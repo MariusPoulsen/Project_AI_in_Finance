@@ -12,29 +12,58 @@
 - `[!]` blocked / decision required
 
 ---
+## Phase completion protocol
 
+Each phase is a hard implementation gate.
+
+For every phase:
+
+1. Read AGENTS.md, DECISIONS.md, this phase, and only the relevant specification files.
+2. Inspect the existing repository before changing code.
+3. Implement the complete phase scope.
+4. Add or update automated tests for every acceptance criterion that can be tested.
+5. Run the full relevant test/lint/type-check suite.
+6. Exercise the actual pipeline on realistic fixture or project data where applicable.
+7. Fix failures before declaring the phase complete.
+8. Perform a final gap analysis against every acceptance criterion in this phase.
+9. Record completion evidence in docs/STATUS.md.
+10. Stop at the phase boundary. Do not begin the next phase unless explicitly requested.
+
+A phase is NOT complete because:
+- files/classes/functions exist;
+- code imports successfully;
+- mocked tests pass while the real pipeline is untested;
+- placeholders/TODOs remain for required functionality;
+- an acceptance criterion was skipped because it was difficult;
+- downstream functionality was stubbed merely to make tests green.
+
+If a criterion cannot be completed, record it as BLOCKED with the exact reason and stop rather than silently reducing scope.
+
+---
 ## P0 — Repository, environment and storage foundation
+
+Status: verification in progress; see `docs/STATUS.md`.
 
 ### Build
 
-- [ ] Create the repository skeleton from the Software Engineering specification.
-- [ ] Add Python 3.11, `pyproject.toml`, `uv.lock`, `.python-version`, `.env.example`, `.gitignore`.
-- [ ] Keep the canonical agent-facing Markdown specifications under `docs/specs/`; PDFs may remain under `docs/PDFs/` as archival/human-readable copies.
-- [ ] Implement typed configuration loading for universe, data, econometrics, ML, agents, decision, backtest and app settings.
-- [ ] Implement structured logging and run IDs.
-- [ ] Implement the canonical directory resolver from `docs/DECISIONS.md`.
-- [ ] Create DuckDB SQL migrations and schema/version registry.
-- [ ] Implement DuckDB, Parquet, document, artifact and run-registry storage helpers.
-- [ ] Add deterministic tiny fixtures.
-- [ ] Configure Ruff, mypy, pytest and GitHub Actions.
+- [x] Create the repository skeleton from the Software Engineering specification.
+- [x] Add Python 3.11, `pyproject.toml`, `uv.lock`, `.python-version`, `.env.example`, `.gitignore`.
+- [x] Keep the canonical agent-facing Markdown specifications under `docs/specs/`; PDFs may remain under `docs/PDFs/` as archival/human-readable copies.
+- [x] Implement typed configuration loading for universe, data, econometrics, ML, agents, decision, backtest and app settings.
+- [x] Implement structured logging and run IDs.
+- [x] Implement the canonical directory resolver from `docs/DECISIONS.md`.
+- [x] Create DuckDB SQL migrations and schema/version registry.
+- [x] Implement DuckDB, Parquet, document, artifact and run-registry storage helpers.
+- [x] Add deterministic tiny fixtures.
+- [x] Configure Ruff, mypy, pytest and GitHub Actions.
 
 ### Acceptance gate P0
 
-- [ ] Fresh clone + `uv sync --frozen` succeeds.
-- [ ] Fresh `data/analytics/structural_break.duckdb` can be created entirely from migrations.
-- [ ] Read/write storage fixture test passes.
-- [ ] CI passes without network or LLM access.
-- [ ] No scientific logic is trapped in Streamlit/notebooks.
+- [-] Fresh clone + `uv sync --frozen` succeeds.
+- [x] Fresh `data/analytics/structural_break.duckdb` can be created entirely from migrations.
+- [x] Read/write storage fixture test passes.
+- [-] CI passes without network or LLM access.
+- [x] No scientific logic is trapped in Streamlit/notebooks.
 
 ---
 

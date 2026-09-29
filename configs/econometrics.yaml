@@ -1,0 +1,8 @@
+version: econometrics-v1
+formation_days: 504
+refit: monthly
+cointegration_alpha: 0.05
+entry_z: 2.0
+success_z: 0.5
+adverse_z: 3.0
+horizon_days: 10

@@ -1,0 +1,5 @@
+version: app-v1
+demo_mode: true
+read_only: true
+cache_ttl_seconds: 300
+row_limit: 100

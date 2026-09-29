@@ -273,3 +273,39 @@ The coding agent may build the final-test pipeline and generate final-test featu
 The coding agents are responsible for the complete implemented system: data ingestion, storage, econometrics, event construction, ML, NLP/event intelligence, multi-agent logic, decision control, backtesting/evaluation, tests, Streamlit application, deployment/demo packaging, technical README/runbook, and generated model/data documentation.
 
 The user will prepare the final academic written report and presentation/video separately.
+
+## 15. Phase 0 environment and storage implementation
+
+- Google Colab is supported as a host for the same Python 3.11 package commands.
+  `scripts/colab_bootstrap.py` uses uv to create the project environment independently
+  of Colab's notebook kernel. No Jupyter packages are required by this project.
+- The existing `Ai_in_Finance` Python 3.12 environment is independent and unchanged.
+- Foundation dependencies install by default. The specified later-phase research,
+  agent and app stacks are declared as locked optional extras. No later-phase
+  implementation or model results are implied by installing these dependencies.
+- Hatch's exact editable mode plus the explicit `editables` dependency avoids
+  Python 3.11's locale-dependent `.pth` decoding in non-ASCII Windows paths.
+- Storage paths are relative to an explicit workspace root (repository by default).
+  `--workspace-root` takes precedence over `SB_WORKSPACE_ROOT`; changing deployment
+  paths does not alter the normalized research configuration hash.
+- Active files use a local filesystem supporting atomic replace/hard links. Colab
+  uses `/content`; completed workspaces can be archived to Drive. Concurrent batch
+  writers are outside the supported execution model.
+- Phase 0 migrations create the four logical schemas, migration ledger and ops
+  tables. Domain tables/views arrive with their owning phase and validated contracts;
+  no empty downstream models or fake research outputs are introduced in Phase 0.
+- SQL checksums normalize CRLF/LF only. An applied migration cannot otherwise change,
+  disappear, or be reordered. New migration batches apply in one transaction.
+- Source documents and versioned artifacts are immutable. Identical writes are
+  idempotent; changed content under an existing identity is rejected. Replacing a
+  curated Parquet file requires an explicit `replace=True` batch operation.
+- Run records contain normalized settings and code/config/data identities; successful
+  artifact/dataset registration and run completion share a transaction. Failed runs
+  publish no registry entries. Unregistered files from interrupted jobs can be retried.
+- Policy probability/break-risk thresholds and transaction/borrow assumptions remain
+  explicitly unset draft values until their owning phases select and freeze them.
+  P0 does not invent scientific defaults or unlock the final test.
+- The archival PDF directory is currently named `docs/PDF's/`; prose references to
+  `docs/PDFs/` refer to those same human-readable archives. The Markdown index lists
+  `04_MULTI_AGENT_PIPELINE.md`, which was absent at P0 start. Recover/approve that
+  specification before its owning implementation phase; P0 does not reconstruct it.

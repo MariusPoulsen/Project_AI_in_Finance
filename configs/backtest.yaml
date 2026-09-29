@@ -1,0 +1,6 @@
+version: backtest-v1-draft
+status: draft
+execution: next_open
+# Explicitly unresolved; Phase 6 must select and freeze these assumptions.
+transaction_cost_bps: null
+annual_borrow_bps: null
