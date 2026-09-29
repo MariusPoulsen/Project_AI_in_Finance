@@ -4,7 +4,8 @@
 
 Date: 2026-09-29. Branch: `phase-0-foundation`.
 
-Status: implementation built; final clean-clone and hosted CI verification in progress.
+Status: implementation and local acceptance passed; hosted CI verification in progress.
+Phase 0 remains open until that acceptance gate passes.
 Phase 1 has not begun.
 
 ### Build evidence
@@ -38,9 +39,13 @@ Phase 1 has not begun.
 
 ### Remaining acceptance evidence
 
-- Clean Git clone installation and checks: pending.
-- Host Python 3.12 → isolated Python 3.11 bootstrap execution: pending.
-- Hosted Windows/Linux CI and Linux Colab bootstrap: pending.
+- Clean Git clone installation: passed at commit `be5f443`, in a separate directory
+  and fresh virtual environment. Frozen sync, Ruff, formatting, mypy and the complete
+  test suite passed (37 passed, one Windows symlink-permission skip).
+- Host Python 3.12.10 → isolated Python 3.11 bootstrap: passed locally, including
+  configuration validation, initialization and the four-row storage round trip.
+- Hosted Windows/Linux CI and Linux Colab bootstrap: pending. The additional GitHub
+  workflow authorization is now complete, allowing the CI workflow to be uploaded.
 - An actual browser-managed Colab session has not been launched from this workstation.
   The portable bootstrap and instructions are provided in `docs/COLAB.md`; hosted
   Linux CI exercises the same commands without needing Google account credentials.
