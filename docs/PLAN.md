@@ -42,8 +42,8 @@ If a criterion cannot be completed, record it as BLOCKED with the exact reason a
 ---
 ## P0 — Repository, environment and storage foundation
 
-Status: local acceptance passed; hosted CI verification in progress.
-See `docs/STATUS.md` for evidence and the remaining gate.
+Status: complete; all P0 acceptance gates passed. See `docs/STATUS.md` for evidence.
+Stopped at the P0 boundary; P1 requires a separate instruction.
 
 ### Build
 
@@ -63,7 +63,7 @@ See `docs/STATUS.md` for evidence and the remaining gate.
 - [x] Fresh clone + `uv sync --frozen` succeeds.
 - [x] Fresh `data/analytics/structural_break.duckdb` can be created entirely from migrations.
 - [x] Read/write storage fixture test passes.
-- [-] CI passes without network or LLM access (hosted verification in progress).
+- [x] CI passes without network or LLM access (Windows, Linux and Colab bootstrap).
 - [x] No scientific logic is trapped in Streamlit/notebooks.
 
 ---
