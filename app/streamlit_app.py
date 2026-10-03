@@ -54,6 +54,20 @@ def render_model(detail: PairDetailView) -> None:
         f"Calibrator: {model.get('calibrator_version', 'Unavailable')} · "
         f"Policy: {model.get('ml_policy_version', model.get('policy_version', 'Unavailable'))}"
     )
+    calibration_sample = (
+        detail.versions.model.get("metrics", {})
+        .get("partitions", {})
+        .get("validation", {})
+        .get("xgboost_calibrated", {})
+    )
+    sample_count = calibration_sample.get("n", 0)
+    successes = calibration_sample.get("positives")
+    if sample_count and successes in (0, sample_count):
+        st.info(
+            f"Validation contains {successes} successes in {sample_count} events. "
+            "Calibration uses a constant smoothed prior and cannot rank events. "
+            "These scores do not establish predictive performance."
+        )
     if detail.predictions.empty:
         st.info("No stored Model A prediction is available for this pair by the selected date.")
         return

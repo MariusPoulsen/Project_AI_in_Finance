@@ -47,7 +47,7 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.mypy]
 python_version = "3.11"
 strict = true
-files = ["src", "scripts"]
+files = ["src", "scripts", "app"]
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
@@ -56,5 +56,6 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 addopts = "-ra --strict-markers --disable-socket"
 
