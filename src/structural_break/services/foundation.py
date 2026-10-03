@@ -182,6 +182,9 @@ def main(argv: list[str] | None = None) -> int:
             "verify-data",
             "build-relationships",
             "verify-relationships",
+            "build-events",
+            "train-model-a",
+            "verify-model-a",
         ],
     )
     parser.add_argument("--project-root", type=Path)
@@ -191,6 +194,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--fixture", type=Path)
     parser.add_argument("--relationship-fixture", action="store_true")
     parser.add_argument("--relationship-version")
+    parser.add_argument("--ml-fixture", action="store_true")
+    parser.add_argument("--event-version")
+    parser.add_argument("--model-version")
     parser.add_argument("--start", type=date.fromisoformat)
     parser.add_argument("--end", type=date.fromisoformat)
     args = parser.parse_args(argv)
@@ -258,6 +264,50 @@ def main(argv: list[str] | None = None) -> int:
                 json.dumps(
                     {
                         "snapshot_id": manifest["data_snapshot_id"],
+                        "status": "VERIFIED",
+                        "synthetic": manifest["synthetic"],
+                    }
+                )
+            )
+        elif args.command == "build-events":
+            from structural_break.services.model_a import build_events
+
+            manifest = build_events(
+                paths, config, fixture=args.ml_fixture, event_version=args.event_version
+            )
+            print(
+                json.dumps(
+                    {
+                        "dataset_version": manifest["dataset_version"],
+                        "status": "SUCCESS",
+                        "synthetic": manifest["synthetic"],
+                    }
+                )
+            )
+        elif args.command == "train-model-a":
+            from structural_break.services.model_a import train_model_a_job
+
+            manifest = train_model_a_job(paths, config, model_version=args.model_version)
+            print(
+                json.dumps(
+                    {
+                        "model_version": manifest["model_version"],
+                        "status": "SUCCESS",
+                        "synthetic": manifest["synthetic"],
+                    }
+                )
+            )
+        elif args.command == "verify-model-a":
+            from structural_break.services.model_a import ModelARepository
+
+            repository = ModelARepository(paths)
+            manifest = repository.active_manifest()
+            repository.load_bundle()
+            print(
+                json.dumps(
+                    {
+                        "model_version": manifest["model_version"],
+                        "dataset_version": manifest["dataset_version"],
                         "status": "VERIFIED",
                         "synthetic": manifest["synthetic"],
                     }

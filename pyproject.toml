@@ -15,6 +15,8 @@ dependencies = [
   "PyYAML>=6,<7", "pandera[pandas]>=0.24,<1",
   "yfinance>=0.2.65,<1", "exchange-calendars>=4.11,<5",
   "statsmodels>=0.14,<1", "matplotlib>=3.10,<4",
+  "scikit-learn>=1.7,<2", "xgboost>=3,<4", "shap>=0.48,<1", "mlflow>=3,<4",
+  "streamlit>=1.45,<2", "plotly>=6,<7",
 ]
 
 [project.optional-dependencies]
@@ -32,6 +34,9 @@ dev = ["pytest>=8,<10", "pytest-socket>=0.7,<1", "ruff>=0.11,<1", "mypy>=1.15,<2
 packages = ["src/structural_break"]
 dev-mode-exact = true
 
+[tool.uv]
+constraint-dependencies = ["numba>=0.62,<0.65"]
+
 [tool.ruff]
 target-version = "py311"
 line-length = 100
@@ -46,7 +51,7 @@ files = ["src", "scripts"]
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-module = ["pyarrow", "pyarrow.*", "yfinance", "exchange_calendars", "exchange_calendars.*", "statsmodels", "statsmodels.*", "matplotlib", "matplotlib.*"]
+module = ["pyarrow", "pyarrow.*", "yfinance", "exchange_calendars", "exchange_calendars.*", "statsmodels", "statsmodels.*", "matplotlib", "matplotlib.*", "sklearn", "sklearn.*", "xgboost", "xgboost.*", "shap", "shap.*", "mlflow", "mlflow.*", "scipy", "scipy.*", "streamlit", "streamlit.*", "plotly", "plotly.*", "joblib", "joblib.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

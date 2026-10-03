@@ -1,4 +1,4 @@
-name: Foundation, data and econometrics
+name: Foundation, data, econometrics and Model A
 
 on:
   push:
@@ -63,6 +63,23 @@ jobs:
           --workspace-root .acceptance/phase2-ci
           --relationship-version fixture-p2-ci
 
+      - name: Build complete point-in-time synthetic events
+        run: >-
+          uv run --frozen structural-break build-events --ml-fixture
+          --workspace-root .acceptance/phase3-ci
+      - name: Train, calibrate and explain Model A offline
+        run: >-
+          uv run --frozen structural-break train-model-a
+          --workspace-root .acceptance/phase3-ci
+      - name: Verify native model artifacts and reload inference
+        run: >-
+          uv run --frozen structural-break verify-model-a
+          --workspace-root .acceptance/phase3-ci
+      - name: Repeat model identity without replacing outputs
+        run: >-
+          uv run --frozen structural-break train-model-a
+          --workspace-root .acceptance/phase3-ci
+
   colab-bootstrap:
     runs-on: ubuntu-latest
     steps:
@@ -78,4 +95,5 @@ jobs:
           --workspace-root /tmp/colab-foundation
           --data-fixture
           --relationship-fixture
+          --ml-fixture
       - run: uv run --frozen pytest

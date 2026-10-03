@@ -1,9 +1,13 @@
-version: ml-v1
-feature_schema_version: quantitative-v1-draft
-train: {start: 2018-01-01, end: 2021-12-31}
+version: ml-v2-early-history
+feature_schema_version: quantitative-v1
+label_policy_version: close-label-v1
+split_version: expanding-2016-v1
+train: {start: 2016-01-01, end: 2021-12-31}
 validation: {start: 2022-01-01, end: 2023-12-31}
 final_test: {start: 2024-01-01, end: 2025-12-31}
 embargo_days: 10
 final_test_locked: true
 calibration: sigmoid
 seed: 42
+search_trials: 30
+candidate_threshold: 0.65
