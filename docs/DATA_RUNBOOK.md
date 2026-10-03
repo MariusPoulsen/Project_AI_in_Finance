@@ -78,7 +78,7 @@ Yahoo exposes parsed vendor frames rather than HTTP response bytes/status; their
 HTTP status is unknown and recorded as null. Local reference files also have no
 HTTP status. Each freeze has a raw inventory and a final manifest. The final
 manifest records configuration/code identities, schemas, row counts, source hashes,
-curated hashes, QA findings and SEC timestamp coverage.
+curated hashes, actual per-dataset date ranges, QA findings and SEC timestamp coverage.
 
 The seven immutable datasets sit below `data/snapshots/{id}/`. Canonical latest
 copies occupy the paths in `DECISIONS.md`. DuckDB readers use views pointing directly
@@ -127,6 +127,9 @@ substituted for availability. Naive cutoff timestamps are rejected.
   context. The 16:16 New York observation proxy is conservative relative to the
   official daily close calculation. It does not establish when a historical CSV
   was published. Same-day VIX is excluded at the equity-close cutoff.
+  Official Cboe weekday observations outside the equity calendar remain in the raw
+  CSV with an audit warning and do not enter equity-session context. Weekend or
+  out-of-range normalized observations remain blocking calendar failures.
 - Yahoo adjusted closes are a frozen retrospective vendor history, not a vintage
   point-in-time adjustment feed. Subsequent research must disclose this prototype
   limitation; freezing a download does not prove historical publication times.

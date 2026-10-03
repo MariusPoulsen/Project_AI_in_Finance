@@ -24,6 +24,19 @@ def frame_table(frame: pd.DataFrame) -> pa.Table:
     return pa.Table.from_pandas(frame, preserve_index=False).replace_schema_metadata(None)
 
 
+def date_coverage(frame: pd.DataFrame) -> dict[str, dict[str, str | int | None]]:
+    result: dict[str, dict[str, str | int | None]] = {}
+    for name in ("trading_date", "filing_date", "acceptance_datetime_utc"):
+        if name in frame:
+            values = frame[name].dropna()
+            result[name] = {
+                "min": values.min().isoformat() if not values.empty else None,
+                "max": values.max().isoformat() if not values.empty else None,
+                "null_rows": int(frame[name].isna().sum()),
+            }
+    return result
+
+
 @dataclass
 class RawInventory:
     paths: ProjectPaths
@@ -179,6 +192,7 @@ def freeze_frames(
                 "sha256": sha256_file(path),
                 "rows": len(frame),
                 "schema": str(table.schema),
+                "date_coverage": date_coverage(frame),
             }
         )
     return result

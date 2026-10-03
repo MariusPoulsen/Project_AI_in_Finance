@@ -98,6 +98,7 @@ def capture_sources(
     end: date,
     downloader: Callable[..., pd.DataFrame | None] | None = None,
     synthetic: bool = False,
+    code_revision: str | None = None,
 ) -> dict[str, Any]:
     inventory = RawInventory(paths, snapshot_id)
     reference = paths.project_root / "configs/securities.yaml"
@@ -204,7 +205,7 @@ def capture_sources(
         "security_reference_version": str(securities["reference_version"].iloc[0]),
         "sector_etfs": sector_map["sector_etf"].tolist(),
         "tickers": list(tickers),
-        "code_revision": git_revision(paths.project_root),
+        "code_revision": code_revision or git_revision(paths.project_root),
         "source_library_versions": {
             "yfinance": version("yfinance"),
             "exchange_calendars": version("exchange_calendars"),
@@ -386,6 +387,7 @@ def ingest_data(
         snapshot_id or "snap_" + datetime.now(UTC).strftime("%Y%m%d_%H%M%SZ") + "_" + run_id[:8]
     )
     logger = configure_logging()
+    revision = git_revision(paths.project_root)
     paths.create_directories()
     registry = RunRegistry(DuckDBConnectionFactory(paths.database), paths.workspace_root)
     migrate(registry.factory, paths.migrations)
@@ -393,7 +395,7 @@ def ingest_data(
         run_id,
         "ingest-data" if replay_id is None else "replay-data",
         config,
-        git_revision(paths.project_root),
+        revision,
         snapshot_id,
     )
     logger.info(
@@ -461,6 +463,7 @@ def ingest_data(
                 end=end,
                 downloader=downloader,
                 synthetic=fixture is not None,
+                code_revision=revision,
             )
         frames, quality = curate_sources(
             paths, config, raw_manifest, output_snapshot_id=snapshot_id
@@ -477,7 +480,7 @@ def ingest_data(
             "data_snapshot_id": snapshot_id,
             "curated_files": files,
             "quality": quality,
-            "curation_code_revision": git_revision(paths.project_root),
+            "curation_code_revision": revision,
             "run_id": run_id,
             "raw_manifest_path": f"data/snapshots/{snapshot_id}/raw_manifest.json",
             "raw_manifest_sha256": sha256_file(

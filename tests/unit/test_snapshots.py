@@ -2,7 +2,7 @@
 
 import json
 from copy import deepcopy
-from datetime import UTC, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -15,6 +15,7 @@ from structural_break.data.http import FetchedResponse
 from structural_break.data.snapshots import (
     RawInventory,
     content_identity,
+    date_coverage,
     frame_table,
     freeze_frames,
     json_bytes,
@@ -295,3 +296,55 @@ def test_source_inventory_check_does_not_mutate_manifest(paths: ProjectPaths) ->
     original = deepcopy(manifest)
     verify_snapshot(paths, manifest)
     assert manifest == original
+
+
+def test_frozen_manifest_records_actual_dates_utc_acceptance_ranges_and_missingness(
+    paths: ProjectPaths,
+) -> None:
+    frame = pd.DataFrame(
+        {
+            "trading_date": [date(2021, 1, 5), None, date(2021, 1, 4)],
+            "filing_date": [date(2021, 1, 6), None, date(2021, 1, 5)],
+            "acceptance_datetime_utc": pd.to_datetime(
+                ["2021-01-06T16:00:00Z", None, "2021-01-05T13:30:00Z"], utc=True
+            ),
+        }
+    )
+    expected = {
+        "trading_date": {"min": "2021-01-04", "max": "2021-01-05", "null_rows": 1},
+        "filing_date": {"min": "2021-01-05", "max": "2021-01-06", "null_rows": 1},
+        "acceptance_datetime_utc": {
+            "min": "2021-01-05T13:30:00+00:00",
+            "max": "2021-01-06T16:00:00+00:00",
+            "null_rows": 1,
+        },
+    }
+    assert date_coverage(frame) == expected
+    files = freeze_frames(
+        paths, "coverage_unit", {"curated/evidence/sec_filing_index.parquet": frame}
+    )
+    assert files[0]["date_coverage"] == expected
+    assert files[0]["rows"] == 3
+
+
+@pytest.mark.parametrize("rows", [0, 2])
+def test_empty_or_all_missing_dataset_has_no_invented_date_coverage(
+    paths: ProjectPaths, rows: int
+) -> None:
+    frame = pd.DataFrame(
+        {
+            "trading_date": pd.Series([None] * rows, dtype="object"),
+            "acceptance_datetime_utc": pd.Series([pd.NaT] * rows, dtype="datetime64[ns, UTC]"),
+            "unrelated_date": pd.Series([None] * rows, dtype="object"),
+        }
+    )
+    expected = {
+        "trading_date": {"min": None, "max": None, "null_rows": rows},
+        "acceptance_datetime_utc": {"min": None, "max": None, "null_rows": rows},
+    }
+    assert date_coverage(frame) == expected
+    files = freeze_frames(
+        paths, "empty_coverage_unit", {"curated/market/prices_daily.parquet": frame}
+    )
+    assert files[0]["date_coverage"] == expected
+    assert files[0]["rows"] == rows
