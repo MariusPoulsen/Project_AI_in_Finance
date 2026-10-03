@@ -263,6 +263,15 @@ def test_event_publication_failure_rolls_back_and_retries_same_identity(copied, 
     assert repository.dataset_manifest() == recovered
     assert repository.active_manifest() == model
     assert repository.features()["dataset_version"].eq(model["dataset_version"]).all()
+    original_frames = repository.dataset_frames(events["dataset_version"])
+    recovered_frames = repository.dataset_frames(recovered["dataset_version"])
+    assert original_frames["divergence_events"]["event_id"].equals(
+        recovered_frames["divergence_events"]["event_id"]
+    )
+    pd.testing.assert_frame_equal(
+        original_frames["event_targets"].drop(columns="dataset_version"),
+        recovered_frames["event_targets"].drop(columns="dataset_version"),
+    )
     archived = list((paths.artifacts / "events").glob("acceptance_failed_events.unregistered-*"))
     assert len(archived) == 1
 

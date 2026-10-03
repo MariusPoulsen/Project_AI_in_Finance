@@ -1,10 +1,13 @@
 """Quantitative features built from an event's frozen, past-only information set."""
 
-from datetime import date
+from datetime import date, timedelta
+from functools import lru_cache
 from typing import Any
 
 import numpy as np
 import pandas as pd
+
+from structural_break.data.market import session_schedule
 
 FEATURE_FAMILIES: dict[str, tuple[str, ...]] = {
     "spread": (
@@ -211,6 +214,16 @@ def _available(frame: pd.DataFrame, field: str, cutoff: pd.Timestamp) -> pd.Time
     return observed.max()
 
 
+@lru_cache(maxsize=256)
+def _first_session_predecessor(first: date) -> date:
+    """The VIX predecessor can legitimately predate the price bootstrap."""
+    schedule = session_schedule(first - timedelta(days=10), first)
+    if len(schedule) < 2 or schedule.iloc[-1]["trading_date"] != first:
+        raise ValueError("Feature history must use actual XNYS session dates")
+    predecessor: date = schedule.iloc[-2]["trading_date"]
+    return predecessor
+
+
 def build_quantitative_features(
     event: dict[str, Any],
     snapshot: dict[str, Any],
@@ -256,6 +269,8 @@ def build_quantitative_features(
         current: previous
         for previous, current in zip(session_dates, session_dates[1:], strict=False)
     }
+    if session_dates:
+        previous_sessions[session_dates[0]] = _first_session_predecessor(session_dates[0])
     vix_present = market["vix_close"].notna()
     vix_dates = pd.to_datetime(market["vix_observation_date"]).dt.date
     expected_vix_dates = pd.Series(

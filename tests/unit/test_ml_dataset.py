@@ -321,6 +321,16 @@ def test_vix_requires_exact_previous_xnys_session_without_stale_carry() -> None:
         build(frames)
 
 
+def test_valid_previous_session_vix_can_predate_first_price_session() -> None:
+    frames, _ = inputs()
+    assert frames[3].iloc[0]["trading_date"] == date(2020, 1, 2)
+    frames[3].loc[0, "vix_close"] = 19.4
+    frames[3].loc[0, "vix_observation_date"] = date(2019, 12, 31)
+    frames[3].loc[0, "vix_observed_at_utc"] = pd.Timestamp("2019-12-31T21:16:00Z")
+    result = build(frames)
+    assert result.features["feature_complete"].all()
+
+
 def test_later_effective_snapshot_prevents_using_older_valid_fit() -> None:
     frames, first = inputs()
     newer = frames[4].iloc[0].to_dict()
