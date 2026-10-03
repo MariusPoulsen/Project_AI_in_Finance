@@ -14,10 +14,11 @@ dependencies = [
   "pyarrow>=19,<24", "pydantic>=2.10,<3", "pydantic-settings>=2.7,<3",
   "PyYAML>=6,<7", "pandera[pandas]>=0.24,<1",
   "yfinance>=0.2.65,<1", "exchange-calendars>=4.11,<5",
+  "statsmodels>=0.14,<1", "matplotlib>=3.10,<4",
 ]
 
 [project.optional-dependencies]
-research = ["statsmodels>=0.14,<1", "scikit-learn>=1.7,<2", "xgboost>=3,<4", "shap>=0.48,<1", "mlflow>=3,<4"]
+research = ["scikit-learn>=1.7,<2", "xgboost>=3,<4", "shap>=0.48,<1", "mlflow>=3,<4"]
 agents = ["litellm>=1.70,<2", "langgraph>=1,<2"]
 app = ["streamlit>=1.45,<2", "plotly>=6,<7"]
 
@@ -45,7 +46,7 @@ files = ["src", "scripts"]
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-module = ["pyarrow", "pyarrow.*", "yfinance", "exchange_calendars", "exchange_calendars.*"]
+module = ["pyarrow", "pyarrow.*", "yfinance", "exchange_calendars", "exchange_calendars.*", "statsmodels", "statsmodels.*", "matplotlib", "matplotlib.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

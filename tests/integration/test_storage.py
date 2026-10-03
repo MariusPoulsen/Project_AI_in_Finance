@@ -13,7 +13,8 @@ from structural_break.storage.registry import Registration, RunRegistry
 
 def test_migrations_build_fresh_db_and_are_idempotent(paths):
     factory = DuckDBConnectionFactory(paths.database)
-    assert migrate(factory, paths.migrations) == [1, 2, 3]
+    expected_versions = [int(file.name[:3]) for file in sorted(paths.migrations.glob("*.sql"))]
+    assert migrate(factory, paths.migrations) == expected_versions
     assert migrate(factory, paths.migrations) == []
     with factory.connect() as connection:
         schemas = {
@@ -23,7 +24,9 @@ def test_migrations_build_fresh_db_and_are_idempotent(paths):
             ).fetchall()
         }
         assert {"ref", "market", "analytics", "ops"} <= schemas
-        assert connection.execute("SELECT count(*) FROM ops.schema_migrations").fetchone() == (3,)
+        assert connection.execute("SELECT count(*) FROM ops.schema_migrations").fetchone() == (
+            len(expected_versions),
+        )
         with pytest.raises(duckdb.InvalidInputException):
             connection.execute("CREATE TABLE analytics.should_fail (id INTEGER)")
 
@@ -44,7 +47,7 @@ def test_checksum_and_missing_history_are_rejected(paths, tmp_path):
     with pytest.raises(ValueError, match="checksum mismatch"):
         migrate(factory, migrations)
     (migrations / "001_schemas.sql").write_text(original)
-    (migrations / "003_data_registry.sql").unlink()
+    sorted(migrations.glob("*.sql"))[-1].unlink()
     with pytest.raises(ValueError, match="checksum mismatch"):
         migrate(factory, migrations)
 
@@ -54,12 +57,17 @@ def test_migration_failure_rolls_back_entire_batch(paths, tmp_path):
     shutil.copytree(paths.migrations, migrations)
     factory = DuckDBConnectionFactory(paths.database)
     migrate(factory, migrations)
-    (migrations / "004_good.sql").write_text("CREATE TABLE analytics.temporary (id INTEGER);")
-    (migrations / "005_bad.sql").write_text("THIS IS INVALID SQL;")
+    previous_count = len(list(migrations.glob("*.sql")))
+    (migrations / f"{previous_count + 1:03d}_good.sql").write_text(
+        "CREATE TABLE analytics.temporary (id INTEGER);"
+    )
+    (migrations / f"{previous_count + 2:03d}_bad.sql").write_text("THIS IS INVALID SQL;")
     with pytest.raises(duckdb.ParserException):
         migrate(factory, migrations)
     with factory.connect() as connection:
-        assert connection.execute("SELECT count(*) FROM ops.schema_migrations").fetchone() == (3,)
+        assert connection.execute("SELECT count(*) FROM ops.schema_migrations").fetchone() == (
+            previous_count,
+        )
         assert connection.execute(
             "SELECT count(*) FROM information_schema.tables WHERE table_name = 'temporary'"
         ).fetchone() == (0,)

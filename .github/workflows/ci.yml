@@ -1,4 +1,4 @@
-name: Foundation and data
+name: Foundation, data and econometrics
 
 on:
   push:
@@ -46,6 +46,22 @@ jobs:
         run: >-
           uv run --frozen structural-break verify-data
           --workspace-root .acceptance/phase1-ci
+      - name: Build complete synthetic econometric history
+        run: >-
+          uv run --frozen structural-break build-relationships
+          --relationship-fixture
+          --workspace-root .acceptance/phase2-ci
+          --relationship-version fixture-p2-ci
+      - name: Verify immutable econometric history
+        run: >-
+          uv run --frozen structural-break verify-relationships
+          --workspace-root .acceptance/phase2-ci
+      - name: Repeat the same build identity without replacing outputs
+        run: >-
+          uv run --frozen structural-break build-relationships
+          --relationship-fixture
+          --workspace-root .acceptance/phase2-ci
+          --relationship-version fixture-p2-ci
 
   colab-bootstrap:
     runs-on: ubuntu-latest
@@ -61,4 +77,5 @@ jobs:
           python scripts/colab_bootstrap.py
           --workspace-root /tmp/colab-foundation
           --data-fixture
+          --relationship-fixture
       - run: uv run --frozen pytest

@@ -3,7 +3,7 @@
 import argparse
 import json
 import subprocess
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from time import perf_counter
 
@@ -180,6 +180,8 @@ def main(argv: list[str] | None = None) -> int:
             "ingest-data",
             "replay-data",
             "verify-data",
+            "build-relationships",
+            "verify-relationships",
         ],
     )
     parser.add_argument("--project-root", type=Path)
@@ -187,6 +189,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--snapshot-id")
     parser.add_argument("--replay-from")
     parser.add_argument("--fixture", type=Path)
+    parser.add_argument("--relationship-fixture", action="store_true")
+    parser.add_argument("--relationship-version")
+    parser.add_argument("--start", type=date.fromisoformat)
+    parser.add_argument("--end", type=date.fromisoformat)
     args = parser.parse_args(argv)
     try:
         root = find_project_root(args.project_root)
@@ -211,6 +217,39 @@ def main(argv: list[str] | None = None) -> int:
                 fixture=args.fixture,
             )
             print(json.dumps({"snapshot_id": manifest["data_snapshot_id"], "status": "SUCCESS"}))
+        elif args.command == "build-relationships":
+            from structural_break.services.relationships import build_relationships
+
+            manifest = build_relationships(
+                paths,
+                config,
+                fixture=args.relationship_fixture,
+                relationship_version=args.relationship_version,
+                start=args.start,
+                end=args.end,
+            )
+            print(
+                json.dumps(
+                    {
+                        "relationship_version": manifest["relationship_version"],
+                        "status": "SUCCESS",
+                        "synthetic": manifest["synthetic"],
+                    }
+                )
+            )
+        elif args.command == "verify-relationships":
+            from structural_break.services.relationships import RelationshipsRepository
+
+            manifest = RelationshipsRepository(paths).active_manifest()
+            print(
+                json.dumps(
+                    {
+                        "relationship_version": manifest["relationship_version"],
+                        "status": "VERIFIED",
+                        "synthetic": manifest["synthetic"],
+                    }
+                )
+            )
         elif args.command == "verify-data":
             from structural_break.services.data_queries import DataRepository
 

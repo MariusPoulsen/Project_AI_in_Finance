@@ -335,3 +335,43 @@ The user will prepare the final academic written report and presentation/video s
 - Optional GDELT Article List timestamps have mixed/ambiguous provenance. Its
   adapter is constrained to current/demo use; publication time remains unknown,
   point-in-time eligibility is false and headline historical usage stays disabled.
+
+## 17. Phase 2 estimation and publication details
+
+- Monthly estimation uses the latest 504 valid common observations on/before the
+  actual XNYS month-end. A missing estimation-day close does not create an extra
+  eligibility rule; the actual formation endpoint is recorded. No filling occurs.
+- ADF uses a constant and AIC; KPSS uses a constant and automatic lag selection.
+  At the fixed 5% diagnostic level, I(1) compatibility requires non-rejection of
+  level ADF, rejection of level KPSS and rejection of first-difference ADF.
+  First-difference KPSS is stored as a cross-check, without an additional gate.
+- Engle–Granger uses the fixed A-on-B orientation and its MacKinnon outputs.
+  Stability, beta drift, half-life and source zero-volume warnings remain exposed
+  diagnostics. No unspecified liquidity/stability thresholds are introduced.
+- The first invalid monthly attempt is WATCH, two consecutive invalid attempts
+  are RETIRED. Statistical retirement can recover on a valid month. Permanent
+  manual/lifecycle retirement requires a declared date; undated terminal flags
+  are rejected to prevent retroactive historical eligibility changes.
+- Every monthly attempt is an audit row. If the newest attempt has no usable fit,
+  the next interval has no daily state; an older fit is not silently carried forward.
+  Unexpected statistical errors fail the batch with pair/date context.
+- Parameters become effective at the next XNYS open and remain frozen. At a refit
+  boundary the previous and current close are compared under the same newly
+  effective parameters. Fresh divergence/sign/velocity checks do not bridge missing
+  sessions, and an exact zero touch alone is not counted as two sign crossings.
+- P2 persists raw threshold crossings for any estimable spread (Baseline 0) and
+  ACTIVE eligibility (Baseline 1). Episode deduplication, forward labels and trade
+  outcomes belong to P3/P6. The final-test outcome lock remains closed.
+- Canonical analytics are physical DuckDB tables with core SQL fields and complete
+  JSON payloads, plus immutable full Parquet artifacts. Version/active-pointer/run
+  publication is transactional. DuckDB does not support cross-schema foreign keys;
+  same-schema relationship keys are enforced in SQL and publication owns the
+  ops/analytics linkage within the transaction.
+- Generation identity includes input/config/range, normalized installed Python
+  source hashes and numerical library versions. Explicit version names cannot
+  conceal changed computation. Scientific row IDs exclude run IDs/creation times;
+  the version scopes generations. Failed unregistered files are archived for audit
+  before retry; registered artifacts are verified and never overwritten.
+- P2's added config defaults change the global normalized config hash. Frozen P1
+  curated files remain usable directly; older raw captures require their recorded
+  P1 code/config checkout for replay. This preserves the original source freeze.

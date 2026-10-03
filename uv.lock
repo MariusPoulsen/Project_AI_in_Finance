@@ -2440,6 +2440,7 @@ dependencies = [
     { name = "duckdb" },
     { name = "editables" },
     { name = "exchange-calendars" },
+    { name = "matplotlib" },
     { name = "numpy" },
     { name = "pandas" },
     { name = "pandera", extra = ["pandas"] },
@@ -2447,6 +2448,7 @@ dependencies = [
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "pyyaml" },
+    { name = "statsmodels" },
     { name = "yfinance" },
 ]
 
@@ -2463,7 +2465,6 @@ research = [
     { name = "mlflow" },
     { name = "scikit-learn" },
     { name = "shap" },
-    { name = "statsmodels" },
     { name = "xgboost" },
 ]
 
@@ -2484,6 +2485,7 @@ requires-dist = [
     { name = "exchange-calendars", specifier = ">=4.11,<5" },
     { name = "langgraph", marker = "extra == 'agents'", specifier = ">=1,<2" },
     { name = "litellm", marker = "extra == 'agents'", specifier = ">=1.70,<2" },
+    { name = "matplotlib", specifier = ">=3.10,<4" },
     { name = "mlflow", marker = "extra == 'research'", specifier = ">=3,<4" },
     { name = "numpy", specifier = ">=2,<3" },
     { name = "pandas", specifier = ">=2.2,<3" },
@@ -2495,7 +2497,7 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6,<7" },
     { name = "scikit-learn", marker = "extra == 'research'", specifier = ">=1.7,<2" },
     { name = "shap", marker = "extra == 'research'", specifier = ">=0.48,<1" },
-    { name = "statsmodels", marker = "extra == 'research'", specifier = ">=0.14,<1" },
+    { name = "statsmodels", specifier = ">=0.14,<1" },
     { name = "streamlit", marker = "extra == 'app'", specifier = ">=1.45,<2" },
     { name = "xgboost", marker = "extra == 'research'", specifier = ">=3,<4" },
     { name = "yfinance", specifier = ">=0.2.65,<1" },

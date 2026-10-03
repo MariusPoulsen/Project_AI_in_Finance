@@ -78,7 +78,7 @@ resolved before its owning phase. Draft policy/cost fields are explicitly unset.
 
 Date: 2026-10-03. Branch: `phase-1-data`.
 
-Status: **COMPLETE — all Phase 1 acceptance gates passed. P2 has not begun.**
+Status: **COMPLETE — all Phase 1 acceptance gates passed. P2 is recorded below.**
 
 ### Implemented scope
 
@@ -176,3 +176,24 @@ login or LLM credentials were needed. The SEC contact stays in ignored local set
 Review: [draft PR #2](https://github.com/MariusPoulsen/Project_AI_in_Finance/pull/2),
 stacked on the unmerged Phase 0 branch. No main-branch merge, P2 econometrics, model
 training, filing-body extraction or headline final-test outcomes were performed.
+
+## Phase 2 — econometric relationships and daily signal state
+
+Date: 2026-10-03. Branch: `phase-2-econometrics`.
+
+Status: **IMPLEMENTED — frozen project-data build and final acceptance in progress.**
+
+The batch engine now aligns fixed-orientation log prices, estimates 504-observation
+monthly ADF/KPSS/Engle–Granger relationships, freezes next-session parameters and
+publishes daily state plus raw Baseline 0/ACTIVE Baseline 1 crossings. SQL migration
+004, immutable artifacts, read-only services and the technical runbook are included.
+No forward labels, model fits, trades or outcome metrics are produced.
+
+Initial local verification: 331 passed, three host symlink-permission skips;
+subsequent edge-case and publication-validator tests passed. Ruff, formatting,
+strict mypy and frozen lock checks passed. The synthetic pipeline published 180
+monthly attempts and 2,262 daily rows. Both Python 3.11 and Python 3.12 host Colab
+bootstraps ran the actual project Python 3.11 fixture path successfully.
+
+Final acceptance will record the clean code revision, frozen project-data output,
+representative diagnostics through 2023, hosted CI and the completed P2 gates.
