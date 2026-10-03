@@ -181,7 +181,7 @@ training, filing-body extraction or headline final-test outcomes were performed.
 
 Date: 2026-10-03. Branch: `phase-2-econometrics`.
 
-Status: **COMPLETE — all Phase 2 acceptance gates passed. P3 has not begun.**
+Status: **COMPLETE — all Phase 2 acceptance gates passed.**
 
 ### Implemented scope
 

@@ -518,6 +518,8 @@ def train_model_a_job(
                 "outside": "EXCLUDED",
             }
         )
+        excluded = ready["partition"].isin(["train", "validation"]) & ~ready["supervised_eligible"]
+        predictions.loc[excluded, "evaluation_role"] = "EXCLUDED_FROM_SUPERVISION"
         prediction_files = _freeze_frames(paths, destination, {"model_predictions": predictions})
         native_files = [
             {

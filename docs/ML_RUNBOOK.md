@@ -98,8 +98,16 @@ label influences preprocessing, fitting, tuning or SHAP reference selection.
 The frozen XGBoost margins receive a validation-only monotone sigmoid calibration.
 Its fitted slope cannot reverse model ranking. A single-class validation sample or
 constant margin cannot identify a discrimination slope; the saved calibrator records
-an explicit smoothed constant mapping and its status. This is a reported limitation,
-not a substitute invented probability.
+an explicit smoothed constant mapping and its status. The model card identifies
+this prior assumption and the absence of validation evidence for discrimination.
+
+The frozen project-data run has 60 eligible training events (nine successes) and
+seven validation events (zero successes). Calibration therefore saves
+`CONSTANT_UNIDENTIFIABLE`, with probability `1/9` for every event. The app exposes
+this limitation. Raw scores and Tree SHAP remain available for research diagnostics,
+but this validation sample cannot establish useful ranking or calibrated forecasts.
+The 2016–2017 extension adds 16 eligible training episodes after deduplication.
+See [the acceptance record](STATUS.md) for partition counts and development metrics.
 
 The real validation sample is too small to support reliable threshold optimisation.
 The working candidate threshold remains the prespecified 0.65, with a development

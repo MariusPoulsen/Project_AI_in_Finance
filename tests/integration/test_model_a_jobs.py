@@ -82,6 +82,19 @@ def test_actual_jobs_publish_integrity_counts_and_final_lock(copied):
     assert model["metrics"]["final_test"] == {"status": "LOCKED", "outcomes_inspected": False}
     frames = repository.dataset_frames()
     joined = merge_event_rows(frames)
+    stored = repository.predictions()
+    excluded = joined.loc[
+        joined["model_ready"]
+        & joined["partition"].isin(["train", "validation"])
+        & ~joined["supervised_eligible"],
+        "event_id",
+    ]
+    assert len(excluded) > 0
+    assert (
+        stored.loc[stored["event_id"].isin(excluded), "evaluation_role"]
+        .eq("EXCLUDED_FROM_SUPERVISION")
+        .all()
+    )
     final = joined.loc[joined["partition"].eq("final_test")]
     assert len(final) > 0
     assert final["outcome_type"].eq("LOCKED").all()
