@@ -117,11 +117,11 @@ for live freeze, offline reproduction and hosted acceptance evidence. Stopped at
 
 ### Acceptance gate P2
 
-- [ ] Synthetic known-stationary/cointegrated fixtures behave as expected.
-- [ ] Monthly snapshots never use future observations.
-- [ ] Daily signal rows always join to the latest effective historical snapshot, never a future snapshot.
-- [ ] Same frozen input/config regenerates identical snapshot/event IDs.
-- [ ] Several representative pairs are manually inspected against stored diagnostics/plots.
+- [x] Synthetic known-stationary/cointegrated fixtures behave as expected.
+- [x] Monthly snapshots never use future observations.
+- [x] Daily signal rows always join to the latest effective historical snapshot, never a future snapshot.
+- [x] Same frozen input/config regenerates identical snapshot/event IDs.
+- [x] Several representative pairs are manually inspected against stored diagnostics/plots.
 
 ---
 
