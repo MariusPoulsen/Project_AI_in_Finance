@@ -303,6 +303,44 @@ def test_nonmonotonic_dates_are_flagged_even_when_every_row_has_volume_warning()
     assert any(f["check"] == "monotonic_dates" and f["severity"] == "FAIL" for f in findings)
 
 
+def test_official_vix_holiday_observation_warns_without_replacing_prior_equity_session():
+    dates = [date(2024, 7, 3), date(2024, 7, 5)]
+    prices = normalize_prices({ticker: raw_prices(ticker, dates) for ticker in ["SPY", "XLP"]})
+    vix = normalize_vix(
+        b"DATE,OPEN,HIGH,LOW,CLOSE\n07/02/2024,13,14,12,13.5\n"
+        b"07/03/2024,14,15,13,14.5\n07/04/2024,20,21,19,20.5\n",
+        date(2024, 7, 2),
+        date(2024, 7, 5),
+    )
+    findings = validate_vix(vix, date(2024, 7, 2), date(2024, 7, 5))
+    assert any(f["check"] == "non_equity_session" and f["severity"] == "WARN" for f in findings)
+    assert not any(f["severity"] == "FAIL" for f in findings)
+    assert date(2024, 7, 4) in set(vix["trading_date"])
+    context = build_market_context(prices, vix, ["XLP"])
+    assert context.loc[1, "vix_observation_date"] == date(2024, 7, 3)
+    assert context.loc[1, "vix_close"] == 14.5
+
+
+def test_official_juneteenth_vix_observation_is_non_equity_session_warning():
+    vix = normalize_vix(
+        b"DATE,OPEN,HIGH,LOW,CLOSE\n06/16/2023,13,14,12,13.5\n"
+        b"06/19/2023,14,15,13,14.5\n06/20/2023,15,16,14,15.5\n",
+        date(2023, 6, 16),
+        date(2023, 6, 20),
+    )
+    findings = validate_vix(vix, date(2023, 6, 16), date(2023, 6, 20))
+    assert any(f["check"] == "non_equity_session" and f["affected_rows"] == 1 for f in findings)
+    assert not any(f["severity"] == "FAIL" for f in findings)
+
+
+@pytest.mark.parametrize("bad_date", [date(2024, 7, 6), date(2024, 7, 8)])
+def test_vix_weekend_and_out_of_bounds_dates_remain_blocking(bad_date):
+    body = "DATE,OPEN,HIGH,LOW,CLOSE\n" + bad_date.strftime("%m/%d/%Y") + ",14,15,13,14\n"
+    vix = normalize_vix(body.encode(), bad_date, bad_date)
+    findings = validate_vix(vix, date(2024, 7, 3), date(2024, 7, 6))
+    assert any(f["check"] == "calendar_alignment" and f["severity"] == "FAIL" for f in findings)
+
+
 def test_volatility_is_trailing_and_missing_return_restarts_twenty_session_window():
     dates = session_schedule(date(2023, 1, 3), date(2023, 3, 31))["trading_date"]
     close = 100 * np.exp(np.cumsum(np.sin(np.arange(len(dates))) / 100))

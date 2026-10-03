@@ -201,6 +201,7 @@ def capture_sources(
         "config_hash": config_hash(config),
         "config_snapshot": config.model_dump(mode="json"),
         "pair_universe_version": config.universe.version,
+        "security_reference_version": str(securities["reference_version"].iloc[0]),
         "sector_etfs": sector_map["sector_etf"].tolist(),
         "tickers": list(tickers),
         "code_revision": git_revision(paths.project_root),

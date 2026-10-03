@@ -613,7 +613,12 @@ def validate_market_context(context: pd.DataFrame) -> list[dict[str, object]]:
 
 
 def validate_vix(vix: pd.DataFrame, start: date, end: date) -> list[dict[str, object]]:
-    """Official VIX OHLC/date QA; missing sessions are explicit warnings."""
+    """Official VIX OHLC/date QA with its calendar distinct from equity sessions.
+
+    Official weekday observations on equity holidays remain in the source and
+    are reported for review. Equity context still joins exactly the prior XNYS
+    session, so these observations cannot replace an equity-session VIX value.
+    """
     fields = ["vix_open", "vix_high", "vix_low", "vix_close"]
     _require_columns(vix, ("trading_date", *fields))
     findings: list[dict[str, object]] = []
@@ -643,10 +648,19 @@ def validate_vix(vix: pd.DataFrame, start: date, end: date) -> list[dict[str, ob
     add("duplicate_keys", int(vix["trading_date"].duplicated().sum()), "VIX dates must be unique")
     schedule = session_schedule(start, end)
     sessions = set(schedule["trading_date"])
+    in_bounds = vix["trading_date"].between(start, end)
+    weekend = vix["trading_date"].map(lambda value: value.weekday() >= 5)
     add(
         "calendar_alignment",
-        int((~vix["trading_date"].isin(sessions)).sum()),
-        "VIX rows must align to requested XNYS sessions",
+        int((~in_bounds | weekend).sum()),
+        "VIX rows must be weekdays within requested date bounds",
+    )
+    add(
+        "non_equity_session",
+        int((in_bounds & ~weekend & ~vix["trading_date"].isin(sessions)).sum()),
+        "Official VIX weekday observations outside XNYS are retained in raw and excluded "
+        "from equity context",
+        "WARN",
     )
     add(
         "missing_sessions",
