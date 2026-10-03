@@ -5,7 +5,7 @@
 Date: 2026-09-29. Branch: `phase-0-foundation`.
 
 Status: **COMPLETE — all Phase 0 acceptance gates passed.**
-Phase 1 has not begun.
+Phase 1 is underway; its gate evidence is recorded below.
 
 ### Build evidence
 
@@ -73,3 +73,18 @@ No ingestion, econometrics, model fitting, LLM calls, final-test results or Stre
 screens are claimed. Later-phase namespaces are intentional package boundaries.
 The missing `docs/specs/04_MULTI_AGENT_PIPELINE.md` predates this work and must be
 resolved before its owning phase. Draft policy/cost fields are explicitly unset.
+
+## Phase 1 — ingestion, reference data and lineage
+
+Date: 2026-10-03. Branch: `phase-1-data`.
+
+Status: **IN PROGRESS — fixture acceptance passed; full live freeze and final checks pending.**
+
+- Implemented the fixed 28 pairs, 56 issuer identities and 65 market series.
+- Complete synthetic capture, immutable raw inventory, seven frozen Parquet datasets,
+  transactional DuckDB publication and offline replay/query paths exercised locally.
+- First full suite: 224 passed, one Windows symlink-permission skip. Additional
+  integrity, raw-only replay and portable-workspace tests passed subsequently.
+- Windows Colab launcher completed fixture ingestion, replay and verification.
+- User chose previous-session VIX; SEC contact is confined to ignored local settings.
+- Full public-source history and hosted Phase 1 CI are pending. P2 has not begun.

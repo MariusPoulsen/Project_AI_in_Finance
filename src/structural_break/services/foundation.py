@@ -171,10 +171,22 @@ def run_job(command: str, paths: ProjectPaths, config: ProjectConfig) -> str:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "command", choices=["check-config", "init-db", "migrate-db", "storage-smoke"]
+        "command",
+        choices=[
+            "check-config",
+            "init-db",
+            "migrate-db",
+            "storage-smoke",
+            "ingest-data",
+            "replay-data",
+            "verify-data",
+        ],
     )
     parser.add_argument("--project-root", type=Path)
     parser.add_argument("--workspace-root", type=Path)
+    parser.add_argument("--snapshot-id")
+    parser.add_argument("--replay-from")
+    parser.add_argument("--fixture", type=Path)
     args = parser.parse_args(argv)
     try:
         root = find_project_root(args.project_root)
@@ -183,6 +195,35 @@ def main(argv: list[str] | None = None) -> int:
         paths = ProjectPaths.resolve(root, args.workspace_root or runtime.workspace_root)
         if args.command == "check-config":
             print(json.dumps({"config_hash": config_hash(config), "status": "VALID"}))
+        elif args.command in {"ingest-data", "replay-data"}:
+            from structural_break.services.ingestion import ingest_data
+
+            if args.command == "replay-data" and not args.replay_from:
+                raise ValueError("replay-data requires --replay-from")
+            if args.command == "ingest-data" and args.replay_from:
+                raise ValueError("--replay-from is only valid for replay-data")
+            manifest = ingest_data(
+                paths,
+                config,
+                runtime,
+                snapshot_id=args.snapshot_id,
+                replay_id=args.replay_from,
+                fixture=args.fixture,
+            )
+            print(json.dumps({"snapshot_id": manifest["data_snapshot_id"], "status": "SUCCESS"}))
+        elif args.command == "verify-data":
+            from structural_break.services.data_queries import DataRepository
+
+            manifest = DataRepository(paths).active_manifest()
+            print(
+                json.dumps(
+                    {
+                        "snapshot_id": manifest["data_snapshot_id"],
+                        "status": "VERIFIED",
+                        "synthetic": manifest["synthetic"],
+                    }
+                )
+            )
         else:
             run_job(args.command, paths, config)
         return 0

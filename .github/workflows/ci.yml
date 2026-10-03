@@ -1,4 +1,4 @@
-name: Foundation
+name: Foundation and data
 
 on:
   push:
@@ -30,6 +30,22 @@ jobs:
       - run: uv run --frozen structural-break init-db
       - run: uv run --frozen structural-break storage-smoke
       - run: uv run --frozen structural-break storage-smoke
+      - name: Ingest complete synthetic data snapshot
+        run: >-
+          uv run --frozen structural-break ingest-data
+          --fixture tests/fixtures/phase1
+          --workspace-root .acceptance/phase1-ci
+          --snapshot-id phase1-ci-fixture
+      - name: Rebuild curated data from immutable raw sources offline
+        run: >-
+          uv run --frozen structural-break replay-data
+          --replay-from phase1-ci-fixture
+          --snapshot-id phase1-ci-replay
+          --workspace-root .acceptance/phase1-ci
+      - name: Verify active data snapshot
+        run: >-
+          uv run --frozen structural-break verify-data
+          --workspace-root .acceptance/phase1-ci
 
   colab-bootstrap:
     runs-on: ubuntu-latest
@@ -41,5 +57,8 @@ jobs:
       - uses: astral-sh/setup-uv@v7
         with:
           version: "0.12.20"
-      - run: python scripts/colab_bootstrap.py --workspace-root /tmp/colab-foundation
+      - run: >-
+          python scripts/colab_bootstrap.py
+          --workspace-root /tmp/colab-foundation
+          --data-fixture
       - run: uv run --frozen pytest

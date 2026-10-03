@@ -1,0 +1,4818 @@
+{
+  "CIK0009000000-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000000-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000000.json": {
+    "cik": 9000000,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000000-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000000-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE ABBV",
+    "tickers": [
+      "ABBV"
+    ]
+  },
+  "CIK0009000001-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000001-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000001.json": {
+    "cik": 9000001,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000001-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000001-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE ABT",
+    "tickers": [
+      "ABT"
+    ]
+  },
+  "CIK0009000002-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000002-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000002.json": {
+    "cik": 9000002,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000002-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000002-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE ADI",
+    "tickers": [
+      "ADI"
+    ]
+  },
+  "CIK0009000003-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000003-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000003.json": {
+    "cik": 9000003,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000003-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000003-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE AZO",
+    "tickers": [
+      "AZO"
+    ]
+  },
+  "CIK0009000004-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000004-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000004.json": {
+    "cik": 9000004,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000004-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000004-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE BAC",
+    "tickers": [
+      "BAC"
+    ]
+  },
+  "CIK0009000005-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000005-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000005.json": {
+    "cik": 9000005,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000005-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000005-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE BDX",
+    "tickers": [
+      "BDX"
+    ]
+  },
+  "CIK0009000006-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000006-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000006.json": {
+    "cik": 9000006,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000006-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000006-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE BMY",
+    "tickers": [
+      "BMY"
+    ]
+  },
+  "CIK0009000007-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000007-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000007.json": {
+    "cik": 9000007,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000007-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000007-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE CAT",
+    "tickers": [
+      "CAT"
+    ]
+  },
+  "CIK0009000008-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000008-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000008.json": {
+    "cik": 9000008,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000008-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000008-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE CB",
+    "tickers": [
+      "CB"
+    ]
+  },
+  "CIK0009000009-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000009-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000009.json": {
+    "cik": 9000009,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000009-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000009-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE CME",
+    "tickers": [
+      "CME"
+    ]
+  },
+  "CIK0009000010-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000010-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000010.json": {
+    "cik": 9000010,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000010-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000010-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE COP",
+    "tickers": [
+      "COP"
+    ]
+  },
+  "CIK0009000011-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000011-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000011.json": {
+    "cik": 9000011,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000011-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000011-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE CSX",
+    "tickers": [
+      "CSX"
+    ]
+  },
+  "CIK0009000012-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000012-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000012.json": {
+    "cik": 9000012,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000012-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000012-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE CVX",
+    "tickers": [
+      "CVX"
+    ]
+  },
+  "CIK0009000013-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000013-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000013.json": {
+    "cik": 9000013,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000013-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000013-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE DAL",
+    "tickers": [
+      "DAL"
+    ]
+  },
+  "CIK0009000014-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000014-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000014.json": {
+    "cik": 9000014,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000014-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000014-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE DE",
+    "tickers": [
+      "DE"
+    ]
+  },
+  "CIK0009000015-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000015-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000015.json": {
+    "cik": 9000015,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000015-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000015-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE DHR",
+    "tickers": [
+      "DHR"
+    ]
+  },
+  "CIK0009000016-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000016-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000016.json": {
+    "cik": 9000016,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000016-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000016-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE DUK",
+    "tickers": [
+      "DUK"
+    ]
+  },
+  "CIK0009000017-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000017-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000017.json": {
+    "cik": 9000017,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000017-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000017-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE EOG",
+    "tickers": [
+      "EOG"
+    ]
+  },
+  "CIK0009000018-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000018-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000018.json": {
+    "cik": 9000018,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000018-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000018-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE F",
+    "tickers": [
+      "F"
+    ]
+  },
+  "CIK0009000019-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000019-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000019.json": {
+    "cik": 9000019,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000019-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000019-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE FDX",
+    "tickers": [
+      "FDX"
+    ]
+  },
+  "CIK0009000020-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000020-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000020.json": {
+    "cik": 9000020,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000020-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000020-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE GM",
+    "tickers": [
+      "GM"
+    ]
+  },
+  "CIK0009000021-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000021-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000021.json": {
+    "cik": 9000021,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000021-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000021-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE GS",
+    "tickers": [
+      "GS"
+    ]
+  },
+  "CIK0009000022-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000022-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000022.json": {
+    "cik": 9000022,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000022-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000022-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE HD",
+    "tickers": [
+      "HD"
+    ]
+  },
+  "CIK0009000023-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000023-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000023.json": {
+    "cik": 9000023,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000023-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000023-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE ICE",
+    "tickers": [
+      "ICE"
+    ]
+  },
+  "CIK0009000024-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000024-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000024.json": {
+    "cik": 9000024,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000024-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000024-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE JPM",
+    "tickers": [
+      "JPM"
+    ]
+  },
+  "CIK0009000025-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000025-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000025.json": {
+    "cik": 9000025,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000025-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000025-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE KLAC",
+    "tickers": [
+      "KLAC"
+    ]
+  },
+  "CIK0009000026-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000026-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000026.json": {
+    "cik": 9000026,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000026-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000026-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE KO",
+    "tickers": [
+      "KO"
+    ]
+  },
+  "CIK0009000027-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000027-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000027.json": {
+    "cik": 9000027,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000027-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000027-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE LMT",
+    "tickers": [
+      "LMT"
+    ]
+  },
+  "CIK0009000028-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000028-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000028.json": {
+    "cik": 9000028,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000028-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000028-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE LOW",
+    "tickers": [
+      "LOW"
+    ]
+  },
+  "CIK0009000029-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000029-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000029.json": {
+    "cik": 9000029,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000029-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000029-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE LRCX",
+    "tickers": [
+      "LRCX"
+    ]
+  },
+  "CIK0009000030-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000030-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000030.json": {
+    "cik": 9000030,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000030-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000030-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE MA",
+    "tickers": [
+      "MA"
+    ]
+  },
+  "CIK0009000031-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000031-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000031.json": {
+    "cik": 9000031,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000031-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000031-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE MCD",
+    "tickers": [
+      "MCD"
+    ]
+  },
+  "CIK0009000032-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000032-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000032.json": {
+    "cik": 9000032,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000032-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000032-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE MCO",
+    "tickers": [
+      "MCO"
+    ]
+  },
+  "CIK0009000033-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000033-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000033.json": {
+    "cik": 9000033,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000033-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000033-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE MET",
+    "tickers": [
+      "MET"
+    ]
+  },
+  "CIK0009000034-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000034-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000034.json": {
+    "cik": 9000034,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000034-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000034-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE MRK",
+    "tickers": [
+      "MRK"
+    ]
+  },
+  "CIK0009000035-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000035-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000035.json": {
+    "cik": 9000035,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000035-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000035-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE MS",
+    "tickers": [
+      "MS"
+    ]
+  },
+  "CIK0009000036-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000036-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000036.json": {
+    "cik": 9000036,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000036-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000036-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE NOC",
+    "tickers": [
+      "NOC"
+    ]
+  },
+  "CIK0009000037-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000037-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000037.json": {
+    "cik": 9000037,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000037-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000037-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE NSC",
+    "tickers": [
+      "NSC"
+    ]
+  },
+  "CIK0009000038-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000038-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000038.json": {
+    "cik": 9000038,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000038-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000038-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE ORLY",
+    "tickers": [
+      "ORLY"
+    ]
+  },
+  "CIK0009000039-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000039-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000039.json": {
+    "cik": 9000039,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000039-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000039-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE PEP",
+    "tickers": [
+      "PEP"
+    ]
+  },
+  "CIK0009000040-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000040-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000040.json": {
+    "cik": 9000040,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000040-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000040-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE PFE",
+    "tickers": [
+      "PFE"
+    ]
+  },
+  "CIK0009000041-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000041-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000041.json": {
+    "cik": 9000041,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000041-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000041-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE PRU",
+    "tickers": [
+      "PRU"
+    ]
+  },
+  "CIK0009000042-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000042-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000042.json": {
+    "cik": 9000042,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000042-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000042-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE ROST",
+    "tickers": [
+      "ROST"
+    ]
+  },
+  "CIK0009000043-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000043-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000043.json": {
+    "cik": 9000043,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000043-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000043-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE SO",
+    "tickers": [
+      "SO"
+    ]
+  },
+  "CIK0009000044-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000044-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000044.json": {
+    "cik": 9000044,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000044-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000044-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE SPGI",
+    "tickers": [
+      "SPGI"
+    ]
+  },
+  "CIK0009000045-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000045-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000045.json": {
+    "cik": 9000045,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000045-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000045-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE TGT",
+    "tickers": [
+      "TGT"
+    ]
+  },
+  "CIK0009000046-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000046-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000046.json": {
+    "cik": 9000046,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000046-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000046-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE TJX",
+    "tickers": [
+      "TJX"
+    ]
+  },
+  "CIK0009000047-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000047-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000047.json": {
+    "cik": 9000047,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000047-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000047-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE TMO",
+    "tickers": [
+      "TMO"
+    ]
+  },
+  "CIK0009000048-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000048-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000048.json": {
+    "cik": 9000048,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000048-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000048-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE TRV",
+    "tickers": [
+      "TRV"
+    ]
+  },
+  "CIK0009000049-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000049-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000049.json": {
+    "cik": 9000049,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000049-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000049-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE TXN",
+    "tickers": [
+      "TXN"
+    ]
+  },
+  "CIK0009000050-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000050-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000050.json": {
+    "cik": 9000050,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000050-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000050-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE UAL",
+    "tickers": [
+      "UAL"
+    ]
+  },
+  "CIK0009000051-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000051-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000051.json": {
+    "cik": 9000051,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000051-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000051-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE UPS",
+    "tickers": [
+      "UPS"
+    ]
+  },
+  "CIK0009000052-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000052-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000052.json": {
+    "cik": 9000052,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000052-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000052-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE V",
+    "tickers": [
+      "V"
+    ]
+  },
+  "CIK0009000053-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000053-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000053.json": {
+    "cik": 9000053,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000053-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000053-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE WMT",
+    "tickers": [
+      "WMT"
+    ]
+  },
+  "CIK0009000054-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000054-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000054.json": {
+    "cik": 9000054,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000054-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000054-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE XOM",
+    "tickers": [
+      "XOM"
+    ]
+  },
+  "CIK0009000055-submissions-001.json": {
+    "acceptanceDateTime": [
+      "2021-01-05T13:30:00Z"
+    ],
+    "accessionNumber": [
+      "0009000055-21-000001"
+    ],
+    "filingDate": [
+      "2021-01-05"
+    ],
+    "form": [
+      "8-K"
+    ],
+    "isInlineXBRL": [
+      0
+    ],
+    "isXBRL": [
+      0
+    ],
+    "items": [
+      "2.02"
+    ],
+    "primaryDocDescription": [
+      "SYNTHETIC FIXTURE"
+    ],
+    "primaryDocument": [
+      "fixture-8k.htm"
+    ],
+    "reportDate": [
+      "2021-01-05"
+    ],
+    "size": [
+      234
+    ]
+  },
+  "CIK0009000055.json": {
+    "cik": 9000055,
+    "filings": {
+      "files": [
+        {
+          "filingFrom": "2021-01-01",
+          "filingTo": "2021-01-31",
+          "name": "CIK0009000055-submissions-001.json"
+        }
+      ],
+      "recent": {
+        "acceptanceDateTime": [
+          "2021-02-05T21:30:00Z"
+        ],
+        "accessionNumber": [
+          "0009000055-21-000002"
+        ],
+        "filingDate": [
+          "2021-02-05"
+        ],
+        "form": [
+          "10-Q"
+        ],
+        "isInlineXBRL": [
+          1
+        ],
+        "isXBRL": [
+          1
+        ],
+        "items": [
+          ""
+        ],
+        "primaryDocDescription": [
+          "SYNTHETIC FIXTURE"
+        ],
+        "primaryDocument": [
+          "fixture-10q.htm"
+        ],
+        "reportDate": [
+          "2020-12-31"
+        ],
+        "size": [
+          1234
+        ]
+      }
+    },
+    "name": "SYNTHETIC FIXTURE YUM",
+    "tickers": [
+      "YUM"
+    ]
+  }
+}

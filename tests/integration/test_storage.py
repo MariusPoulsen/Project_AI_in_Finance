@@ -13,7 +13,7 @@ from structural_break.storage.registry import Registration, RunRegistry
 
 def test_migrations_build_fresh_db_and_are_idempotent(paths):
     factory = DuckDBConnectionFactory(paths.database)
-    assert migrate(factory, paths.migrations) == [1, 2]
+    assert migrate(factory, paths.migrations) == [1, 2, 3]
     assert migrate(factory, paths.migrations) == []
     with factory.connect() as connection:
         schemas = {
@@ -23,7 +23,7 @@ def test_migrations_build_fresh_db_and_are_idempotent(paths):
             ).fetchall()
         }
         assert {"ref", "market", "analytics", "ops"} <= schemas
-        assert connection.execute("SELECT count(*) FROM ops.schema_migrations").fetchone() == (2,)
+        assert connection.execute("SELECT count(*) FROM ops.schema_migrations").fetchone() == (3,)
         with pytest.raises(duckdb.InvalidInputException):
             connection.execute("CREATE TABLE analytics.should_fail (id INTEGER)")
 
@@ -44,7 +44,7 @@ def test_checksum_and_missing_history_are_rejected(paths, tmp_path):
     with pytest.raises(ValueError, match="checksum mismatch"):
         migrate(factory, migrations)
     (migrations / "001_schemas.sql").write_text(original)
-    (migrations / "002_ops_tables.sql").unlink()
+    (migrations / "003_data_registry.sql").unlink()
     with pytest.raises(ValueError, match="checksum mismatch"):
         migrate(factory, migrations)
 
@@ -54,12 +54,12 @@ def test_migration_failure_rolls_back_entire_batch(paths, tmp_path):
     shutil.copytree(paths.migrations, migrations)
     factory = DuckDBConnectionFactory(paths.database)
     migrate(factory, migrations)
-    (migrations / "003_good.sql").write_text("CREATE TABLE analytics.temporary (id INTEGER);")
-    (migrations / "004_bad.sql").write_text("THIS IS INVALID SQL;")
+    (migrations / "004_good.sql").write_text("CREATE TABLE analytics.temporary (id INTEGER);")
+    (migrations / "005_bad.sql").write_text("THIS IS INVALID SQL;")
     with pytest.raises(duckdb.ParserException):
         migrate(factory, migrations)
     with factory.connect() as connection:
-        assert connection.execute("SELECT count(*) FROM ops.schema_migrations").fetchone() == (2,)
+        assert connection.execute("SELECT count(*) FROM ops.schema_migrations").fetchone() == (3,)
         assert connection.execute(
             "SELECT count(*) FROM information_schema.tables WHERE table_name = 'temporary'"
         ).fetchone() == (0,)

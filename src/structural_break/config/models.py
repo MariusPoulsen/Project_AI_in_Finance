@@ -54,6 +54,12 @@ class DataConfig(SettingsModel):
     historical_evidence: Literal["sec"]
     evidence_timestamp: Literal["accepted_at"]
     optional_news_enabled: Literal[False]
+    source_timeout_seconds: PositiveInt = 30
+    source_attempts: Annotated[int, Field(strict=True, ge=1, le=5)] = 3
+    sec_requests_per_second: Annotated[float, Field(gt=0, le=5)] = 2
+    max_missing_session_fraction: Probability = 0.0
+    source_max_age_days: PositiveInt = 30
+    vix_context_lag_sessions: Literal[1] = 1
 
     @model_validator(mode="after")
     def chronological(self) -> Self:
