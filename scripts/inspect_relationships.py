@@ -3,6 +3,7 @@
 import argparse
 import json
 from datetime import date
+from io import BytesIO
 from pathlib import Path
 
 import matplotlib
@@ -30,6 +31,7 @@ def main() -> None:
     paths = ProjectPaths.resolve(root, args.workspace_root)
     repository = RelationshipsRepository(paths)
     manifest = repository.active_manifest()
+    settings = manifest["config_snapshot"]["econometrics"]
     end = min(args.end, date.fromisoformat(manifest["end"]))
     start = date(max(2016, end.year - 2), 1, 1)
     fig, axes = plt.subplots(len(args.pairs), 2, figsize=(13, 3.3 * len(args.pairs)), squeeze=False)
@@ -50,7 +52,7 @@ def main() -> None:
                 [manifest["relationship_version"], pair, start, end],
             ).fetchdf()
         row_axes[0].plot(pd.to_datetime(daily["trading_date"]), daily["z_score"], lw=0.8)
-        for boundary in (-2.0, 2.0):
+        for boundary in (-settings["entry_z"], settings["entry_z"]):
             row_axes[0].axhline(boundary, color="#b35330", lw=0.8, ls="--")
         row_axes[0].set_title(f"{pair}: frozen monthly z-score")
         row_axes[0].set_ylabel("Formation standard deviations")
@@ -60,7 +62,7 @@ def main() -> None:
             marker=".",
             lw=0.8,
         )
-        row_axes[1].axhline(0.05, color="#b35330", lw=0.8, ls="--")
+        row_axes[1].axhline(settings["cointegration_alpha"], color="#b35330", lw=0.8, ls="--")
         row_axes[1].set_title("Engle–Granger / MacKinnon p-value")
         row_axes[1].set_ylim(-0.02, 1.02)
         for axis in row_axes:
@@ -74,8 +76,10 @@ def main() -> None:
     destination = paths.artifacts / "reports" / manifest["relationship_version"]
     destination.mkdir(parents=True, exist_ok=True)
     image_path = destination / f"inspection_{end}.png"
-    fig.savefig(image_path, dpi=160)
+    image_buffer = BytesIO()
+    fig.savefig(image_buffer, format="png", dpi=160)
     plt.close(fig)
+    write_bytes(image_path, image_buffer.getvalue())
     report = {
         "relationship_version": manifest["relationship_version"],
         "data_snapshot_id": manifest["data_snapshot_id"],

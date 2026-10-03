@@ -305,3 +305,95 @@ def test_monthly_crossing_statistics_never_bridge_a_gap() -> None:
     # The 252-session lookback uses actual calendar offsets rather than common-row offsets.
     frame = pd.DataFrame({"session_index": [0, 1, 400, 401]})
     assert statistics._crossing_metrics(frame, np.array([1.0, -1.0, -1.0, -1.0]), []) == (0, None)
+
+
+def test_integration_difference_tests_receive_only_one_session_increments(
+    monkeypatch: pytest.MonkeyPatch,
+    settings: EconometricsConfig,
+) -> None:
+    levels = _window().x.copy()
+    levels.iloc[100:] += 2.0
+    offsets = np.arange(len(levels))
+    offsets[100:] += 3
+    offsets[490:] += 1
+    captured: list[np.ndarray] = []
+    original_adf = statistics.adfuller
+
+    def capture_adf(sample, **kwargs):
+        captured.append(np.asarray(sample).copy())
+        return original_adf(sample, **kwargs)
+
+    monkeypatch.setattr(statistics, "adfuller", capture_adf)
+    diagnostic = integration_order(levels, settings, session_index=pd.Series(offsets))
+    expected = np.diff(levels.to_numpy())[np.diff(offsets) == 1]
+    assert len(captured) == 2
+    np.testing.assert_array_equal(captured[0], levels.to_numpy())
+    np.testing.assert_array_equal(captured[1], expected)
+    assert len(expected) == 501
+    assert diagnostic["n_obs"] == 504
+    assert diagnostic["n_diff_obs"] == 501
+    assert diagnostic["n_omitted_diff_transitions"] == 2
+    assert "FORMATION_GAP_DAILY_DIFFERENCES_OMITTED" in diagnostic["warning_flags"]
+
+
+def test_half_life_fits_only_exact_one_session_lag_pairs(settings: EconometricsConfig) -> None:
+    values = np.random.default_rng(19).normal(0, 0.1, 504)
+    values[99], values[100] = -5.0, 5.0
+    offsets = np.arange(len(values))
+    offsets[100:] += 5
+    selected = np.diff(offsets) == 1
+    lagged, current = values[:-1][selected], values[1:][selected]
+    expected = np.linalg.lstsq(
+        np.column_stack((np.ones(len(lagged)), lagged)), current, rcond=None
+    )[0][1]
+    unmasked = np.linalg.lstsq(
+        np.column_stack((np.ones(503), values[:-1])), values[1:], rcond=None
+    )[0][1]
+    result = estimate_half_life(pd.Series(values), settings, session_index=pd.Series(offsets))
+    assert result["ar1_rho"] == pytest.approx(expected)
+    assert abs(result["ar1_rho"] - unmasked) > 0.1
+    assert result["ar1_n_pairs"] == 502
+    assert result["ar1_omitted_pairs"] == 1
+    assert "FORMATION_GAP_AR1_PAIRS_OMITTED" in result["warning_flags"]
+
+
+def test_gapped_formation_keeps504_levels_and_has_no_fake20_day_volatility(
+    settings: EconometricsConfig,
+) -> None:
+    window = _window()
+    offsets = np.arange(len(window))
+    offsets[490:] += 1
+    window["session_index"] = offsets
+    window.loc[490, ["dy", "dx"]] = np.nan
+    result = estimate_window(window, settings)
+    assert result["estimable"] and result["n_obs"] == 504
+    assert result["y_n_diff_obs"] == 502 and result["x_n_diff_obs"] == 502
+    assert result["ar1_n_pairs"] == 502
+    assert result["spread_vol_20d"] is None and result["spread_vol_ratio"] is None
+    assert "FORMATION_20D_VOLATILITY_GAP" in result["warning_flags"]
+    expected_beta = np.cov(window.x, window.y, ddof=1)[0, 1] / window.x.var(ddof=1)
+    assert result["beta"] == pytest.approx(expected_beta)
+
+
+def test_insufficient_adjacent_samples_leave_nullable_diagnostics(
+    settings: EconometricsConfig,
+) -> None:
+    values = pd.Series(np.random.default_rng(22).normal(size=504))
+    offsets = pd.Series(np.arange(len(values)) * 2)
+    integration = integration_order(values, settings, session_index=offsets)
+    assert integration["integration_flag"] == "AMBIGUOUS"
+    assert integration["adf_diff_p"] is None and integration["n_diff_obs"] == 0
+    assert integration["n_omitted_diff_transitions"] == 503
+    half_life = estimate_half_life(values, settings, session_index=offsets)
+    assert half_life["ar1_rho"] is None and half_life["half_life_days"] is None
+    assert half_life["half_life_flag"] == "INSUFFICIENT_ADJACENT_PAIRS"
+    assert half_life["ar1_n_pairs"] == 0 and half_life["ar1_omitted_pairs"] == 503
+
+
+def test_explicit_contiguous_session_index_preserves_statistics(
+    settings: EconometricsConfig,
+) -> None:
+    window = _window()
+    direct = estimate_window(window, settings)
+    indexed = estimate_window(window.assign(session_index=np.arange(len(window))), settings)
+    assert indexed == direct

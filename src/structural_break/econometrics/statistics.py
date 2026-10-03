@@ -42,6 +42,7 @@ def _blank_integration(reason: str, n_obs: int) -> dict[str, Any]:
         "diagnostics_valid": False,
         "n_obs": n_obs,
         "n_diff_obs": max(0, n_obs - 1),
+        "n_omitted_diff_transitions": 0,
         "warning_flags": [reason],
     }
     for name in ("adf_level", "adf_diff", "kpss_level", "kpss_diff"):
@@ -52,7 +53,23 @@ def _blank_integration(reason: str, n_obs: int) -> dict[str, Any]:
     return result
 
 
-def test_integration_order(series: pd.Series, settings: EconometricsConfig) -> dict[str, Any]:
+def _adjacent_transitions(n_obs: int, session_index: pd.Series | None) -> NDArray[np.bool_]:
+    if session_index is None:
+        return np.ones(max(0, n_obs - 1), dtype=bool)
+    indices = session_index.to_numpy(dtype=np.float64)
+    if (
+        len(indices) != n_obs
+        or not np.isfinite(indices).all()
+        or not np.equal(indices, np.floor(indices)).all()
+        or (np.diff(indices) <= 0).any()
+    ):
+        raise ValueError("Session indices must be increasing integers aligned to the observations")
+    return np.asarray(np.diff(indices) == 1, dtype=np.bool_)
+
+
+def test_integration_order(
+    series: pd.Series, settings: EconometricsConfig, *, session_index: pd.Series | None = None
+) -> dict[str, Any]:
     """ADF/KPSS on a log level and its first differences under one global specification.
 
     KPSS difference results are retained as diagnostics. The preferred I(1) rule
@@ -66,15 +83,31 @@ def test_integration_order(series: pd.Series, settings: EconometricsConfig) -> d
         return _blank_integration("INSUFFICIENT_OR_INVALID_SERIES", len(values))
     if _degenerate(values, settings.numerical_epsilon):
         return _blank_integration("NEAR_CONSTANT_LEVEL", len(values))
-    differences = np.diff(values)
+    adjacent = _adjacent_transitions(len(values), session_index)
+    differences = np.diff(values)[adjacent]
+    omitted = int((~adjacent).sum())
+    gap_warnings = ["FORMATION_GAP_DAILY_DIFFERENCES_OMITTED"] if omitted else []
+    if len(differences) < 8:
+        unavailable = _blank_integration("INSUFFICIENT_ADJACENT_DIFFERENCES", len(values))
+        unavailable.update(
+            integration_flag="AMBIGUOUS",
+            n_diff_obs=len(differences),
+            n_omitted_diff_transitions=omitted,
+        )
+        unavailable["warning_flags"].extend(gap_warnings)
+        return unavailable
     if _degenerate(differences, settings.numerical_epsilon):
-        return _blank_integration("NEAR_CONSTANT_DIFFERENCE", len(values))
+        unavailable = _blank_integration("NEAR_CONSTANT_DIFFERENCE", len(values))
+        unavailable.update(n_diff_obs=len(differences), n_omitted_diff_transitions=omitted)
+        unavailable["warning_flags"].extend(gap_warnings)
+        return unavailable
 
     result: dict[str, Any] = {
         "n_obs": len(values),
         "n_diff_obs": len(differences),
+        "n_omitted_diff_transitions": omitted,
         "diagnostics_valid": True,
-        "warning_flags": [],
+        "warning_flags": gap_warnings,
     }
     for suffix, sample in (("level", values), ("diff", differences)):
         adf, adf_warnings = _statistic(
@@ -117,7 +150,9 @@ def test_integration_order(series: pd.Series, settings: EconometricsConfig) -> d
     return result
 
 
-def estimate_half_life(spread: pd.Series, settings: EconometricsConfig) -> dict[str, Any]:
+def estimate_half_life(
+    spread: pd.Series, settings: EconometricsConfig, *, session_index: pd.Series | None = None
+) -> dict[str, Any]:
     """Fit AR(1) with an intercept; invalid decay regimes have a null half-life."""
     empty: dict[str, Any] = {
         "ar1_rho": None,
@@ -125,6 +160,8 @@ def estimate_half_life(spread: pd.Series, settings: EconometricsConfig) -> dict[
         "half_life_days": None,
         "half_life_valid": False,
         "half_life_flag": "INVALID_SPREAD",
+        "ar1_n_pairs": 0,
+        "ar1_omitted_pairs": 0,
         "warning_flags": [],
     }
     try:
@@ -133,11 +170,18 @@ def estimate_half_life(spread: pd.Series, settings: EconometricsConfig) -> dict[
         return empty
     if len(values) < 3 or not np.isfinite(values).all():
         return empty
-    if _degenerate(values[:-1], settings.numerical_epsilon):
+    adjacent = _adjacent_transitions(len(values), session_index)
+    lagged, current = values[:-1][adjacent], values[1:][adjacent]
+    omitted = int((~adjacent).sum())
+    gap_warnings = ["FORMATION_GAP_AR1_PAIRS_OMITTED"] if omitted else []
+    empty.update(ar1_n_pairs=len(lagged), ar1_omitted_pairs=omitted, warning_flags=gap_warnings)
+    if len(lagged) < 2:
+        return {**empty, "half_life_flag": "INSUFFICIENT_ADJACENT_PAIRS"}
+    if _degenerate(lagged, settings.numerical_epsilon):
         return {**empty, "half_life_flag": "DEGENERATE_SPREAD"}
     fitted, recorded = _statistic(
         "AR1",
-        lambda: OLS(values[1:], np.column_stack((np.ones(len(values) - 1), values[:-1]))).fit(),
+        lambda: OLS(current, np.column_stack((np.ones(len(lagged)), lagged))).fit(),
     )
     rho = float(fitted.params[1])
     if not np.isfinite(rho):
@@ -150,7 +194,9 @@ def estimate_half_life(spread: pd.Series, settings: EconometricsConfig) -> dict[
         "half_life_days": float(-np.log(2) / np.log(rho)) if valid else None,
         "half_life_valid": valid,
         "half_life_flag": flag,
-        "warning_flags": recorded,
+        "ar1_n_pairs": len(lagged),
+        "ar1_omitted_pairs": omitted,
+        "warning_flags": recorded + gap_warnings,
     }
 
 
@@ -217,6 +263,8 @@ def _empty_window(settings: EconometricsConfig, n_obs: int) -> dict[str, Any]:
         "integration_warning": True,
         "half_life_valid": False,
         "half_life_flag": "UNAVAILABLE",
+        "ar1_n_pairs": 0,
+        "ar1_omitted_pairs": 0,
         "coint_tstat_is_infinite": False,
         "cointegration_vector": None,
         "cointegration_alpha": settings.cointegration_alpha,
@@ -322,9 +370,12 @@ def estimate_window(
         result["warning_flags"].append("PERFECT_OR_NEAR_PERFECT_COLLINEARITY")
         return result
 
+    session_index = window["session_index"] if "session_index" in window else None
     flags = []
     for leg, sample in (("y", y), ("x", x)):
-        diagnostic = test_integration_order(pd.Series(sample), settings)
+        diagnostic = test_integration_order(
+            pd.Series(sample), settings, session_index=session_index
+        )
         flags.append(diagnostic["integration_flag"])
         result.update(
             {f"{leg}_{key}": value for key, value in diagnostic.items() if key != "warning_flags"}
@@ -368,13 +419,20 @@ def estimate_window(
     result["warning_flags"].extend(coint_warnings)
     if np.isinf(statistic):
         result["warning_flags"].append("PERFECT_OR_NEAR_PERFECT_COLLINEARITY")
-    half_life = estimate_half_life(pd.Series(spread), settings)
+    half_life = estimate_half_life(pd.Series(spread), settings, session_index=session_index)
     result["warning_flags"].extend(half_life.pop("warning_flags"))
     result.update(half_life)
     if not result["half_life_valid"]:
         result["warning_flags"].append(f"HALF_LIFE_{result['half_life_flag']}")
     crossing_count, crossing_recency = _crossing_metrics(window, spread, result["warning_flags"])
-    vol_20d = float(np.std(spread[-20:], ddof=1)) if len(spread) >= 20 else None
+    vol_20d = None
+    if len(spread) >= 20:
+        if _adjacent_transitions(
+            20, session_index.iloc[-20:] if session_index is not None else None
+        ).all():
+            vol_20d = float(np.std(spread[-20:], ddof=1))
+        else:
+            result["warning_flags"].append("FORMATION_20D_VOLATILITY_GAP")
     result.update(
         beta_drift_pct=(
             abs(beta - previous_beta) / max(abs(previous_beta), settings.numerical_epsilon)

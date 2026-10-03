@@ -76,6 +76,11 @@ Missing current prices produce no state; missing prior prices leave one-day
 velocity/crossing state unavailable. Sign changes and returns do not bridge gaps.
 Zero-crossing recency becomes unknown after a gap until an observed adjacent-session
 crossing; observed trailing crossing counts expose their completeness flag.
+Formation first-difference diagnostics omit transitions across missing sessions;
+the half-life regression uses only exact one-session lag/current pairs. Levels and
+Engle–Granger retain the specified common-observation order; ADF/KPSS lag dynamics
+on retained daily increments use their available-observation order. Missing-transition
+counts/warnings expose this sampling limitation without a new eligibility rule.
 
 ## Statistics and lifecycle
 

@@ -345,6 +345,11 @@ The user will prepare the final academic written report and presentation/video s
   At the fixed 5% diagnostic level, I(1) compatibility requires non-rejection of
   level ADF, rejection of level KPSS and rejection of first-difference ADF.
   First-difference KPSS is stored as a cross-check, without an additional gate.
+- Formation first differences omit missing-session transitions; half-life AR(1)
+  uses only exact one-session lag/current pairs. Level/cointegration tests retain
+  common-observation order, and difference-test lag dynamics use the retained
+  available-observation order. Missing-transition diagnostics make this limitation
+  explicit; it does not introduce a consecutive-history eligibility requirement.
 - Engle–Granger uses the fixed A-on-B orientation and its MacKinnon outputs.
   Stability, beta drift, half-life and source zero-volume warnings remain exposed
   diagnostics. No unspecified liquidity/stability thresholds are introduced.
