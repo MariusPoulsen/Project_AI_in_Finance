@@ -419,8 +419,9 @@ The user will prepare the final academic written report and presentation/video s
   Identity and outcome fields remain metadata. Fit logistic imputation/scaling
   only within each fitting period; XGBoost retains permitted missing values.
   Search 30 seeded XGBoost configurations in the specified parameter ranges.
-  Report undefined one-class/empty folds, select by mean defined ROC AUC and
-  Brier as secondary/fallback; do not conceal unusable folds.
+  Report undefined one-class/empty folds. Select by mean defined ROC AUC, then
+  mean defined PR AUC, then lower Brier; all-undefined ranking falls back to Brier.
+  Do not conceal unusable folds.
 - Fit a monotone Platt sigmoid on all 2022–2023 eligible validation events,
   as specified. Smoothed targets and a nonnegative slope prevent inverted or
   separation-driven mappings. One-class/constant-score fits save an explicitly
