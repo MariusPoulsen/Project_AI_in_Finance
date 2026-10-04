@@ -21,7 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from structural_break.storage.files import write_bytes
 
-PROMPT_VERSION = "sec-catalyst-v1"
+PROMPT_VERSION = "sec-catalyst-v2"
 EXTRACTION_SCHEMA_VERSION = "sec-catalyst-schema-v2"
 EVENT_TYPES = (
     "EARNINGS",

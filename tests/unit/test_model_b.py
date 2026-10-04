@@ -203,3 +203,46 @@ def test_comparison_rejects_final_outcomes_even_when_evaluating_validation(fitte
     rows.loc[rows["partition"].eq("final_test"), "y_revert_success"] = 0
     with pytest.raises(ValueError, match="Final-test outcomes"):
         compare_model_a_b(rows, result.predictions, result.predictions, threshold=0.65)
+
+
+@pytest.mark.parametrize("directory_present", [True, False])
+def test_archive_guard_protects_any_registered_kind_even_when_files_missing(
+    tmp_path, directory_present
+):
+    from structural_break.common.logging import new_run_id
+    from structural_break.config.paths import ProjectPaths
+    from structural_break.services.model_a import _archive_unregistered
+    from structural_break.storage.database import DuckDBConnectionFactory, migrate
+    from structural_break.storage.files import write_bytes
+    from structural_break.storage.registry import Registration, RunRegistry
+
+    root = Path(__file__).resolve().parents[2]
+    paths = ProjectPaths.resolve(root, tmp_path / "workspace")
+    paths.create_directories()
+    factory = DuckDBConnectionFactory(paths.database)
+    migrate(factory, paths.migrations)
+    destination = paths.artifacts / "models" / "reserved_marker"
+    marker = write_bytes(destination / "marker.json", b"{}")
+    run_id = new_run_id()
+    registry = RunRegistry(factory, paths.workspace_root)
+    registry.start(
+        run_id, "synthetic-registry-test", load_config(root / "configs"), "test", "synthetic"
+    )
+    registry.finish(
+        run_id,
+        status="SUCCESS",
+        artifacts=(Registration("unrelated-report", "synthetic", marker),),
+    )
+    if not directory_present:
+        assert destination.resolve().is_relative_to(paths.workspace_root.resolve())
+        marker.unlink()
+        destination.rmdir()
+    with pytest.raises(ValueError, match="registered artifact"):
+        # Case aliases must remain protected when Windows has no existing
+        # directory from which Path.resolve can recover its original case.
+        requested = destination if directory_present else destination.with_name("RESERVED_MARKER")
+        _archive_unregistered(paths, requested, new_run_id())
+    assert destination.exists() is directory_present
+    assert not list(destination.parent.glob("reserved_marker.unregistered-*"))
+    if directory_present:
+        assert marker.read_bytes() == b"{}"

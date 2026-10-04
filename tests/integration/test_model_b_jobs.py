@@ -234,6 +234,23 @@ def test_sql_rejects_orphan_model_b_prediction(copied):
             )
 
 
+@pytest.mark.parametrize("attempted_variant", ["A", "B"])
+def test_registered_model_namespace_collision_preserves_both_variants(copied, attempted_variant):
+    paths, config, events, model_a, evidence, model = copied
+    count = len(query(paths, "SELECT run_id FROM ops.job_runs"))
+    with pytest.raises(ValueError, match="registered artifact"):
+        if attempted_variant == "A":
+            train_model_a_job(paths, config, model_version=model["model_version"])
+        else:
+            train_model_b(paths, config, model_version=model_a["model_version"])
+    assert len(query(paths, "SELECT run_id FROM ops.job_runs")) == count
+    assert ModelARepository(paths).active_manifest() == model_a
+    assert ModelBRepository(paths).active_manifest() == model
+    for manifest in (model_a, model):
+        for item in manifest["files"]:
+            assert sha256_file(paths.workspace_root / item["path"]) == item["sha256"]
+
+
 def test_read_queries_use_model_bound_evidence_after_new_active_generation(copied):
     paths, config, events, model_a, evidence, model = copied
     from structural_break.services.intelligence import build_event_intelligence

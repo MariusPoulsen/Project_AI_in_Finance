@@ -534,6 +534,8 @@ def verify_model_b(paths: ProjectPaths) -> dict[str, Any]:
     shap_error = float(
         np.max(np.abs(contributions.sum(axis=1) + fresh["shap_base_value"] - fresh["raw_margin"]))
     )
+    if not np.isfinite(shap_error) or shap_error > 1e-5:
+        raise ValueError("Model B SHAP contributions exceed the raw-margin acceptance tolerance")
     parent = ModelARepository(paths)
     rows = merge_model_b_rows(
         parent.dataset_frames(manifest["dataset_version"]),
@@ -558,6 +560,7 @@ def verify_model_b(paths: ProjectPaths) -> dict[str, Any]:
         raise ValueError("Cached Model A/B comparison cannot be reproduced from its frozen inputs")
     return {
         "model_version": manifest["model_version"],
+        "synthetic": manifest["synthetic"],
         "event_feature_version": manifest["event_feature_version"],
         "prediction_count": len(stored),
         "reload_max_errors": errors,
