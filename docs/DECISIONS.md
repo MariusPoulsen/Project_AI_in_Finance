@@ -474,7 +474,9 @@ The user will prepare the final academic written report and presentation/video s
   confidence is uncalibrated extraction certainty, not measured correctness or
   reversion probability. Human-labelled evaluation belongs to P5.
 - The user selected a free Gemini Flash API on 2026-10-03. Its locally verified
-  model alias is gemini-3.8-flash; provider/model remain configurable. No billing
+  working model alias is gemini-3.5-flash, after the initial stable 3.8 candidate
+  returned repeated HTTP 503 capacity errors. Both support the free standard API;
+  provider/model remain configurable. No billing
   is enabled by this implementation. Protect the pilot with 20 requests including
   retries, a 32-second interval and no hidden SDK retries. Quota/authentication
   failures stop additional requests for that batch; all remaining rows stay
@@ -495,6 +497,12 @@ The user will prepare the final academic written report and presentation/video s
   eligible validation rows remain in the paired comparison; coverage slices are
   descriptive additions. Native reload, SHAP and stored A/B comparison are
   independently reproducible without LLM calls. Final outcomes remain locked.
+- Calibration retains the same smoothed monotone Platt objective and constraints.
+  A reproduced L-BFGS-B abnormal termination near a stationary solution justifies
+  a numerical SLSQP retry on that identical objective. Accept only finite feasible
+  solutions at least as good as the constant baseline and independently stationary
+  under per-observation, unit-variance KKT checks. A solver failure never silently
+  substitutes an empirical prior for an identifiable two-class fit.
 - The sample adequacy proposal in RESEARCH_REDESIGN.md is a separate unimplemented
   protocol. Do not expand the universe, relax eligibility, lengthen labels or
   alter evaluation in this canonical experiment to manufacture more successes.

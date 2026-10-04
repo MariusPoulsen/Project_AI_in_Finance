@@ -35,7 +35,8 @@ SB_LLM_API_KEY=your-local-key
 
 Provider and model defaults are in `configs/agents.yaml`; optional
 `SB_LLM_PROVIDER` and `SB_LLM_MODEL` override them. The user's free-tier Gemini
-choice is `gemini` / `gemini-3.8-flash`. Creating a key does not require enabling
+choice is `gemini` / `gemini-3.5-flash`. The initial 3.8 candidate returned HTTP 503
+capacity errors; 3.5 passed the same structured API probe. Creating a key does not require enabling
 billing. Actual project quotas vary; the configured limit is a protective budget,
 not a claim that Google grants that many calls.
 

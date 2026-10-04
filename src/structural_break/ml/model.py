@@ -67,6 +67,8 @@ def fit_sigmoid(margins: Any, labels: Any) -> SigmoidCalibrator:
 
     The nonnegative slope preserves the base model ranking. One-class or constant
     margins cannot identify discrimination, so a smoothed constant prior is saved.
+    A line-search failure retries the identical objective with SLSQP. Both solvers
+    must satisfy finite/feasible, projected-gradient and constant-baseline checks.
     """
     x = np.asarray(margins, dtype=float).reshape(-1)
     observed_labels = np.asarray(labels, dtype=float).reshape(-1)
@@ -92,15 +94,52 @@ def fit_sigmoid(margins: Any, labels: Any) -> SigmoidCalibrator:
         gradient = np.array([np.dot(residual, x), residual.sum()], dtype=float)
         return loss, gradient
 
+    margin_scale = float(x.std())
+    standardized = (x - x.mean()) / margin_scale
+    constant_intercept = float(np.log(target.mean() / (1.0 - target.mean())))
+    constant_loss, _ = objective(np.array([0.0, constant_intercept]))
+
+    def converged(result: Any) -> bool:
+        if not result.success or not np.isfinite(result.x).all() or result.x[0] < 0:
+            return False
+        logits = result.x[0] * x + result.x[1]
+        loss, gradient = objective(result.x)
+        if (
+            not np.isfinite(logits).all()
+            or not np.isfinite(loss)
+            or not np.isfinite(gradient).all()
+            or loss > constant_loss + 1e-10 * len(y)
+        ):
+            return False
+        # Check KKT stationarity per observation in unit-variance coordinates,
+        # independently of a solver's step-size/objective stopping criterion.
+        residual = expit(logits) - target
+        slope_gradient = float(np.dot(residual, standardized) / len(y))
+        if result.x[0] * margin_scale <= 1e-10:
+            slope_gradient = min(slope_gradient, 0.0)
+        intercept_gradient = float(residual.mean())
+        return max(abs(slope_gradient), abs(intercept_gradient)) <= 1e-6
+
+    initial = np.array([0.0, intercept])
     fitted = minimize(
         objective,
-        np.array([0.0, intercept]),
+        initial,
         jac=True,
         method="L-BFGS-B",
         bounds=[(0.0, None), (None, None)],
         options={"ftol": 1e-12, "gtol": 1e-9, "maxiter": 1000},
     )
-    if not fitted.success or not np.isfinite(fitted.x).all():
+    if not converged(fitted):
+        warm_start = fitted.x if np.isfinite(fitted.x).all() and fitted.x[0] >= 0 else initial
+        fitted = minimize(
+            objective,
+            warm_start,
+            jac=True,
+            method="SLSQP",
+            bounds=[(0.0, None), (None, None)],
+            options={"ftol": 1e-12, "maxiter": 1000},
+        )
+    if not converged(fitted):
         raise ModelTrainingError(f"Sigmoid calibration failed: {fitted.message}")
     slope, fitted_intercept = (float(value) for value in fitted.x)
     status = "FITTED" if slope > 1e-10 else "CONSTANT_NONNEGATIVE_BOUNDARY"
