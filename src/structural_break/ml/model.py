@@ -13,7 +13,7 @@ import os
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import joblib
 import numpy as np
@@ -523,7 +523,7 @@ def _fold_summary(scores: list[dict[str, Any]]) -> dict[str, Any]:
     return summary
 
 
-def train_model_a(
+def train_chronological_model(
     rows: pd.DataFrame,
     feature_schema: dict[str, Any],
     settings: MLConfig,
@@ -533,10 +533,12 @@ def train_model_a(
     dataset_version: str,
     tracking_directory: Path | None = None,
     label_policy: dict[str, Any] | None = None,
+    expected_feature_schema_version: str,
+    model_variant: Literal["A", "B"],
 ) -> TrainingResult:
-    """Tune inside training; calibrate validation and freeze the predeclared policy."""
+    """Apply the same frozen chronology to an explicit Model A or Model B schema."""
     columns = _schema_columns(feature_schema)
-    if feature_schema["version"] != settings.feature_schema_version:
+    if feature_schema["version"] != expected_feature_schema_version:
         raise ValueError("Configured and dataset feature schema versions differ")
     required = {
         "event_id",
@@ -809,7 +811,22 @@ def train_model_a(
             p,
             policy["candidate_threshold"],
         )
-    ablations["A2"] = metrics["partitions"]["validation"]["xgboost_raw"]
+    if model_variant == "A":
+        ablations["A2"] = metrics["partitions"]["validation"]["xgboost_raw"]
+    else:
+        quantitative = [
+            item["name"] for item in feature_schema["columns"] if item.get("family") != "event"
+        ]
+        if not quantitative or len(quantitative) == len(columns):
+            raise ValueError("Model B requires quantitative and structured event feature families")
+        fitted = _xgboost(best_xgb["parameters"], settings.seed)
+        fitted.fit(x_train[quantitative], y_train)
+        ablations["A2_same_B_hyperparameters"] = predictive_metrics(
+            development.loc[validation_mask, "y_revert_success"].astype(int),
+            fitted.predict_proba(matrix.loc[validation_mask, quantitative])[:, 1],
+            policy["candidate_threshold"],
+        )
+        ablations["B_full"] = metrics["partitions"]["validation"]["xgboost_raw"]
     metrics["raw_validation_feature_ablations"] = ablations
     metrics["global_mean_abs_shap_validation"] = {
         name: float(value)
@@ -857,7 +874,9 @@ def train_model_a(
         "development_predictions.parquet": predictions.to_parquet(index=False),
         "model_card.json": _json_bytes(
             {
-                "family": "Model A quantitative XGBoost",
+                "family": "Model A quantitative XGBoost"
+                if model_variant == "A"
+                else "Model B quantitative plus structured SEC-event XGBoost",
                 "benchmark": "L2 logistic same information",
                 "calibration": calibrator.__dict__,
                 "limits": metrics["sample_limitations"],
@@ -876,12 +895,13 @@ def train_model_a(
     tracking = (tracking_directory or output_directory.parent / "mlflow").resolve()
     tracking.mkdir(parents=True, exist_ok=True)
     mlflow.set_tracking_uri(f"sqlite:///{(tracking / 'tracking.sqlite').as_posix()}")
-    experiment = mlflow.get_experiment_by_name("structural-break-model-a")
+    experiment_name = f"structural-break-model-{model_variant.lower()}"
+    experiment = mlflow.get_experiment_by_name(experiment_name)
     experiment_id = (
         experiment.experiment_id
         if experiment is not None
         else mlflow.create_experiment(
-            "structural-break-model-a", artifact_location=(tracking / "artifacts").as_uri()
+            experiment_name, artifact_location=(tracking / "artifacts").as_uri()
         )
     )
     mlflow.set_experiment(experiment_id=experiment_id)
@@ -922,6 +942,32 @@ def train_model_a(
     }
     write_bytes(output_directory / "bundle_manifest.json", _json_bytes(manifest))
     return TrainingResult(bundle, metrics, predictions, manifest)
+
+
+def train_model_a(
+    rows: pd.DataFrame,
+    feature_schema: dict[str, Any],
+    settings: MLConfig,
+    output_directory: Path,
+    *,
+    model_version: str,
+    dataset_version: str,
+    tracking_directory: Path | None = None,
+    label_policy: dict[str, Any] | None = None,
+) -> TrainingResult:
+    """Preserve the quantitative-only training contract used by Phase 3."""
+    return train_chronological_model(
+        rows,
+        feature_schema,
+        settings,
+        output_directory,
+        model_version=model_version,
+        dataset_version=dataset_version,
+        tracking_directory=tracking_directory,
+        label_policy=label_policy,
+        expected_feature_schema_version=settings.feature_schema_version,
+        model_variant="A",
+    )
 
 
 def load_bundle(directory: Path) -> ModelBundle:

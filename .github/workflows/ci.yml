@@ -79,6 +79,26 @@ jobs:
         run: >-
           uv run --frozen structural-break train-model-a
           --workspace-root .acceptance/phase3-ci
+      - name: Build point-in-time SEC evidence and mocked extractions
+        run: >-
+          uv run --frozen structural-break build-intelligence --intelligence-fixture
+          --workspace-root .acceptance/phase3-ci
+      - name: Verify SEC evidence and parent lineage
+        run: >-
+          uv run --frozen structural-break verify-intelligence
+          --workspace-root .acceptance/phase3-ci
+      - name: Train Model B from stored event features
+        run: >-
+          uv run --frozen structural-break train-model-b
+          --workspace-root .acceptance/phase3-ci
+      - name: Reload and verify Model B
+        run: >-
+          uv run --frozen structural-break verify-model-b
+          --workspace-root .acceptance/phase3-ci
+      - name: Repeat Model B without extraction calls
+        run: >-
+          uv run --frozen structural-break train-model-b
+          --workspace-root .acceptance/phase3-ci
 
   colab-bootstrap:
     runs-on: ubuntu-latest
@@ -96,4 +116,5 @@ jobs:
           --data-fixture
           --relationship-fixture
           --ml-fixture
+          --intelligence-fixture
       - run: uv run --frozen pytest

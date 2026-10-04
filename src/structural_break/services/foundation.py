@@ -185,6 +185,10 @@ def main(argv: list[str] | None = None) -> int:
             "build-events",
             "train-model-a",
             "verify-model-a",
+            "build-intelligence",
+            "verify-intelligence",
+            "train-model-b",
+            "verify-model-b",
         ],
     )
     parser.add_argument("--project-root", type=Path)
@@ -197,6 +201,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--ml-fixture", action="store_true")
     parser.add_argument("--event-version")
     parser.add_argument("--model-version")
+    parser.add_argument("--intelligence-fixture", action="store_true")
+    parser.add_argument("--event-feature-version")
+    parser.add_argument("--offline", action="store_true")
+    parser.add_argument("--sec-retry-attempt")
     parser.add_argument("--start", type=date.fromisoformat)
     parser.add_argument("--end", type=date.fromisoformat)
     args = parser.parse_args(argv)
@@ -308,6 +316,73 @@ def main(argv: list[str] | None = None) -> int:
                     {
                         "model_version": manifest["model_version"],
                         "dataset_version": manifest["dataset_version"],
+                        "status": "VERIFIED",
+                        "synthetic": manifest["synthetic"],
+                    }
+                )
+            )
+        elif args.command == "build-intelligence":
+            from structural_break.services.intelligence import build_event_intelligence
+
+            manifest = build_event_intelligence(
+                paths,
+                config,
+                runtime,
+                dataset_version=args.event_version,
+                event_feature_version=args.event_feature_version,
+                fixture=args.intelligence_fixture,
+                offline=args.offline,
+                sec_retry_attempt=args.sec_retry_attempt,
+            )
+            print(
+                json.dumps(
+                    {
+                        "event_feature_version": manifest["event_feature_version"],
+                        "status": "SUCCESS",
+                        "synthetic": manifest["synthetic"],
+                        "extractions": manifest["extraction_status_counts"],
+                    }
+                )
+            )
+        elif args.command == "verify-intelligence":
+            from structural_break.services.intelligence import EvidenceRepository
+
+            manifest = EvidenceRepository(paths).manifest(args.event_feature_version)
+            print(
+                json.dumps(
+                    {
+                        "event_feature_version": manifest["event_feature_version"],
+                        "status": "VERIFIED",
+                        "synthetic": manifest["synthetic"],
+                    }
+                )
+            )
+        elif args.command == "train-model-b":
+            from structural_break.services.model_b import train_model_b
+
+            manifest = train_model_b(
+                paths,
+                config,
+                event_feature_version=args.event_feature_version,
+                model_version=args.model_version,
+            )
+            print(
+                json.dumps(
+                    {
+                        "model_version": manifest["model_version"],
+                        "status": "SUCCESS",
+                        "synthetic": manifest["synthetic"],
+                    }
+                )
+            )
+        elif args.command == "verify-model-b":
+            from structural_break.services.model_b import verify_model_b
+
+            manifest = verify_model_b(paths)
+            print(
+                json.dumps(
+                    {
+                        "model_version": manifest["model_version"],
                         "status": "VERIFIED",
                         "synthetic": manifest["synthetic"],
                     }

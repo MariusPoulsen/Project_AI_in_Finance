@@ -26,6 +26,11 @@ def main() -> None:
         action="store_true",
         help="Build events, train and reload Model A on offline synthetic history",
     )
+    parser.add_argument(
+        "--intelligence-fixture",
+        action="store_true",
+        help="Also build SEC evidence, mock extractions and Model B offline",
+    )
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     uv = shutil.which("uv")
@@ -81,7 +86,7 @@ def main() -> None:
                 check=True,
             )
         print(f"Phase 2 synthetic econometric history verified: {relationship_version}")
-    if args.ml_fixture:
+    if args.ml_fixture or args.intelligence_fixture:
         for model_job in (
             ("build-events", "--ml-fixture"),
             ("train-model-a",),
@@ -93,6 +98,19 @@ def main() -> None:
                 check=True,
             )
         print("Phase 3 event dataset, trained Model A and saved-bundle reload verified")
+    if args.intelligence_fixture:
+        for intelligence_job in (
+            ("build-intelligence", "--intelligence-fixture"),
+            ("verify-intelligence",),
+            ("train-model-b",),
+            ("verify-model-b",),
+        ):
+            subprocess.run(
+                [uv, "run", "--frozen", "structural-break", *intelligence_job, *options],
+                cwd=root,
+                check=True,
+            )
+        print("Phase 4 SEC intelligence and Model B verified with synthetic provider outputs")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,365 @@
+"""SEC evidence boundaries and failure semantics, with no external requests."""
+
+import hashlib
+import json
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
+import pytest
+
+from structural_break.config.paths import ProjectPaths
+from structural_break.data.http import FetchedResponse, SourceError
+from structural_break.intelligence.evidence import (
+    CHUNK_COLUMNS,
+    EvidencePolicy,
+    build_evidence_pack,
+    cache_filing,
+    parse_documents,
+    select_event_filings,
+)
+
+CUTOFF = datetime(2022, 4, 1, 20, tzinfo=UTC)
+RETRIEVED = datetime(2026, 10, 3, 10, tzinfo=UTC)
+
+
+def event(**extra: Any) -> dict[str, object]:
+    return {
+        "event_id": "evt_fixture",
+        "pair_id": "KO__PEP",
+        "event_timestamp": CUTOFF,
+        "evidence_cutoff": CUTOFF,
+        **extra,
+    }
+
+
+def filing(
+    sequence: int, security: str = "sec_KO", form: str = "8-K", days: int = 3, **extra: Any
+) -> dict[str, object]:
+    cik = "0000021344" if security == "sec_KO" else "0000077476"
+    return {
+        "filing_id": f"{cik}-22-{sequence:06d}",
+        "cik": cik,
+        "security_id": security,
+        "form": form,
+        "acceptance_datetime_utc": CUTOFF - timedelta(days=days),
+        "point_in_time_eligible": True,
+        "report_date": "2021-12-31",
+        "primary_document": "primary.htm",
+        **extra,
+    }
+
+
+def select(rows: list[dict[str, object]], **kwargs: Any) -> Any:
+    return select_event_filings(event(), pd.DataFrame(rows), ["sec_KO", "sec_PEP"], **kwargs)
+
+
+def get_fixture(calls: list[str], failures: set[str] | None = None) -> Any:
+    def get(url: str) -> FetchedResponse:
+        calls.append(url)
+        name = url.rsplit("/", 1)[-1]
+        if failures and name in failures:
+            raise SourceError(url, 403)
+        if name == "index.json":
+            body = json.dumps(
+                {"directory": {"item": [{"name": "primary.htm"}, {"name": "ex99.htm"}]}}
+            ).encode()
+        elif name == "primary.htm":
+            body = (
+                b"<html><head><style>hidden style</style></head><body>"
+                b"<h2>Item 2.02 Results of Operations</h2><p>Earnings declined.</p>"
+                b"<script>future profits invented</script></body></html>"
+            )
+        elif name == "ex99.htm":
+            body = b"<html><p>Guidance raised and revenue increased.</p></html>"
+        else:
+            body = (
+                b"<DOCUMENT>\n<TYPE>8-K\n<SEQUENCE>1\n<FILENAME>primary.htm\n"
+                b"<TEXT><p>Primary embedded earnings text.</p></TEXT>\n</DOCUMENT>\n"
+                b"<DOCUMENT>\n<TYPE>EX-99.1\n<SEQUENCE>2\n<FILENAME>ex99.htm\n"
+                b"<TEXT><p>Guidance raised and revenue increased.</p></TEXT>\n</DOCUMENT>"
+            )
+        return FetchedResponse(body, url, 200, RETRIEVED)
+
+    return get
+
+
+def test_selection_admissibility_precedes_latest_and_amendment_logic() -> None:
+    rows = [
+        filing(1, days=30),
+        filing(2, days=31),
+        filing(3, days=-1),
+        filing(4, form="10-Q", days=70),
+        filing(5, form="10-K", days=200),
+        filing(6, form="10-Q/A", days=20),
+        filing(7, form="10-Q/A", days=-2),
+        filing(8, form="10-Q/A", days=10, report_date="2021-09-30"),
+        filing(9, security="sec_PEP", form="10-K", days=250),
+    ]
+    chosen, coverage = select(rows)
+    assert {row["filing_id"] for row in chosen} == {
+        rows[index]["filing_id"] for index in (0, 3, 5, 8)
+    }
+    assert coverage["A"]["periodic_extended"] is False
+    assert coverage["B"]["periodic_extended"] is True
+    assert next(row for row in chosen if row["form"] == "10-Q/A")["is_amendment"] is True
+
+
+def test_missing_acceptance_and_ineligible_source_do_not_become_none() -> None:
+    chosen, coverage = select(
+        [
+            filing(1, acceptance_datetime_utc=None),
+            filing(2, point_in_time_eligible=False),
+            filing(3, security="sec_PEP", form="10-K", days=401),
+        ]
+    )
+    assert not chosen
+    assert coverage["A"]["status"] == coverage["B"]["status"] == "UNKNOWN"
+    assert coverage["A"]["missing_acceptance_count"] == 1
+
+
+def test_identity_window_prevents_successor_cik_retroactive_evidence() -> None:
+    chosen, _ = select(
+        [filing(1, identity_valid_from="2026-07-01"), filing(2, identity_valid_to="2026-07-01")]
+    )
+    assert [row["filing_id"] for row in chosen] == [filing(2)["filing_id"]]
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [("event_timestamp", "2022-04-01"), ("evidence_cutoff", CUTOFF + timedelta(seconds=1))],
+)
+def test_naive_or_future_event_cutoff_is_blocking(field: str, value: object) -> None:
+    with pytest.raises(ValueError):
+        select_event_filings(
+            event(**{field: value}), pd.DataFrame([filing(1)]), ["sec_KO", "sec_PEP"]
+        )
+
+
+def test_duplicate_accession_rejected_before_selection() -> None:
+    with pytest.raises(ValueError, match="unique"):
+        select([filing(1), filing(1)])
+
+
+def test_cache_primary_submission_exhibits_and_repeat_without_requests(paths: ProjectPaths) -> None:
+    chosen, _ = select([filing(1)])
+    calls: list[str] = []
+    documents = cache_filing(paths, chosen[0], get_fixture(calls))
+    assert len(calls) == 4
+    assert {row["document_type"] for row in documents} == {"INDEX", "8-K", "SUBMISSION", "EX-99.1"}
+    assert all(row["status"] == "DOWNLOADED" for row in documents)
+    repeated = cache_filing(paths, chosen[0], get_fixture(calls), offline=True)
+    assert documents == repeated
+    assert len(calls) == 4
+    for row in documents:
+        raw = paths.workspace_root / str(row["raw_file_path"])
+        assert hashlib.sha256(raw.read_bytes()).hexdigest() == row["sha256"]
+        assert raw.with_name(raw.name + ".response.json").is_file()
+
+
+def test_cache_mutated_raw_bytes_fail_instead_of_recapture(paths: ProjectPaths) -> None:
+    chosen, _ = select([filing(1)])
+    calls: list[str] = []
+    documents = cache_filing(paths, chosen[0], get_fixture(calls))
+    Path(str(documents[1]["local_path"])).write_bytes(b"changed")
+    with pytest.raises(ValueError, match="hash mismatch"):
+        cache_filing(paths, chosen[0], get_fixture(calls))
+    assert len(calls) == 4
+
+
+def test_cache_mutated_metadata_is_blocking(paths: ProjectPaths) -> None:
+    chosen, _ = select([filing(1)])
+    docs = cache_filing(paths, chosen[0], get_fixture([]))
+    path = Path(str(docs[1]["local_path"]))
+    path.with_name(path.name + ".response.json").write_text("{}")
+    with pytest.raises(ValueError, match="metadata mismatch"):
+        cache_filing(paths, chosen[0], get_fixture([]))
+
+
+def test_offline_missing_cache_has_explicit_status_and_no_network(paths: ProjectPaths) -> None:
+    chosen, _ = select([filing(1)])
+    calls: list[str] = []
+    documents = cache_filing(paths, chosen[0], get_fixture(calls), offline=True)
+    assert not calls
+    assert {row["status"] for row in documents} == {"MISSING"}
+    assert all(row["error_reason"] == "OFFLINE_CACHE_MISS" for row in documents)
+    assert not (paths.data / "raw/sec/filings").exists()
+
+
+def test_explicit_retry_preserves_failed_original_cache(paths: ProjectPaths) -> None:
+    chosen, _ = select([filing(1)])
+    first = cache_filing(paths, chosen[0], get_fixture([], {"primary.htm"}))
+    assert any(row["status"] == "FAILED" for row in first)
+    original = paths.data_path(
+        f"raw/sec/filings/{chosen[0]['cik']}/{chosen[0]['filing_id']}/response_manifest.json"
+    )
+    original_bytes = original.read_bytes()
+    repaired = cache_filing(paths, chosen[0], get_fixture([]), attempt_id="retry_fixture")
+    assert all(row["status"] == "DOWNLOADED" for row in repaired)
+    assert all("attempts/retry_fixture/" in row["raw_file_path"] for row in repaired)
+    assert original.read_bytes() == original_bytes
+    assert cache_filing(paths, chosen[0], get_fixture([]), offline=True) == first
+    assert (
+        cache_filing(paths, chosen[0], get_fixture([]), offline=True, attempt_id="retry_fixture")
+        == repaired
+    )
+
+
+def test_submission_failure_still_downloads_index_named_ex99(paths: ProjectPaths) -> None:
+    chosen, _ = select([filing(1)])
+    calls: list[str] = []
+    complete_name = str(chosen[0]["filing_id"]) + ".txt"
+    docs = cache_filing(paths, chosen[0], get_fixture(calls, {complete_name}))
+    assert any(url.endswith("ex99.htm") for url in calls)
+    chunks = parse_documents(docs)
+    assert "FAILED" in set(chunks["status"])
+    assert any(
+        row["document_type"] == "EX-99" and row["status"] == "OK"
+        for row in chunks.to_dict("records")
+    )
+
+
+def test_http_error_body_and_status_are_retained(paths: ProjectPaths) -> None:
+    chosen, _ = select([filing(1)])
+
+    def denied(url: str) -> FetchedResponse:
+        return FetchedResponse(b"Access denied", url, 403, RETRIEVED)
+
+    docs = cache_filing(paths, chosen[0], denied)
+    assert all(row["status"] == "FAILED" and row["http_status"] == 403 for row in docs)
+    assert all(
+        (paths.workspace_root / row["raw_file_path"]).read_bytes() == b"Access denied"
+        for row in docs
+    )
+
+
+def test_parsing_excludes_scripts_and_preserves_section_raw_and_text_hashes(
+    paths: ProjectPaths,
+) -> None:
+    chosen, _ = select([filing(1)])
+    documents = cache_filing(paths, chosen[0], get_fixture([]))
+    chunks = parse_documents(documents)
+    assert set(chunks["status"]) == {"OK"}
+    assert chunks["chunk_id"].is_unique
+    assert not chunks["chunk_text"].str.contains("hidden style|invented").any()
+    assert "Item 2.02 Results of Operations" in set(chunks["section_label"])
+    assert set(chunks["document_type"]) == {"8-K", "EX-99.1"}
+    for row in chunks.to_dict("records"):
+        assert row["text_sha256"] == hashlib.sha256(row["chunk_text"].encode()).hexdigest()
+    pd.testing.assert_frame_equal(chunks, parse_documents(documents))
+
+
+def test_complete_submission_recovers_embedded_exhibit_and_retains_failure(
+    paths: ProjectPaths,
+) -> None:
+    chosen, _ = select([filing(1)])
+    documents = cache_filing(paths, chosen[0], get_fixture([], {"ex99.htm"}))
+    chunks = parse_documents(documents)
+    assert "FAILED" in set(chunks["status"])
+    recovered = chunks.loc[chunks["status"].eq("OK") & chunks["document_type"].eq("EX-99.1")]
+    assert len(recovered) == 1
+    assert recovered.iloc[0]["raw_file_path"].endswith("complete_submission.txt")
+    assert recovered.iloc[0]["source_url"].endswith(".txt")
+
+
+def make_pack(paths: ProjectPaths, **kwargs: Any) -> tuple[dict[str, object], pd.DataFrame]:
+    chosen, coverage = select([filing(1, form="10-Q"), filing(2, security="sec_PEP", form="10-Q")])
+    documents = [doc for row in chosen for doc in cache_filing(paths, row, get_fixture([]))]
+    chunks = parse_documents(documents)
+    return build_evidence_pack(
+        event(y=1, outcome="CONVERGED"), chosen, chunks, coverage, **kwargs
+    ), chunks
+
+
+def test_pack_bounded_balanced_stable_and_no_outcomes(paths: ProjectPaths) -> None:
+    policy = EvidencePolicy(chunk_chars=200, max_chunks_per_leg=1, max_total_chars=400)
+    pack, chunks = make_pack(paths, policy=policy)
+    assert pack["coverage_status"] == "COMPLETE"
+    assert {row["leg"] for row in pack["chunks"]} == {"A", "B"}
+    assert pack["total_chars"] <= 400
+    assert "outcome" not in pack and "y" not in pack
+    chosen, coverage = select([filing(1, form="10-Q"), filing(2, security="sec_PEP", form="10-Q")])
+    repeated = build_evidence_pack(
+        event(), chosen, chunks.sample(frac=1, random_state=3), coverage, policy
+    )
+    assert pack == repeated
+
+
+def test_pack_future_documents_cannot_win_lexical_rank(paths: ProjectPaths) -> None:
+    pack, chunks = make_pack(paths)
+    chosen, coverage = select([filing(1, form="10-Q"), filing(2, security="sec_PEP", form="10-Q")])
+    future = chunks.iloc[[0]].copy()
+    future["acceptance_datetime_utc"] = CUTOFF + timedelta(seconds=1)
+    future["chunk_text"] = "earnings guidance acquisition " * 500
+    future["chunk_id"] = "future_chunk"
+    enlarged = pd.concat([chunks, future], ignore_index=True)
+    assert build_evidence_pack(event(), chosen, enlarged, coverage) == pack
+
+
+def test_pack_tampered_text_is_blocking(paths: ProjectPaths) -> None:
+    _, chunks = make_pack(paths)
+    chosen, coverage = select([filing(1, form="10-Q"), filing(2, security="sec_PEP", form="10-Q")])
+    chunks.loc[0, "chunk_text"] = "invented acquisition"
+    with pytest.raises(ValueError, match="text hash"):
+        build_evidence_pack(event(), chosen, chunks, coverage)
+
+
+def test_selected_future_filing_is_a_leakage_failure(paths: ProjectPaths) -> None:
+    _, chunks = make_pack(paths)
+    chosen, coverage = select([filing(1, form="10-Q"), filing(2, security="sec_PEP", form="10-Q")])
+    chosen[0]["acceptance_datetime_utc"] = CUTOFF + timedelta(seconds=1)
+    with pytest.raises(ValueError, match="follows the evidence cutoff"):
+        build_evidence_pack(event(), chosen, chunks, coverage)
+
+
+def test_pack_rejects_stale_coverage_from_another_source_set(paths: ProjectPaths) -> None:
+    _, chunks = make_pack(paths)
+    chosen, coverage = select([filing(1, form="10-Q"), filing(2, security="sec_PEP", form="10-Q")])
+    coverage["A"]["selected_filing_ids"] = []
+    with pytest.raises(ValueError, match="coverage identity"):
+        build_evidence_pack(event(), chosen, chunks, coverage)
+
+
+def test_document_cannot_be_downloaded_before_claimed_acceptance(paths: ProjectPaths) -> None:
+    chosen, _ = select([filing(1)])
+
+    def prematurely_retrieved(url: str) -> FetchedResponse:
+        return FetchedResponse(b"{}", url, 200, CUTOFF - timedelta(days=10))
+
+    with pytest.raises(ValueError, match="acceptance cannot follow"):
+        cache_filing(paths, chosen[0], prematurely_retrieved)
+
+
+def test_failed_documents_remain_unknown_and_never_remove_event(paths: ProjectPaths) -> None:
+    chosen, coverage = select([filing(1, form="10-Q"), filing(2, security="sec_PEP", form="10-Q")])
+    documents = [
+        doc for row in chosen for doc in cache_filing(paths, row, get_fixture([]), offline=True)
+    ]
+    pack = build_evidence_pack(event(), chosen, parse_documents(documents), coverage)
+    assert pack["event_id"] == "evt_fixture"
+    assert pack["coverage_status"] == "UNKNOWN"
+    assert not pack["chunks"]
+    assert len(pack["selected_filing_ids"]) == 2
+
+
+def test_empty_index_output_can_build_unknown_pack() -> None:
+    index = pd.DataFrame(columns=["security_id", "filing_id", "form", "acceptance_datetime_utc"])
+    chosen, coverage = select_event_filings(event(), index, ["sec_KO", "sec_PEP"])
+    pack = build_evidence_pack(event(), chosen, pd.DataFrame(columns=CHUNK_COLUMNS), coverage)
+    assert pack["coverage_status"] == "UNKNOWN"
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"recent_8k_days": 0},
+        {"periodic_extension_days": 100},
+        {"chunk_chars": 199},
+        {"max_chunks_per_leg": 0},
+        {"max_total_chars": 100},
+    ],
+)
+def test_invalid_evidence_policy_is_rejected(kwargs: dict[str, int]) -> None:
+    with pytest.raises(ValueError):
+        EvidencePolicy(**kwargs)
