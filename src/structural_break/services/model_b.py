@@ -82,7 +82,11 @@ def merge_model_b_rows(
             raise ValueError(f"Model B lacks original feature/lineage field: {name}")
         try:
             pd.testing.assert_series_equal(
-                features[name], original[name], check_dtype=False, check_names=False
+                features[name],
+                original[name],
+                check_dtype=False,
+                check_names=False,
+                check_exact=True,
             )
         except AssertionError as error:
             raise ValueError(

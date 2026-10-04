@@ -219,7 +219,15 @@ def test_unknown_resume_publishes_new_version_and_preserves_old_generation(copie
 
 @pytest.mark.parametrize(
     "kind",
-    ["coverage", "source_selection", "quantitative", "availability", "schema", "raw_inventory"],
+    [
+        "coverage",
+        "source_selection",
+        "quantitative",
+        "event_numeric",
+        "availability",
+        "schema",
+        "raw_inventory",
+    ],
 )
 def test_reader_rejects_scientific_inconsistency_even_with_updated_file_checksums(copied, kind):
     paths, config, events, evidence = copied
@@ -233,12 +241,15 @@ def test_reader_rejects_scientific_inconsistency_even_with_updated_file_checksum
             pack["selected_filing_ids"] = []
         path.write_bytes(json_bytes(pack))
         item["sha256"] = sha256_file(path)
-    elif kind in {"quantitative", "availability", "schema"}:
+    elif kind in {"quantitative", "event_numeric", "availability", "schema"}:
         item = next(entry for entry in evidence["files"] if entry["dataset"] == "model_b_features")
         path = paths.workspace_root / item["path"]
         frame = pq.read_table(path).to_pandas()
         if kind == "quantitative":
             frame.loc[0, "abs_z"] += 0.1
+        elif kind == "event_numeric":
+            position = frame["extraction_confidence"].first_valid_index()
+            frame.loc[position, "extraction_confidence"] += 1e-6
         elif kind == "availability":
             frame.loc[0, "event_available_at"] -= pd.Timedelta(days=1)
         else:

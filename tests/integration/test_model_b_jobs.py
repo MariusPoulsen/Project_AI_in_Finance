@@ -166,7 +166,8 @@ def test_model_b_rejects_evidence_selection_bias_and_quantitative_mutation(copie
     elif malformation == "duplicate":
         features = pd.concat([features, features.iloc[:1]], ignore_index=True)
     elif malformation == "quantitative":
-        features.loc[0, "abs_z"] += 0.1
+        # Below pandas' default approximate-equality tolerance: lineage is exact.
+        features.loc[0, "abs_z"] += 1e-6
     else:
         features["event_feature_cutoff_timestamp"] = features["event_timestamp"] + pd.Timedelta(
             days=1

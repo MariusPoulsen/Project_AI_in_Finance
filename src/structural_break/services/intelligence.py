@@ -626,6 +626,7 @@ def _verify_scientific_content(paths: ProjectPaths, manifest: dict[str, Any]) ->
             features[event_columns],
             rebuilt[event_columns],
             check_dtype=False,
+            check_exact=True,
         )
     except AssertionError as error:
         raise ValueError(
