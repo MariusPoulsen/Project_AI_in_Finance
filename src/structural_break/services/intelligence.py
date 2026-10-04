@@ -40,7 +40,7 @@ from structural_break.services.model_a import (
     _read_frames,
     ml_computation_identity,
 )
-from structural_break.services.model_b import model_b_feature_schema
+from structural_break.services.model_b import _read_verified_frames, model_b_feature_schema
 from structural_break.storage.database import DuckDBConnectionFactory, migrate
 from structural_break.storage.files import segment, sha256_file, write_bytes
 from structural_break.storage.model_a import insert_frame
@@ -705,11 +705,14 @@ class EvidenceRepository:
 
     def frames(self, event_feature_version: str | None = None) -> dict[str, pd.DataFrame]:
         manifest = self.manifest(event_feature_version)
-        return {
-            item["dataset"]: pd.DataFrame(
-                pq.read_table(confined_path(self.paths.workspace_root, item["path"])).to_pandas()
-            )
-            for item in manifest["files"]
-            if item["dataset"]
-            in {"model_b_features", "extractions", "evidence_packs", "document_chunks"}
-        }
+        return self._frames_from_verified_manifest(manifest)
+
+    def _frames_from_verified_manifest(self, manifest: dict[str, Any]) -> dict[str, pd.DataFrame]:
+        """Internal request-local reuse after a full manifest/scientific audit."""
+        return _read_verified_frames(
+            self.paths,
+            manifest,
+            datasets=frozenset(
+                {"model_b_features", "extractions", "evidence_packs", "document_chunks"}
+            ),
+        )

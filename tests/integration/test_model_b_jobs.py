@@ -99,20 +99,74 @@ def test_model_b_publishes_unchanged_cohort_and_independent_model_a(copied):
     assert final["evaluation_role"].eq("LOCKED_FEATURE_ONLY_INFERENCE").all()
 
 
-def test_reloaded_model_b_reproduces_probabilities_and_raw_margin_shap(copied):
+def test_reloaded_model_b_reproduces_probabilities_and_raw_margin_shap(copied, monkeypatch):
     paths, config, events, model_a, evidence, model = copied
+    from structural_break.services import intelligence
+
+    audits = []
+    original_audit = intelligence._verify_scientific_content
+
+    def counted_audit(*args, **kwargs):
+        audits.append(args[1]["event_feature_version"])
+        return original_audit(*args, **kwargs)
+
+    monkeypatch.setattr(intelligence, "_verify_scientific_content", counted_audit)
     report = verify_model_b(paths)
+    assert audits == [evidence["event_feature_version"]]
     assert report["prediction_count"] == model["counts"]["predictions"]
     assert max(report["reload_max_errors"].values()) == 0
     assert report["shap_raw_margin_max_error"] < 2e-5
     assert report["paired_comparison_reproduced"]
     assert report["final_test_outcomes_inspected"] is False
     stored = ModelBRepository(paths).predictions()
+    assert audits == [evidence["event_feature_version"]] * 2
     assert all(
         len(values) == len(model["feature_schema"]["feature_columns"])
         for values in stored["shap_values"]
     )
     assert stored["explanation_status"].eq("AVAILABLE_RAW_MARGIN").all()
+
+
+def test_fresh_model_b_training_audits_evidence_once(copied, monkeypatch):
+    paths, config, events, model_a, evidence, model = copied
+    from structural_break.services import intelligence
+
+    audits = []
+    original_audit = intelligence._verify_scientific_content
+
+    def counted_audit(*args, **kwargs):
+        audits.append(args[1]["event_feature_version"])
+        return original_audit(*args, **kwargs)
+
+    monkeypatch.setattr(intelligence, "_verify_scientific_content", counted_audit)
+    trained = train_model_b(paths, config, model_version="single_audit_b")
+    assert audits == [evidence["event_feature_version"]]
+    assert (
+        trained["comparison"]["validation_supervised_eligible"]
+        == model["comparison"]["validation_supervised_eligible"]
+    )
+    assert trained["final_test_outcomes_computed"] is False
+
+
+def test_verification_rejects_source_tampering_after_its_scientific_audit(copied, monkeypatch):
+    paths, config, events, model_a, evidence, model = copied
+    original_read = model_b._read_verified_frames
+    raw_entry = next(item for item in evidence["files"] if item["dataset"] == "raw_sec_document")
+    raw_path = paths.workspace_root / raw_entry["path"]
+    changed = False
+
+    def mutate_after_audit(read_paths, manifest, **kwargs):
+        nonlocal changed
+        frames = original_read(read_paths, manifest, **kwargs)
+        if manifest.get("model_version") == model["model_version"] and not changed:
+            raw_path.write_bytes(raw_path.read_bytes() + b"tampered after scientific audit")
+            changed = True
+        return frames
+
+    monkeypatch.setattr(model_b, "_read_verified_frames", mutate_after_audit)
+    with pytest.raises(ValueError, match="checksum changed during the operation"):
+        verify_model_b(paths)
+    assert changed
 
 
 def test_registered_rebuild_uses_cached_features_without_an_llm(copied, monkeypatch):

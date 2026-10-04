@@ -9,7 +9,8 @@ required by this project.
 ## 1. Get the source
 
 Open a new Colab notebook. For this private repository, either upload a ZIP downloaded
-from GitHub and extract it under `/content`, or clone using the following cell.
+from GitHub and extract/rename its source folder to `/content/Project_AI_in_Finance`,
+or clone using the following cell.
 Use a short-lived GitHub token with read access to this repository when prompted.
 The token is hidden from output, passed only in the clone process environment, and
 never placed in the Git remote URL or repository files.
@@ -66,6 +67,8 @@ Run these Colab cells:
 ```python
 import subprocess
 import sys
+
+repository = "/content/Project_AI_in_Finance"
 
 subprocess.run(
     [

@@ -497,6 +497,13 @@ The user will prepare the final academic written report and presentation/video s
   eligible validation rows remain in the paired comparison; coverage slices are
   descriptive additions. Native reload, SHAP and stored A/B comparison are
   independently reproducible without LLM calls. Final outcomes remain locked.
+- Each Model B verification command pins its model/evidence/event/A inputs and
+  performs full SEC scientific reconstruction once, then reuses verified in-memory
+  frames for reload and paired comparison. Fresh training loads frames from its
+  already verified evidence manifest. This removes redundant full SEC audits
+  within an operation; separate
+  public reads still verify all hashes, source reconstruction and scientific
+  content afresh. No persistent verification cache or public bypass is introduced.
 - Calibration retains the same smoothed monotone Platt objective and constraints.
   A reproduced L-BFGS-B abnormal termination near a stationary solution justifies
   a numerical SLSQP retry on that identical objective. Accept only finite feasible

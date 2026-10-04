@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import copy
+import hashlib
+import io
 import json
+from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from typing import Any
 
@@ -32,6 +35,50 @@ from structural_break.storage.database import DuckDBConnectionFactory, migrate
 from structural_break.storage.files import segment, sha256_file, write_bytes
 from structural_break.storage.model_b import publish_model_b
 from structural_break.storage.registry import Registration, RunRegistry
+
+
+def _read_verified_frames(
+    paths: ProjectPaths,
+    manifest: dict[str, Any],
+    *,
+    datasets: frozenset[str] | None = None,
+) -> dict[str, pd.DataFrame]:
+    """Read the same bytes that match a previously verified manifest's hashes."""
+    frames = {}
+    for item in manifest["files"]:
+        if not item["path"].endswith(".parquet") or (
+            datasets is not None and item["dataset"] not in datasets
+        ):
+            continue
+        raw = confined_path(paths.workspace_root, item["path"]).read_bytes()
+        if hashlib.sha256(raw).hexdigest() != item["sha256"]:
+            raise ValueError("Verified artifact checksum changed during the operation")
+        frames[item["dataset"]] = pd.read_parquet(io.BytesIO(raw))
+    return frames
+
+
+def _verify_manifest_files(paths: ProjectPaths, manifest: dict[str, Any]) -> None:
+    for item in manifest["files"]:
+        if sha256_file(confined_path(paths.workspace_root, item["path"])) != item["sha256"]:
+            raise ValueError("Verified artifact checksum changed during the operation")
+
+
+@dataclass(frozen=True)
+class _VerifiedModelBInputs:
+    """Request-local lineage; never retained by a repository or reused by public reads."""
+
+    model: dict[str, Any]
+    evidence: dict[str, Any]
+    dataset: dict[str, Any]
+    model_a: dict[str, Any]
+    references: tuple[tuple[str, str], ...]
+
+    def verify_files(self, paths: ProjectPaths) -> None:
+        for path, expected in self.references:
+            if sha256_file(confined_path(paths.workspace_root, path)) != expected:
+                raise ValueError("Verified parent manifest checksum changed during the operation")
+        for manifest in (self.model, self.evidence, self.dataset, self.model_a):
+            _verify_manifest_files(paths, manifest)
 
 
 def model_b_feature_schema(
@@ -245,9 +292,21 @@ def train_model_b(
     expected = model_b_feature_schema(dataset["feature_schema"], version=schema["version"])
     if schema != expected:
         raise ValueError("Model B schema differs from frozen Model A plus structured event block")
-    frames = evidence_repository.frames(evidence["event_feature_version"])
+    frames = evidence_repository._frames_from_verified_manifest(evidence)
     rows = merge_model_b_rows(_read_frames(paths, dataset), frames["model_b_features"], schema)
     model_a = _matching_model_a(paths, dataset["dataset_version"])
+    parent_evidence = _registered_evidence_path(paths, evidence["event_feature_version"])
+    parent_references = (
+        (parent_evidence["path"], parent_evidence["sha256"]),
+        (
+            f"artifacts/events/{dataset['dataset_version']}/manifest.json",
+            sha256_file(paths.artifacts / "events" / dataset["dataset_version"] / "manifest.json"),
+        ),
+        (
+            f"artifacts/models/{model_a['model_version']}/manifest.json",
+            sha256_file(paths.artifacts / "models" / model_a["model_version"] / "manifest.json"),
+        ),
+    )
     identity = {
         "dataset_version": dataset["dataset_version"],
         "event_feature_version": evidence["event_feature_version"],
@@ -335,6 +394,12 @@ def train_model_b(
             for path in sorted(destination.iterdir())
             if path.is_file() and path.name not in {"manifest.json", "model_b_predictions.parquet"}
         ]
+        # Detect changes during fitting without repeating the SEC scientific audit.
+        for path, expected_sha256 in parent_references:
+            if sha256_file(confined_path(paths.workspace_root, path)) != expected_sha256:
+                raise ValueError("Verified parent manifest checksum changed during the operation")
+        for upstream in (evidence, dataset, model_a):
+            _verify_manifest_files(paths, upstream)
         manifest = {
             **identity,
             "model_version": model_id,
@@ -351,15 +416,9 @@ def train_model_b(
             "metrics": result.metrics,
             "comparison": comparison,
             "counts": {"predictions": len(predictions)},
-            "upstream_event_manifest_sha256": sha256_file(
-                paths.artifacts / "events" / dataset["dataset_version"] / "manifest.json"
-            ),
-            "parent_evidence_manifest": _registered_evidence_path(
-                paths, evidence["event_feature_version"]
-            ),
-            "upstream_model_a_manifest_sha256": sha256_file(
-                paths.artifacts / "models" / model_a["model_version"] / "manifest.json"
-            ),
+            "upstream_event_manifest_sha256": parent_references[1][1],
+            "parent_evidence_manifest": parent_evidence,
+            "upstream_model_a_manifest_sha256": parent_references[2][1],
             "final_test_outcomes_computed": False,
         }
         manifest_path = write_bytes(destination / "manifest.json", json_bytes(manifest))
@@ -405,6 +464,9 @@ class ModelBRepository:
         self.factory = DuckDBConnectionFactory(paths.database)
 
     def manifest(self, model_version: str | None = None) -> dict[str, Any]:
+        return self._verified_inputs(model_version).model
+
+    def _verified_inputs(self, model_version: str | None = None) -> _VerifiedModelBInputs:
         from structural_break.services.intelligence import EvidenceRepository
 
         try:
@@ -479,7 +541,24 @@ class ModelBRepository:
             or model_a["dataset_version"] != manifest["dataset_version"]
         ):
             raise ValueError("Model B bundle schema or parent cohort differs")
-        return manifest
+        return _VerifiedModelBInputs(
+            manifest,
+            evidence,
+            dataset,
+            model_a,
+            (
+                (str(row[0]), str(row[1])),
+                (parent["path"], parent["sha256"]),
+                (
+                    f"artifacts/events/{manifest['dataset_version']}/manifest.json",
+                    manifest["upstream_event_manifest_sha256"],
+                ),
+                (
+                    f"artifacts/models/{manifest['model_a_version']}/manifest.json",
+                    manifest["upstream_model_a_manifest_sha256"],
+                ),
+            ),
+        )
 
     def active_manifest(self) -> dict[str, Any]:
         return self.manifest()
@@ -487,8 +566,8 @@ class ModelBRepository:
     def features(self, event_ids: list[str] | None = None) -> pd.DataFrame:
         from structural_break.services.intelligence import EvidenceRepository
 
-        manifest = self.active_manifest()
-        frame = EvidenceRepository(self.paths).frames(manifest["event_feature_version"])[
+        inputs = self._verified_inputs()
+        frame = EvidenceRepository(self.paths)._frames_from_verified_manifest(inputs.evidence)[
             "model_b_features"
         ]
         return frame if event_ids is None else frame.loc[frame["event_id"].isin(event_ids)].copy()
@@ -522,10 +601,17 @@ class ModelBRepository:
 def verify_model_b(paths: ProjectPaths) -> dict[str, Any]:
     """Replay persisted probabilities and SHAP; final rows are features-only inference."""
     repository = ModelBRepository(paths)
-    manifest = repository.active_manifest()
-    stored = repository.predictions()
-    features = repository.features().set_index("event_id").loc[stored["event_id"]]
-    fresh = repository.load_bundle().predict(
+    inputs = repository._verified_inputs()
+    manifest = inputs.model
+    stored = _read_verified_frames(paths, manifest)["model_b_predictions"]
+    from structural_break.ml.model import load_bundle
+    from structural_break.services.intelligence import EvidenceRepository
+
+    evidence_frames = EvidenceRepository(paths)._frames_from_verified_manifest(inputs.evidence)
+    features = evidence_frames["model_b_features"].set_index("event_id").loc[stored["event_id"]]
+    # Re-anchor executable/native files after the potentially long SEC audit.
+    _verify_manifest_files(paths, manifest)
+    fresh = load_bundle(paths.artifacts / "models" / manifest["model_version"]).predict(
         features[manifest["feature_schema"]["feature_columns"]]
     )
     errors = {
@@ -540,15 +626,14 @@ def verify_model_b(paths: ProjectPaths) -> dict[str, Any]:
     )
     if not np.isfinite(shap_error) or shap_error > 1e-5:
         raise ValueError("Model B SHAP contributions exceed the raw-margin acceptance tolerance")
-    parent = ModelARepository(paths)
     rows = merge_model_b_rows(
-        parent.dataset_frames(manifest["dataset_version"]),
-        repository.features(),
+        _read_verified_frames(paths, inputs.dataset),
+        evidence_frames["model_b_features"],
         manifest["feature_schema"],
     )
     comparison = compare_model_a_b(
         rows,
-        _read_frames(paths, parent.manifest(manifest["model_a_version"]))["model_predictions"],
+        _read_verified_frames(paths, inputs.model_a)["model_predictions"],
         stored,
         threshold=float(manifest["comparison"]["threshold"]),
     )
@@ -562,6 +647,7 @@ def verify_model_b(paths: ProjectPaths) -> dict[str, Any]:
     )
     if comparison != manifest["comparison"]:
         raise ValueError("Cached Model A/B comparison cannot be reproduced from its frozen inputs")
+    inputs.verify_files(paths)
     return {
         "model_version": manifest["model_version"],
         "synthetic": manifest["synthetic"],
