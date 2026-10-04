@@ -44,6 +44,7 @@ from structural_break.services.model_b import model_b_feature_schema
 from structural_break.storage.database import DuckDBConnectionFactory, migrate
 from structural_break.storage.files import segment, sha256_file, write_bytes
 from structural_break.storage.model_a import insert_frame
+from structural_break.storage.publication import canonical_aliases
 from structural_break.storage.registry import Registration, RunRegistry
 
 
@@ -123,6 +124,15 @@ def _publish(
         "INSERT INTO ops.active_event_intelligence VALUES (true,?) "
         "ON CONFLICT(singleton) DO UPDATE SET event_feature_version=excluded.event_feature_version",
         [identity],
+    )
+    chunk_file = next(
+        item for item in manifest["files"] if item["dataset"] == "clean_document_chunks"
+    )
+    chunk_path = (
+        confined_path(paths.workspace_root, chunk_file["path"]).as_posix().replace("'", "''")
+    )
+    connection.execute(
+        f"CREATE OR REPLACE VIEW ref.document_chunks AS SELECT * FROM read_parquet('{chunk_path}')"
     )
 
 
@@ -390,6 +400,9 @@ def build_event_intelligence(
             "extractions": extracted,
             "evidence_packs": pd.DataFrame(pack_index),
             "document_chunks": chunks,
+            "clean_document_chunks": chunks.loc[
+                chunks["status"].eq("OK") & chunks["chunk_id"].notna()
+            ].reset_index(drop=True),
             "filing_index": filing_index,
             "documents": pd.DataFrame(
                 [
@@ -463,13 +476,17 @@ def build_event_intelligence(
         }
         _verify_scientific_content(paths, manifest)
         path = write_bytes(destination / "manifest.json", json_bytes(manifest))
-        registry.finish(
-            run_id,
-            status="SUCCESS",
-            record_count=len(events),
-            artifacts=(Registration("event-intelligence", version, path),),
-            publish=lambda connection: _publish(connection, paths, manifest, frames, run_id),
-        )
+        chunk_file = next(item for item in files if item["dataset"] == "clean_document_chunks")
+        with canonical_aliases(
+            paths, [{**chunk_file, "dataset": "curated/evidence/document_chunks.parquet"}]
+        ):
+            registry.finish(
+                run_id,
+                status="SUCCESS",
+                record_count=len(events),
+                artifacts=(Registration("event-intelligence", version, path),),
+                publish=lambda connection: _publish(connection, paths, manifest, frames, run_id),
+            )
         configure_logging().info(
             "Event intelligence published", extra={"run_id": run_id, "status": "SUCCESS"}
         )
@@ -547,6 +564,13 @@ def _verify_scientific_content(paths: ProjectPaths, manifest: dict[str, Any]) ->
     reparsed = parse_documents(documents, policy)
     try:
         pd.testing.assert_frame_equal(frames["document_chunks"], reparsed, check_dtype=False)
+        pd.testing.assert_frame_equal(
+            frames["clean_document_chunks"],
+            reparsed.loc[reparsed["status"].eq("OK") & reparsed["chunk_id"].notna()].reset_index(
+                drop=True
+            ),
+            check_dtype=False,
+        )
     except AssertionError as error:
         raise ValueError("SEC chunks differ from parsing their immutable raw sources") from error
     response_files = [

@@ -449,3 +449,52 @@ The user will prepare the final academic written report and presentation/video s
   published scores and stored SHAP. It neither trains nor writes analytical rows.
   Historical probability replays display their fitting/evaluation role and the
   final outcome lock caps UI dates at 2023. P5 controller/trading status is absent.
+
+## 19. Phase 4 evidence, extraction and Model B protocol
+
+- Use the unchanged P3 event population, quantitative features, targets and splits.
+  Model B adds 31 fixed event columns (67 total), using MEDIUM as the specified
+  materiality category. Extraction schema, prompt and event-feature versions are
+  v2. Missing/failed evidence remains explicit UNKNOWN on the original cohort.
+- Select recent 8-K/8-K/A over 30 calendar days, most recent admissible periodic
+  10-Q/10-K within 180 days with a 400-day extension, and associated admissible
+  periodic amendments. Filter by issuer, type and SEC acceptance before lexical
+  ranking. Eight chunks per leg and 32,000 characters bound each pack. PDF-only
+  exhibits remain explicitly unsupported; a bounded pack is not exhaustive issuer
+  knowledge. NONE requires complete selected coverage and means no supported
+  catalyst in that evidence set, not proof that the company had no event.
+- Preserve raw responses, source/cleaned-text hashes, stable chunks, complete
+  original pack JSON, allowlisted extraction inputs and exact extraction JSON.
+  The normalized extractor evidence hash and richer original pack hash have
+  different contents and both are retained. Verified reads reparse raw files,
+  regenerate selection/packs, validate responses/citations and rebuild features.
+- Nonempty catalyst categories require exact quotes from admissible chunks, with
+  leg/security, timestamp and category-cue checks. Qualitative direction,
+  materiality and relevance still require human semantic evaluation. Self-reported
+  confidence is uncalibrated extraction certainty, not measured correctness or
+  reversion probability. Human-labelled evaluation belongs to P5.
+- The user selected a free Gemini Flash API on 2026-10-03. Its locally verified
+  model alias is gemini-3.8-flash; provider/model remain configurable. No billing
+  is enabled by this implementation. Protect the pilot with 20 requests including
+  retries, a 32-second interval and no hidden SDK retries. Quota/authentication
+  failures stop additional requests for that batch; all remaining rows stay
+  UNKNOWN. Request order is validation, training years in chronological round-
+  robin, then final feature rows, without consulting labels or scores. Partial
+  pilot coverage cannot establish a completed representative NLP study.
+- Successful/NONE extraction caches are immutable. Explicit new jobs may retry
+  UNKNOWN and publish a new generation when validated responses change. SEC
+  response caches retain failed originals; an explicit retry-attempt identifier
+  creates another accession response inventory. These operations never mutate
+  old registered evidence or Model A artifacts.
+- Recover historical XOM through reviewed predecessor CIK 0000034088 until
+  2026-06-30, successor 0002115436 from 2026-07-01, and a supplemental source
+  manifest/raw capture. Keep the P1 freeze intact. Administrative mapping recovery
+  changes neither pair orientation nor the existing event population.
+- Model B uses the identical logistic/XGBoost fitting/search/calibration/0.65
+  threshold protocol as A and binds a fitted A from the same P3 parent. All
+  eligible validation rows remain in the paired comparison; coverage slices are
+  descriptive additions. Native reload, SHAP and stored A/B comparison are
+  independently reproducible without LLM calls. Final outcomes remain locked.
+- The sample adequacy proposal in RESEARCH_REDESIGN.md is a separate unimplemented
+  protocol. Do not expand the universe, relax eligibility, lengthen labels or
+  alter evaluation in this canonical experiment to manufacture more successes.

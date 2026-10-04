@@ -40,7 +40,7 @@ try:
             "git",
             "clone",
             "--branch",
-            "phase-3-model-a",
+            "phase-4-model-b",
             "https://github.com/MariusPoulsen/Project_AI_in_Finance.git",
             repository,
         ],
@@ -51,11 +51,11 @@ finally:
     del token, clone_env
 ```
 
-The branch above contains the Phase 3 implementation stacked on Phase 2. After the
+The branch above contains the Phase 4 implementation stacked on Phase 3. After the
 phase branches are merged, use `main` instead.
 For a reproducible research run, check out a reviewed commit or tag explicitly.
 
-## 2. Install and verify the foundation, data, econometric and Model A pipelines
+## 2. Install and verify the foundation, data, econometric and Models A/B pipelines
 
 Run these Colab cells:
 
@@ -76,6 +76,7 @@ subprocess.run(
         "--data-fixture",
         "--relationship-fixture",
         "--ml-fixture",
+        "--intelligence-fixture",
     ],
     check=True,
 )
@@ -282,7 +283,59 @@ verification, SHAP interpretation and local read-only Streamlit launch. Colab
 supports the complete batch pipeline; public app hosting is delivered in Phase 8.
 No tunnel service or notebook-specific package is required for the research jobs.
 
-## 6. Preserve generated research state
+## 6. SEC intelligence and Model B
+
+The bootstrap's `--intelligence-fixture` option runs cached synthetic SEC documents,
+mock extraction, Model B fitting and native reload verification. No LLM key is
+needed for that path. It uses the same batch modules as local execution.
+
+For a real research workspace with registered P1/P2/P3 outputs and fitted Model A,
+create Colab secrets named `SB_LLM_API_KEY` and `SB_SEC_USER_AGENT`, grant this
+notebook access, and run the following cell. The key stays in the subprocess
+environment; it is not printed or written to the notebook. Optional live SDKs
+must remain installed through `--extra agents` on uv commands.
+
+```python
+import os
+import subprocess
+from google.colab import userdata
+
+repo = "/content/Project_AI_in_Finance"
+research = "/content/structural-break-research"
+live_env = os.environ.copy()
+live_env["SB_LLM_API_KEY"] = userdata.get("SB_LLM_API_KEY")
+live_env["SB_SEC_USER_AGENT"] = userdata.get("SB_SEC_USER_AGENT")
+try:
+    subprocess.run(["uv", "sync", "--frozen", "--extra", "agents"], cwd=repo, check=True)
+    for command in ("build-intelligence", "verify-intelligence", "train-model-b", "verify-model-b"):
+        subprocess.run(
+            [
+                "uv",
+                "run",
+                "--frozen",
+                "--extra",
+                "agents",
+                "structural-break",
+                command,
+                "--workspace-root",
+                research,
+            ],
+            cwd=repo,
+            env=live_env,
+            check=True,
+        )
+finally:
+    del live_env
+```
+
+Do not mix synthetic and real workspaces. The default live batch is limited to
+20 paced requests; quota exhaustion retains explicit UNKNOWN rows. Later explicit
+batches can resume those rows, preserving successful cached extractions. Model B
+fitting and verification do not call an LLM. See
+[the intelligence runbook](INTELLIGENCE_RUNBOOK.md) for frozen generation selection,
+recovery, coverage and interpretation.
+
+## 7. Preserve generated research state
 
 Colab virtual machines are temporary. Keep the virtual environment and active
 DuckDB database on the local `/content` filesystem. After jobs close their database
@@ -307,7 +360,7 @@ The archive example uses the synthetic fixture workspace. For research ingestion
 archive `/content/structural-break-research` instead. Restore to the same local path
 or rebuild the local catalogue from the stored source snapshot using the data
 runbook. Never put credentials in YAML or committed notebook cells. The bootstrap
-runs foundation checks and the selected Phase 1/2/3 acceptance commands; the local
+runs foundation checks and the selected Phase 1/2/3/4 acceptance commands; the local
 Streamlit shell reads a restored published workspace without retraining models.
 
 References: [uv Python installation](https://docs.astral.sh/uv/guides/install-python/),

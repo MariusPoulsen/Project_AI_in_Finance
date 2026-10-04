@@ -8,7 +8,12 @@ Phase 2 adds monthly Engle-Granger relationships, integration/stability diagnost
 frozen daily spread states and raw divergence crossings. Phase 3 adds deduplicated
 events, point-in-time quantitative features, chronological development labels,
 logistic/XGBoost Model A, calibration, SHAP and a read-only Scanner/Pair Detail app.
-SEC intelligence, agents and backtesting follow later phases.
+Phase 4 adds cached point-in-time SEC evidence, validated catalyst extractions,
+explicit coverage and Model B. Agents and backtesting follow later phases.
+
+For SEC evidence, Gemini setup and Model B reproduction, see the
+[intelligence runbook](docs/INTELLIGENCE_RUNBOOK.md). The proposed broader research
+protocol is documented in [the redesign proposal](docs/RESEARCH_REDESIGN.md).
 
 ## Local setup (Windows, Linux or macOS)
 

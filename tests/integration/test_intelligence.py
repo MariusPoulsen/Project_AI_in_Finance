@@ -74,6 +74,49 @@ def test_published_evidence_retains_all_rows_and_original_quantitative_values(co
         assert raw[chunk["raw_file_path"]] == chunk["sha256"]
         assert hashlib.sha256(chunk["chunk_text"].encode()).hexdigest() == chunk["text_sha256"]
     assert evidence["final_test_outcomes_computed"] is False
+    canonical = pd.read_parquet(paths.data / "curated/evidence/document_chunks.parquet")
+    pd.testing.assert_frame_equal(canonical, usable.reset_index(drop=True), check_dtype=False)
+    with DuckDBConnectionFactory(paths.database).connect() as connection:
+        assert connection.execute("SELECT count(*) FROM ref.document_chunks").fetchone()[0] == len(
+            canonical
+        )
+
+
+def test_evidence_publication_failure_restores_canonical_chunks_and_view(copied, monkeypatch):
+    paths, config, events, evidence = copied
+    import structural_break.services.intelligence as service
+
+    canonical = paths.data / "curated/evidence/document_chunks.parquet"
+    before_hash = sha256_file(canonical)
+    with DuckDBConnectionFactory(paths.database).connect() as connection:
+        before_view = connection.execute(
+            "SELECT sql FROM duckdb_views() WHERE schema_name='ref' AND view_name='document_chunks'"
+        ).fetchone()[0]
+    original = service._publish
+
+    def fail(*args, **kwargs):
+        original(*args, **kwargs)
+        raise RuntimeError("Injected intelligence publication failure")
+
+    monkeypatch.setattr(service, "_publish", fail)
+    with pytest.raises(RuntimeError, match="Injected intelligence"):
+        build_event_intelligence(
+            paths, config, fixture=True, event_feature_version="failed_evidence"
+        )
+    assert sha256_file(canonical) == before_hash
+    with DuckDBConnectionFactory(paths.database).connect() as connection:
+        after_view = connection.execute(
+            "SELECT sql FROM duckdb_views() WHERE schema_name='ref' AND view_name='document_chunks'"
+        ).fetchone()[0]
+        assert (
+            connection.execute(
+                "SELECT count(*) FROM analytics.event_intelligence_versions "
+                "WHERE event_feature_version='failed_evidence'"
+            ).fetchone()[0]
+            == 0
+        )
+    assert after_view == before_view
+    assert EvidenceRepository(paths).manifest() == evidence
 
 
 def test_original_evidence_pack_hash_and_normalized_extraction_hash_are_distinct(copied):
