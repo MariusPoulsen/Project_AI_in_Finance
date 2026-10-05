@@ -165,31 +165,36 @@ Stopped at P3. Sparse one-class validation limits predictive conclusions.
 
 ## P4 — Point-in-time SEC event intelligence and Model B
 
+Status: complete; all P4 acceptance gates passed on 2026-10-05. See
+`docs/STATUS.md` for the genuine partial extraction pilot, stored-model replay,
+paired validation limits and Windows/Linux/Colab evidence. Stopped at P4.
+Final-test outcomes remain locked; P5 has not begun.
+
 ### Build
 
-- [ ] Implement event-specific SEC evidence selection using only filings accepted at/before event cutoff.
-- [ ] Lazily download/cache required filing bodies and exhibits by accession number.
-- [ ] Parse/clean SEC documents while retaining provenance.
-- [ ] Chunk and index documents with stable chunk IDs.
-- [ ] Implement deterministic admissibility filtering before relevance ranking.
-- [ ] Implement local lexical retrieval; optional semantic reranking only if it does not become a dependency for correctness.
-- [ ] Build bounded evidence packs.
-- [ ] Implement schema-constrained catalyst extraction from admissible SEC evidence.
-- [ ] Persist structured event features and evidence IDs.
-- [ ] Create Model B feature schema = Model A + structured event block.
-- [ ] Train/tune/calibrate Model B under the same chronological protocol as Model A.
-- [ ] Freeze Model B threshold using validation data.
-- [ ] Save Model B artifacts and SHAP outputs.
-- [ ] Implement extraction/Model-B caches and mocked extraction fixtures for CI.
+- [x] Implement event-specific SEC evidence selection using only filings accepted at/before event cutoff.
+- [x] Lazily download/cache required filing bodies and exhibits by accession number.
+- [x] Parse/clean SEC documents while retaining provenance.
+- [x] Chunk and index documents with stable chunk IDs.
+- [x] Implement deterministic admissibility filtering before relevance ranking.
+- [x] Implement local lexical retrieval; optional semantic reranking only if it does not become a dependency for correctness.
+- [x] Build bounded evidence packs.
+- [x] Implement schema-constrained catalyst extraction from admissible SEC evidence.
+- [x] Persist structured event features and evidence IDs.
+- [x] Create Model B feature schema = Model A + structured event block.
+- [x] Train/tune/calibrate Model B under the same chronological protocol as Model A.
+- [x] Freeze Model B threshold using validation data.
+- [x] Save Model B artifacts and SHAP outputs.
+- [x] Implement extraction/Model-B caches and mocked extraction fixtures for CI.
 
 ### Acceptance gate P4
 
-- [ ] Every non-`NONE` structured catalyst has admissible evidence IDs.
-- [ ] Every supporting SEC timestamp is `<= event_timestamp`.
-- [ ] `NONE` is distinguishable from retrieval/coverage `UNKNOWN`.
-- [ ] Model B can be rebuilt from stored structured event features without re-calling an LLM.
-- [ ] Model A vs Model B validation comparison is reproducible.
-- [ ] Missing event evidence cannot silently remove difficult observations from evaluation; coverage flags are explicit.
+- [x] Every non-`NONE` structured catalyst has admissible evidence IDs.
+- [x] Every supporting SEC timestamp is `<= event_timestamp`.
+- [x] `NONE` is distinguishable from retrieval/coverage `UNKNOWN`.
+- [x] Model B can be rebuilt from stored structured event features without re-calling an LLM.
+- [x] Model A vs Model B validation comparison is reproducible.
+- [x] Missing event evidence cannot silently remove difficult observations from evaluation; coverage flags are explicit.
 
 ---
 

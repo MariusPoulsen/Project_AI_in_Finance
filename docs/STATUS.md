@@ -453,8 +453,139 @@ Local generated artifacts, databases and QA screenshots remain excluded from Git
 | Scanner/Pair Detail without callback training | Actual browser inspection, AppTest and unchanged database hash | PASS |
 
 P1's retrospective Yahoo adjustments, static sector proxies and unknown lifecycle
-dates remain disclosed prototype limitations. Phase 4 must address historical SEC
-CIK coverage: current XOM maps to the 2026 successor CIK 0002115436, while the
-historical issuer used 0000034088. Its missing historical evidence must remain
-UNKNOWN until a dated mapping and new source generation recover coverage; it must
-not be imputed as NONE or silently remove XOM/CVX. Phase 4 has not begun.
+dates remain disclosed prototype limitations. At the P3 boundary, current XOM
+mapped to the 2026 successor CIK 0002115436 while the historical issuer used
+0000034088. P4's dated identity recovery and supplemental source capture address
+that historical evidence gap without rewriting P1 or removing XOM/CVX.
+
+## Phase 4 — point-in-time SEC intelligence and Model B
+
+Implementation/evidence: 2026-10-04. Acceptance completion: 2026-10-05.
+Branch: `phase-4-model-b`.
+
+Status: **COMPLETE — all Phase 4 acceptance gates passed.** Stopped at P4.
+Implementation is pushed in
+[draft PR #5](https://github.com/MariusPoulsen/Project_AI_in_Finance/pull/5), stacked
+on unmerged Phase 3. Final-test outcomes remain locked; Phase 5 has not begun.
+
+### Published real evidence
+
+The original P3 event population, labels and splits are unchanged. Parent dataset
+`events_6451711be4cb02d63a38d13b` remains bound to P1 snapshot
+`snap_20261003_phase1_frozen` and relationship generation
+`relationships_f2f4c804ec0388ecce9fc6fd`.
+
+The genuine Gemini Flash evidence generation is
+`event_intelligence_f7007e7d5176f0f61e479e03`, published at clean source commit
+`317733fd8392b23adf5fc9973dc9217529cb9512`. Its manifest records prompt/schema/
+event-feature v2, Gemini `gemini-3.5-flash`, config SHA-256
+`0051e9bd43ced3f10488ec481f48f64d5aeed3a9a25dec81cd0ff300db613249` and
+source SHA-256 `03db6dba08dffaf869ab6af606e4bfe2aa5169eaa59f6df01f530b0709661678`.
+
+- 308 selected filings and 1,067 downloaded raw responses, including 308
+  accession indices and 759 submission/body/exhibit responses. The audit retains
+  23,460 chunk rows and 23,450 usable cleaned chunks; ten PDF rows remain
+  explicitly unsupported.
+- All 83 events have evidence packs, extraction audit rows and the 67-column
+  Model B feature schema: 36 unchanged quantitative columns plus 31 event columns.
+- Eight real extractions succeeded: five EARNINGS, one GUIDANCE, one M&A and one
+  MANAGEMENT. Seventeen exact supporting quotes have admissible source identity,
+  company leg and acceptance time no later than the event cutoff.
+- The free-tier pilot stopped on the Google rate limit. The remaining 75 rows
+  stay UNKNOWN. One successful extraction also records an earlier
+  invalid/ungrounded-response attempt. NONE is
+  a separate complete-coverage outcome, with no real NONE rows in this generation.
+
+| Partition | Original episodes | SUCCESS | UNKNOWN | NONE |
+| --- | ---: | ---: | ---: | ---: |
+| Train, 2016–2021 | 61 | 2 | 59 | 0 |
+| Validation, 2022–2023 | 7 | 6 | 1 | 0 |
+| Final features, 2024–2025 | 15 | 0 | 15 | 0 |
+
+This is engineering acceptance with a genuine partial extraction pilot. It is
+not a representative NLP accuracy study. Confidence, direction, materiality and
+relationship relevance still need independent human semantic evaluation in P5.
+Every UNKNOWN observation remains in the paired model cohort. Seven all-negative
+validation observations cannot establish discrimination or Model B superiority.
+
+### Published Model B and development comparison
+
+Model B is `model_b_b3122de8fb28e7dd093905c4`, published from clean source
+`565d15d23d29fca27db2c3c029b074b29640442e`, run
+`50da6f4b04aa4299becd696a8ddb0d01`. Its computational source SHA-256 is
+`8be5c6954afccf598c30506fd3c82bdc244cf1420350e532789b6b34202a2450`.
+It binds the evidence generation above and original Model A
+`model_a_7d2b85c381abaefb98855e31`. All 83 episodes receive stored predictions;
+the supervised population remains 60 training events (nine successes), seven
+validation events (zero successes) and 15 final features-only events.
+
+| Paired validation score | Model A Brier | Model B Brier | Selected at 0.65 |
+| --- | ---: | ---: | ---: |
+| Raw XGBoost holdout | 0.028566 | 0.045191 | 0 / 0 |
+| Calibrated validation-fit descriptive | 0.012346 | 0.012346 | 0 / 0 |
+
+ROC AUC and average precision are undefined because all seven validation outcomes
+are negative. Both smoothed calibrators are constant at 1/9, with no ranking
+information. Raw Brier is worse by 0.016625 on this observed cohort; calibrated
+scores are identical. Neither the small one-class sample nor the partial pilot
+supports a claim of Model B superiority or useful probability generalisation.
+UNKNOWN/NONE/available/supported paired slices remain additional descriptions;
+they do not replace the full seven-event comparison. Final outcomes are absent.
+
+### Reproduction, leakage and hosted checks
+
+Lint/format (104 files), strict mypy (58 source files) and the tracked-file secret
+scan pass. Final computational source passed **563 tests on each of Windows,
+Linux and Colab**, plus the actual offline P1–P4 bootstrap/training/reload/repeat
+workflows in
+[CI run 37203256653](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/37203256653).
+The Colab launcher uses a Linux Python 3.12 host and an isolated Python 3.11
+project environment; a signed-in interactive Colab notebook was not exercised.
+
+Source commit `565d15d23d29fca27db2c3c029b074b29640442e` consolidates repeated
+SEC scientific audits within Model B verification into one, using a pinned verified
+input set and exact-byte frame checks. Independent public reads remain fresh;
+native files are rechecked before loading and all bound files/manifests before
+returning. It adds fresh-training audit-count and mid-operation source-tamper
+regressions. The real Model B jobs completed with external sockets disabled.
+Native raw/calibrated/logistic probabilities reproduce with maximum error **0**;
+Tree SHAP raw-margin reconstruction error is **5.865883345279599e-06**, below
+1e-5. The paired comparison reproduces exactly, and repeating Model B training
+returns the identical registered generation without extraction or external calls.
+P1's manifest is unchanged and final targets remain NULL. The initial overlapping
+local retry hit a DuckDB lock and
+registered no Model B or active pointer; the single-process retry preserved the
+failed files in an unregistered archive and published successfully.
+
+The local immutable acceptance report is
+`artifacts/reports/model_b_b3122de8fb28e7dd093905c4/phase4_acceptance.json`,
+SHA-256 `4a23150d919c9ef3943666f10a9dcdf9ce60bde2e3207b768d2b216fd07ad315`.
+Evidence-manifest SHA-256 is
+`2b41bbdfb95221d5d3262609c9fea1e9c1049e7f1f0c1fc912c88bf87fd47f45`;
+Model B manifest SHA-256 is
+`1563e56aa7dbf4cada97be685cf9309276c3c2a968dcf502eaa3df4d1e2c6cc0`.
+Generated source caches, models, databases and reports remain excluded from Git.
+
+| P4 acceptance criterion | Evidence | Result |
+| --- | --- | --- |
+| Known non-NONE catalysts have admissible evidence IDs | Eight genuine supported extractions, 17 exact citations and strict schema/source replay tests | PASS |
+| Supporting SEC timestamps do not exceed the event cutoff | Actual citation audit plus future/security/timestamp rejection tests | PASS |
+| NONE differs from retrieval/coverage UNKNOWN | Complete-coverage policy, mocked NONE fixtures and retained real UNKNOWN rows | PASS |
+| Model B rebuilds from stored features without an LLM | Actual socket-disabled training and identical repeat generation | PASS |
+| Model A/B validation comparison is reproducible | Native probability replay, exact paired comparison and stored JSON | PASS |
+| Missing evidence preserves difficult observations | All 83 parent events and all seven validation events retained, explicit coverage slices | PASS |
+
+### Separate research proposal
+
+[RESEARCH_REDESIGN.md](RESEARCH_REDESIGN.md) records the development-only scarcity
+audit and a proposed separate `research-v2` experiment. The main bottleneck is
+relationship eligibility: only 17 of 672 validation pair-months are ACTIVE,
+yielding seven deduplicated episodes. More rows from the same episode would add
+dependence rather than independent information.
+
+The recommended direction is 250–500 dated issuers / 500–1,000 economic peer
+pairs with longer point-in-time history, regularised simple models, chronological
+walk-forward predictions and separate calibration/evaluation. A predeclared
+10/20/30-session horizon study tests target adequacy separately. These are
+proposals; no universe, label, split, eligibility or threshold changes are applied,
+and 2024–2025 outcomes remain locked.
