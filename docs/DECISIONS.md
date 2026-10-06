@@ -141,10 +141,14 @@ The first implementation uses **28 manually curated pairs**. Pair orientation is
 - Daily end-of-day system; no intraday modelling.
 - Raw market-data bootstrap begins 2014-01-01 to provide formation-window warm-up.
 - Frozen research history runs through 2025-12-31.
-- Training events: 2018-2021.
+- Training events: 2016-2021 (extended at P3 under the user's delegated decision).
 - Validation events: 2022-2023.
 - Final test events: 2024-2025.
 - Minimum embargo at partition boundaries: 10 trading days, matching the maximum label horizon.
+- 2014-2015 supply formation warm-up; the first usable frozen relationship is
+  effective 2016-01-04. These warm-up years cannot independently provide events
+  under the unchanged 504-session model. The former 2018 training start was a
+  baseline design choice, not a source-data limitation.
 
 ## 7. Econometric relationship engine
 
@@ -380,3 +384,68 @@ The user will prepare the final academic written report and presentation/video s
 - P2's added config defaults change the global normalized config hash. Frozen P1
   curated files remain usable directly; older raw captures require their recorded
   P1 code/config checkout for replay. This preserves the original source freeze.
+
+## 18. Phase 3 earlier history and Model A protocol
+
+- The user delegated the earlier-history choice on 2026-10-03. Prices cover
+  2014–2025, but a 504-session formation window uses 2014–2015. Extend supervised
+  training from the original 2018–2021 to **2016–2021**, when valid signals first
+  exist. Keep validation 2022–2023 and the locked final test 2024–2025 unchanged.
+  This choice preceded inspection of the additional labels or model scores.
+- Preserve the three forward evaluation years 2019, 2020 and 2021; their fitting
+  histories begin in 2016. Purge any full 10-XNYS-session label window that reaches
+  the evaluation year or another partition. Early convergence does not waive the
+  full-window requirement. Embargo counts are sessions, not event rows.
+- An event freezes alpha, beta, spread mean and standard deviation at entry for
+  its full target path. A later statistical WATCH/RETIRED state does not censor
+  that path; declared lifecycle termination or unusable required prices does.
+  Success is an observed close within |z| <= 0.5, adverse failure when entry-sign
+  times z >= 3,
+  otherwise failure at ten sessions. A sign-changing jump across equilibrium
+  without an observed close in the success band is not convergence.
+- Maintain one open episode per pair, then require an inside-entry-band reset
+  before a fresh outward crossing. The same causal, session-by-session registry
+  applies to development and final features. Final episode gating may use prices
+  already observed at that session; final labels, resolution metadata, excursions,
+  censor reasons and outcome metrics remain absent/NULL. No final outcomes are
+  supplied to fitting or threshold decisions.
+- Compute rolling spread predictors under the event's current frozen fit, so
+  monthly coefficient changes do not introduce artificial velocity. Use exact
+  trailing sessions and no gap filling. Undefined half-life, beta drift and time
+  since an observed equilibrium are explicit optional NaNs; other undefined
+  required predictors make the event ineligible. Each feature family records
+  source availability and its cutoff; previous-session VIX remains mandatory.
+- Model A and the logistic benchmark use the identical 36 quantitative columns.
+  Identity and outcome fields remain metadata. Fit logistic imputation/scaling
+  only within each fitting period; XGBoost retains permitted missing values.
+  Search 30 seeded XGBoost configurations in the specified parameter ranges.
+  Report undefined one-class/empty folds. Select by mean defined ROC AUC, then
+  mean defined PR AUC, then lower Brier; all-undefined ranking falls back to Brier.
+  Do not conceal unusable folds.
+- Fit a monotone Platt sigmoid on all 2022–2023 eligible validation events,
+  as specified. Smoothed targets and a nonnegative slope prevent inverted or
+  separation-driven mappings. One-class/constant-score fits save an explicitly
+  constant mapping. Calibrated validation metrics are **calibration-fit descriptive**;
+  they are not an untouched assessment of probability generalisation.
+- Freeze the specified **0.65** candidate probability threshold. The small
+  validation sample does not justify optimising precision or adding an arbitrary
+  minimum-coverage gate. Report the specified threshold grid descriptively, with
+  counts/undefined metrics and uncertainty. This policy is predeclared, not
+  empirically optimal. No positive-beta trading gate is added in P3.
+- Tree SHAP explains raw XGBoost margins and verifies additive reconstruction.
+  Calibrated probabilities have a separate mapping; SHAP is not presented as a
+  calibrated-probability contribution or a causal explanation.
+- Batch jobs publish immutable event/model artifacts and physical DuckDB core
+  tables plus full JSON payloads. Registration, active pointers and run completion
+  share a transaction. Verify manifests, every file and upstream version/checksum
+  before reading. Frozen P2 outputs are reused when only downstream ML settings
+  change; new ML source/config identities create new event/model versions.
+- MLflow uses a local SQLite tracking database and local artifact directory,
+  without an HTTP service. DuckDB remains the canonical analytical database.
+  Research/app dependencies now install by default; the matching extra names are
+  retained as compatible aliases. The lock constrains compatible Numba releases
+  for the declared Python 3.11/NumPy stack.
+- The P3 Streamlit shell browses Scanner and Pair Detail using read-only services,
+  published scores and stored SHAP. It neither trains nor writes analytical rows.
+  Historical probability replays display their fitting/evaluation role and the
+  final outcome lock caps UI dates at 2023. P5 controller/trading status is absent.

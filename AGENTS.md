@@ -26,7 +26,7 @@ Use `docs/specs/README.md` to find the right specification. Do not parse `docs/P
 These are blockers, not suggestions:
 
 - **Point-in-time correctness:** for event time `t0`, every predictor/evidence item must have been available at or before `t0`. Future data is allowed only for label construction and realised backtest outcomes.
-- **Chronological evaluation:** training 2018–2021, validation 2022–2023, final test 2024–2025, with the specified embargo and training-only fitted transformations.
+- **Chronological evaluation:** training 2016–2021, validation 2022–2023, final test 2024–2025, with the specified embargo and training-only fitted transformations. The user delegated the earlier-history decision at P3; 2014–2015 supply the 504-session formation warm-up.
 - **Final-test lock:** implement the final-test path, but do not inspect/tune against headline 2024–2025 results until the methodology is frozen and the user explicitly authorises the final run.
 - **Fixed pair orientation:** use the pair universe/orientations in `docs/DECISIONS.md`; do not search both Engle–Granger directions and keep the best.
 - **Historical text evidence:** headline Model B / Full-System historical evaluation uses admissible SEC evidence according to the specs.

@@ -40,7 +40,7 @@ try:
             "git",
             "clone",
             "--branch",
-            "phase-2-econometrics",
+            "phase-3-model-a",
             "https://github.com/MariusPoulsen/Project_AI_in_Finance.git",
             repository,
         ],
@@ -51,11 +51,11 @@ finally:
     del token, clone_env
 ```
 
-The branch above contains the Phase 2 implementation stacked on Phase 1. After the
+The branch above contains the Phase 3 implementation stacked on Phase 2. After the
 phase branches are merged, use `main` instead.
 For a reproducible research run, check out a reviewed commit or tag explicitly.
 
-## 2. Install and verify the foundation, data and econometric pipelines
+## 2. Install and verify the foundation, data, econometric and Model A pipelines
 
 Run these Colab cells:
 
@@ -75,6 +75,7 @@ subprocess.run(
         "/content/structural-break-workspace",
         "--data-fixture",
         "--relationship-fixture",
+        "--ml-fixture",
     ],
     check=True,
 )
@@ -88,8 +89,11 @@ immutable raw sources and verifies the resulting snapshot through the local cata
 independent-walk and stationary-price histories through the actual Phase 2 job.
 It does not need the Phase 1 fixture or a provider account. The script prints the
 generated snapshot and relationship versions; each run uses fresh identities.
-Omit both fixture flags to run only foundation checks. A CPU runtime is sufficient
-for Phase 2; Statsmodels and Matplotlib install with the default locked dependencies.
+`--ml-fixture` additionally builds the independent Phase 3 synthetic event dataset,
+trains the logistic benchmark/XGBoost Model A, calibrates and verifies the saved
+model generation. It requires no Phase 1/2 fixture or provider login. Omit the
+fixture flags to run only foundation checks. A CPU runtime is sufficient; the
+quantitative research stack installs with the default locked dependencies.
 Dependency/Python downloads require internet; fixture jobs do not call data sources
 or LLMs.
 
@@ -115,7 +119,9 @@ To run the test suite, use:
 
 ```python
 subprocess.run(
-    ["uv", "run", "--frozen", "pytest"], cwd="/content/Project_AI_in_Finance", check=True
+    ["uv", "run", "--frozen", "--extra", "app", "pytest"],
+    cwd="/content/Project_AI_in_Finance",
+    check=True,
 )
 ```
 
@@ -238,7 +244,45 @@ and the final run is explicitly authorised. See
 [the econometrics runbook](ECONOMETRICS_RUNBOOK.md) for the scientific conventions
 and local historical query examples.
 
-## 5. Preserve generated research state
+## 5. Build the divergence dataset and Model A
+
+After publishing relationships in the research workspace, build the quantitative
+event dataset and train only on unlocked development observations:
+
+```python
+for arguments in (
+    ["build-events"],
+    ["train-model-a"],
+    ["verify-model-a"],
+):
+    subprocess.run(
+        [
+            "uv",
+            "run",
+            "--frozen",
+            "structural-break",
+            *arguments,
+            "--workspace-root",
+            "/content/structural-break-research",
+        ],
+        cwd=repository,
+        check=True,
+    )
+```
+
+The 2014–2015 prices supply the 504-session formation warm-up. Eligible training
+events begin in 2016 and run through 2021. Validation remains 2022–2023, with the
+10-session partition embargo and previous-session VIX convention. Final-test
+outcomes for 2024–2025 remain locked. The small real ACTIVE-event sample limits
+ranking and calibration claims. The predeclared candidate threshold stays 0.65;
+validation metrics fitted by the calibrator are explicitly descriptive.
+
+See [the ML runbook](ML_RUNBOOK.md) for the episode policy, model bundle, reload
+verification, SHAP interpretation and local read-only Streamlit launch. Colab
+supports the complete batch pipeline; public app hosting is delivered in Phase 8.
+No tunnel service or notebook-specific package is required for the research jobs.
+
+## 6. Preserve generated research state
 
 Colab virtual machines are temporary. Keep the virtual environment and active
 DuckDB database on the local `/content` filesystem. After jobs close their database
@@ -262,9 +306,9 @@ files.download(archive)
 The archive example uses the synthetic fixture workspace. For research ingestion,
 archive `/content/structural-break-research` instead. Restore to the same local path
 or rebuild the local catalogue from the stored source snapshot using the data
-runbook. Never put credentials in YAML or committed notebook cells. Streamlit is a
-later-phase deliverable; the bootstrap runs the foundation and optional Phase 1/2
-acceptance commands.
+runbook. Never put credentials in YAML or committed notebook cells. The bootstrap
+runs foundation checks and the selected Phase 1/2/3 acceptance commands; the local
+Streamlit shell reads a restored published workspace without retraining models.
 
 References: [uv Python installation](https://docs.astral.sh/uv/guides/install-python/),
 [uv frozen synchronization](https://docs.astral.sh/uv/concepts/projects/sync/),

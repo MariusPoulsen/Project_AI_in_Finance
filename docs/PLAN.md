@@ -127,35 +127,39 @@ for live freeze, offline reproduction and hosted acceptance evidence. Stopped at
 
 ## P3 — Divergence dataset, Model A and minimal app shell
 
+Status: complete; all P3 acceptance gates passed on 2026-10-03. See `docs/STATUS.md`
+for frozen-data counts, development metrics, reload/app checks and hosted CI.
+Stopped at P3. Sparse one-class validation limits predictive conclusions.
+
 ### Build
 
-- [ ] Generate one divergence event per episode with de-duplication.
-- [ ] Construct binary labels using the frozen convergence/stop/horizon policy.
-- [ ] Implement censoring and 10-trading-day partition embargo.
-- [ ] Build point-in-time quantitative Model A features:
+- [x] Generate one divergence event per episode with de-duplication.
+- [x] Construct binary labels using the frozen convergence/stop/horizon policy.
+- [x] Implement censoring and 10-trading-day partition embargo.
+- [x] Build point-in-time quantitative Model A features:
   - spread state;
   - relationship quality;
   - market context;
   - security state;
   - liquidity / implementation.
-- [ ] Build deterministic event/feature/target schemas and lineage.
-- [ ] Create chronological train/validation/final-test partitions.
-- [ ] Train the logistic benchmark.
-- [ ] Train/tune XGBoost Model A using training/validation only.
-- [ ] Calibrate Model A probabilities using validation data.
-- [ ] Freeze Model A candidate threshold using validation policy.
-- [ ] Save/load model bundle, calibrator, feature schema and SHAP reference data.
-- [ ] Implement Model A inference and SHAP outputs.
-- [ ] Create a minimal read-only Streamlit shell with Scanner and Pair Detail backed by services/fixtures or current quantitative outputs.
+- [x] Build deterministic event/feature/target schemas and lineage.
+- [x] Create chronological train/validation/final-test partitions.
+- [x] Train the logistic benchmark.
+- [x] Train/tune XGBoost Model A using training/validation only.
+- [x] Calibrate Model A probabilities using validation data.
+- [x] Freeze Model A candidate threshold using validation policy.
+- [x] Save/load model bundle, calibrator, feature schema and SHAP reference data.
+- [x] Implement Model A inference and SHAP outputs.
+- [x] Create a minimal read-only Streamlit shell with Scanner and Pair Detail backed by services/fixtures or current quantitative outputs.
 
 ### Acceptance gate P3
 
-- [ ] Leakage tests pass for every quantitative feature.
-- [ ] Event counts and labels are reproducible.
-- [ ] Train/validation/embargo counts are documented.
-- [ ] Logistic and Model A metrics are available for training/validation without opening headline final-test results.
-- [ ] Saved Model A reproduces stored inference probabilities after reload.
-- [ ] Minimal Scanner/Pair Detail render without model training inside UI callbacks.
+- [x] Leakage tests pass for every quantitative feature.
+- [x] Event counts and labels are reproducible.
+- [x] Train/validation/embargo counts are documented.
+- [x] Logistic and Model A metrics are available for training/validation without opening headline final-test results.
+- [x] Saved Model A reproduces stored inference probabilities after reload.
+- [x] Minimal Scanner/Pair Detail render without model training inside UI callbacks.
 
 ---
 

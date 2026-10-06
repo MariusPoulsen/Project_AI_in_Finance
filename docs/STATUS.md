@@ -181,7 +181,7 @@ training, filing-body extraction or headline final-test outcomes were performed.
 
 Date: 2026-10-03. Branch: `phase-2-econometrics`.
 
-Status: **COMPLETE — all Phase 2 acceptance gates passed. P3 has not begun.**
+Status: **COMPLETE — all Phase 2 acceptance gates passed.**
 
 ### Implemented scope
 
@@ -284,3 +284,177 @@ The implementation is pushed in [draft PR #3](https://github.com/MariusPoulsen/P
 stacked on unmerged Phase 1. No main-branch merge is implied. P1 source limitations
 and the older-raw-capture replay requirement remain documented in the runbooks.
 `final_test_outcomes_computed` remains false; the final-test outcome lock is closed.
+
+## Phase 3 — divergence dataset, Model A and minimal app
+
+Date: 2026-10-03. Branch: `phase-3-model-a`.
+
+Status: **COMPLETE — all Phase 3 acceptance gates passed.** Stopped at P3.
+The implementation is pushed in [draft PR #4](https://github.com/MariusPoulsen/Project_AI_in_Finance/pull/4),
+stacked on unmerged Phase 2. Final-test outcomes remain locked.
+
+### Earlier history and implemented scope
+
+The frozen prices begin on 2014-01-02. The 504-common-session formation window
+uses 2014–2015; the first usable daily relationship is 2016-01-04. The user
+delegated the history decision before the additional labels/model scores were
+inspected. Training now covers **2016–2021**, while validation stays **2022–2023**
+and the locked final test stays **2024–2025**. The added 2016–2017 history supplies
+23 ACTIVE raw crossings and 16 supervised eligible episodes. The original
+2018–2021 range would supply only 44 eligible training episodes. Warm-up prices
+are used in formation and trailing predictors rather than labelled as trades.
+
+- Causal, per-pair episode deduplication, entry-frozen convergence/stop/horizon
+  labels, explicit censoring and full 10-XNYS-session partition/fold purges.
+- Thirty-six point-in-time quantitative predictors across all five required
+  families, exact prior-session VIX and explicit optional missing values.
+- Same-feature logistic benchmark and 30 seeded XGBoost configurations in purged
+  forward folds; validation-only calibration and predeclared 0.65 threshold.
+- Verified native model bundle, ordered schema, calibration/threshold policies,
+  predictions, training SHAP reference, raw-margin Tree SHAP and local MLflow.
+- Migration 005, immutable Parquet/native artifacts and transactional analytical
+  publication. Readers verify hashes, parent generations and scientific versions;
+  each model reads its own event generation even after a newer generation activates.
+- Read-only Streamlit Scanner and Pair Detail with stored research scores/SHAP,
+  model/evaluation context and an explicit constant-calibration notice. UI callbacks
+  perform no fitting, ingestion or analytical writes. Replay dates stop at 2023.
+- Documented CLI/Colab workflows in `docs/ML_RUNBOOK.md` and `docs/COLAB.md`.
+
+### Frozen project-data acceptance
+
+Input snapshot: `snap_20261003_phase1_frozen`. Relationship generation remains
+`relationships_f2f4c804ec0388ecce9fc6fd`; no upstream source recapture occurred.
+Final P3 outputs were generated with external sockets disabled at clean code commit
+`b4ae764a4867d64d844e9eae6ed625af7dd49b10`:
+
+| Identity | Value |
+| --- | --- |
+| Event generation | `events_6451711be4cb02d63a38d13b` |
+| Model generation | `model_a_7d2b85c381abaefb98855e31` |
+| Event run | `b09bbd7e91f745868c5d496a7b76e503` |
+| Model run | `8b39d7e626b14caaa190f162aa0c8d4f` |
+| Config SHA-256 | `b4b72b6d7eac7ed11d9ea03f07b1ab654b673cfd736427e5c2784e04171b0305` |
+| Source SHA-256 | `d9e53bdc42fa93c85fc6bee4259967a600364e7ad767bd225f912c43babc519a` |
+
+The manifests record Python 3.11 and installed numerical dependencies, including
+scikit-learn 1.9.1, XGBoost 3.2.0, SHAP 0.51.0 and MLflow 3.16.1.
+
+| Partition | Episodes / feature-complete | Supervised eligible | Successes | Failures |
+| --- | ---: | ---: | ---: | ---: |
+| Train, 2016–2021 | 61 | 60 | 9 | 51 |
+| Validation, 2022–2023 | 7 | 7 | 0 | 7 |
+| Final test, 2024–2025 | 15 | 0 | LOCKED | LOCKED |
+
+All 83 episodes have feature/target/partition audit rows and stored predictions.
+Exactly one training episode is excluded by `PARTITION_EMBARGO`; its inference
+role is `EXCLUDED_FROM_SUPERVISION`, not a fitted observation. Final-test rows
+are features-only: target, resolution, excursions and censor-reason fields are
+NULL, outcome is LOCKED and supervision is disabled. The full SQL audit found
+zero final-outcome leaks. Required quantitative features are complete on this freeze.
+
+| Development year | Eligible episodes | Successes |
+| --- | ---: | ---: |
+| 2016 | 15 | 1 |
+| 2017 | 1 | 0 |
+| 2018 | 5 | 0 |
+| 2019 | 3 | 0 |
+| 2020 | 21 | 8 |
+| 2021 | 15 | 0 |
+| 2022 | 3 | 0 |
+| 2023 | 4 | 0 |
+
+### Development metrics and interpretation
+
+The selected XGBoost forward-fold results are:
+
+| Evaluation year | Fitting events | Evaluation events | Successes | ROC AUC | Brier |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 2019 | 21 | 3 | 0 | Undefined | 0.002268 |
+| 2020 | 24 | 21 | 8 | 0.500000 | 0.350942 |
+| 2021 | 45 | 15 | 0 | Undefined | 0.003689 |
+
+All three folds were evaluated, but only one supports ROC AUC/average precision.
+Mean defined ROC AUC is 0.5 and mean Brier is 0.118966. Search ranks by mean defined
+ROC AUC, then PR AUC, then lower Brier, and preserves undefined-fold counts.
+All-undefined ranking falls back to Brier. Selected logistic
+regularisation is C=0.1; the full XGBoost parameter selection is in the model bundle.
+
+| Score / role | Events | ROC AUC | Average precision | Brier | Selected at 0.65 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Logistic training resubstitution | 60 | 0.962963 | 0.839556 | 0.064438 | 3 |
+| XGBoost raw training resubstitution | 60 | 1.000000 | 1.000000 | 0.019870 | 6 |
+| Logistic raw validation holdout | 7 | Undefined | Undefined | 0.010765 | 0 |
+| XGBoost raw validation holdout | 7 | Undefined | Undefined | 0.028566 | 0 |
+| Model A calibrated validation-fit descriptive | 7 | Undefined | Undefined | 0.012346 | 0 |
+
+Training scores are fitted-sample descriptions, not evidence of generalisation.
+All seven validation events fail under the frozen target policy. The fitted
+calibrator is explicitly `CONSTANT_UNIDENTIFIABLE`: slope 0, intercept
+−2.0794415416798357 and calibrated probability **1/9 (11.1%)** for every event.
+This is a smoothed-prior assumption; it supplies no ranking evidence. Calibrated
+validation metrics describe the calibration-fitting sample, not an untouched test.
+Precision and recall are undefined where no events are selected or no positives
+exist; coverage is zero. The 0.65 policy remains predeclared, with the specified
+threshold grid reported descriptively rather than optimised on seven failures.
+
+The sample does **not** establish useful predictive performance or superiority to
+logistic regression. Statistical eligibility/label rules were not weakened after
+observing these results. Pair/date dependence and concentration of successes in
+2020 further limit inference; counts and uncertainty notes accompany metrics.
+
+### Reproduction, leakage, app and hosted checks
+
+- Full local suite: **429 passed, three Windows symlink-permission skips**.
+  Linux CI exercises those skipped cases. The final inference-role correction
+  additionally passed all 16 P3 integration tests. Ruff lint/format (87 files),
+  strict mypy (50 source files including the app) and frozen lock checks passed.
+- Units/integration cover every quantitative feature's cutoff/future invariance,
+  frozen label paths, episode reset, missing-price/lifecycle censoring, full-window
+  embargo, training-only preprocessing and chronological selection/calibration.
+- Actual frozen labels were checked directly from log prices and entry coefficients
+  for six development examples: two each of CONVERGED, STOPPED and TIMEOUT.
+  Saved native models reproduce both raw and calibrated probabilities with maximum
+  error **0**. Tree SHAP reconstructs raw margins with maximum error
+  **3.332021141222441e-06**, within the 1e-5 tolerance.
+- Repeating both final batch jobs returns the same verified generations and adds
+  **zero** jobs. Failure rollback, immutable tamper rejection and model-bound reads
+  are exercised by integration tests. The final generation matches the preceding
+  registered generation's scientific rows and mathematical predictions exactly;
+  excluded-inference audit labels now correctly identify their supervision role.
+- Actual browser inspection rendered all 28 Scanner pairs and CAT/DE Pair Detail
+  charts, stored probability context and SHAP drivers. No browser errors occurred;
+  transient chart-initialisation warnings did not prevent rendering. Final-generation
+  Scanner/Pair Detail AppTest also passes and displays the constant-prior notice.
+  Database SHA-256 is unchanged before/after app use:
+  `6f175b505ed6ddd5c068fb79e97d1a948f69cdd0d010d2b462902be10d5206d0`.
+- Windows, Linux and Colab jobs passed for the final computational source commit
+  in [PR CI run 37117654777](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/37117654777).
+  Hosted jobs run actual synthetic ingestion/replay, relationship publication,
+  event construction, model tuning/calibration/SHAP, reload and repeated builds
+  without provider credentials. The Colab launcher runs from a Linux Python 3.12
+  host into isolated project Python 3.11. No Google-account browser session was
+  required or launched; that interactive runtime remains unverified.
+
+Local immutable acceptance reports reside under
+`artifacts/reports/model_a_7d2b85c381abaefb98855e31/`:
+`phase3_acceptance.json` SHA-256
+`6586aa410abcd447dd715f6e982e88b864b5d0bdffc78354b378846100dd3147` and
+`lineage_acceptance.json` SHA-256
+`f9c28e20641df732ce70124bd49440d3915ecb2471596da367eab518fa063b82`.
+Local generated artifacts, databases and QA screenshots remain excluded from Git.
+
+| P3 acceptance criterion | Evidence | Result |
+| --- | --- | --- |
+| Leakage tests for every quantitative feature | Cutoff, future-perturbation and exact-session tests | PASS |
+| Reproducible event counts and labels | Frozen-data direct checks, immutable generation comparison and repeat jobs | PASS |
+| Documented split/embargo counts | Partition/year tables and persisted exclusion audit | PASS |
+| Development metrics without final outcomes | Logistic/XGBoost reports with explicit undefined/calibration-fit roles and SQL lock audit | PASS |
+| Reloaded probabilities reproduce stored inference | Actual native bundle, zero maximum probability error | PASS |
+| Scanner/Pair Detail without callback training | Actual browser inspection, AppTest and unchanged database hash | PASS |
+
+P1's retrospective Yahoo adjustments, static sector proxies and unknown lifecycle
+dates remain disclosed prototype limitations. Phase 4 must address historical SEC
+CIK coverage: current XOM maps to the 2026 successor CIK 0002115436, while the
+historical issuer used 0000034088. Its missing historical evidence must remain
+UNKNOWN until a dated mapping and new source generation recover coverage; it must
+not be imputed as NONE or silently remove XOM/CVX. Phase 4 has not begun.

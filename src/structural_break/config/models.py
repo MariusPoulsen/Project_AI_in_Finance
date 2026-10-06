@@ -105,6 +105,8 @@ class Period(SettingsModel):
 class MLConfig(SettingsModel):
     version: Version
     feature_schema_version: Version
+    label_policy_version: Version = "close-label-v1"
+    split_version: Version = "expanding-2016-v1"
     train: Period
     validation: Period
     final_test: Period
@@ -112,6 +114,8 @@ class MLConfig(SettingsModel):
     final_test_locked: Literal[True]
     calibration: Literal["sigmoid"]
     seed: Annotated[int, Field(strict=True, ge=0)]
+    search_trials: Annotated[int, Field(strict=True, ge=1, le=50)] = 30
+    candidate_threshold: Probability = 0.65
 
     @model_validator(mode="after")
     def disjoint_periods(self) -> Self:
