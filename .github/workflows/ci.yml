@@ -1,4 +1,4 @@
-name: Foundation, data, econometrics and Models A/B
+name: Foundation, data, econometrics and Models A/B research
 
 on:
   push:
@@ -112,9 +112,15 @@ jobs:
           version: "0.12.20"
       - run: >-
           python scripts/colab_bootstrap.py
+          --nlp
           --workspace-root /tmp/colab-foundation
           --data-fixture
           --relationship-fixture
           --ml-fixture
           --intelligence-fixture
-      - run: uv run --frozen pytest
+      - name: Verify optional CPU NLP runtime
+        run: >-
+          uv run --frozen --extra nlp python -c
+          "import torch, transformers; assert torch.version.cuda is None;
+          print(torch.__version__, transformers.__version__)"
+      - run: uv run --frozen --extra nlp pytest

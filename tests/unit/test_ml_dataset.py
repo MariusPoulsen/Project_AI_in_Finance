@@ -135,6 +135,27 @@ def build(frames: list[pd.DataFrame]) -> Any:
     )
 
 
+def test_estimable_population_preserves_inactive_flag() -> None:
+    frames, _ = inputs()
+    frames[4]["pair_status"] = "WATCH"
+    frames[5]["pair_status"] = "WATCH"
+    frames[6]["pair_status"] = "WATCH"
+    frames[6]["baseline1_eligible"] = False
+    assert build(frames).events.empty
+    expanded = build_event_dataset(
+        *frames,
+        load_config(Path("configs")),
+        data_snapshot_id="test-data",
+        relationship_version="test-relationships",
+        dataset_version="research-test",
+        population="estimable",
+    )
+    assert len(expanded.events) == 1
+    assert not expanded.events["baseline1_eligible"].any()
+    assert expanded.targets["y_revert_success"].tolist() == [1]
+    assert expanded.partitions["supervised_eligible"].all()
+
+
 @pytest.mark.parametrize(
     "path,outcome,label,elapsed",
     [

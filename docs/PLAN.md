@@ -198,7 +198,34 @@ Final-test outcomes remain locked; P5 has not begun.
 
 ---
 
+## Research v2 — authorized development redesign
+
+Status: implementation and source capture in progress; no expanded predictive
+improvement result has been established. The original P4 acceptance remains valid.
+
+- [x] Freeze the business-peer roster, orientations and development-only protocol.
+- [x] Capture and independently reconstruct 2004–2023 market sources for 250 issuers.
+- [x] Capture and independently reconstruct SEC metadata for the frozen issuers.
+- [x] Implement resumable per-pair causal registries for 10/20/30-session horizons.
+- [x] Implement guarded free Gemma and pinned local FinBERT adapters.
+- [x] Implement metadata/tone/catalyst ablations on matched quantitative cohorts.
+- [x] Implement forward tuning, independent calibration and paired assessment replay.
+- [ ] Pass the complete offline pipeline and original regression suite.
+- [ ] Generate the complete expanded development event registry.
+- [ ] Generate genuine SEC text features and disclose inference/source coverage.
+- [ ] Fit and independently replay primary and sensitivity A/B comparisons.
+- [ ] Record actual sample counts, uncertainty and positive/negative comparison results.
+- [ ] Verify Windows/Linux/Colab compatibility on the frozen implementation.
+
+Commands and recovery rules are in `docs/RESEARCH_V2_RUNBOOK.md`.
+
+---
+
 ## P5 — Multi-agent structural-break investigation and decision controller
+
+Research v2 is an authorized parallel experiment before P5. Its protocol and
+implementation status are recorded in `docs/RESEARCH_V2_PROTOCOL.md` and above.
+It does not mark any P5 gate complete or open final outcomes.
 
 ### Build
 

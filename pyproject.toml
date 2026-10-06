@@ -16,16 +16,19 @@ dependencies = [
   "yfinance>=0.2.65,<1", "exchange-calendars>=4.11,<5",
   "statsmodels>=0.14,<1", "matplotlib>=3.10,<4",
   "scikit-learn>=1.7,<2", "xgboost>=3,<4", "shap>=0.48,<1", "mlflow>=3,<4",
+  "threadpoolctl>=3.6,<4",
   "streamlit>=1.45,<2", "plotly>=6,<7",
 ]
 
 [project.optional-dependencies]
 research = ["scikit-learn>=1.7,<2", "xgboost>=3,<4", "shap>=0.48,<1", "mlflow>=3,<4"]
 agents = ["litellm>=1.70,<2", "langgraph>=1,<2"]
+nlp = ["torch>=2.6,<3", "transformers>=4.48,<5"]
 app = ["streamlit>=1.45,<2", "plotly>=6,<7"]
 
 [project.scripts]
 structural-break = "structural_break.services.foundation:main"
+structural-break-research = "structural_break.research.cli:main"
 
 [dependency-groups]
 dev = ["pytest>=8,<10", "pytest-socket>=0.7,<1", "ruff>=0.11,<1", "mypy>=1.15,<2", "types-PyYAML>=6", "pandas-stubs>=2.2,<3"]
@@ -36,6 +39,14 @@ dev-mode-exact = true
 
 [tool.uv]
 constraint-dependencies = ["numba>=0.62,<0.65"]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [{index = "pytorch-cpu", marker = "sys_platform == 'linux'"}]
 
 [tool.ruff]
 target-version = "py311"

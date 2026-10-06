@@ -338,7 +338,29 @@ fitting and verification do not call an LLM. See
 [the intelligence runbook](INTELLIGENCE_RUNBOOK.md) for frozen generation selection,
 recovery, coverage and interpretation.
 
-## 7. Preserve generated research state
+## 7. Research v2 with local FinBERT and guarded Gemma
+
+The authorized broader experiment uses its own workspace and CLI. After cloning
+the research branch, retain the optional NLP extra in bootstrap and batch commands:
+
+```python
+import subprocess
+
+subprocess.run(["python", "scripts/colab_bootstrap.py", "--nlp"], cwd=repo, check=True)
+subprocess.run(
+    ["uv", "run", "--frozen", "--extra", "nlp", "structural-break-research", "--help"],
+    cwd=repo,
+    check=True,
+)
+```
+
+Use the exact source/registry/evidence/model commands in
+[RESEARCH_V2_RUNBOOK.md](RESEARCH_V2_RUNBOOK.md), supplying credentials through
+Colab Secrets as above. The frozen lock selects the CPU PyTorch index on Linux;
+Gemma uses direct REST. The broad development capture ends in 2023 and preserves
+the original P4 workspace. Keep the v2 workspace on `/content` while jobs run.
+
+## 8. Preserve generated research state
 
 Colab virtual machines are temporary. Keep the virtual environment and active
 DuckDB database on the local `/content` filesystem. After jobs close their database

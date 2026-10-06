@@ -1,0 +1,89 @@
+# Outcome-blind candidate roster. Current surviving issuers and current business
+# groups are research assumptions, NOT reconstructed historical index membership.
+# SEC directory mappings are frozen separately before any research-v2 labels.
+version: survivor-peers-250-v1
+reviewed_at: 2026-10-06T00:00:00Z
+membership_policy: current_survivor_conditioned_prototype
+orientation_policy: original_or_ascending_frozen_security_id
+classification_policy: static_business_peer_groups
+domestic_reporting_policy: candidate_domestic_10k_10q_requires_source_check
+source_links:
+  - https://www.sec.gov/search-filings/edgar-search-assistance/accessing-edgar-data
+  - https://www.sec.gov/files/company_tickers.json
+  - https://www.sec.gov/search-filings/standard-industrial-classification-sic-code-list
+limitations:
+  - Current survivors omit failed, delisted and acquired firms; delisting completeness is false.
+  - Current business groups are backfilled research assumptions; historical industry membership is not known.
+  - US domestic reporting refers to 10-K/10-Q reporting, not US incorporation.
+  - SEC ticker-directory membership alone does not verify reporting regime or common-stock continuity.
+  - Yahoo is retrospectively adjusted history, not adjustment vintages; ticker histories need identity review.
+  - Price first/last observations are source coverage dates, never inferred listing or delisting dates.
+groups:
+  - {name: Beverages, sector_etf: XLP, tickers: [KO, PEP, KDP, MNST, FIZZ, CELH], rationale: Branded non-alcoholic beverage demand and distribution}
+  - {name: Packaged food, sector_etf: XLP, tickers: [GIS, KHC, CAG, CPB, SJM, MKC, HRL, LW], rationale: Packaged food manufacturers with retail distribution and ingredient exposure}
+  - {name: Household and personal products, sector_etf: XLP, tickers: [PG, CL, KMB, CHD, CLX, EL, ELF], rationale: Branded household and personal consumption products}
+  - {name: Home improvement retail, sector_etf: XLY, tickers: [HD, LOW, TSCO, WSM, RH], rationale: Home and household improvement retail demand}
+  - {name: Large-format retail, sector_etf: XLP, tickers: [WMT, TGT, COST, BJ, DG, DLTR], rationale: General merchandise retail and household spending}
+  - {name: Restaurants, sector_etf: XLY, tickers: [MCD, YUM, DRI, CMG, SBUX, DPZ, WING, TXRH], rationale: Restaurant traffic food input costs and consumer spending}
+  - {name: Auto-parts retail, sector_etf: XLY, tickers: [ORLY, AZO, AAP, GPC], rationale: Aftermarket automotive parts distribution}
+  - {name: Apparel and off-price retail, sector_etf: XLY, tickers: [TJX, ROST, BURL, GAP, AEO, ANF, URBN, VFC], rationale: Apparel retail inventory and discretionary household demand}
+  - {name: Integrated oil and gas, sector_etf: XLE, tickers: [XOM, CVX], rationale: Integrated upstream refining and energy commodity exposure}
+  - {name: Exploration and production, sector_etf: XLE, tickers: [COP, EOG, OXY, DVN, APA, FANG], rationale: US oil and gas exploration and production}
+  - {name: Petroleum refining, sector_etf: XLE, tickers: [MPC, PSX, VLO, DK, PBF], rationale: Petroleum refining margins and fuel demand}
+  - {name: Oilfield services, sector_etf: XLE, tickers: [SLB, HAL, BKR, NOV], rationale: Oilfield service and drilling equipment spending}
+  - {name: Payments and transaction processing, sector_etf: XLF, tickers: [V, MA, AXP, FIS, GPN, PYPL], rationale: Payment volume and financial transaction processing}
+  - {name: US banking, sector_etf: XLF, tickers: [JPM, BAC, C, WFC, USB, PNC, TFC, FITB, MTB, CFG], rationale: Deposit lending credit and interest margin exposures}
+  - {name: Capital markets, sector_etf: XLF, tickers: [GS, MS, SCHW, RJF, SF, JEF], rationale: Securities brokerage capital markets and wealth management}
+  - {name: Financial data and ratings, sector_etf: XLF, tickers: [SPGI, MCO, MSCI, FDS], rationale: Financial information ratings indices and subscription demand}
+  - {name: Exchanges and market infrastructure, sector_etf: XLF, tickers: [ICE, CME, CBOE, NDAQ, MKTX], rationale: Trading volumes market data and exchange infrastructure}
+  - {name: Property and casualty insurance, sector_etf: XLF, tickers: [CB, TRV, ALL, PGR, WRB, CINF, AIG, HIG], rationale: Property casualty underwriting premium cycles and investment returns}
+  - {name: Life insurance and retirement, sector_etf: XLF, tickers: [MET, PRU, AFL, UNM, GL, LNC, PFG], rationale: Life protection retirement liabilities and interest rates}
+  - {name: Pharmaceuticals and biotechnology, sector_etf: XLV, tickers: [PFE, MRK, BMY, ABBV, LLY, JNJ, AMGN, GILD, REGN], rationale: Pharmaceutical discovery patents regulation and commercialisation}
+  - {name: Life-science tools, sector_etf: XLV, tickers: [TMO, DHR, A, WAT, BRKR, TECH, MTD], rationale: Research analytical laboratory and bioprocessing equipment}
+  - {name: Medical devices and supplies, sector_etf: XLV, tickers: [ABT, BDX, MDT, SYK, BSX, EW, ZBH, PODD], rationale: Regulated medical device procedure and hospital demand}
+  - {name: Managed care, sector_etf: XLV, tickers: [UNH, CI, CVS, HUM, CNC, MOH, ELV], rationale: Health insurance reimbursement and medical utilisation}
+  - {name: Logistics and freight, sector_etf: XLI, tickers: [UPS, FDX, CHRW, EXPD, JBHT, ODFL, SAIA, XPO], rationale: Freight parcel transport and logistics demand}
+  - {name: Heavy machinery, sector_etf: XLI, tickers: [CAT, DE, CMI, PCAR, AGCO, TEX, OSK, WAB], rationale: Capital equipment industrial transport and agricultural cycles}
+  - {name: Defense and aerospace, sector_etf: XLI, tickers: [LMT, NOC, RTX, GD, HII, TXT], rationale: Aerospace defense procurement and long-cycle contracts}
+  - {name: US freight railroads, sector_etf: XLI, tickers: [CSX, NSC, UNP], rationale: US rail freight commodity and industrial demand}
+  - {name: US airlines, sector_etf: XLI, tickers: [DAL, UAL, AAL, LUV, ALK, JBLU], rationale: US passenger aviation fuel costs and travel demand}
+  - {name: Analog and embedded semiconductors, sector_etf: XLK, tickers: [TXN, ADI, MCHP, 'ON', SWKS, QRVO, MPWR], rationale: Analog mixed signal and embedded semiconductor cycles}
+  - {name: Semiconductor equipment, sector_etf: XLK, tickers: [LRCX, KLAC, AMAT, TER], rationale: Semiconductor fabrication and testing capital spending}
+  - {name: Digital semiconductors, sector_etf: XLK, tickers: [NVDA, AMD, INTC, AVGO, QCOM, MU], rationale: Digital computing communications and memory semiconductor cycles}
+  - {name: US auto manufacturers, sector_etf: XLY, tickers: [GM, F, TSLA], rationale: Passenger vehicle manufacturing and household durable demand}
+  - {name: Electric utilities, sector_etf: XLU, tickers: [DUK, SO, AEP, EXC, XEL, ETR, DTE, WEC, PPL, ES, NEE, PCG], rationale: Electric utility demand regulation and financing exposures}
+  - {name: Enterprise software, sector_etf: XLK, tickers: [MSFT, ORCL, CRM, ADBE, INTU, NOW, WDAY, ADSK], rationale: Enterprise software subscriptions licensing and IT spending}
+  - {name: Cybersecurity software, sector_etf: XLK, tickers: [CRWD, PANW, FTNT, ZS, OKTA, GEN], rationale: Cybersecurity software and information protection spending}
+  - {name: Internet commerce and media, sector_etf: XLC, tickers: [GOOGL, META, AMZN, NFLX, EBAY], rationale: Online commerce advertising and digital consumer services}
+  - {name: Telecommunications, sector_etf: XLC, tickers: [T, VZ, TMUS], rationale: US communications subscriptions and network capital spending}
+  - {name: Steel and metals, sector_etf: XLB, tickers: [NUE, STLD, CLF, CMC, RS, ATI], rationale: Metal production processing and industrial materials demand}
+  - {name: Packaging materials, sector_etf: XLB, tickers: [IP, PKG, AVY, BALL, GEF, SON], rationale: Consumer and industrial packaging demand and raw materials}
+  - {name: Homebuilding, sector_etf: XLY, tickers: [DHI, LEN, PHM, TOL, NVR, KBH, MTH], rationale: US residential construction financing and housing demand}
+issuer_rules:
+  XOM:
+    historical_cik: '0000034088'
+    historical_cik_valid_to: 2026-06-30
+    notes: Reviewed P4 predecessor route; the successor CIK does not represent 2004-2023 SEC filings.
+    source_links:
+      - https://www.sec.gov/Archives/edgar/data/34088/000119312526291986/d70995d8k.htm
+      - https://www.sec.gov/Archives/edgar/data/2115436/000119312526291990/d71068d8k12b.htm
+  GM:
+    identity_valid_from: 2010-11-18
+    notes: Exclude old bankrupt General Motors common stock; current common shares commenced trading in 2010.
+    source_links: [https://www.sec.gov/Archives/edgar/data/1467858/000146785812000014/gm201110k.htm]
+  DAL:
+    identity_valid_from: 2007-05-03
+    notes: Exclude pre-bankruptcy common shares; new common stock returned to NYSE in 2007.
+    source_links: [https://ir.delta.com/news/news-details/2007/Opening-Bell-Signals-Delta-Air-Lines-Return-to-the-New-York-Stock-Exchange/default.aspx]
+  UAL:
+    identity_valid_from: 2010-10-01
+    notes: Conservative current combined-issuer floor; do not splice predecessor airline common equities.
+    source_links: [https://www.sec.gov/Archives/edgar/data/100517/000119312510222185/dex991.htm]
+  AAL:
+    identity_valid_from: 2013-12-09
+    notes: Current American Airlines Group after reorganisation and merger; exclude predecessor common equities.
+    source_links: [https://www.sec.gov/Archives/edgar/data/4515/000119312513465950/d640604dex991.htm]
+  CB:
+    identity_valid_from: 2016-01-15
+    notes: Conservative floor avoids old Chubb CB ticker versus surviving ACE shares; no predecessor splice.
+    source_links: [https://www.sec.gov/Archives/edgar/data/896159/000119312516430900/d113231d8k.htm]

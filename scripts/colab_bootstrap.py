@@ -12,6 +12,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--workspace-root", type=Path)
     parser.add_argument(
+        "--nlp",
+        action="store_true",
+        help="Install and retain the optional local CPU FinBERT dependencies",
+    )
+    parser.add_argument(
         "--data-fixture",
         action="store_true",
         help="Also ingest, replay and verify the complete synthetic Phase 1 snapshot offline",
@@ -37,13 +42,15 @@ def main() -> None:
     if uv is None:
         raise SystemExit("Install uv in the Colab host first: %pip install uv==0.12.20")
     subprocess.run([uv, "python", "install", "3.11"], cwd=root, check=True)
-    subprocess.run([uv, "sync", "--frozen", "--python", "3.11"], cwd=root, check=True)
+    extras = ["--extra", "nlp"] if args.nlp else []
+    subprocess.run([uv, "sync", "--frozen", "--python", "3.11", *extras], cwd=root, check=True)
+    run = [uv, "run", "--frozen", *extras]
     options = ["--project-root", str(root)]
     if args.workspace_root:
         options += ["--workspace-root", str(args.workspace_root)]
     for command in ("check-config", "init-db", "storage-smoke"):
         subprocess.run(
-            [uv, "run", "--frozen", "structural-break", command, *options],
+            [*run, "structural-break", command, *options],
             cwd=root,
             check=True,
         )
@@ -64,7 +71,7 @@ def main() -> None:
         )
         for job in jobs:
             subprocess.run(
-                [uv, "run", "--frozen", "structural-break", *job, *options],
+                [*run, "structural-break", *job, *options],
                 cwd=root,
                 check=True,
             )
@@ -81,7 +88,7 @@ def main() -> None:
             ("verify-relationships",),
         ):
             subprocess.run(
-                [uv, "run", "--frozen", "structural-break", *relationship_job, *options],
+                [*run, "structural-break", *relationship_job, *options],
                 cwd=root,
                 check=True,
             )
@@ -93,7 +100,7 @@ def main() -> None:
             ("verify-model-a",),
         ):
             subprocess.run(
-                [uv, "run", "--frozen", "structural-break", *model_job, *options],
+                [*run, "structural-break", *model_job, *options],
                 cwd=root,
                 check=True,
             )
@@ -106,7 +113,7 @@ def main() -> None:
             ("verify-model-b",),
         ):
             subprocess.run(
-                [uv, "run", "--frozen", "structural-break", *intelligence_job, *options],
+                [*run, "structural-break", *intelligence_job, *options],
                 cwd=root,
                 check=True,
             )

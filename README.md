@@ -12,8 +12,10 @@ Phase 4 adds cached point-in-time SEC evidence, validated catalyst extractions,
 explicit coverage and Model B. Agents and backtesting follow later phases.
 
 For SEC evidence, Gemini setup and Model B reproduction, see the
-[intelligence runbook](docs/INTELLIGENCE_RUNBOOK.md). The proposed broader research
-protocol is documented in [the redesign proposal](docs/RESEARCH_REDESIGN.md).
+[intelligence runbook](docs/INTELLIGENCE_RUNBOOK.md). The authorized broader
+research experiment uses [the frozen v2 protocol](docs/RESEARCH_V2_PROTOCOL.md)
+and [the research runbook](docs/RESEARCH_V2_RUNBOOK.md). It preserves the original
+Phase 4 results and the final-test lock.
 
 ## Local setup (Windows, Linux or macOS)
 

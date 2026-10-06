@@ -1,5 +1,49 @@
 # Implementation status
 
+## Research v2 — authorized development redesign
+
+Date: 2026-10-06. Branch: `research-v2`. Status: **IN PROGRESS**.
+The user delegated scientific design and implementation. The expanded genuine
+Model A/B comparison is pending; improvement has not yet been established.
+The completed original Phase 4 artifacts and 2024–2025 outcome lock are preserved.
+
+The frozen v2 roster contains 250 current-survivor domestic issuers, 40 business
+groups and 736 fixed pairs, retaining all original 28 orientations. The primary
+forecasting population is deduplicated estimable crossings with actual ACTIVE
+status retained. Predeclared horizons are 20 sessions (primary) and 10/30
+(sensitivities). Forward tuning is 2018/2019, independent calibration 2020–2021,
+and development assessment 2022–2023. Full-window embargo applies throughout.
+
+Observed source captures:
+
+- Universe: `universe_880ba35c09b7997d8a7e322d`.
+- Market: `market_0e7ddfd8382ca8a866f66bd1`; all 250 issuer requests and 11
+  context tickers succeeded, with 1,222,930 price rows and 50,330 context rows.
+  Curated equity history is 2004–2023, excluding final-test prices.
+- SEC metadata: `research_sec_a26f07f21c33a8d662ab87b0`; 250 issuers and 89,657
+  filing rows, with zero missing SEC acceptance timestamps. Current-CIK history
+  is not proof of predecessor completeness; events before the first observed
+  accepted filing retain UNKNOWN source coverage.
+
+Implementation includes immutable/resumable pair and event generations, an
+independent research database, matched logistic/XGBoost metadata/tone/catalyst/both
+ablations, paired quarter-block assessment and native model/calibrator replay.
+Guarded Gemma is configured for free `gemma-4-26b-a4b-it`; Flash is reserved for
+P5. Local FinBERT uses the pinned ProsusAI revision and explicit token coverage.
+The real CPU adapter smoke passed on synthetic SEC fixture text and exact cache
+replay. A captured Gemma diagnostic final JSON passed offline validation after
+excluding explicit thought-channel parts. These are adapter checks, not completed
+historical NLP coverage or predictive results.
+
+Observed local checks: Ruff lint passed; strict mypy passed for 70 source files;
+all installed dependencies are compatible. The 32 focused pipeline checks passed
+in 167.43 seconds, including causal two-pair registries for all three horizons,
+full evidence-to-model flow, replay of ten native bundles, failed-publication
+recovery, future-item exclusion and shared-cache/source tamper rejection.
+The full original-plus-v2 regression run and clean hosted portability checks are
+pending. See [the protocol](RESEARCH_V2_PROTOCOL.md) and
+[runbook](RESEARCH_V2_RUNBOOK.md) for commands and scientific limitations.
+
 ## Phase 0 — foundation
 
 Date: 2026-09-29. Branch: `phase-0-foundation`.

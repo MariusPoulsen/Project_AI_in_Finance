@@ -513,3 +513,44 @@ The user will prepare the final academic written report and presentation/video s
 - The sample adequacy proposal in RESEARCH_REDESIGN.md is a separate unimplemented
   protocol. Do not expand the universe, relax eligibility, lengthen labels or
   alter evaluation in this canonical experiment to manufacture more successes.
+
+## 20. Delegated research v2 redesign
+
+- On 2026-10-06 the user authorized implementation and scientific design of the
+  redesign with the aim of improving Model B over matched Model A. The original
+  Phase 4 experiment remains an immutable reference. The authorized new protocol
+  is `configs/research_v2.yaml` and `docs/RESEARCH_V2_PROTOCOL.md`, frozen before
+  computing added development labels. No 2024–2025 outcome unlock is granted.
+- Freeze 250 current-survivor domestic issuer candidates in 40 documented peer
+  groups, 736 fixed pairs including the original 28 orientations. Business-group
+  selection precedes outcomes. Historical identity floors constrain admissibility;
+  observed price start/end dates are source coverage, not legal listing dates.
+  This free Yahoo/SEC study remains survivor-conditioned and uses retrospective
+  vendor adjustments; it is not a delisting-complete investable universe.
+- Capture 2004–2023 development prices. The primary population is deduplicated
+  estimable crossings, with actual ACTIVE status retained for separate assessment.
+  This forecasting population does not silently alter the canonical ACTIVE-only
+  trading ladder or authorize trades in ineligible relationships.
+- Predeclare a primary 20-session target and 10/30-session sensitivity registries.
+  Entry/success/adverse boundaries remain 2/0.5/3; entry coefficients, episode
+  reset, censoring and full-window embargo remain causal. Fit through 2019, tune
+  on expanding 2018/2019 folds, calibrate on 2020–2021 and assess on 2022–2023.
+  Purge both fitting and annual assessment tails using complete label windows.
+- Use strongly regularized logistic A/B as the primary research estimators, plus
+  identical-budget small-grid XGBoost comparisons. A uses quantitative features;
+  B adds predeclared SEC metadata, local FinBERT tone and guarded Gemma catalysts.
+  Report all ablations and failures on exactly the same quantitative registry,
+  including UNKNOWN source/inference rows. No assessment-based choice of winner,
+  horizon, universe, threshold, or favorable companies is permitted.
+- Reserve Flash for later reasoning agents. FinBERT weights/revision and text
+  window preprocessing are fixed; its 2020 release is a disclosed retrospective
+  extractor limitation for earlier observations. SEC text acceptance/issuer/quote
+  admissibility remain required independently of model training date. Gemma is
+  free only, locally schema/quote validated, paced, budgeted and quota-stopped;
+  failures stay UNKNOWN. Provider thought-channel metadata is excluded from the
+  required sole final JSON answer, without coercing that answer.
+- Use a separate `data/research_v2` workspace and DuckDB database with immutable
+  source/pair/evidence/model generations. Preserve every attempted source/pair
+  and disclose selection/coverage/exclusion funnels. Temporal-block paired loss
+  intervals retain shared-issuer events; few blocks and cross-quarter dependence
+  limit confidence. Forecast improvement is not a claim of economic profitability.

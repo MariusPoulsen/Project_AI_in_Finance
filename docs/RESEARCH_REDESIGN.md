@@ -1,6 +1,6 @@
 # Research redesign proposal after Phase 4
 
-**Status: proposed follow-on experiment; no research policy changes are applied.**  
+**Status: implementation authorized on 2026-10-06 in a separate research version.**
 **Date: 2026-10-04.**  
 **Scope: predictive usefulness and sample adequacy, using development data only.**
 
@@ -10,6 +10,10 @@ of calibration from evaluation. More LLM reasoning on the existing seven
 validation observations cannot establish predictive usefulness. The existing
 28-pair experiment remains an immutable reference, and 2024–2025 outcomes remain
 locked under [DECISIONS.md](DECISIONS.md).
+
+The concrete predeclared implementation is [RESEARCH_V2_PROTOCOL.md](RESEARCH_V2_PROTOCOL.md).
+The historical proposal and scarcity audit below remain the motivation, not a
+claim that the expanded experiment has passed acceptance or improved prediction.
 
 ## What causes the small sample
 

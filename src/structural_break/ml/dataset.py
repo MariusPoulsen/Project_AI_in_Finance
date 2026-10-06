@@ -11,7 +11,7 @@ import hashlib
 import json
 from dataclasses import dataclass
 from datetime import date, timedelta
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 import numpy as np
 import pandas as pd
@@ -198,6 +198,7 @@ def build_event_dataset(
     data_snapshot_id: str,
     relationship_version: str,
     dataset_version: str = "unregistered",
+    population: Literal["active", "estimable"] = "active",
 ) -> EventDataset:
     """Build ACTIVE event rows without fitting models or writing storage.
 
@@ -205,6 +206,8 @@ def build_event_dataset(
     is the non-overlapping Model A/B observation registry, including explicit
     feature/censor/partition exclusions rather than silently dropping rows.
     """
+    if population not in {"active", "estimable"}:
+        raise ValueError("Unknown observation population")
     prices, market_context = _dates(prices), _dates(market_context)
     daily_states, crossings = _dates(daily_states), _dates(crossings)
     if prices.duplicated(["ticker", "trading_date"]).any():
@@ -326,7 +329,8 @@ def build_event_dataset(
             crossing = crossing_rows.get(day)
             if crossing is None or pending is not None or not armed:
                 continue
-            if not bool(crossing["baseline1_eligible"]) or str(state["pair_status"]) != "ACTIVE":
+            active = bool(crossing["baseline1_eligible"]) and str(state["pair_status"]) == "ACTIVE"
+            if population == "active" and not active:
                 continue
             timestamp = pd.to_datetime(crossing["event_timestamp"], utc=True)
             if timestamp != cutoff or not bool(state["fresh_threshold_crossing"]):
@@ -384,7 +388,7 @@ def build_event_dataset(
                 "data_snapshot_id": data_snapshot_id,
                 "relationship_version": relationship_version,
                 "dataset_version": dataset_version,
-                "baseline1_eligible": True,
+                "baseline1_eligible": active,
                 "partition": partition,
                 "horizon_end_date": horizon_end,
             }
@@ -464,7 +468,9 @@ def build_event_dataset(
             partition_record["exclusion_reason"] = (
                 "INCOMPLETE_FEATURES" if not event["feature_complete"] else target["censor_reason"]
             )
-        event["model_ready"] = bool(event["baseline1_eligible"] and event["feature_complete"])
+        event["model_ready"] = bool(
+            (population == "estimable" or event["baseline1_eligible"]) and event["feature_complete"]
+        )
     result = EventDataset(
         pd.DataFrame(events, columns=EVENT_COLUMNS),
         pd.DataFrame(features) if features else _empty_features(),
