@@ -16,6 +16,11 @@ def main() -> None:
         action="store_true",
         help="Also ingest, replay and verify the complete synthetic Phase 1 snapshot offline",
     )
+    parser.add_argument(
+        "--relationship-fixture",
+        action="store_true",
+        help="Also build and verify the independent synthetic Phase 2 history offline",
+    )
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     uv = shutil.which("uv")
@@ -54,6 +59,23 @@ def main() -> None:
                 check=True,
             )
         print(f"Phase 1 synthetic snapshot verified: {snapshot}; offline replay: {replay}")
+    if args.relationship_fixture:
+        relationship_version = f"colab-relationship-fixture-{uuid4().hex[:12]}"
+        for relationship_job in (
+            (
+                "build-relationships",
+                "--relationship-fixture",
+                "--relationship-version",
+                relationship_version,
+            ),
+            ("verify-relationships",),
+        ):
+            subprocess.run(
+                [uv, "run", "--frozen", "structural-break", *relationship_job, *options],
+                cwd=root,
+                check=True,
+            )
+        print(f"Phase 2 synthetic econometric history verified: {relationship_version}")
 
 
 if __name__ == "__main__":

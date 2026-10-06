@@ -102,26 +102,26 @@ for live freeze, offline reproduction and hosted acceptance evidence. Stopped at
 
 ### Build
 
-- [ ] Align pair price histories and apply log-price transforms.
-- [ ] Implement ADF/KPSS integration diagnostics according to the econometric specification.
-- [ ] Implement fixed-orientation 504-day Engle-Granger estimation.
-- [ ] Use appropriate Engle-Granger/MacKinnon cointegration outputs.
-- [ ] Store alpha, beta/cointegration vector, formation spread moments and diagnostics.
-- [ ] Implement monthly point-in-time re-estimation with next-session effective timestamps.
-- [ ] Compute daily out-of-sample spread/z-score from frozen monthly parameters.
-- [ ] Compute half-life and relationship-stability diagnostics.
-- [ ] Implement `ACTIVE` / `WATCH` / `RETIRED` lifecycle logic.
-- [ ] Produce daily pair-state history.
-- [ ] Produce raw fresh threshold crossings for Baseline 0 where a current spread is estimable.
-- [ ] Produce econometrically valid fresh threshold crossings for downstream ML/Baseline 1.
+- [x] Align pair price histories and apply log-price transforms.
+- [x] Implement ADF/KPSS integration diagnostics according to the econometric specification.
+- [x] Implement fixed-orientation 504-day Engle-Granger estimation.
+- [x] Use appropriate Engle-Granger/MacKinnon cointegration outputs.
+- [x] Store alpha, beta/cointegration vector, formation spread moments and diagnostics.
+- [x] Implement monthly point-in-time re-estimation with next-session effective timestamps.
+- [x] Compute daily out-of-sample spread/z-score from frozen monthly parameters.
+- [x] Compute half-life and relationship-stability diagnostics.
+- [x] Implement `ACTIVE` / `WATCH` / `RETIRED` lifecycle logic.
+- [x] Produce daily pair-state history.
+- [x] Produce raw fresh threshold crossings for Baseline 0 where a current spread is estimable.
+- [x] Produce econometrically valid fresh threshold crossings for downstream ML/Baseline 1.
 
 ### Acceptance gate P2
 
-- [ ] Synthetic known-stationary/cointegrated fixtures behave as expected.
-- [ ] Monthly snapshots never use future observations.
-- [ ] Daily signal rows always join to the latest effective historical snapshot, never a future snapshot.
-- [ ] Same frozen input/config regenerates identical snapshot/event IDs.
-- [ ] Several representative pairs are manually inspected against stored diagnostics/plots.
+- [x] Synthetic known-stationary/cointegrated fixtures behave as expected.
+- [x] Monthly snapshots never use future observations.
+- [x] Daily signal rows always join to the latest effective historical snapshot, never a future snapshot.
+- [x] Same frozen input/config regenerates identical snapshot/event IDs.
+- [x] Several representative pairs are manually inspected against stored diagnostics/plots.
 
 ---
 

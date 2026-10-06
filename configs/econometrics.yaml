@@ -6,3 +6,9 @@ entry_z: 2.0
 success_z: 0.5
 adverse_z: 3.0
 horizon_days: 10
+diagnostic_alpha: 0.05
+test_trend: c
+eg_autolag: aic
+kpss_nlags: auto
+numerical_epsilon: 1.0e-10
+retire_after_invalid: 2

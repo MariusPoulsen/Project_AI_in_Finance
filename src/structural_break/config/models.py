@@ -77,6 +77,12 @@ class EconometricsConfig(SettingsModel):
     success_z: Annotated[float, Field(ge=0)]
     adverse_z: Annotated[float, Field(gt=0)]
     horizon_days: PositiveInt
+    diagnostic_alpha: Annotated[float, Field(gt=0, lt=1)] = 0.05
+    test_trend: Literal["c"] = "c"
+    eg_autolag: Literal["aic"] = "aic"
+    kpss_nlags: Literal["auto"] = "auto"
+    numerical_epsilon: Annotated[float, Field(gt=0)] = 1e-10
+    retire_after_invalid: Annotated[int, Field(strict=True, ge=2)] = 2
 
     @model_validator(mode="after")
     def ordered_boundaries(self) -> Self:

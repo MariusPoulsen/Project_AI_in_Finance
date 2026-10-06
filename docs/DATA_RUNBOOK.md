@@ -44,6 +44,9 @@ Replay requires a successfully registered source snapshot, its original final/ra
 manifests and raw files/sidecars. It validates their hashes before transforming
 them. Prior curated Parquet files need not exist; the job rebuilds them from raw
 sources. Research settings must match the captured normalized configuration hash.
+Later phases can add configuration fields and change that hash; replay an older
+capture with its recorded code/config checkout. P2 can read already curated P1
+files directly without replay or fresh source retrieval.
 New curated rows receive the replay ID while preserving original source IDs,
 retrieval times and raw hashes. No Yahoo, Cboe, SEC or news call occurs during replay.
 Snapshot/run identities differ; normalized observations and computed context are

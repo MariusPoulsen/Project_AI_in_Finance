@@ -4,7 +4,9 @@ AI Structural-Break Detector for Statistical Arbitrage: a research and decision-
 system. Phase 0 provides the package, validated settings, storage and repeatable jobs.
 Phase 1 adds governed reference data, Yahoo prices/actions, official Cboe VIX,
 SEC filing metadata, immutable source snapshots and offline historical queries.
-Econometrics, models, agents, backtesting and Streamlit pages follow later phases.
+Phase 2 adds monthly Engle-Granger relationships, integration/stability diagnostics,
+frozen daily spread states and raw divergence crossings. Models, agents, backtesting
+and Streamlit pages follow later phases.
 
 ## Local setup (Windows, Linux or macOS)
 
@@ -22,7 +24,12 @@ uv run --frozen structural-break storage-smoke
 This creates a separate `.venv` using Python 3.11. It does not use or modify the
 Python 3.12 course environment in `../Ai_in_Finance`. No Jupyter installation is
 required. Optional dependency sets `research`, `agents` and `app` are locked but
-not needed for Phase 1; install them when needed with `uv sync --frozen --extra NAME`.
+not needed for Phase 2; install them when needed with `uv sync --frozen --extra NAME`.
+Statsmodels and Matplotlib are included in the default environment.
+
+If uv encounters file-locking problems on Windows/OneDrive, set
+`$env:UV_LINK_MODE = "copy"` in the current PowerShell session before syncing.
+This changes the current process only and does not modify global settings.
 
 `init-db` and `migrate-db` use the same transactional migration runner. They check
 existing migration checksums and apply new numbered files. Normal readers open
@@ -72,6 +79,35 @@ point-in-time feed. Reference classifications are fixed project assumptions and
 unknown lifecycle dates remain explicit. Historical CSV publication times are not
 verified. These limitations are recorded in the data runbook.
 
+## Build and verify econometric history
+
+Run the independent Phase 2 fixture without a data-provider login or Phase 1 fixture:
+
+```shell
+uv run --frozen structural-break build-relationships --relationship-fixture --workspace-root .acceptance/phase2 --relationship-version fixture-p2
+uv run --frozen structural-break verify-relationships --workspace-root .acceptance/phase2
+```
+
+For project prices, run these commands in the workspace containing a successfully
+published and verified Phase 1 snapshot:
+
+```shell
+uv run --frozen structural-break verify-data
+uv run --frozen structural-break build-relationships
+uv run --frozen structural-break verify-relationships
+```
+
+The default build uses the 2014 warm-up through 2025 source history. It fits the
+fixed A-on-B orientation on 504 valid common sessions at each actual month-end,
+then applies frozen parameters and spread moments from the next XNYS session.
+Missing prices produce no daily state and never create a crossing across a gap.
+Baseline 0 retains fresh crossings wherever the current spread is estimable;
+Baseline 1 additionally requires an ACTIVE relationship. These raw observations
+have no labels, trade outcomes or performance metrics. Final-test outcomes remain locked.
+
+Read [the econometrics runbook](docs/ECONOMETRICS_RUNBOOK.md) for lifecycle rules,
+immutable versions, offline queries, failure recovery and representative diagnostics.
+
 ## Verification
 
 ```shell
@@ -84,8 +120,9 @@ uv run --frozen pytest
 Tests block network sockets and need no credentials. CI runs on Windows and Linux,
 including a Python 3.12 host launching the isolated Python 3.11 Colab bootstrap.
 Package/Python installation requires internet; the installed checks and fixture
-jobs run offline. CI also ingests, replays and verifies the full Phase 1 fixture.
-No headline final-test metrics are computed by these data jobs.
+jobs run offline. CI also ingests/replays the full Phase 1 fixture and builds/verifies
+the independent Phase 2 econometric fixture, including an idempotent repeated build.
+No headline final-test metrics are computed by these jobs.
 
 ## Google Colab
 

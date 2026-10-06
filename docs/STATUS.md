@@ -78,7 +78,7 @@ resolved before its owning phase. Draft policy/cost fields are explicitly unset.
 
 Date: 2026-10-03. Branch: `phase-1-data`.
 
-Status: **COMPLETE — all Phase 1 acceptance gates passed. P2 has not begun.**
+Status: **COMPLETE — all Phase 1 acceptance gates passed. P2 is recorded below.**
 
 ### Implemented scope
 
@@ -176,3 +176,111 @@ login or LLM credentials were needed. The SEC contact stays in ignored local set
 Review: [draft PR #2](https://github.com/MariusPoulsen/Project_AI_in_Finance/pull/2),
 stacked on the unmerged Phase 0 branch. No main-branch merge, P2 econometrics, model
 training, filing-body extraction or headline final-test outcomes were performed.
+
+## Phase 2 — econometric relationships and daily signal state
+
+Date: 2026-10-03. Branch: `phase-2-econometrics`.
+
+Status: **COMPLETE — all Phase 2 acceptance gates passed. P3 has not begun.**
+
+### Implemented scope
+
+- Fixed-orientation log-price alignment, 504-common-observation OLS,
+  ADF/KPSS integration diagnostics and Engle–Granger/MacKinnon cointegration.
+- Actual XNYS monthly refits, next-session open effectiveness and frozen formation
+  coefficients/moments for historical daily spread, z-score and stability state.
+- Nullable half-life with exact one-session AR(1) pairs; gap-safe daily increments,
+  velocities, sign crossings and fresh divergence comparisons across refits.
+- ACTIVE/WATCH/RETIRED lifecycle, dated manual retirement, raw Baseline 0 crossings
+  and ACTIVE Baseline 1 eligibility. Episode deduplication and labels remain P3.
+- Migration 004, transactional physical analytics tables, immutable complete
+  Parquet/manifest artifacts, computation-aware versions and verified read-only APIs.
+- Technical runbook, pre-final diagnostic export and offline CI/Colab fixture paths.
+  No forward labels, model fits, trades or outcome metrics are produced.
+
+### Frozen project-data acceptance
+
+Input: `snap_20261003_phase1_frozen`. Active output:
+`relationships_f2f4c804ec0388ecce9fc6fd`, generated with sockets disabled at clean
+code commit `30ba728a47c08643669656389d84e58d4300a4ff`.
+Run ID: `0f93823e1ef640adb2f9d4fb0d3f716d`.
+Config SHA-256: `50df70b5830b49db50c10410cc3b371dcfb0030721098ae14d377ac9be265087`.
+Source SHA-256: `4f37497f097edd79ae01c0a1b0efb78c973605547da1e30f7a6d942de0debb1d`.
+The manifest records all numerical dependency versions, including statsmodels
+0.15.0, NumPy 2.4.6, pandas 2.3.3 and SciPy 1.17.1.
+
+| Output | Rows |
+| --- | ---: |
+| Monthly attempts, including incomplete warm-up audit rows | 4,032 |
+| Daily states across all 28 pairs, 2016-01-04 through 2025-12-31 | 70,392 |
+| Raw fresh crossings, Baseline 0 | 1,357 |
+| ACTIVE eligible raw crossings, Baseline 1 subset | 116 |
+
+These crossing counts precede P3 episode deduplication and are not trade results.
+The earlier complete-data generation remains immutable. Both real generations have
+identical monthly IDs/parameters, daily IDs/spread/z/status and crossing IDs/eligibility;
+the gap correction leaves this complete input grid unchanged. Repeating the final
+build offline verifies and returns the same version, adding no run or analytics rows.
+
+Actual SQL/manifest audits found **zero** future formation observations, future
+price availability, future/expired daily parameter joins, non-latest historical
+joins, changed frozen coefficients, wrong estimable formation sizes or inactive
+Baseline 1 crossings. Hash verification passed for the input and published artifacts.
+
+### Representative manual inspection
+
+KO/PEP, HD/LOW and TXN/ADI were selected before inspecting their diagnostics. Their
+2021–2023 frozen z-score and monthly cointegration plots were inspected alongside
+stored records. Latest pre-final estimates (2023-12-29):
+
+| Pair | Beta | MacKinnon p-value | Half-life, days | Integration | Status |
+| --- | ---: | ---: | ---: | --- | --- |
+| KO/PEP | 0.39846 | 0.20451 | 25.75 | I0 | RETIRED |
+| HD/LOW | 0.86192 | 0.20488 | 27.04 | I0 | RETIRED |
+| TXN/ADI | 0.32895 | 0.06220 | 18.01 | I0 | RETIRED |
+
+Plot excursions coexist with failed validity tests; the engine exposes raw signals
+without treating economic similarity or a finite half-life as proof of eligibility.
+No thresholds were retuned from this inspection. Nine daily samples on 2023-06-01,
+2023-12-01 and 2023-12-29 matched direct log-price/coefficient z-score calculations
+within 1e-10. December daily states correctly use the November 30 fit; the December
+29 estimate becomes effective January 2, 2024.
+
+The local PNG/JSON record is under
+`artifacts/reports/relationships_f2f4c804ec0388ecce9fc6fd/inspection_2023-12-31.*`.
+PNG SHA-256: `f3124eae16a815f0de00c75abd6eaa1e85cd0bb320cefe01af8842dd2170b112`.
+The export command rejects inspection end dates from 2024 onward.
+
+### Tests, hosted CI and portability
+
+- Final local full suite: **340 passed, three Windows symlink-permission skips**.
+  Ruff, formatting, strict mypy (42 source files) and frozen lock checks passed.
+- Statistical fixtures cover known cointegration, I0, 20 preselected independent
+  random-walk seeds, fixed orientation, MacKinnon critical values, degenerate scale,
+  nullable half-life, gaps, lifecycle recovery and unexpected failure propagation.
+- Chronology/integration tests cover future-prefix invariance, exact effective joins,
+  refit-boundary/gap crossings, lineage, deterministic rebuilds, changed-computation
+  identity rejection, real SQL publication, rollback/retry and tamper rejection.
+- Complete synthetic build: 180 monthly attempts, 2,262 daily states and 56 raw
+  crossings. Actual local Colab bootstraps succeeded from Python 3.11 and 3.12
+  hosts into the same isolated project Python 3.11 environment.
+- Windows/Linux and Linux Colab jobs all passed for `30ba728` in
+  [PR CI run 37099219258](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/37099219258).
+  Linux exercises the symlink tests skipped on this host. Hosted jobs run synthetic
+  ingestion/replay and econometric publication/verification/repetition without credentials.
+- An actual Google-account browser Colab session was not required or launched.
+  The same portable bootstrap is tested on hosted Linux. OneDrive installations
+  that reject uv cache hard links can use command-scoped `UV_LINK_MODE=copy`.
+
+| P2 acceptance criterion | Evidence | Result |
+| --- | --- | --- |
+| Known synthetic relationships | Statistical units and actual synthetic history | PASS |
+| No future formation data | Prefix-invariance tests and full real-history SQL audit | PASS |
+| Latest effective daily relationship | Boundary/gap tests and full real-history SQL audit | PASS |
+| Reproducible scientific IDs | Synthetic rebuilds, real-generation comparison and immutable reuse | PASS |
+| Several representative manual inspections | Three stored pre-final plots/diagnostic records and direct calculations | PASS |
+
+The implementation is pushed in [draft PR #3](https://github.com/MariusPoulsen/Project_AI_in_Finance/pull/3),
+stacked on unmerged Phase 1. No main-branch merge is implied. P1 source limitations
+and the older-raw-capture replay requirement remain documented in the runbooks.
+`final_test_outcomes_computed` remains false; the final-test outcome lock is closed.
