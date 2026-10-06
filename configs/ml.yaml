@@ -1,0 +1,9 @@
+version: ml-v1
+feature_schema_version: quantitative-v1-draft
+train: {start: 2018-01-01, end: 2021-12-31}
+validation: {start: 2022-01-01, end: 2023-12-31}
+final_test: {start: 2024-01-01, end: 2025-12-31}
+embargo_days: 10
+final_test_locked: true
+calibration: sigmoid
+seed: 42

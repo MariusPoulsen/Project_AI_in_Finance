@@ -1,0 +1,9 @@
+version: data-v1
+start: 2014-01-01
+end: 2025-12-31
+calendar: XNYS
+market_source: yahoo
+volatility_source: cboe
+historical_evidence: sec
+evidence_timestamp: accepted_at
+optional_news_enabled: false

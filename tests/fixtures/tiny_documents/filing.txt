@@ -1,0 +1,3 @@
+SYNTHETIC TEST FIXTURE. Not an actual SEC filing.
+Issuer reports an illustrative business update.
+Accepted at 2021-01-04T13:00:00Z.

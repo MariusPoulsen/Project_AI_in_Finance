@@ -1,0 +1,8 @@
+version: agents-v1-draft
+prompt_graph_version: graph-v1-draft
+mode: mock
+provider: null
+model: null
+timeout_seconds: 60
+max_retries: 2
+historical_web_browsing: false

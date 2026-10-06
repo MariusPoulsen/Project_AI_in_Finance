@@ -1,0 +1,32 @@
+version: curated-28-v1
+orientation: leg_a_is_y
+pairs:
+  - {leg_a: KO, leg_b: PEP, peer_group: "Beverages"}
+  - {leg_a: HD, leg_b: LOW, peer_group: "Home improvement retail"}
+  - {leg_a: WMT, leg_b: TGT, peer_group: "Large-format retail"}
+  - {leg_a: MCD, leg_b: YUM, peer_group: "Quick-service restaurants"}
+  - {leg_a: ORLY, leg_b: AZO, peer_group: "Auto-parts retail"}
+  - {leg_a: TJX, leg_b: ROST, peer_group: "Off-price apparel retail"}
+  - {leg_a: XOM, leg_b: CVX, peer_group: "Integrated oil & gas"}
+  - {leg_a: COP, leg_b: EOG, peer_group: "US exploration & production"}
+  - {leg_a: V, leg_b: MA, peer_group: "Card/payment networks"}
+  - {leg_a: JPM, leg_b: BAC, peer_group: "Large US banks"}
+  - {leg_a: GS, leg_b: MS, peer_group: "Investment banking / capital markets"}
+  - {leg_a: SPGI, leg_b: MCO, peer_group: "Ratings / financial information"}
+  - {leg_a: ICE, leg_b: CME, peer_group: "Exchanges / market infrastructure"}
+  - {leg_a: CB, leg_b: TRV, peer_group: "Property & casualty insurance"}
+  - {leg_a: MET, leg_b: PRU, peer_group: "Life insurance / retirement"}
+  - {leg_a: PFE, leg_b: MRK, peer_group: "Large-cap pharmaceuticals"}
+  - {leg_a: BMY, leg_b: ABBV, peer_group: "Large-cap biopharma"}
+  - {leg_a: TMO, leg_b: DHR, peer_group: "Life-science tools"}
+  - {leg_a: ABT, leg_b: BDX, peer_group: "Medical devices / supplies"}
+  - {leg_a: UPS, leg_b: FDX, peer_group: "Parcel logistics"}
+  - {leg_a: CAT, leg_b: DE, peer_group: "Heavy machinery"}
+  - {leg_a: LMT, leg_b: NOC, peer_group: "Defense primes"}
+  - {leg_a: CSX, leg_b: NSC, peer_group: "US freight railroads"}
+  - {leg_a: DAL, leg_b: UAL, peer_group: "US network airlines"}
+  - {leg_a: TXN, leg_b: ADI, peer_group: "Analog semiconductors"}
+  - {leg_a: LRCX, leg_b: KLAC, peer_group: "Semiconductor equipment"}
+  - {leg_a: GM, leg_b: F, peer_group: "US auto manufacturers"}
+  - {leg_a: DUK, leg_b: SO, peer_group: "Regulated electric utilities"}
+

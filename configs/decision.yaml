@@ -1,0 +1,6 @@
+version: policy-v1-draft
+status: draft
+# Selection and freeze belong to later validation phases.
+candidate_probability: null
+break_risk_limit: null
+fail_closed_status: ABSTAIN
