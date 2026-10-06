@@ -55,6 +55,16 @@ from structural_break.intelligence.sentiment import (
     score_sentiment_pack,
     validate_sentiment_result,
 )
+from structural_break.research.availability import (
+    ACCEPTANCE_POLICY,
+    ambiguous_cutoff,
+    apply_availability_bounds,
+)
+from structural_break.research.scheduling import (
+    DEFAULT_CATALYST_EVENTS,
+    MAX_CATALYST_CALLS,
+    build_catalyst_schedule,
+)
 from structural_break.research.universe import json_bytes, parquet_bytes, verify_universe_freeze
 from structural_break.storage.files import sha256_file, write_bytes
 
@@ -101,11 +111,61 @@ def _load_json(path: Path) -> dict[str, Any]:
     return result
 
 
+_SOURCE_FIELDS = frozenset(
+    {"request_url", "source_url", "file", "sha256", "status_code", "retrieved_at_utc"}
+)
+
+
+def _checked_metadata_source(
+    source: Mapping[str, Any], directory: Path, *, inventory: bool
+) -> FetchedResponse:
+    """Bind each cached response to one canonical SEC request and immutable bytes."""
+    fields = _SOURCE_FIELDS | {"cik", "included"} if inventory else _SOURCE_FIELDS
+    if set(source) != fields:
+        raise ValueError("SEC metadata response schema differs")
+    request = source["request_url"]
+    match = (
+        re.fullmatch(
+            re.escape(SUBMISSIONS_BASE_URL) + r"CIK(\d{10})(?:-submissions-\d+)?\.json",
+            request,
+        )
+        if isinstance(request, str)
+        else None
+    )
+    if (
+        match is None
+        or source["source_url"] != request
+        or source["file"] != "data/raw/sec/submissions/" + request.rsplit("/", 1)[1]
+        or type(source["status_code"]) is not int
+        or not 100 <= source["status_code"] <= 599
+        or not isinstance(source["sha256"], str)
+        or re.fullmatch(r"[0-9a-f]{64}", source["sha256"]) is None
+    ):
+        raise ValueError("SEC metadata exact source identity differs")
+    if inventory and (source["cik"] != match[1] or type(source["included"]) is not bool):
+        raise ValueError("SEC metadata source issuer or inclusion identity differs")
+    try:
+        retrieved = datetime.fromisoformat(source["retrieved_at_utc"])
+    except (TypeError, ValueError) as exc:
+        raise ValueError("SEC metadata retrieval timestamp must be UTC aware") from exc
+    if retrieved.tzinfo is None or retrieved.utcoffset() != UTC.utcoffset(retrieved):
+        raise ValueError("SEC metadata retrieval timestamp must be UTC aware")
+    body = confined_path(directory, source["file"]).read_bytes()
+    if hashlib.sha256(body).hexdigest() != source["sha256"]:
+        raise ValueError("Cached SEC metadata raw checksum differs")
+    return FetchedResponse(body, request, source["status_code"], retrieved)
+
+
 def _source_get(
     directory: Path, get: Callable[[str], FetchedResponse], sources: dict[str, dict[str, Any]]
 ) -> Callable[[str], FetchedResponse]:
     def cached(url: str) -> FetchedResponse:
-        if not url.startswith(SUBMISSIONS_BASE_URL):
+        if (
+            re.fullmatch(
+                re.escape(SUBMISSIONS_BASE_URL) + r"CIK\d{10}(?:-submissions-\d+)?\.json", url
+            )
+            is None
+        ):
             raise ValueError("SEC metadata cache requires the official submissions endpoint")
         name = url.removeprefix(SUBMISSIONS_BASE_URL)
         if "/" in name or "\\" in name or not name.endswith(".json"):
@@ -116,18 +176,16 @@ def _source_get(
             metadata = _load_json(metadata_path)
             if metadata.get("request_url") != url or metadata.get("file") != file:
                 raise ValueError("Cached SEC source identity disagrees with its request")
-            body = confined_path(directory, file).read_bytes()
-            if hashlib.sha256(body).hexdigest() != metadata["sha256"]:
-                raise ValueError("Cached SEC metadata raw checksum differs")
-            response = FetchedResponse(
-                body,
-                metadata["source_url"],
-                metadata["status_code"],
-                datetime.fromisoformat(metadata["retrieved_at_utc"]),
-            )
+            response = _checked_metadata_source(metadata, directory, inventory=False)
         else:
             response = get(url)
-            if response.url != url or response.retrieved_at.tzinfo is None:
+            if (
+                response.url != url
+                or response.retrieved_at.tzinfo is None
+                or response.retrieved_at.utcoffset() is None
+                or type(response.status_code) is not int
+                or not 100 <= response.status_code <= 599
+            ):
                 raise ValueError("SEC metadata response lacks exact source or retrieval identity")
             metadata = {
                 "request_url": url,
@@ -177,6 +235,8 @@ def _normalized_metadata(
     filings = normalize_filings(
         normalized, date.fromisoformat(inputs["start"]), date.fromisoformat(inputs["end"])
     )
+    if inputs.get("acceptance_policy") == ACCEPTANCE_POLICY:
+        filings = apply_availability_bounds(filings)
     identities = securities[
         [
             "cik",
@@ -229,6 +289,10 @@ def collect_sec_metadata(
         "max_issuers": max_issuers,
         "code_sha256": sha256_file(Path(__file__)),
         "normalizer_sha256": sha256_file(Path(__file__).parents[1] / "data/sec.py"),
+        "acceptance_policy": ACCEPTANCE_POLICY,
+        "availability_implementation_sha256": sha256_file(
+            Path(__file__).with_name("availability.py")
+        ),
     }
     if (output_dir / "manifest.json").exists():
         manifest = verify_sec_metadata(output_dir, frozen_universe_dir)
@@ -314,7 +378,7 @@ def collect_sec_metadata(
         for filename in (source["file"], source["file"] + ".source.json"):
             files[filename] = sha256_file(confined_path(output_dir, filename))
     manifest = {
-        "schema_version": "research-sec-metadata-v1",
+        "schema_version": "research-sec-metadata-v2",
         "inputs": inputs,
         "data_snapshot_id": snapshot_id,
         "source_identity": identity,
@@ -332,43 +396,164 @@ def collect_sec_metadata(
     return manifest
 
 
+def _replay_metadata_coverage(
+    sources: Sequence[Mapping[str, Any]],
+    responses: Mapping[str, FetchedResponse],
+    securities: pd.DataFrame,
+    inputs: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    """Replay the required current/history inventory without any network access.
+
+    A missing required response can only reconstruct UNKNOWN. Hash consistency
+    alone cannot establish complete history when the current JSON declares an
+    intersecting older file that is absent from the stored response inventory.
+    """
+    coverage = []
+    known_ciks = set(securities["cik"])
+    if any(source["cik"] not in known_ciks for source in sources):
+        raise ValueError("SEC metadata source lies outside the frozen issuer roster")
+    start, end = date.fromisoformat(inputs["start"]), date.fromisoformat(inputs["end"])
+    limit = inputs["max_issuers"]
+    if start > end or (limit is not None and (type(limit) is not int or limit < 1)):
+        raise ValueError("SEC metadata capture range or issuer scheduling limit differs")
+    for index, security in enumerate(securities.sort_values("security_id").to_dict("records")):
+        cik = str(security["cik"])
+        issuer_sources = {
+            source["request_url"]: source for source in sources if source["cik"] == cik
+        }
+        status = "NOT_SCHEDULED" if limit is not None and index >= limit else "OK"
+        reason = "METADATA_BATCH_LIMIT" if status == "NOT_SCHEDULED" else None
+        attempted: set[str] = set()
+        included: set[str] = set()
+
+        def offline_get(
+            url: str,
+            _attempted: set[str] = attempted,
+            _issuer_sources: Mapping[str, Mapping[str, Any]] = issuer_sources,
+        ) -> FetchedResponse:
+            _attempted.add(url)
+            if url not in _issuer_sources:
+                raise SourceError(url)
+            return responses[url]
+
+        if status == "OK":
+            try:
+                included = {
+                    response.url
+                    for _, _, response in fetch_submissions([cik], start, end, offline_get)
+                }
+            except (SourceError, SecDataError):
+                status, reason = "UNKNOWN", "SEC_METADATA_SOURCE_FAILED"
+                for url, source in issuer_sources.items():
+                    if source["status_code"] == 200:
+                        try:
+                            parse_json_response(responses[url])
+                            included.add(url)
+                        except SecDataError:
+                            pass
+        if set(issuer_sources) != attempted & set(responses):
+            raise ValueError("SEC metadata inventory differs from its required source requests")
+        if any(
+            source["included"] is not (url in included) for url, source in issuer_sources.items()
+        ):
+            raise ValueError("SEC metadata source inclusion differs from offline request replay")
+        coverage.append(
+            {
+                "security_id": security["security_id"],
+                "cik": cik,
+                "status": status,
+                "reason": reason,
+                "metadata_sources": len(included),
+            }
+        )
+    return coverage
+
+
 def verify_sec_metadata(directory: Path, frozen_universe_dir: Path) -> dict[str, Any]:
     """Hash and reconstruct source-derived filings before they enter evidence selection."""
     freeze = verify_universe_freeze(frozen_universe_dir)
     manifest = _load_json(directory / "manifest.json")
     inputs = manifest["inputs"]
     if (
-        manifest.get("schema_version") != "research-sec-metadata-v1"
+        inputs.get("acceptance_policy") not in {None, ACCEPTANCE_POLICY}
+        or manifest.get("schema_version")
+        != (
+            "research-sec-metadata-v2"
+            if inputs.get("acceptance_policy") == ACCEPTANCE_POLICY
+            else "research-sec-metadata-v1"
+        )
         or inputs["universe_freeze_id"] != freeze["freeze_id"]
         or inputs["universe_manifest_sha256"] != sha256_file(frozen_universe_dir / "manifest.json")
         or date.fromisoformat(inputs["end"]) > date(2023, 12, 31)
         or manifest.get("final_test_sources_requested") is not False
     ):
         raise ValueError("SEC metadata violates its frozen universe or final-test boundary")
+    sources = json.loads((directory / "sources.json").read_bytes())
+    coverage = json.loads((directory / "coverage.json").read_bytes())
+    if not isinstance(sources, list) or not isinstance(coverage, list):
+        raise ValueError("SEC metadata source and coverage inventories must be arrays")
+    expected_files = {"sources.json", "coverage.json", "filings.parquet"}
+    responses = {}
+    for source in sources:
+        if not isinstance(source, dict):
+            raise ValueError("SEC metadata source inventory schema differs")
+        response = _checked_metadata_source(source, directory, inventory=True)
+        if response.url in responses:
+            raise ValueError("SEC metadata source requests must be unique")
+        responses[response.url] = response
+        metadata_file = source["file"] + ".source.json"
+        if _load_json(confined_path(directory, metadata_file)) != {
+            field: source[field] for field in _SOURCE_FIELDS
+        }:
+            raise ValueError("SEC metadata cached response provenance differs from its inventory")
+        expected_files.update((source["file"], metadata_file))
+    if list(responses) != sorted(responses) or set(manifest["files"]) != expected_files:
+        raise ValueError("SEC metadata source or file inventory differs")
     for filename, digest in manifest["files"].items():
         if sha256_file(confined_path(directory, filename)) != digest:
             raise ValueError("SEC metadata file checksum differs")
+    expected_identity = {"inputs": inputs, "sources": sources, "coverage": coverage}
     if (
-        manifest["data_snapshot_id"] != "research_sec_" + _sha(manifest["source_identity"])[:24]
-        or manifest["source_identity"]["inputs"] != inputs
-        or json.loads((directory / "coverage.json").read_bytes())
-        != manifest["source_identity"]["coverage"]
+        manifest["data_snapshot_id"] != "research_sec_" + _sha(expected_identity)[:24]
+        or manifest["source_identity"] != expected_identity
     ):
         raise ValueError("SEC metadata identity differs from its raw source freeze")
-    sources = json.loads((directory / "sources.json").read_bytes())
-    if sources != manifest["source_identity"]["sources"]:
-        raise ValueError("SEC metadata raw source inventory differs")
-    for source in sources:
-        if sha256_file(confined_path(directory, source["file"])) != source["sha256"]:
-            raise ValueError("SEC metadata raw source lineage checksum differs")
     securities = pd.read_parquet(frozen_universe_dir / "security_master.parquet")
+    expected_coverage = _replay_metadata_coverage(sources, responses, securities, inputs)
     expected = _normalized_metadata(
         sources, directory, securities, inputs, manifest["data_snapshot_id"]
     )
+    missing_counts = expected.loc[
+        expected["acceptance_datetime_utc"].isna(), "security_id"
+    ].value_counts()
+    for row in expected_coverage:
+        row["missing_acceptance_count"] = int(missing_counts.get(row["security_id"], 0))
+    if coverage != expected_coverage or any(
+        not isinstance(row, dict)
+        or type(row.get("metadata_sources")) is not int
+        or type(row.get("missing_acceptance_count")) is not int
+        for row in coverage
+    ):
+        raise ValueError("SEC metadata coverage differs from offline source reconstruction")
     actual = pd.read_parquet(directory / "filings.parquet")
     pd.testing.assert_frame_equal(actual, expected, check_dtype=False)
-    if len(actual) != manifest["filing_count"]:
-        raise ValueError("SEC filing count disagrees with its capture")
+    counts = {
+        "filing_count": len(expected),
+        "issuer_count": len(securities),
+        "scheduled_issuer_count": sum(
+            row["status"] != "NOT_SCHEDULED" for row in expected_coverage
+        ),
+        "complete_source_issuer_count": sum(row["status"] == "OK" for row in expected_coverage),
+        "missing_acceptance_count": int(expected["acceptance_datetime_utc"].isna().sum()),
+    }
+    if (
+        any(
+            type(manifest.get(key)) is not int or manifest[key] != value
+            for key, value in counts.items()
+        )
+        or manifest.get("timestamp_recovery_from_filing_date") is not False
+    ):
+        raise ValueError("SEC metadata capture counts or missing timestamp contract differs")
     return manifest
 
 
@@ -389,15 +574,16 @@ def _event_inputs(events: pd.DataFrame, pairs: pd.DataFrame) -> pd.DataFrame:
         pair = pair_index[event["pair_id"]]
         stamp = pd.Timestamp(event["event_timestamp"])
         cutoff = pd.Timestamp(event.get("evidence_cutoff", stamp))
-        if (
-            pd.isna(stamp)
-            or stamp.tzinfo is None
-            or cutoff.tzinfo is None
-            or cutoff > stamp
-            or stamp.date() > date(2023, 12, 31)
-            or stamp.date() < date(2004, 1, 1)
-        ):
+        if pd.isna(stamp) or pd.isna(cutoff) or stamp.tzinfo is None or cutoff.tzinfo is None:
             raise ValueError("Research SEC event cutoff violates the development information set")
+        stamp, cutoff = stamp.tz_convert("UTC"), cutoff.tz_convert("UTC")
+        if cutoff > stamp or stamp.date() > date(2023, 12, 31) or stamp.date() < date(2004, 1, 1):
+            raise ValueError("Research SEC event cutoff violates the development information set")
+        start, end = pair.get("active_from"), pair.get("active_to")
+        if (pd.notna(start) and min(stamp.date(), cutoff.date()) < pd.Timestamp(start).date()) or (
+            pd.notna(end) and max(stamp.date(), cutoff.date()) >= pd.Timestamp(end).date()
+        ):
+            raise ValueError("Research SEC event cutoff violates frozen issuer continuity")
         for field in ("leg_a", "leg_b", "leg_a_security_id", "leg_b_security_id"):
             if field in event and event[field] != pair[field]:
                 raise ValueError("Research event fixed orientation disagrees with the universe")
@@ -483,7 +669,9 @@ def metadata_event_features(
     for leg in ("A", "B"):
         prefix = f"sec_{leg.lower()}_"
         coverage = issuer_coverage[event[f"leg_{leg.lower()}_security_id"]]
-        unknown = not _coverage_known(coverage, cutoff)
+        unknown = not _coverage_known(coverage, cutoff) or ambiguous_cutoff(
+            filing_index, event[f"leg_{leg.lower()}_security_id"], cutoff
+        )
         names = METADATA_FEATURE_COLUMNS[:6]
         for name in names:
             values[prefix + name.removeprefix("sec_a_")] = None
@@ -566,11 +754,14 @@ def _event_pack(
     pack = cast(dict[str, Any], build_evidence_pack(event, selected, chunks, coverage, policy))
     for leg in ("A", "B"):
         coverage_row = source_coverage[event[f"leg_{leg.lower()}_security_id"]]
-        if not _coverage_known(coverage_row, pd.Timestamp(event["evidence_cutoff"])):
+        cutoff = pd.Timestamp(event["evidence_cutoff"])
+        if not _coverage_known(coverage_row, cutoff) or ambiguous_cutoff(
+            filings, event[f"leg_{leg.lower()}_security_id"], cutoff
+        ):
             pack["coverage"][leg]["status"] = (
                 "PARTIAL" if any(chunk["leg"] == leg for chunk in pack["chunks"]) else "UNKNOWN"
             )
-            pack["coverage"][leg]["reason"] = "SEC_METADATA_COVERAGE_INCOMPLETE"
+            pack["coverage"][leg]["reason"] = "SEC_METADATA_OR_TIME_COVERAGE_INCOMPLETE"
     pack["coverage_status"] = (
         "COMPLETE"
         if all(pack["coverage"][leg]["status"] == "COMPLETE" for leg in ("A", "B"))
@@ -662,6 +853,7 @@ def build_event_intelligence(
     sentiment_policy: FinBERTPolicy | None = None,
     cache_workspace: Path | None = None,
     max_events: int | None = None,
+    catalyst_max_events: int = DEFAULT_CATALYST_EVENTS,
     timeout_seconds: float = 90,
     max_retries: int = 0,
     get: Callable[[str], FetchedResponse] | None = None,
@@ -673,19 +865,30 @@ def build_event_intelligence(
 ) -> dict[str, Any]:
     """Retain 31 catalyst, 17 tone and 14 metadata features for every input event.
 
-    Source scheduling is chronological and label blind. ``max_events`` bounds
-    downloads as well as inference; all unscheduled rows carry explicit UNKNOWN
-    fields. Per-event checkpoints permit interruption recovery. A completed batch
-    is immutable; an explicit new batch directory can retry UNKNOWN later.
+    ``max_events`` is an explicit partial source/tone inventory. The separate
+    catalyst pilot covers years/business groups without targets, then processes
+    its selected events chronologically. Unselected catalysts remain UNKNOWN;
+    tone and metadata still cover all source-scheduled rows. Checkpoints permit
+    interruption recovery; completed batches and their schedules are immutable.
     """
     if max_events is not None and (type(max_events) is not int or max_events < 1):
         raise ValueError("Research event batch limit must be a positive integer")
     if not 0 < timeout_seconds <= 300 or not 0 <= max_retries <= 5:
         raise ValueError("Research extraction timeout exceeds bounded controls")
     freeze = verify_universe_freeze(frozen_universe_dir)
-    verify_sec_metadata(sec_metadata_dir, frozen_universe_dir)
+    metadata_capture = verify_sec_metadata(sec_metadata_dir, frozen_universe_dir)
+    if metadata_capture["inputs"].get("acceptance_policy") != ACCEPTANCE_POLICY:
+        raise ValueError("New research intelligence requires conservative SEC availability bounds")
     pairs = pd.read_parquet(frozen_universe_dir / "pair_universe.parquet")
     clean = _event_inputs(events, pairs)
+    catalyst_schedule = build_catalyst_schedule(
+        clean.loc[:, ["event_id", "pair_id", "event_timestamp"]],
+        pairs,
+        max_events=catalyst_max_events,
+        max_calls=getattr(provider, "max_calls", MAX_CATALYST_CALLS),
+        max_retries=max_retries,
+    )
+    catalyst_ids = set(catalyst_schedule["selected_event_ids"])
     tone_policy = sentiment_policy or FinBERTPolicy()
     policy = RESEARCH_EVIDENCE_POLICY
     inputs = {
@@ -701,6 +904,8 @@ def build_event_intelligence(
         "prompt_version": prompt_version,
         "provider_config": dict(provider_config or {}),
         "max_events": max_events,
+        "catalyst_max_events": catalyst_max_events,
+        "catalyst_schedule_sha256": catalyst_schedule["schedule_sha256"],
         "timeout_seconds": timeout_seconds,
         "max_retries": max_retries,
         "shared_cache_workspace": cache_workspace is not None,
@@ -733,6 +938,7 @@ def build_event_intelligence(
     if (output_dir / "inputs.json").exists() and _load_json(output_dir / "inputs.json") != inputs:
         raise ValueError("Interrupted intelligence checkpoint belongs to different batch inputs")
     write_bytes(output_dir / "inputs.json", json_bytes(inputs))
+    write_bytes(output_dir / "catalyst_schedule.json", json_bytes(catalyst_schedule))
     filings = pd.read_parquet(sec_metadata_dir / "filings.parquet")
     pair_filings = _pair_filing_indices(clean, filings)
     source_coverage = _coverage_bounds(
@@ -748,13 +954,18 @@ def build_event_intelligence(
     for index, event in enumerate(cast(list[dict[str, Any]], clean.to_dict("records"))):
         event_filings = pair_filings[event["pair_id"]]
         scheduled = max_events is None or index < max_events
+        catalyst_scheduled = scheduled and event["event_id"] in catalyst_ids
         filename = "events/" + hashlib.sha256(event["event_id"].encode()).hexdigest() + ".json"
         checkpoint = output_dir / filename
         if checkpoint.exists():
             record = _load_json(checkpoint)
-            if record["event"] != event or record["scheduled"] is not scheduled:
+            if (
+                record["event"] != event
+                or record["scheduled"] is not scheduled
+                or record["catalyst_scheduled"] is not catalyst_scheduled
+            ):
                 raise ValueError("Research event checkpoint identity differs")
-            validate_stored_extraction(record["pack"], record["extraction"])
+            validate_stored_extraction(record["catalyst_pack"], record["extraction"])
             expected_pack = (
                 _event_pack(
                     event,
@@ -770,6 +981,10 @@ def build_event_intelligence(
             )
             if record["pack"] != expected_pack:
                 raise ValueError("Research checkpoint evidence differs from raw reconstruction")
+            if record["catalyst_pack"] != (
+                expected_pack if catalyst_scheduled else _empty_pack(event, policy)
+            ):
+                raise ValueError("Research checkpoint catalyst evidence violates its schedule")
         else:
             selected_count = 0
             pack = _empty_pack(event, policy)
@@ -784,9 +999,10 @@ def build_event_intelligence(
                     parsed_cache=parsed_cache,
                 )
             validate_pack(pack)
+            catalyst_pack = pack if catalyst_scheduled else _empty_pack(event, policy)
             extraction = extract_pack(
-                pack,
-                provider or _disabled_provider,
+                catalyst_pack,
+                (provider or _disabled_provider) if catalyst_scheduled else _disabled_provider,
                 paths.data / "cache",
                 provider_name,
                 model_name,
@@ -805,7 +1021,9 @@ def build_event_intelligence(
             record = {
                 "event": event,
                 "scheduled": scheduled,
+                "catalyst_scheduled": catalyst_scheduled,
                 "pack": pack,
+                "catalyst_pack": catalyst_pack,
                 "extraction": extraction,
                 "tone": tone,
                 "selected_filing_count": selected_count,
@@ -832,6 +1050,7 @@ def build_event_intelligence(
                 "pair_id": event["pair_id"],
                 "event_timestamp": event["event_timestamp"],
                 "scheduled": scheduled,
+                "catalyst_scheduled": catalyst_scheduled,
                 "catalyst_status": record["extraction"]["status"],
                 "reason_codes": record["extraction"]["reason_codes"],
                 "coverage_a": record["pack"]["coverage"]["A"]["status"],
@@ -847,6 +1066,7 @@ def build_event_intelligence(
                     "stage": "EVENT_INTELLIGENCE",
                     "event_id": event["event_id"],
                     "scheduled": scheduled,
+                    "catalyst_scheduled": catalyst_scheduled,
                     "status": record["extraction"]["status"],
                     "completed": index + 1,
                     "total": len(clean),
@@ -878,10 +1098,11 @@ def build_event_intelligence(
         write_bytes(output_dir / filename, body)
         files[filename] = hashlib.sha256(body).hexdigest()
     files["inputs.json"] = sha256_file(output_dir / "inputs.json")
+    files["catalyst_schedule.json"] = sha256_file(output_dir / "catalyst_schedule.json")
     files.update({row["file"]: row["sha256"] for row in records})
     cache_files = _cache_inventory(packs, paths, filings)
     manifest = {
-        "schema_version": "research-event-intelligence-v1",
+        "schema_version": "research-event-intelligence-v2",
         "inputs": inputs,
         "intelligence_version": version,
         "source_identity": identity,
@@ -892,6 +1113,10 @@ def build_event_intelligence(
         ),
         "event_count": len(clean),
         "scheduled_event_count": sum(row["scheduled"] for row in audits),
+        "catalyst_selected_event_count": catalyst_schedule["selected_event_count"],
+        "catalyst_scheduled_event_count": sum(row["catalyst_scheduled"] for row in audits),
+        "catalyst_call_upper_bound": sum(row["catalyst_scheduled"] for row in audits)
+        * (1 + max_retries),
         "catalyst_counts": pd.Series([row["catalyst_status"] for row in audits])
         .value_counts()
         .to_dict(),
@@ -922,7 +1147,7 @@ def verify_event_intelligence(
         raise ValueError("Research intelligence requires its explicit shared cache workspace")
     cache_root = (cache_workspace or directory).resolve()
     if (
-        manifest.get("schema_version") != "research-event-intelligence-v1"
+        manifest.get("schema_version") != "research-event-intelligence-v2"
         or inputs["universe_freeze_id"] != freeze["freeze_id"]
         or inputs["sec_manifest_sha256"] != sha256_file(sec_metadata_dir / "manifest.json")
         or manifest.get("final_test_outcomes_inspected") is not False
@@ -943,10 +1168,24 @@ def verify_event_intelligence(
     ):
         raise ValueError("Research intelligence identity differs")
     clean = pd.read_parquet(directory / "events.parquet")
-    canonical = _event_inputs(clean, pd.read_parquet(frozen_universe_dir / "pair_universe.parquet"))
+    pairs = pd.read_parquet(frozen_universe_dir / "pair_universe.parquet")
+    canonical = _event_inputs(clean, pairs)
     pd.testing.assert_frame_equal(pd.read_parquet(directory / "event_mapping.parquet"), clean)
     if _sha(canonical.to_dict("records")) != inputs["events_sha256"]:
         raise ValueError("Research intelligence event registry differs")
+    catalyst_schedule = build_catalyst_schedule(
+        canonical.loc[:, ["event_id", "pair_id", "event_timestamp"]],
+        pairs,
+        max_events=inputs["catalyst_max_events"],
+        max_calls=inputs["provider_limits"]["max_calls"] or MAX_CATALYST_CALLS,
+        max_retries=inputs["max_retries"],
+    )
+    if (
+        _load_json(directory / "catalyst_schedule.json") != catalyst_schedule
+        or inputs["catalyst_schedule_sha256"] != catalyst_schedule["schedule_sha256"]
+    ):
+        raise ValueError("Research catalyst schedule differs from target-blind reconstruction")
+    catalyst_ids = set(catalyst_schedule["selected_event_ids"])
     filings = pd.read_parquet(sec_metadata_dir / "filings.parquet")
     pair_filings = _pair_filing_indices(clean, filings)
     source_coverage = _coverage_bounds(
@@ -968,11 +1207,16 @@ def verify_event_intelligence(
         record = _load_json(confined_path(directory, row["file"]))
         event = record["event"]
         scheduled = inputs["max_events"] is None or index < inputs["max_events"]
-        if event != canonical_rows[index] or record["scheduled"] is not scheduled:
+        catalyst_scheduled = scheduled and event["event_id"] in catalyst_ids
+        if (
+            event != canonical_rows[index]
+            or record["scheduled"] is not scheduled
+            or record["catalyst_scheduled"] is not catalyst_scheduled
+        ):
             raise ValueError("Research checkpoint event or label-blind scheduling differs")
         event_filings = pair_filings[event["pair_id"]]
         validate_pack(record["pack"])
-        validate_stored_extraction(record["pack"], record["extraction"])
+        validate_stored_extraction(record["catalyst_pack"], record["extraction"])
         expected_pack = (
             _event_pack(
                 record["event"],
@@ -988,6 +1232,10 @@ def verify_event_intelligence(
         )
         if record["pack"] != expected_pack:
             raise ValueError("Research evidence differs from raw-source scientific reconstruction")
+        if record["catalyst_pack"] != (
+            expected_pack if catalyst_scheduled else _empty_pack(event, RESEARCH_EVIDENCE_POLICY)
+        ) or (not catalyst_scheduled and record["extraction"]["status"] != "UNKNOWN"):
+            raise ValueError("Research catalyst evidence or response violates the frozen schedule")
         for chunk in record["pack"]["chunks"]:
             if sha256_file(confined_path(cache_root, chunk["raw_file_path"])) != chunk["sha256"]:
                 raise ValueError("Research intelligence evidence raw provenance differs")
@@ -1011,6 +1259,7 @@ def verify_event_intelligence(
                 "pair_id": event["pair_id"],
                 "event_timestamp": event["event_timestamp"],
                 "scheduled": scheduled,
+                "catalyst_scheduled": catalyst_scheduled,
                 "catalyst_status": record["extraction"]["status"],
                 "reason_codes": record["extraction"]["reason_codes"],
                 "coverage_a": record["pack"]["coverage"]["A"]["status"],
@@ -1041,6 +1290,11 @@ def verify_event_intelligence(
         or manifest["feature_columns"]
         != list(EVENT_FEATURE_NAMES + SENTIMENT_FEATURE_COLUMNS + METADATA_FEATURE_COLUMNS)
         or manifest["scheduled_event_count"] != sum(row["scheduled"] for row in audits)
+        or manifest["catalyst_selected_event_count"] != catalyst_schedule["selected_event_count"]
+        or manifest["catalyst_scheduled_event_count"]
+        != sum(row["catalyst_scheduled"] for row in audits)
+        or manifest["catalyst_call_upper_bound"]
+        != sum(row["catalyst_scheduled"] for row in audits) * (1 + inputs["max_retries"])
         or json.loads((directory / "coverage.json").read_bytes()) != audits
         or manifest["catalyst_counts"]
         != pd.Series([row["catalyst_status"] for row in audits]).value_counts().to_dict()

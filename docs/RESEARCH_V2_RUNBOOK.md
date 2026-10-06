@@ -48,6 +48,18 @@ unchanged while it runs. A matching rerun verifies and reuses complete pairs.
 The last registry command prints `research_version`. Supply that exact value in
 subsequent commands; do not infer it from directory modification times.
 
+The original `sec_metadata/source_v1` capture remains immutable. A cached-header
+diagnostic matched 186 of 250 sampled acceptance times under the earlier JSON
+normalizer; 49 were four hours later and 15 five hours later, with no premature
+case in this sample. This is not a complete audit of its 89,657 filings. New
+research evidence uses the conservative UTC/New York availability upper bound,
+with boundary-straddling and missing times kept UNKNOWN. Derive
+`sec_metadata/source_v2` by a frozen, zero-network replay of the verified v1 raw
+responses, following [SEC_METADATA_RECAPTURE.md](SEC_METADATA_RECAPTURE.md).
+Do not point a new-policy collection command at the completed v1 directory.
+Pass `--sec-source source_v2` to source/evidence commands that accept it. Model
+fitting must resolve the exact SEC source bound by the evidence parent manifest.
+
 ## SEC text, inference and fitting
 
 Replace `REGISTRY_VERSION` below with the printed version. `development_v1` is
@@ -70,7 +82,7 @@ FinBERT weights are pinned to the protocol revision and checked locally. The
 cache exists. Inference uses bounded token windows and exact text/model caches.
 Tone is a financial sentiment measurement, not a catalyst or reversion label.
 
-Gemma requests are chronological and label blind, with 1,000 calls including
+Gemma requests are label blind, with 1,000 calls including
 retries, eight-second pacing and an explicit quota/authentication stop. Strict
 JSON, timestamps, issuer/leg, category cues and exact quote grounding are checked
 locally. Invalid or unprocessed events retain UNKNOWN. A completed batch cannot
@@ -80,6 +92,21 @@ missing extractions. `--no-gemma` explicitly requests a tone/metadata batch;
 quantitative cohort. A `--max-events` pilot limits text acquisition and inference,
 but metadata features still cover every event; unscheduled text stays UNKNOWN.
 Disclose that limitation with the resulting comparison.
+
+Use `--catalyst-max-events 500` for the separately limited Gemma pilot, scheduling
+across year/business-group strata without reading labels or scores. The frozen
+schedule first covers available UTC years, then unrepresented business groups,
+then balances year/group/cell counts with fixed hash tie-breaks. Its manifest
+retains exact selected IDs and uncovered margins. The provider-call budget
+reserves retries for every selected event, even with cached responses. This flag
+limits catalyst inference while leaving full text-source and FinBERT processing
+available; representative-NLP-study completeness stays false. Preserve the complete
+quantitative cohort and report unscheduled catalysts as UNKNOWN; use a distinct
+batch name for another schedule or budget. Keep `--max-events` for an explicit
+partial text-source pilot, with its partial-batch completeness flag.
+The v2 evidence artifact stores the full source pack and a separate catalyst
+pack. An unselected catalyst remains UNKNOWN even when a successful extraction
+exists in a shared cache; cache contents cannot silently expand the schedule.
 
 ## Recovery and results
 
@@ -106,3 +133,11 @@ Clone the branch and run `scripts/colab_bootstrap.py --nlp` as shown in
 Keep the virtual environment and active database on `/content`, and archive the
 closed workspace between sessions. A current-survivor Yahoo/SEC roster and
 modern FinBERT extraction remain disclosed research limitations on either host.
+
+## Acceptance state
+
+Hosted CI for commit `8f10d18` was green before the latest SEC availability guards
+and balanced catalyst schedule. That run verifies its own committed revision.
+The new guards, schedule and zero-network source_v2 replay require their own
+offline checks and capture verification before the first actual Model B fits;
+those gates remain pending until their results are recorded.

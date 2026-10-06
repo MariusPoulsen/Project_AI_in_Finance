@@ -43,6 +43,22 @@ def _read_named(directory: Path, manifest: dict[str, Any], name: str) -> pd.Data
     return pd.read_parquet(io.BytesIO(body))
 
 
+def _sec_source(paths: ProjectPaths, intelligence_directory: Path) -> Path:
+    """Resolve the exact content-bound metadata snapshot, never an active alias."""
+    manifest = json.loads((intelligence_directory / "manifest.json").read_bytes())
+    expected = manifest["inputs"]["sec_manifest_sha256"]
+    candidates = []
+    for filename in (paths.workspace_root / "sec_metadata").glob("*/manifest.json"):
+        checked = confined_path(
+            paths.workspace_root, filename.relative_to(paths.workspace_root).as_posix()
+        )
+        if sha256_file(checked) == expected:
+            candidates.append(checked.parent)
+    if len(candidates) != 1:
+        raise ValueError("Intelligence must bind one unambiguous SEC metadata snapshot")
+    return candidates[0]
+
+
 def train_research_models(
     paths: ProjectPaths,
     registry_version: str,
@@ -71,7 +87,7 @@ def train_research_models(
     }
     universe_input = next(i for i in parent["inputs"] if i["role"] == "universe")
     universe_directory = confined_path(paths.workspace_root, universe_input["path"]).parent
-    sec_directory = paths.workspace_root / "sec_metadata" / "source_v1"
+    sec_directory = _sec_source(paths, intelligence_directory)
     verify_event_intelligence(
         intelligence_directory,
         universe_directory,
@@ -222,10 +238,11 @@ def verify_research_models(paths: ProjectPaths, research_version: str) -> dict[s
     universe_input = next(i for i in registry_parent["inputs"] if i["role"] == "universe")
     universe_directory = confined_path(paths.workspace_root, universe_input["path"]).parent
     intelligence_parent = next(p for p in manifest["parents"] if p["role"] == "intelligence")
+    intelligence_directory = confined_path(paths.workspace_root, intelligence_parent["path"]).parent
     verify_event_intelligence(
-        confined_path(paths.workspace_root, intelligence_parent["path"]).parent,
+        intelligence_directory,
         universe_directory,
-        paths.workspace_root / "sec_metadata" / "source_v1",
+        _sec_source(paths, intelligence_directory),
         cache_workspace=paths.workspace_root / "cache",
     )
     rows = _read_named(directory, manifest, "model_inputs")

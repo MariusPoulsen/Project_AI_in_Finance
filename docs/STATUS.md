@@ -619,17 +619,32 @@ Generated source caches, models, databases and reports remain excluded from Git.
 | Model A/B validation comparison is reproducible | Native probability replay, exact paired comparison and stored JSON | PASS |
 | Missing evidence preserves difficult observations | All 83 parent events and all seven validation events retained, explicit coverage slices | PASS |
 
-### Separate research proposal
+### Separate authorized research v2 experiment
 
 [RESEARCH_REDESIGN.md](RESEARCH_REDESIGN.md) records the development-only scarcity
-audit and a proposed separate `research-v2` experiment. The main bottleneck is
+audit that motivated the separate `research-v2` experiment. The reference bottleneck is
 relationship eligibility: only 17 of 672 validation pair-months are ACTIVE,
 yielding seven deduplicated episodes. More rows from the same episode would add
 dependence rather than independent information.
 
-The recommended direction is 250–500 dated issuers / 500–1,000 economic peer
-pairs with longer point-in-time history, regularised simple models, chronological
-walk-forward predictions and separate calibration/evaluation. A predeclared
-10/20/30-session horizon study tests target adequacy separately. These are
-proposals; no universe, label, split, eligibility or threshold changes are applied,
-and 2024–2025 outcomes remain locked.
+The user authorized its design and implementation on 2026-10-06. It now has a
+frozen 250-issuer current-survivor roster and 736 business-peer pairs, preserving
+the original 28 orientations. The verified 2004–2023 market capture contains
+1,222,930 price rows across issuers and benchmarks. Its SEC source-v1 capture has
+735 official submissions responses and 89,657 normalized filings. A separately
+versioned source-v2 replay is prepared to apply conservative acceptance-time
+bounds to those exact cached responses with zero network requests; source-v1 and
+the original Phase 4 artifacts remain intact.
+
+The implemented v2 pipeline supports regularized matched A/B models, forward
+tuning through 2019, separate 2020–2021 calibration and 2022–2023 assessment,
+predeclared 10/20/30-session targets, SEC metadata, pinned local FinBERT and a
+guarded, year/business-group balanced Gemma pilot. Its larger estimable-crossing
+population and ACTIVE subset are separate from the canonical experiment. See
+[the protocol](RESEARCH_V2_PROTOCOL.md) and [runbook](RESEARCH_V2_RUNBOOK.md).
+
+Hosted CI for `8f10d18` passed the committed offline pipeline on Windows, Linux
+and Colab. The subsequent SEC availability guards and catalyst schedule require
+fresh verification. The expanded real registry, genuine text-feature batch and
+matched predictive comparisons are still in progress. No new predictive
+improvement claim is supported yet, and 2024–2025 outcomes remain locked.

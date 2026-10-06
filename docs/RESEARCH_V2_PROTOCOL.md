@@ -73,6 +73,31 @@ unknown is not neutral. Freeze ProsusAI/finbert revision
 Its weights were published in 2020; retrospective use on earlier text is a
 disclosed modern-extractor limitation, not historical model availability.
 
+Research v2 uses `sec-json-clock-upper-bound-v2` for SEC JSON availability.
+Cached submission headers revealed mixed clock conventions: among 250 matched
+successful cached captures with hash-verified source headers, the earlier JSON
+normalizer matched the SGML acceptance header in 186 cases, placed availability
+four hours later in 49 and five hours later in 15. No premature case occurred in
+that sample. This is a 250-capture diagnostic, not a full audit of the 89,657
+filing rows or proof that every other acceptance timestamp is correct.
+
+For absent or zero JSON offsets, including `Z`, consider both UTC and New York
+wall-clock interpretations. Preserve their lower and upper bounds and admit
+evidence only at the upper bound. Explicit nonzero offsets retain their exact
+stated interpretation. Missing acceptance times stay UNKNOWN; filing
+dates never recover them. If a relevant filing's availability interval crosses
+the signal cutoff or the 30-, 180- or 400-calendar-day selection boundary, the
+issuer's affected evidence coverage stays UNKNOWN, so uncertainty cannot prove
+absence. These conservative bounds can postpone otherwise admissible evidence.
+
+Rebuild SEC metadata in a new immutable `sec_metadata/source_v2` using only the
+hash-verified response bytes and sidecars of `source_v1`, with network access
+blocked. The v2 manifest binds the availability policy and implementation; a
+separate replay receipt binds the exact parent manifest, complete raw inventory,
+frozen code and derived manifest. Recompute normalized metadata and features;
+do not relabel or overwrite old source, evidence or original Phase 4 artifacts.
+See [the replay policy](SEC_METADATA_RECAPTURE.md) for execution and provenance.
+
 Use free Gemma for a smaller bounded catalyst pack with exact JSON schema,
 issuer/leg/timestamp checks, category-cue and exact-quote grounding, strict local
 validation, bounded retries and quota-stop. Processing order is chronological,
@@ -82,6 +107,29 @@ Use all four predeclared ablations to distinguish text signal from retrieval
 coverage. FinBERT ranking must not silently replace the deterministic source
 selection or omit low-tone chunks from the inference inventory. Flash remains
 configured for future adversarial reasoning agents. No paid API is enabled.
+
+The `year-business-group-balanced-gemma-pilot-v1` catalyst schedule uses the
+separate `--catalyst-max-events` limit, default 500. Hash the full allowlisted
+event identities/timestamps and frozen business-group mappings before selection;
+never read targets or scores. Cover each available UTC year from 2006–2023, then
+each still-unrepresented available business group. Fill remaining slots by the
+lowest selected year, group and year/group-cell counts, using fixed SHA-256
+tie-breaks. Within each cell, rank identities/timestamps by fixed SHA-256; process
+selected IDs in timestamp/pair/ID order. Reserve the configured retry allowance
+for every selected event, including cache hits, and cap the selected count by
+the provider's bounded call budget (at most 1,000 calls).
+
+The manifest binds `catalyst_schedule.json`, its hash, exact selected IDs,
+year/group margins, missing years/groups and call upper bound. Report scheduled
+and actually processed coverage separately. Metadata and FinBERT source
+processing can cover the full quantitative registry; unscheduled catalysts stay
+UNKNOWN on the matched cohort, even if shared caches contain earlier successful
+extractions. The evidence-v2 schema retains the complete bounded source pack
+and a separately frozen catalyst pack; unselected catalyst packs are empty.
+The pilot's representative-NLP-study flag remains
+false. Report each ablation; 500 scheduled events do not imply complete Gemma
+coverage or establish Model B improvement. The broader `--max-events` option
+still limits text-source acquisition and creates a partial text batch.
 
 The official [FinBERT card](https://huggingface.co/ProsusAI/finbert) documents
 financial-tone classification. Google's [pricing](https://ai.google.dev/gemini-api/docs/pricing)

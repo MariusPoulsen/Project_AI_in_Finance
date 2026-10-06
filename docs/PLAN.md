@@ -210,12 +210,13 @@ improvement result has been established. The original P4 acceptance remains vali
 - [x] Implement guarded free Gemma and pinned local FinBERT adapters.
 - [x] Implement metadata/tone/catalyst ablations on matched quantitative cohorts.
 - [x] Implement forward tuning, independent calibration and paired assessment replay.
-- [ ] Pass the complete offline pipeline and original regression suite.
+- [x] Pass the complete offline pipeline and original regression suite at committed revision `8f10d18` (hosted CI green).
+- [ ] Verify the new SEC availability guards, balanced catalyst schedule and zero-network source-v2 replay.
 - [ ] Generate the complete expanded development event registry.
 - [ ] Generate genuine SEC text features and disclose inference/source coverage.
 - [ ] Fit and independently replay primary and sensitivity A/B comparisons.
 - [ ] Record actual sample counts, uncertainty and positive/negative comparison results.
-- [ ] Verify Windows/Linux/Colab compatibility on the frozen implementation.
+- [x] Verify Windows/Linux/Colab compatibility for committed revision `8f10d18` (hosted CI green; new guards/schedule pending).
 
 Commands and recovery rules are in `docs/RESEARCH_V2_RUNBOOK.md`.
 

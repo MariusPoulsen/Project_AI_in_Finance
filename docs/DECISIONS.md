@@ -554,3 +554,20 @@ The user will prepare the final academic written report and presentation/video s
   and disclose selection/coverage/exclusion funnels. Temporal-block paired loss
   intervals retain shared-issuer events; few blocks and cross-quarter dependence
   limit confidence. Forecast improvement is not a claim of economic profitability.
+- Before actual research Model B fits, use `sec-json-clock-upper-bound-v2`:
+  absent/zero-offset SEC JSON acceptance values retain UTC and New York
+  wall-clock candidates, and only the upper bound admits evidence. Explicit
+  nonzero offsets stay exact. Missing times are UNKNOWN, never recovered from
+  filing dates. Relevant intervals straddling the cutoff or 30/180/400-day
+  evidence boundaries keep coverage UNKNOWN. Among 250 matched cached captures
+  with hash-verified SGML source headers, the earlier JSON normalizer matched
+  186, was four hours later in 49 and five hours later in 15; none was premature
+  in this sample. This is not a full audit of 89,657 source-v1 filings. Preserve
+  source_v1 and original Phase 4; derive a separate source_v2 from its exact
+  verified raw response inventory with frozen code and zero HTTP requests.
+- A separate `--catalyst-max-events 500` pilot balances declared year/business-
+  group strata without outcomes or scores while metadata/FinBERT may cover the
+  full registry. Unscheduled Gemma rows stay UNKNOWN; disclose coverage and all
+  ablations. `--max-events` continues to identify a partial text-source batch.
+  Hosted CI `8f10d18` predates these new guards/schedule; their acceptance checks
+  and the new source replay remain pending until separately verified.

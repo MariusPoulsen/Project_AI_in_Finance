@@ -370,6 +370,134 @@ def test_provider_config_credentials_do_not_enter_checkpoint(freeze: Path, tmp_p
     assert not (output / "inputs.json").exists()
 
 
+def test_balanced_catalyst_pilot_reuses_caches_without_filling_unscheduled_catalysts(
+    freeze: Path, tmp_path: Path
+) -> None:
+    metadata = tmp_path / "metadata"
+    collect_sec_metadata(freeze, metadata, get=source([]))
+    shared_cache = tmp_path / "shared-cache"
+    first = tmp_path / "all-catalysts"
+    calls: list[str] = []
+    build_event_intelligence(
+        event_rows(),
+        freeze,
+        metadata,
+        first,
+        provider=provider(calls),
+        sentiment_backend=Tone(),
+        get=source([]),
+        cache_workspace=shared_cache,
+        catalyst_max_events=2,
+        max_retries=1,
+    )
+    assert len(calls) == 2
+
+    class CachedTone(Tone):
+        def predict(self, windows: list[list[int]]) -> list[dict[str, float]]:
+            pytest.fail("Successful FinBERT windows must be reused")
+
+    second = tmp_path / "small-pilot"
+    manifest = build_event_intelligence(
+        event_rows().iloc[::-1],
+        freeze,
+        metadata,
+        second,
+        provider=lambda _: pytest.fail("Scheduled successful Gemma result must be reused"),
+        sentiment_backend=CachedTone(),
+        get=lambda _: pytest.fail("Verified sources must be reused"),
+        cache_workspace=shared_cache,
+        catalyst_max_events=1,
+        max_retries=1,
+    )
+    schedule = json.loads((second / "catalyst_schedule.json").read_bytes())
+    selected = schedule["selected_event_ids"]
+    assert len(selected) == manifest["catalyst_scheduled_event_count"] == 1
+    assert manifest["scheduled_event_count"] == 2
+    assert manifest["catalyst_call_upper_bound"] == 2
+    frame = pd.read_parquet(second / "features.parquet").set_index("event_id")
+    assert frame.loc[selected[0], "event_type_EARNINGS"] == 1
+    assert frame.drop(index=selected).event_type_UNKNOWN.eq(1).all()
+    assert frame.sentiment_both_known.eq(1).all()
+    assert frame.sec_a_recent_8k_count_30d.eq(1).all()
+    assert (
+        verify_event_intelligence(second, freeze, metadata, cache_workspace=shared_cache)
+        == manifest
+    )
+    for checkpoint in (second / "events").glob("*.json"):
+        row = json.loads(checkpoint.read_bytes())
+        assert row["pack"]["chunks"]
+        assert bool(row["catalyst_pack"]["chunks"]) is row["catalyst_scheduled"]
+
+
+def test_catalyst_retry_reservation_keeps_actual_calls_within_frozen_budget(
+    freeze: Path, tmp_path: Path
+) -> None:
+    metadata = tmp_path / "metadata"
+    collect_sec_metadata(freeze, metadata, get=source([]))
+    calls: list[str] = []
+    successful = provider(calls)
+
+    class Limited:
+        max_calls = 2
+
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def __call__(self, request: dict[str, Any]) -> dict[str, Any]:
+            self.calls += 1
+            if self.calls == 1:
+                raise ProviderFailure("PROVIDER_UNAVAILABLE", retriable=True)
+            return successful(request)
+
+    limited = Limited()
+    output = tmp_path / "pilot"
+    manifest = build_event_intelligence(
+        event_rows(),
+        freeze,
+        metadata,
+        output,
+        provider=limited,
+        get=source([]),
+        sentiment_backend=Tone(),
+        max_retries=1,
+    )
+    assert limited.calls == 2
+    assert manifest["catalyst_selected_event_count"] == 1
+    assert manifest["catalyst_call_upper_bound"] == 2
+    assert pd.read_parquet(output / "features.parquet").sentiment_both_known.eq(1).all()
+
+
+def test_schedule_is_reconstructed_even_if_its_file_checksum_is_resealed(
+    freeze: Path, tmp_path: Path
+) -> None:
+    import hashlib
+
+    metadata = tmp_path / "metadata"
+    collect_sec_metadata(freeze, metadata, get=source([]))
+    output = tmp_path / "pilot"
+    build_event_intelligence(
+        event_rows(),
+        freeze,
+        metadata,
+        output,
+        provider=provider([]),
+        get=source([]),
+        catalyst_max_events=1,
+    )
+    schedule_path = output / "catalyst_schedule.json"
+    schedule = json.loads(schedule_path.read_bytes())
+    schedule["selected_event_ids"] = ["event-outside-registry"]
+    schedule_path.write_text(json.dumps(schedule), encoding="utf-8")
+    manifest_path = output / "manifest.json"
+    manifest = json.loads(manifest_path.read_bytes())
+    manifest["files"]["catalyst_schedule.json"] = hashlib.sha256(
+        schedule_path.read_bytes()
+    ).hexdigest()
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(ValueError, match="schedule differs"):
+        verify_event_intelligence(output, freeze, metadata)
+
+
 def test_current_cik_inventory_cannot_prove_absence_before_first_observed_filing(
     freeze: Path, tmp_path: Path
 ) -> None:

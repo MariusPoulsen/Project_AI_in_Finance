@@ -25,6 +25,7 @@ from structural_break.research.market import collect_market
 from structural_break.research.model_job import train_research_models, verify_research_models
 from structural_break.research.protocol import ResearchProtocol, identity, load_protocol
 from structural_break.research.runner import _registered_manifest, build_research_registry
+from structural_break.research.scheduling import DEFAULT_CATALYST_EVENTS
 from structural_break.research.universe import freeze_universe
 from structural_break.storage.files import segment
 
@@ -101,6 +102,9 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--protocol", type=Path)
     parser.add_argument("--universe-config", type=Path)
     parser.add_argument(
+        "--sec-source", default="source_v2", help="Immutable SEC metadata source version"
+    )
+    parser.add_argument(
         "--sec-directory", type=Path, help="Exact SEC company directory JSON for freeze"
     )
     parser.add_argument("--registry-version", help="Explicit successfully registered event version")
@@ -112,6 +116,12 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--horizon", type=int)
     parser.add_argument(
         "--max-events", type=int, help="Explicit partial source/inference inventory"
+    )
+    parser.add_argument(
+        "--catalyst-max-events",
+        type=int,
+        default=DEFAULT_CATALYST_EVENTS,
+        help="Target-blind year/business-group Gemma pilot limit (default 500)",
     )
     parser.add_argument("--max-issuers", type=int, help="Explicit partial SEC metadata inventory")
     parser.add_argument("--tickers", nargs="+", help="Explicit source dry-run ticker subset")
@@ -142,7 +152,7 @@ def run_command(
     protocol = load_protocol(protocol_path)
     universe_directory = confined_path(paths.workspace_root, "universe/source_v1")
     market_directory = confined_path(paths.workspace_root, "market/source_v1")
-    sec_directory = confined_path(paths.workspace_root, "sec_metadata/source_v1")
+    sec_directory = confined_path(paths.workspace_root, f"sec_metadata/{segment(args.sec_source)}")
     contact = runtime.sec_user_agent.get_secret_value() if runtime.sec_user_agent else None
     if args.command == "freeze-universe":
         source = (
@@ -234,6 +244,7 @@ def run_command(
         sentiment_policy=tone_policy,
         cache_workspace=paths.workspace_root / "cache",
         max_events=args.max_events,
+        catalyst_max_events=args.catalyst_max_events,
         max_retries=protocol.extraction_retries,
         sec_user_agent=contact,
         offline=args.offline,
@@ -254,7 +265,10 @@ def main(argv: list[str] | None = None) -> int:
             raise ValueError(
                 "Research-v2 requires a separate workspace from the Phase 4 experiment"
             )
-        if any(value is not None and value < 1 for value in (args.max_events, args.max_issuers)):
+        if any(
+            value is not None and value < 1
+            for value in (args.max_events, args.max_issuers, args.catalyst_max_events)
+        ):
             raise ValueError("Explicit partial inventory limits must be positive")
         runtime = RuntimeSettings(_env_file=project / ".env")
         result = run_command(args, paths, runtime)
@@ -270,6 +284,9 @@ def main(argv: list[str] | None = None) -> int:
                 "filing_count",
                 "event_count",
                 "scheduled_event_count",
+                "catalyst_selected_event_count",
+                "catalyst_scheduled_event_count",
+                "catalyst_call_upper_bound",
                 "native_max_errors",
                 "paired_comparison_reproduced",
                 "final_test_read",

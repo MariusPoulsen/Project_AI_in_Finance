@@ -204,6 +204,7 @@ def test_intelligence_dispatch_never_passes_targets_and_retains_free_limits(
     assert options["sentiment_backend"].device == "cpu"
     assert options["sentiment_backend"].local_files_only is True
     assert options["max_events"] == 3
+    assert options["catalyst_max_events"] == 500
     assert options["max_retries"] == 1
     assert options["cache_workspace"] == paths.workspace_root / "cache"
     assert options["offline"] is True
@@ -303,6 +304,26 @@ def test_main_blocks_canonical_workspace_and_invalid_partial_limits(
     assert cli.main(["build-registry", "--workspace-root", str(PROJECT)]) == 1
     assert cli.main(["collect-sec", "--max-issuers", "0"]) == 1
     assert cli.main(["build-intelligence", "--max-events", "-1"]) == 1
+    assert cli.main(["build-intelligence", "--catalyst-max-events", "0"]) == 1
+
+
+def test_catalyst_pilot_limit_is_distinct_from_partial_source_inventory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    paths, version, _ = registered_events(tmp_path, monkeypatch)
+    args = cli._parser().parse_args(
+        ["build-intelligence", "--registry-version", version, "--catalyst-max-events", "120"]
+    )
+    options: dict[str, Any] = {}
+
+    def build(*values: Any, **kwargs: Any) -> dict[str, Any]:
+        options.update(kwargs)
+        return {"event_count": len(values[0])}
+
+    monkeypatch.setattr(cli, "build_event_intelligence", build)
+    cli.run_command(args, paths, runtime())
+    assert options["max_events"] is None
+    assert options["catalyst_max_events"] == 120
 
 
 @pytest.mark.parametrize("nlp", [False, True])
