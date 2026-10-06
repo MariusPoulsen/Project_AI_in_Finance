@@ -70,28 +70,31 @@ Stopped at the P0 boundary; P1 requires a separate instruction.
 
 ## P1 — Data ingestion, reference data and lineage
 
+Status: complete; all P1 acceptance gates passed on 2026-10-03. See `docs/STATUS.md`
+for live freeze, offline reproduction and hosted acceptance evidence. Stopped at P1.
+
 ### Build
 
-- [ ] Encode the fixed 28-pair universe and orientation from `docs/DECISIONS.md` in versioned reference/config data.
-- [ ] Build `security_master`, including ticker, CIK, issuer, sector/sub-industry, sector ETF, lifecycle fields and manual-review status.
-- [ ] Implement Yahoo/yfinance daily OHLCV/actions bootstrap beginning 2014-01-01.
-- [ ] Ingest SPY and required sector ETFs under the same market-data contract.
-- [ ] Ingest official Cboe VIX history.
-- [ ] Ingest SEC ticker-CIK mapping and company submissions metadata.
-- [ ] Normalize SEC filing index with acceptance timestamps.
-- [ ] Implement immutable raw snapshots, source manifests and SHA/hash lineage where specified.
-- [ ] Build canonical curated Parquet datasets.
-- [ ] Register DuckDB views/tables and data snapshot metadata.
-- [ ] Implement data-quality checks: keys, duplicates, monotonic dates, positive prices, missingness, calendar alignment, source freshness, timestamp validity.
-- [ ] Implement optional news adapter only as non-headline current/demo enrichment; it must remain disabled for headline historical experiments.
+- [x] Encode the fixed 28-pair universe and orientation from `docs/DECISIONS.md` in versioned reference/config data.
+- [x] Build `security_master`, including ticker, CIK, issuer, sector/sub-industry, sector ETF, lifecycle fields and manual-review status.
+- [x] Implement Yahoo/yfinance daily OHLCV/actions bootstrap beginning 2014-01-01.
+- [x] Ingest SPY and required sector ETFs under the same market-data contract.
+- [x] Ingest official Cboe VIX history.
+- [x] Ingest SEC ticker-CIK mapping and company submissions metadata.
+- [x] Normalize SEC filing index with acceptance timestamps.
+- [x] Implement immutable raw snapshots, source manifests and SHA/hash lineage where specified.
+- [x] Build canonical curated Parquet datasets.
+- [x] Register DuckDB views/tables and data snapshot metadata.
+- [x] Implement data-quality checks: keys, duplicates, monotonic dates, positive prices, missingness, calendar alignment, source freshness, timestamp validity.
+- [x] Implement optional news adapter only as non-headline current/demo enrichment; it must remain disabled for headline historical experiments.
 
 ### Acceptance gate P1
 
-- [ ] One command/job sequence reproduces a frozen market + reference + SEC-index data snapshot.
-- [ ] Every curated row has source/data lineage.
-- [ ] No forward-filled missing equity prices across missing/non-trading observations.
-- [ ] SEC acceptance timestamps are stored and queryable.
-- [ ] Historical app/data queries can run without network access after ingestion.
+- [x] One command/job sequence reproduces a frozen market + reference + SEC-index data snapshot.
+- [x] Every curated row has source/data lineage.
+- [x] No forward-filled missing equity prices across missing/non-trading observations.
+- [x] SEC acceptance timestamps are stored and queryable.
+- [x] Historical app/data queries can run without network access after ingestion.
 
 ---
 

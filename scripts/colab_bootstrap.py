@@ -5,11 +5,17 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from uuid import uuid4
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--workspace-root", type=Path)
+    parser.add_argument(
+        "--data-fixture",
+        action="store_true",
+        help="Also ingest, replay and verify the complete synthetic Phase 1 snapshot offline",
+    )
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     uv = shutil.which("uv")
@@ -27,6 +33,27 @@ def main() -> None:
             check=True,
         )
     print(f"Foundation verified. Host Python: {sys.version.split()[0]}; project: Python 3.11")
+    if args.data_fixture:
+        snapshot = f"colab-fixture-{uuid4().hex[:12]}"
+        replay = f"{snapshot}-replay"
+        jobs = (
+            (
+                "ingest-data",
+                "--fixture",
+                str(root / "tests/fixtures/phase1"),
+                "--snapshot-id",
+                snapshot,
+            ),
+            ("replay-data", "--replay-from", snapshot, "--snapshot-id", replay),
+            ("verify-data",),
+        )
+        for job in jobs:
+            subprocess.run(
+                [uv, "run", "--frozen", "structural-break", *job, *options],
+                cwd=root,
+                check=True,
+            )
+        print(f"Phase 1 synthetic snapshot verified: {snapshot}; offline replay: {replay}")
 
 
 if __name__ == "__main__":

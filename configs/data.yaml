@@ -7,3 +7,9 @@ volatility_source: cboe
 historical_evidence: sec
 evidence_timestamp: accepted_at
 optional_news_enabled: false
+source_timeout_seconds: 30
+source_attempts: 3
+sec_requests_per_second: 2
+max_missing_session_fraction: 0.0
+source_max_age_days: 30
+vix_context_lag_sessions: 1

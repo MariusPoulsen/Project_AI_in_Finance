@@ -1,0 +1,82 @@
+# Manually governed project classifications; not a historical GICS database.
+# Approval is restricted to the fixed universe in docs/DECISIONS.md section 5.
+# SEC identities are joined from an immutable official company_tickers snapshot.
+version: securities-28-v1
+universe_version: curated-28-v1
+reviewed_at: 2026-10-03T00:00:00Z
+review_basis: docs/DECISIONS.md#5-fixed-working-pair-universe
+classification_policy: static_project_research_classification
+classification_sources:
+  - https://www.ssga.com/us/en/individual/etfs/state-street-consumer-staples-select-sector-spdr-etf-xlp
+  - https://www.ssga.com/us/en/individual/etfs/state-street-consumer-discretionary-select-sector-spdr-etf-xly
+  - https://www.ssga.com/us/en/individual/etfs/state-street-financial-select-sector-spdr-etf-xlf
+  - docs/specs/01_DATA_ARCHITECTURE.md#61-broad-market-and-sector-benchmarks
+sector_etfs:
+  Consumer Staples: XLP
+  Consumer Discretionary: XLY
+  Energy: XLE
+  Financials: XLF
+  Health Care: XLV
+  Industrials: XLI
+  Information Technology: XLK
+  Utilities: XLU
+# active_from is unknown until reconciled with authoritative lifecycle records;
+# null does not assert availability at the beginning of the research period.
+# Exchange is a present audit label, never a historical session/calendar feature.
+securities:
+  - {ticker: KO, exchange: NYSE, sector: Consumer Staples, sub_industry: Beverages, sector_etf: XLP, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: PEP, exchange: NASDAQ, sector: Consumer Staples, sub_industry: Beverages, sector_etf: XLP, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: HD, exchange: NYSE, sector: Consumer Discretionary, sub_industry: Home improvement retail, sector_etf: XLY, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: LOW, exchange: NYSE, sector: Consumer Discretionary, sub_industry: Home improvement retail, sector_etf: XLY, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: WMT, exchange: NASDAQ, sector: Consumer Staples, sub_industry: Large-format retail, sector_etf: XLP, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED, notes: "Exchange changed NYSE to NASDAQ on 2025-12-09; exchange label is current audit metadata, not historical membership.", audit_source: "https://www.nasdaqtrader.com/TraderNews.aspx?id=DTN2025-35"}
+  - {ticker: TGT, exchange: NYSE, sector: Consumer Staples, sub_industry: Large-format retail, sector_etf: XLP, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED, notes: "Consumer Staples/XLP is the fixed project proxy; does not claim historical GICS continuity."}
+  - {ticker: MCD, exchange: NYSE, sector: Consumer Discretionary, sub_industry: Quick-service restaurants, sector_etf: XLY, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: YUM, exchange: NYSE, sector: Consumer Discretionary, sub_industry: Quick-service restaurants, sector_etf: XLY, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: ORLY, exchange: NASDAQ, sector: Consumer Discretionary, sub_industry: Auto-parts retail, sector_etf: XLY, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: AZO, exchange: NYSE, sector: Consumer Discretionary, sub_industry: Auto-parts retail, sector_etf: XLY, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: TJX, exchange: NYSE, sector: Consumer Discretionary, sub_industry: Off-price apparel retail, sector_etf: XLY, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: ROST, exchange: NASDAQ, sector: Consumer Discretionary, sub_industry: Off-price apparel retail, sector_etf: XLY, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: XOM, exchange: NYSE, sector: Energy, sub_industry: Integrated oil & gas, sector_etf: XLE, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: CVX, exchange: NYSE, sector: Energy, sub_industry: Integrated oil & gas, sector_etf: XLE, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: COP, exchange: NYSE, sector: Energy, sub_industry: US exploration & production, sector_etf: XLE, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: EOG, exchange: NYSE, sector: Energy, sub_industry: US exploration & production, sector_etf: XLE, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: V, exchange: NYSE, sector: Financials, sub_industry: Card/payment networks, sector_etf: XLF, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED, notes: "Financials/XLF is a fixed project proxy, not a historical GICS classification."}
+  - {ticker: MA, exchange: NYSE, sector: Financials, sub_industry: Card/payment networks, sector_etf: XLF, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED, notes: "Financials/XLF is a fixed project proxy, not a historical GICS classification."}
+  - {ticker: JPM, exchange: NYSE, sector: Financials, sub_industry: Large US banks, sector_etf: XLF, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: BAC, exchange: NYSE, sector: Financials, sub_industry: Large US banks, sector_etf: XLF, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: GS, exchange: NYSE, sector: Financials, sub_industry: Investment banking / capital markets, sector_etf: XLF, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: MS, exchange: NYSE, sector: Financials, sub_industry: Investment banking / capital markets, sector_etf: XLF, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: SPGI, exchange: NYSE, sector: Financials, sub_industry: Ratings / financial information, sector_etf: XLF, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: MCO, exchange: NYSE, sector: Financials, sub_industry: Ratings / financial information, sector_etf: XLF, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: ICE, exchange: NYSE, sector: Financials, sub_industry: Exchanges / market infrastructure, sector_etf: XLF, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: CME, exchange: NASDAQ, sector: Financials, sub_industry: Exchanges / market infrastructure, sector_etf: XLF, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: CB, exchange: NYSE, sector: Financials, sub_industry: Property & casualty insurance, sector_etf: XLF, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED, notes: "Chubb is Swiss-incorporated but files US domestic reporting forms 10-K/10-Q; domestic_sec_issuer describes SEC reporting regime, not incorporation."}
+  - {ticker: TRV, exchange: NYSE, sector: Financials, sub_industry: Property & casualty insurance, sector_etf: XLF, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: MET, exchange: NYSE, sector: Financials, sub_industry: Life insurance / retirement, sector_etf: XLF, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: PRU, exchange: NYSE, sector: Financials, sub_industry: Life insurance / retirement, sector_etf: XLF, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: PFE, exchange: NYSE, sector: Health Care, sub_industry: Large-cap pharmaceuticals, sector_etf: XLV, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: MRK, exchange: NYSE, sector: Health Care, sub_industry: Large-cap pharmaceuticals, sector_etf: XLV, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: BMY, exchange: NYSE, sector: Health Care, sub_industry: Large-cap biopharma, sector_etf: XLV, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: ABBV, exchange: NYSE, sector: Health Care, sub_industry: Large-cap biopharma, sector_etf: XLV, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: TMO, exchange: NYSE, sector: Health Care, sub_industry: Life-science tools, sector_etf: XLV, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: DHR, exchange: NYSE, sector: Health Care, sub_industry: Life-science tools, sector_etf: XLV, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: ABT, exchange: NYSE, sector: Health Care, sub_industry: Medical devices / supplies, sector_etf: XLV, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: BDX, exchange: NYSE, sector: Health Care, sub_industry: Medical devices / supplies, sector_etf: XLV, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: UPS, exchange: NYSE, sector: Industrials, sub_industry: Parcel logistics, sector_etf: XLI, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: FDX, exchange: NYSE, sector: Industrials, sub_industry: Parcel logistics, sector_etf: XLI, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: CAT, exchange: NYSE, sector: Industrials, sub_industry: Heavy machinery, sector_etf: XLI, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: DE, exchange: NYSE, sector: Industrials, sub_industry: Heavy machinery, sector_etf: XLI, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: LMT, exchange: NYSE, sector: Industrials, sub_industry: Defense primes, sector_etf: XLI, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: NOC, exchange: NYSE, sector: Industrials, sub_industry: Defense primes, sector_etf: XLI, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: CSX, exchange: NASDAQ, sector: Industrials, sub_industry: US freight railroads, sector_etf: XLI, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: NSC, exchange: NYSE, sector: Industrials, sub_industry: US freight railroads, sector_etf: XLI, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: DAL, exchange: NYSE, sector: Industrials, sub_industry: US network airlines, sector_etf: XLI, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: UAL, exchange: NASDAQ, sector: Industrials, sub_industry: US network airlines, sector_etf: XLI, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: TXN, exchange: NASDAQ, sector: Information Technology, sub_industry: Analog semiconductors, sector_etf: XLK, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: ADI, exchange: NASDAQ, sector: Information Technology, sub_industry: Analog semiconductors, sector_etf: XLK, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: LRCX, exchange: NASDAQ, sector: Information Technology, sub_industry: Semiconductor equipment, sector_etf: XLK, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: KLAC, exchange: NASDAQ, sector: Information Technology, sub_industry: Semiconductor equipment, sector_etf: XLK, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: GM, exchange: NYSE, sector: Consumer Discretionary, sub_industry: US auto manufacturers, sector_etf: XLY, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: F, exchange: NYSE, sector: Consumer Discretionary, sub_industry: US auto manufacturers, sector_etf: XLY, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: DUK, exchange: NYSE, sector: Utilities, sub_industry: Regulated electric utilities, sector_etf: XLU, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
+  - {ticker: SO, exchange: NYSE, sector: Utilities, sub_industry: Regulated electric utilities, sector_etf: XLU, active_from: null, active_to: null, domestic_sec_issuer: true, manual_review_status: APPROVED}
