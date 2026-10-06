@@ -233,6 +233,7 @@ def test_eligible_nonbinary_label_and_final_event_are_blocking() -> None:
         evaluate_matched_models(rows, QUANT, BLOCKS, protocol())
     rows = registry()
     rows.loc[0, "event_date"] = date(2024, 1, 1)
+    rows.loc[0, "horizon_end_date"] = date(2024, 2, 1)
     with pytest.raises(ValueError, match="final-test"):
         evaluate_matched_models(rows, QUANT, BLOCKS, protocol())
 
