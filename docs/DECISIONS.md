@@ -309,3 +309,29 @@ The user will prepare the final academic written report and presentation/video s
   `docs/PDFs/` refer to those same human-readable archives. The Markdown index lists
   `04_MULTI_AGENT_PIPELINE.md`, which was absent at P0 start. Recover/approve that
   specification before its owning implementation phase; P0 does not reconstruct it.
+
+## 16. Phase 1 source and information-set decisions
+
+- The user explicitly selected previous-session VIX for an equity-close signal
+  cutoff on 2026-10-03. Join the exact prior XNYS session; do not include same-day
+  VIX or carry forward an older missing observation. Preserve its source date and
+  conservative 16:16 America/New_York observation proxy. Historical CSV publication
+  times remain unknown.
+- `configs/securities.yaml` implements the already approved fixed universe using
+  static project sector/sub-industry proxies. This is not a vintage GICS database.
+  WMT/TGT use XLP and V/MA use XLF throughout. Current exchange metadata and changes
+  are audit fields; unspecified listing lifecycle dates remain null/UNKNOWN.
+- Yahoo unadjusted OHLCV, adjusted close, dividends and splits are captured with
+  explicit `auto_adjust=False`, `actions=True`, `repair=False`, daily interval and
+  regular-session data. Retrospective vendor adjustments are a disclosed prototype
+  limitation rather than a claim of historical adjustment-vintage availability.
+- Frozen dataset/source identities and hashes govern reproduction. Replay preserves
+  source retrieval metadata and requires matching research configuration plus a
+  successfully registered, verified raw inventory. New captures use new identities.
+- P1 adds source-backed `ref`/`market` views and ops ingestion/QA/active-snapshot
+  tables through migration 003. The four canonical database schemas remain unchanged.
+  Reader views point to immutable files; publication and registry completion share
+  one transaction, with rollback of canonical latest copies on failure.
+- Optional GDELT Article List timestamps have mixed/ambiguous provenance. Its
+  adapter is constrained to current/demo use; publication time remains unknown,
+  point-in-time eligibility is false and headline historical usage stays disabled.

@@ -1,0 +1,282 @@
+{
+  "0": {
+    "cik_str": 9000000,
+    "ticker": "ABBV",
+    "title": "SYNTHETIC FIXTURE ABBV"
+  },
+  "1": {
+    "cik_str": 9000001,
+    "ticker": "ABT",
+    "title": "SYNTHETIC FIXTURE ABT"
+  },
+  "10": {
+    "cik_str": 9000010,
+    "ticker": "COP",
+    "title": "SYNTHETIC FIXTURE COP"
+  },
+  "11": {
+    "cik_str": 9000011,
+    "ticker": "CSX",
+    "title": "SYNTHETIC FIXTURE CSX"
+  },
+  "12": {
+    "cik_str": 9000012,
+    "ticker": "CVX",
+    "title": "SYNTHETIC FIXTURE CVX"
+  },
+  "13": {
+    "cik_str": 9000013,
+    "ticker": "DAL",
+    "title": "SYNTHETIC FIXTURE DAL"
+  },
+  "14": {
+    "cik_str": 9000014,
+    "ticker": "DE",
+    "title": "SYNTHETIC FIXTURE DE"
+  },
+  "15": {
+    "cik_str": 9000015,
+    "ticker": "DHR",
+    "title": "SYNTHETIC FIXTURE DHR"
+  },
+  "16": {
+    "cik_str": 9000016,
+    "ticker": "DUK",
+    "title": "SYNTHETIC FIXTURE DUK"
+  },
+  "17": {
+    "cik_str": 9000017,
+    "ticker": "EOG",
+    "title": "SYNTHETIC FIXTURE EOG"
+  },
+  "18": {
+    "cik_str": 9000018,
+    "ticker": "F",
+    "title": "SYNTHETIC FIXTURE F"
+  },
+  "19": {
+    "cik_str": 9000019,
+    "ticker": "FDX",
+    "title": "SYNTHETIC FIXTURE FDX"
+  },
+  "2": {
+    "cik_str": 9000002,
+    "ticker": "ADI",
+    "title": "SYNTHETIC FIXTURE ADI"
+  },
+  "20": {
+    "cik_str": 9000020,
+    "ticker": "GM",
+    "title": "SYNTHETIC FIXTURE GM"
+  },
+  "21": {
+    "cik_str": 9000021,
+    "ticker": "GS",
+    "title": "SYNTHETIC FIXTURE GS"
+  },
+  "22": {
+    "cik_str": 9000022,
+    "ticker": "HD",
+    "title": "SYNTHETIC FIXTURE HD"
+  },
+  "23": {
+    "cik_str": 9000023,
+    "ticker": "ICE",
+    "title": "SYNTHETIC FIXTURE ICE"
+  },
+  "24": {
+    "cik_str": 9000024,
+    "ticker": "JPM",
+    "title": "SYNTHETIC FIXTURE JPM"
+  },
+  "25": {
+    "cik_str": 9000025,
+    "ticker": "KLAC",
+    "title": "SYNTHETIC FIXTURE KLAC"
+  },
+  "26": {
+    "cik_str": 9000026,
+    "ticker": "KO",
+    "title": "SYNTHETIC FIXTURE KO"
+  },
+  "27": {
+    "cik_str": 9000027,
+    "ticker": "LMT",
+    "title": "SYNTHETIC FIXTURE LMT"
+  },
+  "28": {
+    "cik_str": 9000028,
+    "ticker": "LOW",
+    "title": "SYNTHETIC FIXTURE LOW"
+  },
+  "29": {
+    "cik_str": 9000029,
+    "ticker": "LRCX",
+    "title": "SYNTHETIC FIXTURE LRCX"
+  },
+  "3": {
+    "cik_str": 9000003,
+    "ticker": "AZO",
+    "title": "SYNTHETIC FIXTURE AZO"
+  },
+  "30": {
+    "cik_str": 9000030,
+    "ticker": "MA",
+    "title": "SYNTHETIC FIXTURE MA"
+  },
+  "31": {
+    "cik_str": 9000031,
+    "ticker": "MCD",
+    "title": "SYNTHETIC FIXTURE MCD"
+  },
+  "32": {
+    "cik_str": 9000032,
+    "ticker": "MCO",
+    "title": "SYNTHETIC FIXTURE MCO"
+  },
+  "33": {
+    "cik_str": 9000033,
+    "ticker": "MET",
+    "title": "SYNTHETIC FIXTURE MET"
+  },
+  "34": {
+    "cik_str": 9000034,
+    "ticker": "MRK",
+    "title": "SYNTHETIC FIXTURE MRK"
+  },
+  "35": {
+    "cik_str": 9000035,
+    "ticker": "MS",
+    "title": "SYNTHETIC FIXTURE MS"
+  },
+  "36": {
+    "cik_str": 9000036,
+    "ticker": "NOC",
+    "title": "SYNTHETIC FIXTURE NOC"
+  },
+  "37": {
+    "cik_str": 9000037,
+    "ticker": "NSC",
+    "title": "SYNTHETIC FIXTURE NSC"
+  },
+  "38": {
+    "cik_str": 9000038,
+    "ticker": "ORLY",
+    "title": "SYNTHETIC FIXTURE ORLY"
+  },
+  "39": {
+    "cik_str": 9000039,
+    "ticker": "PEP",
+    "title": "SYNTHETIC FIXTURE PEP"
+  },
+  "4": {
+    "cik_str": 9000004,
+    "ticker": "BAC",
+    "title": "SYNTHETIC FIXTURE BAC"
+  },
+  "40": {
+    "cik_str": 9000040,
+    "ticker": "PFE",
+    "title": "SYNTHETIC FIXTURE PFE"
+  },
+  "41": {
+    "cik_str": 9000041,
+    "ticker": "PRU",
+    "title": "SYNTHETIC FIXTURE PRU"
+  },
+  "42": {
+    "cik_str": 9000042,
+    "ticker": "ROST",
+    "title": "SYNTHETIC FIXTURE ROST"
+  },
+  "43": {
+    "cik_str": 9000043,
+    "ticker": "SO",
+    "title": "SYNTHETIC FIXTURE SO"
+  },
+  "44": {
+    "cik_str": 9000044,
+    "ticker": "SPGI",
+    "title": "SYNTHETIC FIXTURE SPGI"
+  },
+  "45": {
+    "cik_str": 9000045,
+    "ticker": "TGT",
+    "title": "SYNTHETIC FIXTURE TGT"
+  },
+  "46": {
+    "cik_str": 9000046,
+    "ticker": "TJX",
+    "title": "SYNTHETIC FIXTURE TJX"
+  },
+  "47": {
+    "cik_str": 9000047,
+    "ticker": "TMO",
+    "title": "SYNTHETIC FIXTURE TMO"
+  },
+  "48": {
+    "cik_str": 9000048,
+    "ticker": "TRV",
+    "title": "SYNTHETIC FIXTURE TRV"
+  },
+  "49": {
+    "cik_str": 9000049,
+    "ticker": "TXN",
+    "title": "SYNTHETIC FIXTURE TXN"
+  },
+  "5": {
+    "cik_str": 9000005,
+    "ticker": "BDX",
+    "title": "SYNTHETIC FIXTURE BDX"
+  },
+  "50": {
+    "cik_str": 9000050,
+    "ticker": "UAL",
+    "title": "SYNTHETIC FIXTURE UAL"
+  },
+  "51": {
+    "cik_str": 9000051,
+    "ticker": "UPS",
+    "title": "SYNTHETIC FIXTURE UPS"
+  },
+  "52": {
+    "cik_str": 9000052,
+    "ticker": "V",
+    "title": "SYNTHETIC FIXTURE V"
+  },
+  "53": {
+    "cik_str": 9000053,
+    "ticker": "WMT",
+    "title": "SYNTHETIC FIXTURE WMT"
+  },
+  "54": {
+    "cik_str": 9000054,
+    "ticker": "XOM",
+    "title": "SYNTHETIC FIXTURE XOM"
+  },
+  "55": {
+    "cik_str": 9000055,
+    "ticker": "YUM",
+    "title": "SYNTHETIC FIXTURE YUM"
+  },
+  "6": {
+    "cik_str": 9000006,
+    "ticker": "BMY",
+    "title": "SYNTHETIC FIXTURE BMY"
+  },
+  "7": {
+    "cik_str": 9000007,
+    "ticker": "CAT",
+    "title": "SYNTHETIC FIXTURE CAT"
+  },
+  "8": {
+    "cik_str": 9000008,
+    "ticker": "CB",
+    "title": "SYNTHETIC FIXTURE CB"
+  },
+  "9": {
+    "cik_str": 9000009,
+    "ticker": "CME",
+    "title": "SYNTHETIC FIXTURE CME"
+  }
+}

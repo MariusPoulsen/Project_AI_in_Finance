@@ -1,10 +1,13 @@
 """Run lifecycle and version provenance; only successful runs publish registrations."""
 
 import hashlib
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
+
+import duckdb
 
 from structural_break.config.loader import config_hash, normalized_config
 from structural_break.config.models import ProjectConfig
@@ -52,6 +55,7 @@ class RunRegistry:
         error_type: str | None = None,
         artifacts: tuple[Registration, ...] = (),
         dataset: Registration | None = None,
+        publish: Callable[[duckdb.DuckDBPyConnection], None] | None = None,
     ) -> None:
         if status == "FAILED" and (artifacts or dataset):
             raise ValueError("Failed runs cannot publish versions")
@@ -74,6 +78,10 @@ class RunRegistry:
                     error_type = ? WHERE run_id = ?""",
                     [datetime.now(UTC), status, record_count, error_type, run_id],
                 )
+                if publish is not None:
+                    if status != "SUCCESS":
+                        raise ValueError("Only successful runs can publish canonical data")
+                    publish(connection)
                 for item, relative, checksum in prepared:
                     if dataset is not None and item is dataset:
                         existing = connection.execute(
