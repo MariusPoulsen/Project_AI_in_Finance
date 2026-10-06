@@ -554,20 +554,28 @@ The user will prepare the final academic written report and presentation/video s
   and disclose selection/coverage/exclusion funnels. Temporal-block paired loss
   intervals retain shared-issuer events; few blocks and cross-quarter dependence
   limit confidence. Forecast improvement is not a claim of economic profitability.
-- Before actual research Model B fits, use `sec-json-clock-upper-bound-v2`:
+- Before actual research Model B fits, prepare `sec-json-clock-envelope-v3`:
   absent/zero-offset SEC JSON acceptance values retain UTC and New York
-  wall-clock candidates, and only the upper bound admits evidence. Explicit
+  wall-clock candidates plus the inverse UTC-to-New-York-wall-clock candidate
+  observed from source lag; only the upper bound admits evidence. V3 widens
+  the v2 lower bound while preserving its conservative upper bound. Explicit
   nonzero offsets stay exact. Missing times are UNKNOWN, never recovered from
   filing dates. Relevant intervals straddling the cutoff or 30/180/400-day
   evidence boundaries keep coverage UNKNOWN. Among 250 matched cached captures
-  with hash-verified SGML source headers, the earlier JSON normalizer matched
-  186, was four hours later in 49 and five hours later in 15; none was premature
+  with hash-verified SGML source headers, 186 JSON values matched; 49 JSON `Z`
+  values were themselves four hours later and 15 five hours later. This is
+  source timestamp lag, not solely a naive parsing issue; none was premature
   in this sample. This is not a full audit of 89,657 source-v1 filings. Preserve
-  source_v1 and original Phase 4; derive a separate source_v2 from its exact
-  verified raw response inventory with frozen code and zero HTTP requests.
+  source_v1 and original Phase 4. The successful metadata-only source-v2 replay
+  remains immutable; its interval excluded those 64 SGML headers below its
+  lower bound. It is not full evidence admissibility acceptance. Derive a
+  separate source_v3 from the exact source-v1 raw response inventory, frozen
+  code and zero HTTP requests; actual B fitting stays blocked until fresh
+  availability and canonical SGML replay checks pass.
 - A separate `--catalyst-max-events 500` pilot balances declared year/business-
   group strata without outcomes or scores while metadata/FinBERT may cover the
   full registry. Unscheduled Gemma rows stay UNKNOWN; disclose coverage and all
   ablations. `--max-events` continues to identify a partial text-source batch.
-  Hosted CI `8f10d18` predates these new guards/schedule; their acceptance checks
-  and the new source replay remain pending until separately verified.
+  Hosted CI `3c01d262` passed the committed schedule/v2 guards on Windows,
+  Linux and Colab. The subsequent v3 envelope/source replay and canonical
+  SGML admissibility gate remain pending until separately verified.

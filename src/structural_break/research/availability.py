@@ -1,8 +1,10 @@
 """Conservative SEC JSON availability bounds when its clock basis is uncertain.
 
-Official cached SGML headers exposed mixed naive/aware JSON clock conventions.
-No issuer/date heuristic chooses the favorable interpretation. UTC and New York
-wall-clock candidates define an interval; only its upper bound can admit text.
+Official cached SGML headers exposed inconsistent JSON clock conversions.
+No issuer/date heuristic chooses the favorable interpretation. UTC, New York
+wall-clock and inverse-conversion candidates define an interval; only its upper
+bound can admit text. The inverse candidate covers the observed four/five-hour
+JSON delay relative to headers; bounds do not assert a universal exact clock.
 Explicit nonzero offsets retain their stated zone. Filing dates never substitute
 for missing acceptance times. This does not alter the immutable original P4.
 """
@@ -11,15 +13,22 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 
 from structural_break.data.sec import parse_acceptance_timestamp
 
-ACCEPTANCE_POLICY = "sec-json-clock-upper-bound-v2"
+LEGACY_ACCEPTANCE_POLICY = "sec-json-clock-upper-bound-v2"
+ACCEPTANCE_POLICY = "sec-json-clock-envelope-v3"
+_NEW_YORK = ZoneInfo("America/New_York")
 
 
-def acceptance_bounds(raw: Any) -> tuple[datetime | None, datetime | None]:
+def acceptance_bounds(
+    raw: Any, *, policy: str = ACCEPTANCE_POLICY
+) -> tuple[datetime | None, datetime | None]:
+    if policy not in {ACCEPTANCE_POLICY, LEGACY_ACCEPTANCE_POLICY}:
+        raise ValueError("Unsupported SEC availability policy")
     if raw is None or raw is pd.NA or (isinstance(raw, float) and pd.isna(raw)):
         return None, None
     parsed, _ = parse_acceptance_timestamp(raw)
@@ -36,12 +45,17 @@ def acceptance_bounds(raw: Any) -> tuple[datetime | None, datetime | None]:
     eastern, _ = parse_acceptance_timestamp(clock.isoformat())
     assert eastern is not None
     utc = clock.replace(tzinfo=UTC)
-    return min(utc, eastern), max(utc, eastern)
+    if policy == LEGACY_ACCEPTANCE_POLICY:
+        return min(utc, eastern), max(utc, eastern)
+    inverse = utc.astimezone(_NEW_YORK).replace(tzinfo=UTC)
+    return min(inverse, utc, eastern), max(inverse, utc, eastern)
 
 
-def apply_availability_bounds(filings: pd.DataFrame) -> pd.DataFrame:
+def apply_availability_bounds(
+    filings: pd.DataFrame, *, policy: str = ACCEPTANCE_POLICY
+) -> pd.DataFrame:
     result = filings.copy()
-    bounds = [acceptance_bounds(raw) for raw in result["acceptance_datetime_raw"]]
+    bounds = [acceptance_bounds(raw, policy=policy) for raw in result["acceptance_datetime_raw"]]
     result["acceptance_lower_bound_utc"] = pd.to_datetime(
         pd.Series([b[0] for b in bounds], index=result.index, dtype=object), utc=True
     )
@@ -55,7 +69,7 @@ def apply_availability_bounds(filings: pd.DataFrame) -> pd.DataFrame:
     result["timestamp_quality_flag"] = result["timestamp_quality_flag"].where(
         ~result["acceptance_zone_ambiguous"], "CONSERVATIVE_AVAILABILITY_BOUND"
     )
-    result["acceptance_policy"] = ACCEPTANCE_POLICY
+    result["acceptance_policy"] = policy
     return result
 
 

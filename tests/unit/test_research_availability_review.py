@@ -13,11 +13,18 @@ from structural_break.config.models import ProjectConfig
 from structural_break.config.paths import ProjectPaths
 from structural_break.data.http import FetchedResponse
 from structural_break.data.sec import SUBMISSIONS_BASE_URL, SecDataError
-from structural_break.research.availability import acceptance_bounds, ambiguous_cutoff
+from structural_break.research.availability import (
+    ACCEPTANCE_POLICY,
+    LEGACY_ACCEPTANCE_POLICY,
+    acceptance_bounds,
+    ambiguous_cutoff,
+    apply_availability_bounds,
+)
 from structural_break.research.intelligence import (
     _event_inputs,
     _normalized_metadata,
     _source_get,
+    _validate_submission_clock,
     collect_sec_metadata,
     verify_sec_metadata,
 )
@@ -67,6 +74,230 @@ def test_admission_upper_endpoint_is_known_but_lower_is_uncertain() -> None:
 def test_dst_uncertainty_fails_closed_instead_of_guessing_a_fold(raw: str) -> None:
     with pytest.raises(SecDataError):
         acceptance_bounds(raw)
+
+
+@pytest.mark.parametrize(
+    "raw,header_eastern,header_utc,upper",
+    [
+        # Cached official filing0000006281-22-000168: header raw SHA256
+        # 9469dd25b8581860acffc95b60003830aa894e68e3eb288a966f008abfa26ffb.
+        (
+            "2022-05-18T15:06:59.000Z",
+            "20220518070659",
+            "2022-05-18T11:06:59Z",
+            "2022-05-18T19:06:59Z",
+        ),
+        # Cached official filing0000064040-20-000052: header raw SHA256
+        # 34ff56506a08fe3cd029c77677bd07c9ed69ed5c250a462a7d87aa081f2dc73f.
+        (
+            "2020-02-06T17:15:00.000Z",
+            "20200206071500",
+            "2020-02-06T12:15:00Z",
+            "2020-02-06T22:15:00Z",
+        ),
+    ],
+)
+def test_v3_envelope_contains_observed_official_summer_winter_headers(
+    raw: str, header_eastern: str, header_utc: str, upper: str
+) -> None:
+    from structural_break.data.sec import parse_acceptance_timestamp
+
+    actual, _ = parse_acceptance_timestamp(header_eastern)
+    lower, last = acceptance_bounds(raw)
+    legacy_lower, legacy_upper = acceptance_bounds(raw, policy=LEGACY_ACCEPTANCE_POLICY)
+    assert actual == lower == pd.Timestamp(header_utc)
+    assert last == legacy_upper == pd.Timestamp(upper)
+    assert legacy_lower == pd.Timestamp(raw) and actual < legacy_lower
+    assert lower <= actual <= last
+
+
+@pytest.mark.parametrize(
+    "raw,lower,upper,width_hours",
+    [
+        ("2021-03-14T06:30:00Z", "2021-03-14T01:30:00Z", "2021-03-14T10:30:00Z", 9),
+        ("2021-11-07T05:30:00Z", "2021-11-07T01:30:00Z", "2021-11-07T10:30:00Z", 9),
+        ("2021-07-01T02:30:00Z", "2021-06-30T22:30:00Z", "2021-07-01T06:30:00Z", 8),
+        ("2021-01-01T02:30:00Z", "2020-12-31T21:30:00Z", "2021-01-01T07:30:00Z", 10),
+    ],
+)
+def test_v3_inverse_candidate_uses_zone_rules_across_dst_and_date_rollover(
+    raw: str, lower: str, upper: str, width_hours: int
+) -> None:
+    first, last = acceptance_bounds(raw)
+    assert first == pd.Timestamp(lower) and last == pd.Timestamp(upper)
+    assert (last - first).total_seconds() / 3600 == width_hours
+
+
+@pytest.mark.parametrize("raw", ["2022-05-18T07:06:59-04:00", "2020-02-06T07:15:00-05:00"])
+def test_v3_preserves_exact_nonzero_offsets_without_inverse_redating(raw: str) -> None:
+    first, last = acceptance_bounds(raw)
+    assert first == last == pd.Timestamp(raw).tz_convert("UTC")
+    assert (first, last) == acceptance_bounds(raw, policy=LEGACY_ACCEPTANCE_POLICY)
+
+
+def test_v3_new_lower_flags_previously_missed_admission_and_lookback_uncertainty() -> None:
+    raw = "2022-05-18T15:06:59.000Z"
+    old_first, old_last = acceptance_bounds(raw, policy=LEGACY_ACCEPTANCE_POLICY)
+    first, last = acceptance_bounds(raw)
+    legacy = pd.DataFrame(
+        [
+            {
+                "security_id": "US:KO",
+                "form": "8-K",
+                "acceptance_lower_bound_utc": old_first,
+                "acceptance_upper_bound_utc": old_last,
+            }
+        ]
+    )
+    current = legacy.copy()
+    current["acceptance_lower_bound_utc"] = first
+    cutoff = pd.Timestamp("2022-05-18T13:00:00Z")
+    assert last == old_last and cutoff < last
+    for boundary in (cutoff, cutoff + pd.Timedelta(days=30)):
+        assert not ambiguous_cutoff(legacy, "US:KO", boundary)
+        assert ambiguous_cutoff(current, "US:KO", boundary)
+
+
+def test_v3_changed_lower_never_changes_admission_from_legacy_upper() -> None:
+    frame = pd.DataFrame(
+        [
+            {
+                "acceptance_datetime_raw": "2022-05-18T15:06:59.000Z",
+                "timestamp_quality_flag": "AWARE_SOURCE",
+            }
+        ]
+    )
+    legacy = apply_availability_bounds(frame, policy=LEGACY_ACCEPTANCE_POLICY)
+    current = apply_availability_bounds(frame)
+    assert current.iloc[0].acceptance_policy == ACCEPTANCE_POLICY
+    assert legacy.iloc[0].acceptance_policy == LEGACY_ACCEPTANCE_POLICY
+    assert current.iloc[0].acceptance_datetime_utc == legacy.iloc[0].acceptance_datetime_utc
+    assert current.iloc[0].acceptance_lower_bound_utc < legacy.iloc[0].acceptance_lower_bound_utc
+
+
+def _header_document(tmp_path: Path, body: bytes) -> dict:
+    path = tmp_path / "official_submission.txt"
+    path.write_bytes(body)
+    return {"document_type": "SUBMISSION", "status": "DOWNLOADED", "local_path": str(path)}
+
+
+def _header_filing() -> dict:
+    lower, upper = acceptance_bounds("2022-05-18T15:06:59.000Z")
+    return {
+        "acceptance_lower_bound_utc": lower,
+        "acceptance_upper_bound_utc": upper,
+        "acceptance_datetime_utc": upper,
+    }
+
+
+def test_present_official_header_inside_envelope_verifies_conservative_later_upper(
+    tmp_path: Path,
+) -> None:
+    document = _header_document(
+        tmp_path,
+        b"<SEC-HEADER>\n<ACCEPTANCE-DATETIME>20220518070659\n</SEC-HEADER>\n<DOCUMENT>\n",
+    )
+    filing = _header_filing()
+    cutoff = pd.Timestamp("2022-05-18T20:00:00Z")
+    assert _validate_submission_clock([document], filing, cutoff) is True
+    assert filing["acceptance_lower_bound_utc"] < filing["acceptance_upper_bound_utc"] <= cutoff
+
+
+@pytest.mark.parametrize("endpoint", ["lower", "upper", "cutoff"])
+def test_header_bound_and_cutoff_endpoints_are_inclusive(tmp_path: Path, endpoint: str) -> None:
+    document = _header_document(tmp_path, b"<ACCEPTANCE-DATETIME>20220518070659\n")
+    actual = pd.Timestamp("2022-05-18T11:06:59Z")
+    filing = _header_filing()
+    cutoff = actual + pd.Timedelta(hours=12)
+    if endpoint == "lower":
+        filing["acceptance_lower_bound_utc"] = actual
+    elif endpoint == "upper":
+        filing["acceptance_upper_bound_utc"] = actual
+    else:
+        cutoff = actual
+    assert _validate_submission_clock([document], filing, cutoff) is True
+
+
+@pytest.mark.parametrize("contradiction", ["before_lower", "after_upper", "after_cutoff"])
+def test_header_contradiction_blocks_before_any_admission(
+    tmp_path: Path, contradiction: str
+) -> None:
+    document = _header_document(tmp_path, b"<ACCEPTANCE-DATETIME>20220518070659\n")
+    actual = pd.Timestamp("2022-05-18T11:06:59Z")
+    filing = _header_filing()
+    cutoff = actual + pd.Timedelta(hours=12)
+    if contradiction == "before_lower":
+        filing["acceptance_lower_bound_utc"] = actual + pd.Timedelta(seconds=1)
+    elif contradiction == "after_upper":
+        filing["acceptance_upper_bound_utc"] = actual - pd.Timedelta(seconds=1)
+    else:
+        cutoff = actual - pd.Timedelta(seconds=1)
+    with pytest.raises(ValueError, match="contradicts"):
+        _validate_submission_clock([document], filing, cutoff)
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        b"2022051807065",
+        b"202205180706599",
+        b"20220518070659oops",
+        b"20220230070659",
+        b"20211107013000",
+        b"20210314023000",
+    ],
+)
+def test_present_malformed_or_unresolvable_header_fails_closed(
+    tmp_path: Path, value: bytes
+) -> None:
+    document = _header_document(tmp_path, b"<ACCEPTANCE-DATETIME>" + value + b"\n")
+    with pytest.raises(ValueError):
+        _validate_submission_clock([document], _header_filing(), pd.Timestamp("2023-01-01T00:00Z"))
+
+
+def test_duplicate_header_is_blocked_even_when_each_clock_is_individually_valid(
+    tmp_path: Path,
+) -> None:
+    document = _header_document(tmp_path, b"<ACCEPTANCE-DATETIME>20220518070659\n" * 2)
+    with pytest.raises(ValueError, match="ambiguous|malformed"):
+        _validate_submission_clock([document], _header_filing(), pd.Timestamp("2023-01-01T00:00Z"))
+
+
+@pytest.mark.parametrize("tag", [b"<DOCUMENT>", b"<document>", b"<Document>"])
+def test_quoted_embedded_header_cannot_substitute_for_missing_top_level_header(
+    tmp_path: Path, tag: bytes
+) -> None:
+    body = b"<SEC-HEADER>\nNo acceptance header\n</SEC-HEADER>\n" + tag
+    document = _header_document(tmp_path, body + b"\nQuoted <ACCEPTANCE-DATETIME>20220518070659\n")
+    assert (
+        _validate_submission_clock([document], _header_filing(), pd.Timestamp("2023-01-01T00:00Z"))
+        is False
+    )
+
+
+def test_missing_header_never_claims_exact_clock_verification(tmp_path: Path) -> None:
+    document = _header_document(tmp_path, b"<SEC-HEADER>\nNo acceptance clock\n</SEC-HEADER>\n")
+    assert (
+        _validate_submission_clock([document], _header_filing(), pd.Timestamp("2023-01-01T00:00Z"))
+        is False
+    )
+
+
+@pytest.mark.parametrize("status", ["FAILED", "MISSING"])
+def test_failed_submission_never_reads_or_invents_an_acceptance_header(status: str) -> None:
+    document = {"document_type": "SUBMISSION", "status": status, "local_path": "does-not-exist"}
+    assert (
+        _validate_submission_clock([document], _header_filing(), pd.Timestamp("2023-01-01T00:00Z"))
+        is False
+    )
+
+
+def test_non_submission_document_cannot_provide_the_official_acceptance_clock() -> None:
+    document = {"document_type": "8-K", "status": "DOWNLOADED", "local_path": "does-not-exist"}
+    assert (
+        _validate_submission_clock([document], _header_filing(), pd.Timestamp("2023-01-01T00:00Z"))
+        is False
+    )
 
 
 def _pairs() -> pd.DataFrame:
@@ -343,6 +574,36 @@ def test_legitimate_legacy_clock_snapshot_still_replays(
         json.loads((output / "sources.json").read_bytes()),
         json.loads((output / "coverage.json").read_bytes()),
     )
+    assert verify_sec_metadata(output, review_freeze) == manifest
+
+
+def test_legitimate_v2_bounds_snapshot_replays_its_original_lower_bound(
+    review_freeze: Path, tmp_path: Path
+) -> None:
+    valid = _review_source()
+
+    def zero_offset(url: str) -> FetchedResponse:
+        response = valid(url)
+        payload = json.loads(response.body)
+        rows = payload if "-submissions-" in url else payload["filings"]["recent"]
+        rows["acceptanceDateTime"] = [rows["acceptanceDateTime"][0].replace("-05:00", "Z")]
+        return FetchedResponse(json_bytes(payload), url, 200, response.retrieved_at)
+
+    output = tmp_path / "metadata"
+    manifest = collect_sec_metadata(review_freeze, output, get=zero_offset)
+    original = pd.read_parquet(output / "filings.parquet")
+    manifest["inputs"]["acceptance_policy"] = LEGACY_ACCEPTANCE_POLICY
+    _restamp(
+        output,
+        review_freeze,
+        manifest,
+        json.loads((output / "sources.json").read_bytes()),
+        json.loads((output / "coverage.json").read_bytes()),
+    )
+    stored = pd.read_parquet(output / "filings.parquet")
+    assert (stored.acceptance_lower_bound_utc > original.acceptance_lower_bound_utc).all()
+    assert stored.acceptance_upper_bound_utc.equals(original.acceptance_upper_bound_utc)
+    assert stored.acceptance_policy.eq(LEGACY_ACCEPTANCE_POLICY).all()
     assert verify_sec_metadata(output, review_freeze) == manifest
 
 

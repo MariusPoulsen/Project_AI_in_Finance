@@ -26,6 +26,7 @@ from structural_break.data.sec import (
     SecDataError,
     fetch_submissions,
     normalize_filings,
+    parse_acceptance_timestamp,
     parse_json_response,
 )
 from structural_break.intelligence.event_features import (
@@ -57,6 +58,7 @@ from structural_break.intelligence.sentiment import (
 )
 from structural_break.research.availability import (
     ACCEPTANCE_POLICY,
+    LEGACY_ACCEPTANCE_POLICY,
     ambiguous_cutoff,
     apply_availability_bounds,
 )
@@ -235,8 +237,8 @@ def _normalized_metadata(
     filings = normalize_filings(
         normalized, date.fromisoformat(inputs["start"]), date.fromisoformat(inputs["end"])
     )
-    if inputs.get("acceptance_policy") == ACCEPTANCE_POLICY:
-        filings = apply_availability_bounds(filings)
+    if inputs.get("acceptance_policy") in {ACCEPTANCE_POLICY, LEGACY_ACCEPTANCE_POLICY}:
+        filings = apply_availability_bounds(filings, policy=inputs["acceptance_policy"])
     identities = securities[
         [
             "cik",
@@ -475,11 +477,11 @@ def verify_sec_metadata(directory: Path, frozen_universe_dir: Path) -> dict[str,
     manifest = _load_json(directory / "manifest.json")
     inputs = manifest["inputs"]
     if (
-        inputs.get("acceptance_policy") not in {None, ACCEPTANCE_POLICY}
+        inputs.get("acceptance_policy") not in {None, ACCEPTANCE_POLICY, LEGACY_ACCEPTANCE_POLICY}
         or manifest.get("schema_version")
         != (
             "research-sec-metadata-v2"
-            if inputs.get("acceptance_policy") == ACCEPTANCE_POLICY
+            if inputs.get("acceptance_policy") in {ACCEPTANCE_POLICY, LEGACY_ACCEPTANCE_POLICY}
             else "research-sec-metadata-v1"
         )
         or inputs["universe_freeze_id"] != freeze["freeze_id"]
@@ -720,6 +722,50 @@ def metadata_event_features(
     return {name: values[name] for name in METADATA_FEATURE_COLUMNS}
 
 
+def _validate_submission_clock(
+    documents: Sequence[Mapping[str, Any]], filing: Mapping[str, Any], cutoff: pd.Timestamp
+) -> bool:
+    """Fail closed on contradictory available top-level official SGML clocks.
+
+    Missing headers are not evidence of an exact acceptance time. Existing
+    source gaps remain explicit; only a present, valid header is audited here.
+    Embedded documents can quote historical headers and are excluded.
+    """
+    verified = False
+    for document in documents:
+        if document["document_type"] != "SUBMISSION" or document["status"] != "DOWNLOADED":
+            continue
+        preamble = re.split(
+            rb"<DOCUMENT>", Path(document["local_path"]).read_bytes(), maxsplit=1, flags=re.I
+        )[0]
+        markers = re.findall(rb"<ACCEPTANCE-DATETIME>", preamble, flags=re.I)
+        if not markers:
+            continue
+        matches = re.findall(
+            rb"<ACCEPTANCE-DATETIME>[ \t]*(\d{14})[ \t]*(?:</ACCEPTANCE-DATETIME>)?[ \t]*\r?$",
+            preamble,
+            flags=re.I | re.M,
+        )
+        if len(markers) != 1 or len(matches) != 1:
+            raise ValueError("Official SEC submission acceptance header is ambiguous or malformed")
+        accepted, _ = parse_acceptance_timestamp(matches[0].decode("ascii"))
+        assert accepted is not None
+        lower, upper = (
+            filing.get("acceptance_lower_bound_utc"),
+            filing.get("acceptance_upper_bound_utc", filing["acceptance_datetime_utc"]),
+        )
+        if (
+            accepted > cutoff
+            or pd.notna(lower)
+            and accepted < pd.Timestamp(lower)
+            or pd.notna(upper)
+            and accepted > pd.Timestamp(upper)
+        ):
+            raise ValueError("Official SEC submission acceptance contradicts its bounds or cutoff")
+        verified = True
+    return verified
+
+
 def _event_pack(
     event: Mapping[str, Any],
     filings: pd.DataFrame,
@@ -739,6 +785,7 @@ def _event_pack(
         # cache_filing checks the current raw bytes and response metadata even
         # when this operation has already parsed the exact document inventory.
         documents = cache_filing(paths, filing, source_get, offline=offline)
+        _validate_submission_clock(documents, filing, pd.Timestamp(event["evidence_cutoff"]))
         key = _sha(documents)
         if parsed_cache is not None and key in parsed_cache:
             chunks = parsed_cache[key]

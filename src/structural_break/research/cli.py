@@ -102,7 +102,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--protocol", type=Path)
     parser.add_argument("--universe-config", type=Path)
     parser.add_argument(
-        "--sec-source", default="source_v2", help="Immutable SEC metadata source version"
+        "--sec-source", default="source_v3", help="Immutable SEC metadata source version"
     )
     parser.add_argument(
         "--sec-directory", type=Path, help="Exact SEC company directory JSON for freeze"

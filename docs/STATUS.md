@@ -631,10 +631,14 @@ The user authorized its design and implementation on 2026-10-06. It now has a
 frozen 250-issuer current-survivor roster and 736 business-peer pairs, preserving
 the original 28 orientations. The verified 2004–2023 market capture contains
 1,222,930 price rows across issuers and benchmarks. Its SEC source-v1 capture has
-735 official submissions responses and 89,657 normalized filings. A separately
-versioned source-v2 replay is prepared to apply conservative acceptance-time
-bounds to those exact cached responses with zero network requests; source-v1 and
-the original Phase 4 artifacts remain intact.
+735 official submissions responses and 89,657 normalized filings. The separately
+versioned source-v2 replay completed with zero network requests and identical
+filing membership/non-timing metadata. Its timestamp interval excluded 64 of
+250 sampled SGML headers below the lower bound: the corresponding JSON `Z`
+values were themselves four or five hours later. Its metadata replay receipt
+does not establish evidence admissibility. A source-v3 envelope is being
+prepared, preserving the conservative upper bound while widening the lower
+bound. All earlier sources and original Phase 4 artifacts remain intact.
 
 The implemented v2 pipeline supports regularized matched A/B models, forward
 tuning through 2019, separate 2020–2021 calibration and 2022–2023 assessment,
@@ -643,8 +647,10 @@ guarded, year/business-group balanced Gemma pilot. Its larger estimable-crossing
 population and ACTIVE subset are separate from the canonical experiment. See
 [the protocol](RESEARCH_V2_PROTOCOL.md) and [runbook](RESEARCH_V2_RUNBOOK.md).
 
-Hosted CI for `8f10d18` passed the committed offline pipeline on Windows, Linux
-and Colab. The subsequent SEC availability guards and catalyst schedule require
-fresh verification. The expanded real registry, genuine text-feature batch and
-matched predictive comparisons are still in progress. No new predictive
+Hosted CI for `3c01d262` passed the committed offline pipeline, balanced catalyst
+schedule and v2 metadata guards on Windows, Linux and Colab. The subsequent v3
+envelope and SGML source checks require fresh verification. Actual Model B
+fitting is blocked until the v3 guards and
+canonical SGML replay pass. The expanded real registry, genuine text-feature
+batch and matched predictive comparisons are still in progress. No new predictive
 improvement claim is supported yet, and 2024–2025 outcomes remain locked.

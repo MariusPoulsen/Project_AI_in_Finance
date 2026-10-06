@@ -49,16 +49,21 @@ The last registry command prints `research_version`. Supply that exact value in
 subsequent commands; do not infer it from directory modification times.
 
 The original `sec_metadata/source_v1` capture remains immutable. A cached-header
-diagnostic matched 186 of 250 sampled acceptance times under the earlier JSON
-normalizer; 49 were four hours later and 15 five hours later, with no premature
-case in this sample. This is not a complete audit of its 89,657 filings. New
-research evidence uses the conservative UTC/New York availability upper bound,
-with boundary-straddling and missing times kept UNKNOWN. Derive
-`sec_metadata/source_v2` by a frozen, zero-network replay of the verified v1 raw
+diagnostic matched 186 of 250 sampled JSON acceptance times; 49 JSON `Z` values
+were themselves four hours later and 15 five hours later, with no premature
+case in this sample. This is source clock lag, not solely a naive parser issue,
+and not a complete audit of its 89,657 filings. The source-v2 zero-network replay
+completed, but its constructed lower bound excluded those 64 earlier SGML
+headers. Preserve it as an immutable capture; do not treat it as evidence
+admissibility acceptance. Prepare the v3 envelope while preserving its
+conservative upper bound, with boundary-straddling and missing times UNKNOWN.
+Derive `sec_metadata/source_v3` by a frozen, zero-network replay of the verified v1 raw
 responses, following [SEC_METADATA_RECAPTURE.md](SEC_METADATA_RECAPTURE.md).
 Do not point a new-policy collection command at the completed v1 directory.
-Pass `--sec-source source_v2` to source/evidence commands that accept it. Model
+Pass `--sec-source source_v3` to source/evidence commands after its acceptance. Model
 fitting must resolve the exact SEC source bound by the evidence parent manifest.
+Actual Model B fitting remains blocked until source-v3 availability guards and
+canonical SGML document replay pass. A metadata manifest alone cannot clear it.
 
 ## SEC text, inference and fitting
 
@@ -82,7 +87,7 @@ FinBERT weights are pinned to the protocol revision and checked locally. The
 cache exists. Inference uses bounded token windows and exact text/model caches.
 Tone is a financial sentiment measurement, not a catalyst or reversion label.
 
-Gemma requests are label blind, with 1,000 calls including
+Gemma requests are label blind, with 1,000 calls per invocation including
 retries, eight-second pacing and an explicit quota/authentication stop. Strict
 JSON, timestamps, issuer/leg, category cues and exact quote grounding are checked
 locally. Invalid or unprocessed events retain UNKNOWN. A completed batch cannot
@@ -136,8 +141,9 @@ modern FinBERT extraction remain disclosed research limitations on either host.
 
 ## Acceptance state
 
-Hosted CI for commit `8f10d18` was green before the latest SEC availability guards
-and balanced catalyst schedule. That run verifies its own committed revision.
-The new guards, schedule and zero-network source_v2 replay require their own
-offline checks and capture verification before the first actual Model B fits;
-those gates remain pending until their results are recorded.
+Hosted CI for `3c01d262` passed the committed offline pipeline, including the
+balanced catalyst schedule and v2 metadata guards, on Windows, Linux and Colab.
+That run verifies its own committed revision. The subsequent v3 envelope,
+source-v3 replay and canonical SGML admissibility require fresh checks before
+the first actual Model B fits. Source-v2 metadata replay passed, but its
+lower-bound mismatch keeps the scientific gate pending.
