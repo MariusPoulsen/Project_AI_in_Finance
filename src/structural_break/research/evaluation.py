@@ -70,28 +70,99 @@ def _raw(estimator: Any, rows: pd.DataFrame, columns: tuple[str, ...]) -> Any:
     return estimator.predict_proba(rows.loc[:, columns].astype(float))[:, 1]
 
 
+def _balanced_weights(rows: pd.DataFrame) -> dict[str, Any]:
+    counts = rows["pair_id"].value_counts()
+    pairs = 1.0 / rows["pair_id"].map(counts).to_numpy(dtype=float)
+    issuers = pd.concat([rows["leg_a"], rows["leg_b"]]).value_counts()
+    issuer_weights = (
+        1.0 / rows["leg_a"].map(issuers).to_numpy(dtype=float)
+        + 1.0 / rows["leg_b"].map(issuers).to_numpy(dtype=float)
+    ) / 2
+    return {"pair_balanced": pairs, "issuer_balanced": issuer_weights}
+
+
+def _observation_losses(y: Any, probabilities: Any) -> dict[str, Any]:
+    values = np.asarray(probabilities, dtype=float)
+    # Float64 machine epsilon makes log loss finite at exact zero/one without
+    # changing the stored probabilities or any model/threshold decision.
+    epsilon = np.finfo(np.float64).eps
+    clipped = np.clip(values, epsilon, 1.0 - epsilon)
+    return {
+        "brier": (values - y) ** 2,
+        "log_loss": -(y * np.log(clipped) + (1.0 - y) * np.log1p(-clipped)),
+    }
+
+
+def research_metrics(rows: pd.DataFrame, values: Any, threshold: float) -> dict[str, Any]:
+    """Research-only losses; keep the original Phase 3/4 metric contract intact."""
+    y = rows["y_revert_success"].to_numpy(dtype=float)
+    result = predictive_metrics(y, values, threshold)
+    result["log_loss"] = None
+    for balance in ("pair_balanced", "issuer_balanced"):
+        for loss in ("brier", "log_loss"):
+            result[f"{balance}_{loss}"] = None
+    if not len(rows):
+        return result
+    losses = _observation_losses(y, values)
+    result["log_loss"] = float(losses["log_loss"].mean())
+    for balance, weights in _balanced_weights(rows).items():
+        for name, loss_values in losses.items():
+            result[f"{balance}_{name}"] = float(np.average(loss_values, weights=weights))
+    return result
+
+
 def _metrics(rows: pd.DataFrame, values: Any, threshold: float) -> dict[str, Any]:
-    return predictive_metrics(rows["y_revert_success"].to_numpy(dtype=int), values, threshold)
+    return research_metrics(rows, values, threshold)
+
+
+def assessment_slices(
+    rows: pd.DataFrame,
+    values: Any,
+    protocol: ResearchProtocol,
+    *,
+    business_groups: tuple[str, ...],
+) -> dict[str, Any]:
+    """Describe every predeclared margin without changing model selection."""
+    probabilities = np.asarray(values, dtype=float)
+    if probabilities.ndim != 1 or len(probabilities) != len(rows):
+        raise ValueError("Research subgroup probabilities must align with assessment rows")
+    dates = pd.to_datetime(rows["event_date"])
+    dimensions = {
+        "year": (
+            dates.dt.year.astype(str),
+            tuple(
+                str(year)
+                for year in range(protocol.assessment_start.year, protocol.assessment_end.year + 1)
+            ),
+        ),
+        "sector": (rows["sector"].astype(str), tuple(sorted(rows["sector"].astype(str).unique()))),
+        "ACTIVE": (rows["baseline1_eligible"].astype(str), ("False", "True")),
+        "business_group": (rows["business_group"].astype(str), business_groups),
+    }
+    result: dict[str, Any] = {}
+    for name, (memberships, groups) in dimensions.items():
+        result[name] = {}
+        for group in groups:
+            mask = memberships.eq(group).to_numpy()
+            subset = rows.loc[mask]
+            result[name][group] = {
+                **research_metrics(subset, probabilities[mask], protocol.candidate_threshold),
+                "pairs": int(subset["pair_id"].nunique()),
+                "issuers": len(set(subset["leg_a"]) | set(subset["leg_b"])),
+            }
+    return result
 
 
 def _weighted_losses(rows: pd.DataFrame, a: Any, b: Any) -> dict[str, Any]:
     y = rows["y_revert_success"].to_numpy(dtype=float)
     result: dict[str, Any] = {}
-    counts = rows["pair_id"].value_counts()
-    weights = 1.0 / rows["pair_id"].map(counts).to_numpy(dtype=float)
-    result["pair_balanced_brier"] = {
-        "A": float(np.average((a - y) ** 2, weights=weights)),
-        "B": float(np.average((b - y) ** 2, weights=weights)),
-    }
-    issuers = pd.concat([rows["leg_a"], rows["leg_b"]]).value_counts()
-    weights = (
-        1.0 / rows["leg_a"].map(issuers).to_numpy(dtype=float)
-        + 1.0 / rows["leg_b"].map(issuers).to_numpy(dtype=float)
-    ) / 2
-    result["issuer_balanced_brier"] = {
-        "A": float(np.average((a - y) ** 2, weights=weights)),
-        "B": float(np.average((b - y) ** 2, weights=weights)),
-    }
+    losses_a, losses_b = _observation_losses(y, a), _observation_losses(y, b)
+    for balance, weights in _balanced_weights(rows).items():
+        for name in losses_a:
+            result[f"{balance}_{name}"] = {
+                "A": float(np.average(losses_a[name], weights=weights)),
+                "B": float(np.average(losses_b[name], weights=weights)),
+            }
     return result
 
 
@@ -129,6 +200,7 @@ def paired_assessment(
     for name, values in (
         ("year", dates.dt.year.astype(str)),
         ("sector", rows["sector"].astype(str)),
+        ("business_group", rows["business_group"].astype(str)),
         ("ACTIVE", rows["baseline1_eligible"].astype(str)),
     ):
         slices[name] = {}
@@ -160,6 +232,8 @@ def evaluate_matched_models(
     quantitative_columns: tuple[str, ...],
     extra_blocks: dict[str, tuple[str, ...]],
     protocol: ResearchProtocol,
+    *,
+    business_groups: tuple[str, ...] = (),
 ) -> ResearchEvaluation:
     """B imputes missing text on A's cohort; it cannot drop unfavorable UNKNOWNs."""
     if rows["event_id"].duplicated().any():
@@ -174,12 +248,22 @@ def evaluate_matched_models(
         "leg_a",
         "leg_b",
         "sector",
+        "business_group",
         "baseline1_eligible",
     }
     if not required <= set(rows):
         raise ValueError("Research observation registry is incomplete")
     if "both" not in extra_blocks or not quantitative_columns:
         raise ValueError("Predeclared primary quantitative/B-both features are absent")
+    observed_groups = set(rows["business_group"])
+    if any(not isinstance(group, str) or not group for group in observed_groups):
+        raise ValueError("Every research observation requires its frozen business group")
+    if not business_groups:
+        business_groups = tuple(sorted(observed_groups))
+    if len(set(business_groups)) != len(business_groups) or not observed_groups <= set(
+        business_groups
+    ):
+        raise ValueError("Research observations differ from the frozen business-group inventory")
     forbidden = required | {
         "outcome_type",
         "resolution_date",
@@ -231,6 +315,19 @@ def evaluate_matched_models(
         "protocol": protocol.model_dump(mode="json"),
         "final_test_read": False,
         "all_quantitative_events_retained": True,
+        "metric_policy": {
+            "log_loss_logarithm": "natural",
+            "log_loss_probability_clip_epsilon": float(np.finfo(np.float64).eps),
+            "pair_balance": "equal average loss per observed pair",
+            "issuer_balance": "equal average loss per observed issuer, both legs included",
+        },
+        "assessment_slice_policy": {
+            "descriptive_only": True,
+            "business_group_universe": list(business_groups),
+            "empty_business_groups_retained": True,
+            "undefined_discrimination_is_null": True,
+            "candidate_threshold": protocol.candidate_threshold,
+        },
         "cohorts": {},
         "models": {},
     }
@@ -276,6 +373,7 @@ def evaluate_matched_models(
         "leg_a",
         "leg_b",
         "sector",
+        "business_group",
         "baseline1_eligible",
         "research_partition",
         "y_revert_success",
@@ -371,8 +469,14 @@ def evaluate_matched_models(
                 "calibrator": vars(calibrator),
                 "reload_max_error": error,
                 "raw_assessment": _metrics(assessment, raw, protocol.candidate_threshold),
+                "raw_assessment_slices": assessment_slices(
+                    assessment, raw, protocol, business_groups=business_groups
+                ),
                 "calibrated_assessment": _metrics(
                     assessment, calibrated, protocol.candidate_threshold
+                ),
+                "calibrated_assessment_slices": assessment_slices(
+                    assessment, calibrated, protocol, business_groups=business_groups
                 ),
             }
         assessment_mask = predictions["research_partition"].eq("assessment")

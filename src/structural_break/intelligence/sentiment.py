@@ -34,8 +34,28 @@ FINBERT_ASSETS_SHA256 = {
     "special_tokens_map.json": "303df45a03609e4ead04bc3dc1536d0ab19b5358db685b6f3da123d05ec200e3",
 }
 SENTIMENT_SCHEMA_VERSION = "sec-finbert-research-v2.1"
+LEGACY_PREPROCESSING_VERSION = "exact-sentence-nonoverlap-wordpiece-v1"
+QUALITY_PREPROCESSING_VERSION = "sec-sentence-quality-wordpiece-v2"
 _LABELS = ("positive", "negative", "neutral")
 _SENTENCE_BOUNDARY = re.compile(r"(?<=[.!?])\s+|\n+")
+_LINE_BOUNDARY = re.compile(r"\n+")
+_ALPHABETIC_WORD = re.compile(r"\b[A-Za-z][A-Za-z'-]*\b")
+_NUMERIC_WORD = re.compile(r"\b\d+(?:[.,]\d+)*\b")
+_TERMINAL_PUNCTUATION = re.compile(r"""[.!?]["')\]]*$""")
+_VISIBLE_ASCII = re.compile(r"[!-~]")
+_QUALITY_FIELDS = frozenset(
+    {
+        "quality_fragments",
+        "eligible_sentence_count",
+        "eligible_window_count",
+        "eligible_token_count",
+        "excluded_sentence_count",
+        "excluded_window_count",
+        "excluded_token_count",
+        "budget_omitted_window_count",
+        "budget_omitted_token_count",
+    }
+)
 SENTIMENT_FEATURE_COLUMNS = tuple(
     f"sentiment_{leg}_{name}"
     for leg in ("a", "b")
@@ -59,7 +79,7 @@ class FinBERTPolicy:
     max_windows_per_chunk: int = 64
     batch_size: int = 8
     max_chunk_chars: int = 100_000
-    preprocessing_version: str = "exact-sentence-nonoverlap-wordpiece-v1"
+    preprocessing_version: str = LEGACY_PREPROCESSING_VERSION
 
     def __post_init__(self) -> None:
         if (
@@ -69,7 +89,8 @@ class FinBERTPolicy:
             or not 1 <= self.max_windows_per_chunk <= 1024
             or not 1 <= self.batch_size <= 256
             or not 1 <= self.max_chunk_chars <= 1_000_000
-            or self.preprocessing_version != "exact-sentence-nonoverlap-wordpiece-v1"
+            or self.preprocessing_version
+            not in {LEGACY_PREPROCESSING_VERSION, QUALITY_PREPROCESSING_VERSION}
         ):
             raise ValueError("Invalid pinned FinBERT inference policy")
 
@@ -271,13 +292,15 @@ def _probabilities(value: Mapping[str, object]) -> dict[str, float]:
 
 def _window_plan(
     text: str, backend: SentimentBackend, policy: FinBERTPolicy
-) -> tuple[list[dict[str, Any]], list[list[int]], dict[str, int]]:
+) -> tuple[list[dict[str, Any]], list[list[int]], dict[str, Any]]:
     """Keep every nonempty sentence's exact character and nonoverlap token spans.
 
     A sentence longer than the tokenizer limit is explicitly divided. The global
     chunk budget scores the first windows in source order, recording all omitted
     windows/tokens and incomplete sentences rather than claiming full coverage.
     """
+    if policy.preprocessing_version == QUALITY_PREPROCESSING_VERSION:
+        return _quality_window_plan(text, backend, policy)
     metadata: list[dict[str, Any]] = []
     windows: list[list[int]] = []
     cursor, sentence_count, token_count = 0, 0, 0
@@ -329,6 +352,122 @@ def _window_plan(
     )
 
 
+def _quality_line_spans(text: str) -> list[tuple[int, int]]:
+    """Exact physical lines; no stitching or rewriting of table/prose text."""
+    spans: list[tuple[int, int]] = []
+    cursor = 0
+    boundaries = [(match.start(), match.end()) for match in _LINE_BOUNDARY.finditer(text)]
+    boundaries.append((len(text), len(text)))
+    for boundary, following in boundaries:
+        segment = text[cursor:boundary]
+        begin = cursor + len(segment) - len(segment.lstrip())
+        end = cursor + len(segment.rstrip())
+        cursor = following
+        if begin < end:
+            spans.append((begin, end))
+    return spans
+
+
+def _quality_line_eligible(text: str) -> bool:
+    """FIT-text-prespecified fragmentation guard, not a semantic prose detector."""
+    words = sum(len(word) >= 2 for word in _ALPHABETIC_WORD.findall(text))
+    numeric = len(_NUMERIC_WORD.findall(text))
+    return bool(
+        words >= 2
+        and _TERMINAL_PUNCTUATION.search(text.rstrip())
+        or words >= 6
+        and words / max(1, words + numeric) >= 2 / 3
+    )
+
+
+def _minimum_ascii_tokens(text: str) -> int:
+    """Pinned BasicTokenizer cannot erase a visible ASCII whitespace word."""
+    return sum(bool(_VISIBLE_ASCII.search(word)) for word in text.split())
+
+
+def _quality_window_plan(
+    text: str, backend: SentimentBackend, policy: FinBERTPolicy
+) -> tuple[list[dict[str, Any]], list[list[int]], dict[str, Any]]:
+    """Score eligible exact lines; all excluded raw windows/tokens stay counted."""
+    metadata: list[dict[str, Any]] = []
+    windows: list[list[int]] = []
+    fragments: list[dict[str, Any]] = []
+    counts: dict[str, Any] = dict(
+        sentence_count=0,
+        window_count=0,
+        token_count=0,
+        eligible_sentence_count=0,
+        eligible_window_count=0,
+        eligible_token_count=0,
+        excluded_sentence_count=0,
+        excluded_window_count=0,
+        excluded_token_count=0,
+    )
+    for begin, end in _quality_line_spans(text):
+        ids = list(backend.token_ids(text[begin:end]))
+        if any(not isinstance(value, int) or isinstance(value, bool) or value < 0 for value in ids):
+            raise ValueError("Sentiment tokenizer must return nonnegative integer token IDs")
+        if len(ids) < _minimum_ascii_tokens(text[begin:end]):
+            raise ValueError("Sentiment tokenizer returned an impossible visible-text token count")
+        eligible = bool(ids) and _quality_line_eligible(text[begin:end])
+        sentence_index = len(fragments)
+        window_count = math.ceil(len(ids) / (policy.max_tokens - 2))
+        fragments.append(
+            dict(
+                sentence_index=sentence_index,
+                sentence_char_start=begin,
+                sentence_char_end=end,
+                sentence_token_count=len(ids),
+                window_count=window_count,
+                eligible=eligible,
+                exclusion_reason=None
+                if eligible
+                else "QUALITY_GUARD_FRAGMENT"
+                if ids
+                else "NO_USABLE_TOKENS",
+            )
+        )
+        for prefix in ("", "eligible_" if eligible else "excluded_"):
+            counts[prefix + "sentence_count"] += 1
+            counts[prefix + "window_count"] += window_count
+            counts[prefix + "token_count"] += len(ids)
+        if not eligible:
+            continue
+        for offset in range(0, len(ids), policy.max_tokens - 2):
+            window = ids[offset : offset + policy.max_tokens - 2]
+            metadata.append(
+                dict(
+                    window_index=len(metadata),
+                    sentence_index=sentence_index,
+                    sentence_char_start=begin,
+                    sentence_char_end=end,
+                    sentence_token_count=len(ids),
+                    token_start=offset,
+                    token_end=offset + len(window),
+                    token_count=len(window),
+                    token_ids_sha256=_sha(window),
+                )
+            )
+            windows.append(window)
+    counts["quality_fragments"] = fragments
+    return metadata, windows, counts
+
+
+def _scored_status_reason(scored: int, counts: Mapping[str, Any]) -> tuple[str, str]:
+    if scored == counts["window_count"] and not counts.get("excluded_sentence_count", 0):
+        return "SUCCESS", "ALL_CHUNK_WINDOWS_SCORED"
+    excluded = counts.get("excluded_sentence_count", 0)
+    budget = scored < counts.get("eligible_window_count", counts["window_count"])
+    reason = (
+        "QUALITY_GUARD_AND_WINDOW_BUDGET"
+        if excluded and budget
+        else "QUALITY_GUARD_EXCLUDED_FRAGMENTS"
+        if excluded
+        else "EXPLICIT_WINDOW_BUDGET"
+    )
+    return "PARTIAL", reason
+
+
 def _chunk_scores(
     text: str, backend: SentimentBackend, cache_dir: Path, policy: FinBERTPolicy
 ) -> dict[str, Any]:
@@ -357,7 +496,13 @@ def _chunk_scores(
         return dict(result, cache_key=cache_key)
     if not selected_windows:
         return dict(
-            counts, status="UNKNOWN", reason="NO_USABLE_TOKENS", windows=[], cache_key=cache_key
+            counts,
+            status="UNKNOWN",
+            reason="NO_ELIGIBLE_SOURCE_FRAGMENTS"
+            if counts.get("excluded_window_count", 0)
+            else "NO_USABLE_TOKENS",
+            windows=[],
+            cache_key=cache_key,
         )
     try:
         probabilities = list(backend.predict(selected_windows))
@@ -369,12 +514,11 @@ def _chunk_scores(
         dict(row, probabilities=_probabilities(probability))
         for row, probability in zip(selected_plan, probabilities, strict=True)
     ]
+    status, reason = _scored_status_reason(len(scored), counts)
     result = dict(
         counts,
-        status="SUCCESS" if len(scored) == counts["window_count"] else "PARTIAL",
-        reason="ALL_CHUNK_WINDOWS_SCORED"
-        if len(scored) == counts["window_count"]
-        else "EXPLICIT_WINDOW_BUDGET",
+        status=status,
+        reason=reason,
         windows=scored,
         runtime=dict(getattr(backend, "runtime", {})),
     )
@@ -394,13 +538,17 @@ def _chunk_scores(
 
 
 def _validate_chunk_result(
-    result: object, selected_plan: list[dict[str, Any]], counts: dict[str, int]
+    result: object, selected_plan: list[dict[str, Any]], counts: dict[str, Any]
 ) -> None:
     if not isinstance(result, dict):
         raise ValueError("Invalid stored sentiment result")
-    expected_status = "SUCCESS" if len(selected_plan) == counts["window_count"] else "PARTIAL"
-    if result.get("status") != expected_status or any(
-        result.get(name) != count for name, count in counts.items()
+    if "quality_fragments" not in counts and _QUALITY_FIELDS.intersection(result):
+        raise ValueError("Stored sentiment legacy result cannot contain quality policy fields")
+    expected_status, expected_reason = _scored_status_reason(len(selected_plan), counts)
+    if (
+        result.get("status") != expected_status
+        or result.get("reason") != expected_reason
+        or any(result.get(name) != count for name, count in counts.items())
     ):
         raise ValueError("Stored sentiment window coverage mismatch")
     rows = result.get("windows")
@@ -589,7 +737,7 @@ def _chunk_summary(scores: Mapping[str, Any]) -> dict[str, Any]:
         for window in scores["windows"]
         if window["token_end"] == window["sentence_token_count"]
     }
-    return dict(
+    summary = dict(
         scored_token_count=scored_tokens,
         scored_window_count=len(scores["windows"]),
         omitted_window_count=scores["window_count"] - len(scores["windows"]),
@@ -612,6 +760,12 @@ def _chunk_summary(scores: Mapping[str, Any]) -> dict[str, Any]:
             for label in _LABELS
         },
     )
+    if "eligible_window_count" in scores:
+        summary.update(
+            budget_omitted_window_count=scores["eligible_window_count"] - len(scores["windows"]),
+            budget_omitted_token_count=scores["eligible_token_count"] - scored_tokens,
+        )
+    return summary
 
 
 def _aggregate_scores(
@@ -692,10 +846,102 @@ def _sentence_spans(text: str) -> set[tuple[int, int]]:
     return spans
 
 
+def _quality_stored_plan(
+    row: dict[str, Any], source: dict[str, Any], rules: FinBERTPolicy
+) -> list[dict[str, int]] | None:
+    """Reconstruct eligibility, complete raw denominators and scored prefix offline."""
+    inventory = row.get("quality_fragments")
+    if inventory is None:
+        if (
+            row["status"] == "UNKNOWN"
+            and row.get("cache_key") is None
+            and not any(row[name] for name in ("sentence_count", "window_count", "token_count"))
+        ):
+            return None  # Source or tokenizer unavailable: no invented raw token counts.
+        raise ValueError("Stored sentiment quality fragment inventory is missing")
+    spans = _quality_line_spans(source["chunk_text"])
+    if not isinstance(inventory, list) or len(inventory) != len(spans):
+        raise ValueError("Stored sentiment quality raw line inventory differs")
+    expected: list[dict[str, int]] = []
+    counts = dict(
+        sentence_count=0,
+        window_count=0,
+        token_count=0,
+        eligible_sentence_count=0,
+        eligible_window_count=0,
+        eligible_token_count=0,
+        excluded_sentence_count=0,
+        excluded_window_count=0,
+        excluded_token_count=0,
+    )
+    keys = {
+        "sentence_index",
+        "sentence_char_start",
+        "sentence_char_end",
+        "sentence_token_count",
+        "window_count",
+        "eligible",
+        "exclusion_reason",
+    }
+    for index, (fragment, (begin, end)) in enumerate(zip(inventory, spans, strict=True)):
+        if not isinstance(fragment, dict) or set(fragment) != keys:
+            raise ValueError("Stored sentiment quality fragment schema differs")
+        if any(
+            not isinstance(fragment[key], int)
+            or isinstance(fragment[key], bool)
+            or fragment[key] < 0
+            for key in keys - {"eligible", "exclusion_reason"}
+        ):
+            raise ValueError("Stored sentiment quality fragment counts are invalid")
+        token_count = fragment["sentence_token_count"]
+        if token_count < _minimum_ascii_tokens(source["chunk_text"][begin:end]):
+            raise ValueError("Stored sentiment quality visible-text token count is impossible")
+        window_count = math.ceil(token_count / (rules.max_tokens - 2))
+        eligible = bool(token_count) and _quality_line_eligible(source["chunk_text"][begin:end])
+        reason = (
+            None if eligible else "QUALITY_GUARD_FRAGMENT" if token_count else "NO_USABLE_TOKENS"
+        )
+        if (
+            fragment["sentence_index"] != index
+            or fragment["sentence_char_start"] != begin
+            or fragment["sentence_char_end"] != end
+            or fragment["window_count"] != window_count
+            or fragment["eligible"] is not eligible
+            or fragment["exclusion_reason"] != reason
+        ):
+            raise ValueError("Stored sentiment quality fragment provenance/eligibility differs")
+        for prefix in ("", "eligible_" if eligible else "excluded_"):
+            counts[prefix + "sentence_count"] += 1
+            counts[prefix + "window_count"] += window_count
+            counts[prefix + "token_count"] += token_count
+        if eligible:
+            for start in range(0, token_count, rules.max_tokens - 2):
+                stop = min(token_count, start + rules.max_tokens - 2)
+                expected.append(
+                    dict(
+                        window_index=len(expected),
+                        sentence_index=index,
+                        sentence_char_start=begin,
+                        sentence_char_end=end,
+                        sentence_token_count=token_count,
+                        token_start=start,
+                        token_end=stop,
+                        token_count=stop - start,
+                    )
+                )
+    if any(row.get(name) != value for name, value in counts.items()):
+        raise ValueError("Stored sentiment quality raw/excluded coverage denominators differ")
+    return expected[: rules.max_windows_per_chunk]
+
+
 def _validate_stored_windows(
     row: dict[str, Any], source: dict[str, Any], rules: FinBERTPolicy
 ) -> None:
     """Validate recorded token spans; exact tokenizer IDs remain immutable outputs."""
+    if rules.preprocessing_version == LEGACY_PREPROCESSING_VERSION and _QUALITY_FIELDS.intersection(
+        row
+    ):
+        raise ValueError("Stored sentiment legacy result cannot contain quality policy fields")
     for name in ("sentence_count", "window_count", "token_count"):
         value = row.get(name)
         if not isinstance(value, int) or isinstance(value, bool) or value < 0:
@@ -712,6 +958,11 @@ def _validate_stored_windows(
         "policy": asdict(rules),
         "schema_version": SENTIMENT_SCHEMA_VERSION,
     }
+    quality_plan = (
+        _quality_stored_plan(row, source, rules)
+        if rules.preprocessing_version == QUALITY_PREPROCESSING_VERSION
+        else None
+    )
     if status == "UNKNOWN":
         if windows or row.get("cache_key") not in (None, _sha(identity)):
             raise ValueError("UNKNOWN sentiment cannot invent scored windows")
@@ -720,15 +971,32 @@ def _validate_stored_windows(
             raise ValueError("Unavailable SEC source cannot have sentiment scores")
         if row.get("cache_key") != _sha(identity):
             raise ValueError("Stored sentiment cache key disagrees with exact text/model/policy")
-        if not windows or len(windows) != min(row["window_count"], rules.max_windows_per_chunk):
+        available_windows = row.get("eligible_window_count", row["window_count"])
+        if not windows or len(windows) != min(available_windows, rules.max_windows_per_chunk):
             raise ValueError("Stored sentiment does not retain the declared window prefix")
-        expected_status = "SUCCESS" if len(windows) == row["window_count"] else "PARTIAL"
-        expected_reason = (
-            "ALL_CHUNK_WINDOWS_SCORED" if expected_status == "SUCCESS" else "EXPLICIT_WINDOW_BUDGET"
-        )
+        expected_status, expected_reason = _scored_status_reason(len(windows), row)
         if status != expected_status or row["reason"] != expected_reason:
             raise ValueError("Stored sentiment truncation status/reason mismatch")
-    spans = _sentence_spans(source["chunk_text"])
+    if (
+        quality_plan is not None
+        and status != "UNKNOWN"
+        and any(
+            {key: window.get(key) for key in expected} != expected
+            for window, expected in zip(windows, quality_plan, strict=True)
+        )
+    ):
+        raise ValueError("Stored sentiment quality windows differ from eligible source prefix")
+    if (
+        rules.preprocessing_version == QUALITY_PREPROCESSING_VERSION
+        and row["reason"] == "NO_ELIGIBLE_SOURCE_FRAGMENTS"
+        and (status != "UNKNOWN" or row.get("eligible_window_count") != 0)
+    ):
+        raise ValueError("Stored sentiment quality UNKNOWN contradicts eligible source fragments")
+    spans = (
+        set(_quality_line_spans(source["chunk_text"]))
+        if rules.preprocessing_version == QUALITY_PREPROCESSING_VERSION
+        else _sentence_spans(source["chunk_text"])
+    )
     previous: dict[str, Any] | None = None
     observed_sentences: dict[int, int] = {}
     observed_tokens = 0
@@ -770,7 +1038,8 @@ def _validate_stored_windows(
         if previous is None or window["sentence_index"] != previous["sentence_index"]:
             if (
                 window["token_start"] != 0
-                or window["sentence_index"] != len(observed_sentences)
+                or rules.preprocessing_version == LEGACY_PREPROCESSING_VERSION
+                and window["sentence_index"] != len(observed_sentences)
                 or previous is not None
                 and (
                     previous["token_end"] != previous["sentence_token_count"]

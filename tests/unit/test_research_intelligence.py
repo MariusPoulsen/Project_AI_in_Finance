@@ -2,6 +2,7 @@
 
 import json
 import re
+import weakref
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
@@ -11,6 +12,7 @@ import pytest
 import yaml
 
 from structural_break.config.models import ProjectConfig
+from structural_break.config.paths import ProjectPaths
 from structural_break.data.http import FetchedResponse, SourceError
 from structural_break.intelligence.event_features import EVENT_FEATURE_NAMES
 from structural_break.intelligence.extraction import ProviderFailure
@@ -19,6 +21,7 @@ from structural_break.intelligence.sentiment import (
     FINBERT_REVISION,
     SENTIMENT_FEATURE_COLUMNS,
 )
+from structural_break.research import intelligence
 from structural_break.research.intelligence import (
     METADATA_FEATURE_COLUMNS,
     build_event_intelligence,
@@ -28,6 +31,7 @@ from structural_break.research.intelligence import (
     verify_sec_metadata,
 )
 from structural_break.research.universe import freeze_universe
+from structural_break.storage.files import sha256_file
 
 
 @pytest.fixture
@@ -318,7 +322,7 @@ def test_tampered_inputs_or_outputs_fail_verification(
     }
     path = paths[target]
     path.write_bytes(path.read_bytes() + b"changed")
-    with pytest.raises(ValueError, match="checksum"):
+    with pytest.raises(ValueError, match="checksum|hash mismatch"):
         verify_event_intelligence(output, freeze, metadata_dir)
 
 
@@ -580,5 +584,85 @@ def test_new_generation_reuses_shared_verified_sources_and_inference(
         verify_event_intelligence(tmp_path / "second", freeze, metadata_dir)
     body = next((cache / "data/raw/sec/filings").glob("**/primary_document.html"))
     body.write_bytes(body.read_bytes() + b"changed")
-    with pytest.raises(ValueError, match="checksum"):
+    with pytest.raises(ValueError, match="checksum|hash mismatch"):
         verify_event_intelligence(tmp_path / "second", freeze, metadata_dir, cache_workspace=cache)
+
+
+def test_source_inventory_union_preserves_legacy_bytes_and_does_not_retain_packs(
+    freeze: Path, tmp_path: Path, project_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    metadata = tmp_path / "metadata"
+    collect_sec_metadata(freeze, metadata, get=source([]))
+    output = tmp_path / "intelligence"
+    original_pack = intelligence._event_pack
+    original_inventory = intelligence._cache_inventory
+    tracked: list[weakref.ReferenceType[Any]] = []
+    inventory_calls: list[set[str]] = []
+
+    class TrackedPack(dict):
+        pass
+
+    def observe_pack(*args: Any, **kwargs: Any):
+        pack, count = original_pack(*args, **kwargs)
+        wrapped = TrackedPack(pack)
+        tracked.append(weakref.ref(wrapped))
+        return wrapped, count
+
+    def observe_inventory(selected: Any, paths: ProjectPaths, filings: pd.DataFrame):
+        assert isinstance(selected, set)
+        assert all(isinstance(value, str) for value in selected)
+        # Builder and scientific replay keep only the latest pack, rather than
+        # retaining a full text dictionary for every event.
+        assert sum(ref() is not None for ref in tracked) <= 2
+        inventory_calls.append(set(selected))
+        return original_inventory(selected, paths, filings)
+
+    monkeypatch.setattr(intelligence, "_event_pack", observe_pack)
+    monkeypatch.setattr(intelligence, "_cache_inventory", observe_inventory)
+    events = pd.DataFrame(
+        [
+            dict(
+                event_id=f"event_{index}",
+                pair_id="KO__PEP",
+                event_timestamp=f"2022-03-{10 + index:02d}T21:00:00Z",
+            )
+            for index in range(12)
+        ]
+    )
+    manifest = build_event_intelligence(
+        events,
+        freeze,
+        metadata,
+        output,
+        provider=None,
+        sentiment_backend=Tone(),
+        get=source([]),
+    )
+    assert len(inventory_calls) == 2 and inventory_calls[0] == inventory_calls[1]
+    checkpoint_packs = [
+        json.loads((output / row["file"]).read_bytes())["pack"]
+        for row in manifest["source_identity"]["records"]
+    ]
+    legacy_selected = {
+        filing for pack in checkpoint_packs for filing in pack.get("selected_filing_ids", [])
+    }
+    assert inventory_calls[0] == legacy_selected
+    filings = pd.read_parquet(metadata / "filings.parquet")
+    paths = ProjectPaths(project_root, output)
+    legacy_inventory = {}
+    for row in filings.loc[filings["filing_id"].isin(legacy_selected)].to_dict("records"):
+        folder = paths.data_path(f"raw/sec/filings/{row['cik']}/{row['filing_id']}")
+        for filename in folder.rglob("*"):
+            if filename.is_file() and "attempts" not in filename.relative_to(folder).parts:
+                legacy_inventory[filename.relative_to(paths.workspace_root).as_posix()] = (
+                    sha256_file(filename)
+                )
+    assert manifest["cache_files"] == legacy_inventory
+    assert intelligence.json_bytes(manifest["cache_files"]) == intelligence.json_bytes(
+        legacy_inventory
+    )
+    # A rehashed manifest cannot omit selected response metadata from its inventory.
+    manifest["cache_files"].pop(next(iter(manifest["cache_files"])))
+    (output / "manifest.json").write_bytes(intelligence.json_bytes(manifest))
+    with pytest.raises(ValueError, match="source cache inventory/checksum"):
+        verify_event_intelligence(output, freeze, metadata)

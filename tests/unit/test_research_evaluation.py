@@ -57,6 +57,7 @@ def registry() -> pd.DataFrame:
                     "leg_a": "KO",
                     "leg_b": pair.split("__")[1],
                     "sector": "Consumer Staples",
+                    "business_group": "beverages" if pair == "KO__PEP" else "retail",
                     "baseline1_eligible": index % 4 != 0,
                     "q1": float(label) + float(index % 3) * 0.4,
                     "q2": float(index % 7),

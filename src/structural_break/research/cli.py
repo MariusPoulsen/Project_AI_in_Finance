@@ -19,7 +19,12 @@ from structural_break.config.paths import ProjectPaths, confined_path, find_proj
 from structural_break.data.http import HttpClient
 from structural_break.data.sec import COMPANY_TICKERS_URL
 from structural_break.intelligence.gemma import GemmaProvider
-from structural_break.intelligence.sentiment import FinBERTPolicy, HuggingFaceFinBERT
+from structural_break.intelligence.sentiment import (
+    LEGACY_PREPROCESSING_VERSION,
+    QUALITY_PREPROCESSING_VERSION,
+    FinBERTPolicy,
+    HuggingFaceFinBERT,
+)
 from structural_break.research.intelligence import build_event_intelligence, collect_sec_metadata
 from structural_break.research.market import collect_market
 from structural_break.research.model_job import train_research_models, verify_research_models
@@ -132,6 +137,12 @@ def _parser() -> argparse.ArgumentParser:
         "--download-model", action="store_true", help="Acquire public pinned FinBERT assets"
     )
     parser.add_argument(
+        "--sentiment-preprocessing",
+        choices=(LEGACY_PREPROCESSING_VERSION, QUALITY_PREPROCESSING_VERSION),
+        default=QUALITY_PREPROCESSING_VERSION,
+        help="Versioned FinBERT sentence policy; legacy captures remain independently readable",
+    )
+    parser.add_argument(
         "--no-gemma", action="store_true", help="Explicit FinBERT-only source batch"
     )
     parser.add_argument(
@@ -219,7 +230,9 @@ def run_command(
             ),
         )
     tone_policy = FinBERTPolicy(
-        model_name=protocol.sentiment_model, model_revision=protocol.sentiment_revision
+        model_name=protocol.sentiment_model,
+        model_revision=protocol.sentiment_revision,
+        preprocessing_version=args.sentiment_preprocessing,
     )
     backend = None
     if not args.no_finbert:

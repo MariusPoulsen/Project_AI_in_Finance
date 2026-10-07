@@ -6,6 +6,7 @@ import shutil
 from datetime import UTC, date, datetime
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import pytest
 import yaml
@@ -444,6 +445,58 @@ def test_complete_registry_evidence_model_flow_replays_all_ten_native_bundles(mo
     assert report["cohorts"]["assessment"]["n"] > 0
     for family in report["models"].values():
         assert set(family) == {"A", "B_metadata", "B_tone", "B_catalyst", "B_both"}
+        for variant in family.values():
+            for scale in ("raw_assessment", "calibrated_assessment"):
+                metrics = variant[scale]
+                assert np.isfinite(metrics["log_loss"])
+                assert np.isfinite(metrics["pair_balanced_log_loss"])
+                assert np.isfinite(metrics["issuer_balanced_log_loss"])
+    assert report["metric_policy"]["log_loss_probability_clip_epsilon"] == np.finfo(float).eps
+    frozen_groups = set(report["assessment_slice_policy"]["business_group_universe"])
+    for family in report["models"].values():
+        for variant in family.values():
+            for scale in ("raw", "calibrated"):
+                slices = variant[f"{scale}_assessment_slices"]
+                assert set(slices["business_group"]) == frozen_groups
+                assert set(slices["ACTIVE"]) == {"False", "True"}
+                assert (
+                    sum(group["n"] for group in slices["ACTIVE"].values())
+                    == (report["cohorts"]["assessment"]["n"])
+                )
+
+
+def test_model_verification_independently_reconstructs_log_loss(model_publication, monkeypatch):
+    from structural_break.research import model_job
+
+    paths, model, _ = model_publication
+    original = model_job.research_metrics
+
+    def changed_loss(rows, probabilities, threshold):
+        metrics = original(rows, probabilities, threshold)
+        metrics["log_loss"] += 0.1
+        return metrics
+
+    monkeypatch.setattr(model_job, "research_metrics", changed_loss)
+    with pytest.raises(ValueError, match="assessment metrics do not reproduce"):
+        verify_research_models(paths, model["research_version"])
+
+
+def test_model_verification_independently_reconstructs_subgroup_coverage(
+    model_publication, monkeypatch
+):
+    from structural_break.research import model_job
+
+    paths, model, _ = model_publication
+    original = model_job.assessment_slices
+
+    def changed_slice(rows, probabilities, protocol, *, business_groups):
+        slices = original(rows, probabilities, protocol, business_groups=business_groups)
+        slices["ACTIVE"]["True"]["selected"] += 1
+        return slices
+
+    monkeypatch.setattr(model_job, "assessment_slices", changed_slice)
+    with pytest.raises(ValueError, match="subgroup metrics do not reproduce"):
+        verify_research_models(paths, model["research_version"])
 
 
 def test_model_verification_rechecks_the_scientific_evidence_parent(model_publication, tmp_path):

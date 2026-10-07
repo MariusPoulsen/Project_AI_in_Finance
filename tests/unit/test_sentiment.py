@@ -12,6 +12,7 @@ import pandas as pd
 import pytest
 
 from structural_break.config.paths import ProjectPaths
+from structural_break.intelligence import sentiment
 from structural_break.intelligence.evidence import (
     build_evidence_pack,
     cache_filing,
@@ -22,6 +23,8 @@ from structural_break.intelligence.fixtures import make_evidence_fixture
 from structural_break.intelligence.sentiment import (
     FINBERT_MODEL,
     FINBERT_REVISION,
+    LEGACY_PREPROCESSING_VERSION,
+    QUALITY_PREPROCESSING_VERSION,
     SENTIMENT_FEATURE_COLUMNS,
     FinBERTPolicy,
     HuggingFaceFinBERT,
@@ -428,3 +431,267 @@ def test_unknown_and_budgeted_partial_results_reconstruct_offline(tmp_path: Path
         validate_sentiment_result(evidence, result, leg_security_ids=("KO", "PEP"), policy=rules)
         == result["features"]
     )
+
+
+def quality_pack(text: str) -> dict[str, Any]:
+    evidence = pack()
+    for chunk in evidence["chunks"]:
+        chunk.update(chunk_text=text, text_sha256=hashlib.sha256(text.encode()).hexdigest())
+    return evidence
+
+
+def quality_policy(**kwargs: Any) -> FinBERTPolicy:
+    return FinBERTPolicy(preprocessing_version=QUALITY_PREPROCESSING_VERSION, **kwargs)
+
+
+def test_quality_guard_preserves_short_sentences_and_full_raw_denominators(
+    tmp_path: Path,
+) -> None:
+    text = "103 106\n1\nSales fell.\nMargins improved."
+    evidence, backend = quality_pack(text), MockBackend()
+    rules = quality_policy()
+    result = score(tmp_path, evidence, backend=backend, policy=rules)
+    row = result["chunks"][0]
+    assert backend.calls == 1 and backend.windows == [[1, 2], [1, 2]]
+    assert backend.texts == text.splitlines() * 2  # Excluded lines are still tokenized.
+    assert row["status"] == "PARTIAL"
+    assert row["reason"] == "QUALITY_GUARD_EXCLUDED_FRAGMENTS"
+    assert row["sentence_count"] == row["window_count"] == 4
+    assert row["token_count"] == 7 and row["scored_token_count"] == 4
+    assert row["excluded_sentence_count"] == row["excluded_window_count"] == 2
+    assert row["excluded_token_count"] == 3
+    assert row["omitted_window_count"] == 2 and row["budget_omitted_window_count"] == 0
+    assert row["token_coverage"] == pytest.approx(4 / 7)
+    assert [w["sentence_index"] for w in row["windows"]] == [2, 3]
+    assert result["features"]["sentiment_a_unknown"] == 0
+    assert result["features"]["sentiment_a_token_coverage"] == pytest.approx(4 / 7)
+    assert (
+        validate_sentiment_result(evidence, result, leg_security_ids=("KO", "PEP"), policy=rules)
+        == result["features"]
+    )
+
+
+def test_quality_guard_never_joins_lines_or_splits_punctuation_within_a_line(
+    tmp_path: Path,
+) -> None:
+    text = "  Sales fell. Revenue grew. \r\n  100 200 \n  Margins improved! "
+    evidence, rules = quality_pack(text), quality_policy()
+    result = score(tmp_path, evidence, policy=rules)
+    row = result["chunks"][0]
+    assert [text[w["sentence_char_start"] : w["sentence_char_end"]] for w in row["windows"]] == [
+        "Sales fell. Revenue grew.",
+        "Margins improved!",
+    ]
+    assert [f["eligible"] for f in row["quality_fragments"]] == [True, False, True]
+    assert (
+        validate_sentiment_result(evidence, result, leg_security_ids=("KO", "PEP"), policy=rules)
+        == result["features"]
+    )
+
+
+def test_quality_guard_word_rich_numeric_share_boundary_and_captions_disclosed(
+    tmp_path: Path,
+) -> None:
+    text = (
+        "Revenue increased across our growing business 1 2 3\n"
+        "Revenue increased across our growing business 1 2 3 4\n"
+        "Sales fell 1 2 3 4 5.\n"
+        "Loss.\n"
+        "(Principal Accounting Officer and Duly Authorized Officer)"
+    )
+    evidence, rules = quality_pack(text), quality_policy()
+    result = score(tmp_path, evidence, policy=rules)
+    row = result["chunks"][0]
+    assert [f["eligible"] for f in row["quality_fragments"]] == [True, False, True, False, True]
+    # The deterministic guard reduces fragmentation; it does not claim narrative semantics.
+    assert row["excluded_sentence_count"] == 2 and row["status"] == "PARTIAL"
+    assert (
+        validate_sentiment_result(evidence, result, leg_security_ids=("KO", "PEP"), policy=rules)
+        == result["features"]
+    )
+
+
+def test_quality_budget_is_first64_eligible_windows_not_first64_raw_fragments(
+    tmp_path: Path,
+) -> None:
+    text = "\n".join(["123"] * 100 + ["Sales fell."] * 65)
+    evidence, backend, rules = quality_pack(text), MockBackend(), quality_policy()
+    result = score(tmp_path, evidence, backend=backend, policy=rules)
+    row = result["chunks"][0]
+    assert len(backend.windows) == 64
+    assert row["window_count"] == 165 and row["eligible_window_count"] == 65
+    assert row["excluded_window_count"] == 100
+    assert row["budget_omitted_window_count"] == 1
+    assert row["token_count"] == 230 and row["scored_token_count"] == 128
+    assert row["reason"] == "QUALITY_GUARD_AND_WINDOW_BUDGET"
+    assert [w["sentence_index"] for w in row["windows"]] == list(range(100, 164))
+    assert (
+        validate_sentiment_result(evidence, result, leg_security_ids=("KO", "PEP"), policy=rules)
+        == result["features"]
+    )
+
+
+def test_quality_long_line_splits_without_hidden_truncation(tmp_path: Path) -> None:
+    text = "meaningful growth company strong financial business " * 4
+    evidence, rules = quality_pack(text), quality_policy(max_tokens=8, max_windows_per_chunk=2)
+    result = score(tmp_path, evidence, policy=rules)
+    row = result["chunks"][0]
+    assert row["window_count"] == row["eligible_window_count"] == 4
+    assert row["token_count"] == 24 and row["scored_token_count"] == 12
+    assert row["budget_omitted_token_count"] == 12
+    assert row["token_coverage"] == 0.5 and row["fully_scored_sentence_count"] == 0
+    assert row["reason"] == "EXPLICIT_WINDOW_BUDGET"
+    assert (
+        validate_sentiment_result(evidence, result, leg_security_ids=("KO", "PEP"), policy=rules)
+        == result["features"]
+    )
+
+
+def test_quality_excluded_table_only_is_unknown_not_neutral_and_avoids_inference(
+    tmp_path: Path,
+) -> None:
+    evidence, rules, backend = (
+        quality_pack("100 200\nGross profit\n%\nLoss."),
+        quality_policy(),
+        MockBackend(),
+    )
+    result = score(tmp_path, evidence, backend=backend, policy=rules)
+    assert backend.calls == 0 and not list(tmp_path.glob("*.json"))
+    row = result["chunks"][0]
+    assert row["status"] == "UNKNOWN" and row["reason"] == "NO_ELIGIBLE_SOURCE_FRAGMENTS"
+    assert row["token_count"] == 6 and row["excluded_token_count"] == 6
+    assert row["token_coverage"] == 0 and row["probabilities"]["neutral"] is None
+    assert result["features"]["sentiment_a_unknown"] == 1
+    assert result["features"]["sentiment_a_neutral"] is None
+    assert (
+        validate_sentiment_result(evidence, result, leg_security_ids=("KO", "PEP"), policy=rules)
+        == result["features"]
+    )
+
+
+def test_quality_and_legacy_caches_are_separate_and_default_legacy_replay_is_unchanged(
+    tmp_path: Path,
+) -> None:
+    assert FinBERTPolicy().preprocessing_version == LEGACY_PREPROCESSING_VERSION
+    first = score(tmp_path)
+    legacy_files = {p.name: p.read_bytes() for p in tmp_path.glob("*.json")}
+    assert "quality_fragments" not in first["chunks"][0]
+    newer = score(tmp_path, policy=quality_policy())
+    assert first["chunks"][0]["cache_key"] != newer["chunks"][0]["cache_key"]
+    assert len(list(tmp_path.glob("*.json"))) == 2
+    assert all((tmp_path / name).read_bytes() == body for name, body in legacy_files.items())
+
+    class CacheOnly(MockBackend):
+        def predict(self, windows: Sequence[Sequence[int]]) -> Sequence[Mapping[str, float]]:
+            pytest.fail("Legacy cache replay cannot run inference")
+
+    assert score(tmp_path, backend=CacheOnly()) == first
+
+
+@pytest.mark.parametrize(
+    "mutation", ["denominator", "excluded_flag", "missing_fragment", "wrong_prefix", "complete"]
+)
+def test_quality_offline_replay_rejects_changed_coverage_and_eligible_source_prefix(
+    tmp_path: Path, mutation: str
+) -> None:
+    evidence, rules = quality_pack("100 200\nSales fell.\nMargins improved."), quality_policy()
+    result = score(tmp_path, evidence, policy=rules)
+    row = result["chunks"][0]
+    if mutation == "denominator":
+        row["token_count"] = row["scored_token_count"]
+    elif mutation == "excluded_flag":
+        row["quality_fragments"][0]["eligible"] = True
+    elif mutation == "missing_fragment":
+        row["quality_fragments"].pop(0)
+    elif mutation == "wrong_prefix":
+        row["windows"][0]["sentence_index"] = 0
+    else:
+        row["status"], row["reason"] = "SUCCESS", "ALL_CHUNK_WINDOWS_SCORED"
+    with pytest.raises(ValueError, match="Stored sentiment"):
+        validate_sentiment_result(evidence, result, leg_security_ids=("KO", "PEP"), policy=rules)
+
+
+def test_quality_unknown_tokenizer_failure_remains_explicit_and_replayable(
+    tmp_path: Path,
+) -> None:
+    class UnavailableTokenizer(MockBackend):
+        def token_ids(self, text: str) -> Sequence[int]:
+            raise SentimentFailure("NLP_DEPENDENCY_UNAVAILABLE")
+
+    evidence, rules = quality_pack("Sales fell."), quality_policy()
+    result = score(tmp_path, evidence, policy=rules, backend=UnavailableTokenizer())
+    assert result["features"]["sentiment_a_unknown"] == 1
+    assert result["features"]["sentiment_a_neutral"] is None
+    assert (
+        validate_sentiment_result(evidence, result, leg_security_ids=("KO", "PEP"), policy=rules)
+        == result["features"]
+    )
+
+
+def test_legacy_extra_quality_field_cannot_mask_a_truncated_raw_window_prefix(
+    tmp_path: Path,
+) -> None:
+    evidence = pack()
+    result = score(tmp_path, evidence)
+    row = result["chunks"][0]
+    assert row["window_count"] == 2
+    row["eligible_window_count"] = 1
+    row["eligible_token_count"] = row["token_count"]
+    row["windows"] = row["windows"][:1]
+    row["status"], row["reason"] = "PARTIAL", "EXPLICIT_WINDOW_BUDGET"
+    row.update(sentiment._chunk_summary(row))
+    result["legs"], result["features"] = sentiment._aggregate_scores(
+        result["chunks"], {"A": "KO", "B": "PEP"}, {"A": "COMPLETE", "B": "COMPLETE"}
+    )
+    with pytest.raises(ValueError, match="legacy result cannot contain quality"):
+        validate_sentiment_result(evidence, result, leg_security_ids=("KO", "PEP"))
+
+
+def test_quality_forged_zero_tokens_cannot_hide_real_sentences_or_numeric_coverage(
+    tmp_path: Path,
+) -> None:
+    evidence, rules = quality_pack("100 200\nSales fell.\nMargins improved."), quality_policy()
+    result = score(tmp_path, evidence, policy=rules)
+    for row in result["chunks"]:
+        for fragment in row["quality_fragments"]:
+            fragment.update(
+                sentence_token_count=0,
+                window_count=0,
+                eligible=False,
+                exclusion_reason="NO_USABLE_TOKENS",
+            )
+        row.update(
+            token_count=0,
+            window_count=0,
+            eligible_sentence_count=0,
+            eligible_window_count=0,
+            eligible_token_count=0,
+            excluded_sentence_count=3,
+            excluded_window_count=0,
+            excluded_token_count=0,
+            windows=[],
+            status="UNKNOWN",
+            reason="NO_USABLE_TOKENS",
+        )
+        row.update(sentiment._chunk_summary(row))
+    result["legs"], result["features"] = sentiment._aggregate_scores(
+        result["chunks"], {"A": "KO", "B": "PEP"}, {"A": "COMPLETE", "B": "COMPLETE"}
+    )
+    with pytest.raises(ValueError, match="visible-text token count is impossible"):
+        validate_sentiment_result(evidence, result, leg_security_ids=("KO", "PEP"), policy=rules)
+
+
+def test_quality_production_tokenizer_cannot_claim_ascii_sentences_have_no_tokens(
+    tmp_path: Path,
+) -> None:
+    class BrokenTokenizer(MockBackend):
+        def token_ids(self, text: str) -> Sequence[int]:
+            return []
+
+    with pytest.raises(ValueError, match="impossible visible-text token count"):
+        score(
+            tmp_path,
+            quality_pack("Sales fell."),
+            policy=quality_policy(),
+            backend=BrokenTokenizer(),
+        )

@@ -11,7 +11,7 @@ import hashlib
 import json
 import re
 from collections import OrderedDict
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import asdict
 from datetime import UTC, date, datetime
 from pathlib import Path
@@ -872,12 +872,11 @@ def _pair_filing_indices(events: pd.DataFrame, filings: pd.DataFrame) -> dict[st
 
 
 def _cache_inventory(
-    packs: Sequence[Mapping[str, Any]], paths: ProjectPaths, filings: pd.DataFrame
+    selected_filing_ids: Collection[str], paths: ProjectPaths, filings: pd.DataFrame
 ) -> dict[str, str]:
     """Bind only this batch's selected source captures, not unrelated cache entries."""
-    selected = {filing for pack in packs for filing in pack.get("selected_filing_ids", [])}
     inventory = {}
-    for row in filings.loc[filings["filing_id"].isin(selected)].to_dict("records"):
+    for row in filings.loc[filings["filing_id"].isin(selected_filing_ids)].to_dict("records"):
         folder = paths.data_path(f"raw/sec/filings/{row['cik']}/{row['filing_id']}")
         for source in folder.rglob("*"):
             if source.is_file() and "attempts" not in source.relative_to(folder).parts:
@@ -996,7 +995,8 @@ def build_event_intelligence(
     )
     source_get = get or HttpClient(sec_user_agent).get
     backend = sentiment_backend or _UnavailableTone(tone_policy)
-    records, extractions, tones, metadata_rows, audits, packs = [], [], [], [], [], []
+    records, extractions, tones, metadata_rows, audits = [], [], [], [], []
+    selected_filing_ids: set[str] = set()
     parsed_cache: OrderedDict[str, pd.DataFrame] = OrderedDict()
     for index, event in enumerate(cast(list[dict[str, Any]], clean.to_dict("records"))):
         event_filings = pair_filings[event["pair_id"]]
@@ -1077,7 +1077,9 @@ def build_event_intelligence(
             }
             write_bytes(checkpoint, json_bytes(record))
         extractions.append(record["extraction"])
-        packs.append(record["pack"])
+        # Full text packs are persisted in immutable checkpoints. Retaining only
+        # their filing-ID union keeps memory bounded by selected source captures.
+        selected_filing_ids.update(record["pack"].get("selected_filing_ids", []))
         tone_features = validate_sentiment_result(
             record["pack"],
             record["tone"],
@@ -1147,7 +1149,7 @@ def build_event_intelligence(
     files["inputs.json"] = sha256_file(output_dir / "inputs.json")
     files["catalyst_schedule.json"] = sha256_file(output_dir / "catalyst_schedule.json")
     files.update({row["file"]: row["sha256"] for row in records})
-    cache_files = _cache_inventory(packs, paths, filings)
+    cache_files = _cache_inventory(selected_filing_ids, paths, filings)
     manifest = {
         "schema_version": "research-event-intelligence-v2",
         "inputs": inputs,
@@ -1203,9 +1205,6 @@ def verify_event_intelligence(
     for filename, digest in manifest["files"].items():
         if sha256_file(confined_path(directory, filename)) != digest:
             raise ValueError("Research intelligence file checksum differs")
-    for filename, digest in manifest["cache_files"].items():
-        if sha256_file(confined_path(cache_root, filename)) != digest:
-            raise ValueError("Research intelligence source cache checksum differs")
     if (
         manifest["intelligence_version"]
         != "research_intelligence_" + _sha(manifest["source_identity"])[:24]
@@ -1243,6 +1242,7 @@ def verify_event_intelligence(
     paths = ProjectPaths(Path(__file__).resolve().parents[3], cache_root)
     tone_policy = FinBERTPolicy(**inputs["sentiment_policy"])
     extractions, tones, metadata_rows, audits = [], [], [], []
+    selected_filing_ids: set[str] = set()
     canonical_rows = canonical.to_dict("records")
     records = manifest["source_identity"]["records"]
     parsed_cache: OrderedDict[str, pd.DataFrame] = OrderedDict()
@@ -1279,6 +1279,7 @@ def verify_event_intelligence(
         )
         if record["pack"] != expected_pack:
             raise ValueError("Research evidence differs from raw-source scientific reconstruction")
+        selected_filing_ids.update(record["pack"].get("selected_filing_ids", []))
         if record["catalyst_pack"] != (
             expected_pack if catalyst_scheduled else _empty_pack(event, RESEARCH_EVIDENCE_POLICY)
         ) or (not catalyst_scheduled and record["extraction"]["status"] != "UNKNOWN"):
@@ -1315,6 +1316,8 @@ def verify_event_intelligence(
                 "tone_b": record["tone"]["legs"]["B"]["status"],
             }
         )
+    if _cache_inventory(selected_filing_ids, paths, filings) != manifest["cache_files"]:
+        raise ValueError("Research intelligence source cache inventory/checksum differs")
     expected = (
         build_event_feature_frame(canonical, extractions, manifest["intelligence_version"])
         .merge(

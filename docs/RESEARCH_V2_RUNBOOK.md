@@ -57,24 +57,43 @@ completed, but its constructed lower bound excluded those 64 earlier SGML
 headers. Preserve it as an immutable capture; do not treat it as evidence
 admissibility acceptance. Prepare the v3 envelope while preserving its
 conservative upper bound, with boundary-straddling and missing times UNKNOWN.
-Derive `sec_metadata/source_v3` by a frozen, zero-network replay of the verified v1 raw
-responses, following [SEC_METADATA_RECAPTURE.md](SEC_METADATA_RECAPTURE.md).
+`sec_metadata/source_v3` has now been derived by a frozen, zero-network replay of
+the verified v1 raw responses, following
+[SEC_METADATA_RECAPTURE.md](SEC_METADATA_RECAPTURE.md).
 Do not point a new-policy collection command at the completed v1 directory.
-Pass `--sec-source source_v3` to source/evidence commands after its acceptance. Model
-fitting must resolve the exact SEC source bound by the evidence parent manifest.
-Actual Model B fitting remains blocked until source-v3 availability guards and
-canonical SGML document replay pass. A metadata manifest alone cannot clear it.
+Pass `--sec-source source_v3` to source/evidence commands after its acceptance.
+Model fitting must resolve the exact SEC source bound by the evidence manifest.
+The v3 guards passed their focused checks and the metadata replay completed;
+canonical replay of 250 cached accession inventories also passed, with every
+sampled official SGML header inside the envelope and all original raw/retrieval
+identities unchanged. Genuine pinned CPU FinBERT inference on V/MA SEC text at
+2016-01-08 passed with six chunks, 210 windows and exact cache replay. These
+source/inference gates are complete; full feature generation and A/B fits are
+still pending.
 
 ## SEC text, inference and fitting
 
-Replace `REGISTRY_VERSION` below with the printed version. `development_v1` is
-an explicit new batch name, not an instruction to replace an older batch.
+Replace `REGISTRY_VERSION` below with the printed version. The proposed batch
+`development_quality_v2` needs its own committed code/input freeze before launch.
+
+Legacy batch `development_v3_100e1e4` used frozen main source
+`100e1e48`, with 37,421 scheduled events, `--sec-source source_v3` and
+`--catalyst-max-events 500`. Neither `--max-events` nor disabled inference was
+used. Its progress log is `.acceptance/research_full_intelligence_v3.log`.
+It is confirmed STOPPED and incomplete as of 2026-10-07 05:10 UTC: session and
+process are absent, and the log ends at 1,494 completed checkpoints at 03:33 UTC
+without traceback or terminal manifest. Its cause is unknown; do not label it
+an intentional stop, successful completion or confirmed FAILED publication.
+The tested quality-v2 replacement is a separate batch, not a resume of this
+legacy-policy batch. Record a new code/input freeze before launch.
+Preserve the old partial directory
+and verified source/Gemma caches; do not overwrite its `inputs.json` or evidence.
 
 ```shell
-uv run --frozen --extra nlp structural-break-research build-intelligence --registry-version REGISTRY_VERSION --batch-name development_v1 --download-model
-uv run --frozen --extra nlp structural-break-research train-models --registry-version REGISTRY_VERSION --batch-name development_v1 --horizon 20
-uv run --frozen --extra nlp structural-break-research train-models --registry-version REGISTRY_VERSION --batch-name development_v1 --horizon 10
-uv run --frozen --extra nlp structural-break-research train-models --registry-version REGISTRY_VERSION --batch-name development_v1 --horizon 30
+uv run --frozen --extra nlp structural-break-research build-intelligence --registry-version REGISTRY_VERSION --batch-name development_quality_v2 --sec-source source_v3 --sentiment-preprocessing sec-sentence-quality-wordpiece-v2 --catalyst-max-events 500 --download-model
+uv run --frozen --extra nlp structural-break-research train-models --registry-version REGISTRY_VERSION --batch-name development_quality_v2 --horizon 20
+uv run --frozen --extra nlp structural-break-research train-models --registry-version REGISTRY_VERSION --batch-name development_quality_v2 --horizon 10
+uv run --frozen --extra nlp structural-break-research train-models --registry-version REGISTRY_VERSION --batch-name development_quality_v2 --horizon 30
 uv run --frozen --extra nlp structural-break-research verify-models --model-version MODEL_VERSION
 ```
 
@@ -86,6 +105,38 @@ FinBERT weights are pinned to the protocol revision and checked locally. The
 `--download-model` flag permits acquiring these public assets; omit it after the
 cache exists. Inference uses bounded token windows and exact text/model caches.
 Tone is a financial sentiment measurement, not a catalyst or reversion label.
+
+The authorized preprocessing amendment is
+`sec-sentence-quality-wordpiece-v2`. After its tested code freeze, research CLI
+inference defaults to that policy; use
+`--sentiment-preprocessing exact-sentence-nonoverlap-wordpiece-v1` to
+explicitly reproduce `exact-sentence-nonoverlap-wordpiece-v1` in a separate
+batch. The domain policy's legacy default and old caches/proofs stay unchanged.
+Choose a new batch name for the amended policy and record its exact inputs hash;
+never reuse `development_v3_100e1e4` for changed preprocessing.
+
+The input-only audit uses nineteen FIT source events dated 2006-01-03/04,
+after cohort labels/counts existed but before any research model assessment.
+No labels, scores, calibration/assessment text or final data were inspected.
+The legacy bounded scoring plan retains 4,189 windows with median four
+WordPieces; the chosen exact-line guard plans 1,259 with median 14 and retains
+20,957 of 39,879 raw tokens (52.6%). Both have two UNKNOWN issuer legs out of 38.
+This diagnostic is not representative NLP validation or measured inference
+speed. The guard preserves short sentences and word-rich lines without merging
+table rows, but cannot certify narrative semantics. Record raw offsets,
+full-source token denominators and discarded/unscored coverage; no eligible text
+means UNKNOWN. The proof and limitations are in
+[the protocol amendment](RESEARCH_V2_PROTOCOL.md#fit-input-preprocessing-amendment).
+Production receipt `finbert_quality_v2_plan_acceptance.json` confirms these
+counts: 8,292 raw physical-line windows, 1,259 eligible/scored and 7,033 excluded;
+legacy has 8,720 raw newline-plus-punctuation windows. Both retain the same
+39,879-token raw denominator. Quality-v2 excludes 18,922 tokens, with no budget
+omissions in this sample, and exactly replays nineteen genuine legacy records.
+
+The amended union builder retains compact feature rows while source packs remain
+in immutable per-event records. The FIT audit's 1.37 GB pack-only extrapolation
+motivates this memory change; exact output/source equivalence is required.
+It is not a reduction in source evidence, event count or model information.
 
 Gemma requests are label blind, with 1,000 calls per invocation including
 retries, eight-second pacing and an explicit quota/authentication stop. Strict
@@ -130,6 +181,15 @@ negative or inconclusive results remain results. A gain selected after inspectin
 assessment, a favorable company subset, or dropped UNKNOWN rows is not valid
 evidence. Actual sample sizes, positive outcomes, ACTIVE slices, source coverage
 and quarter-block uncertainty accompany the metrics.
+The reporting completion adds natural-log loss with float64 epsilon clipping
+for every raw/calibrated bundle, without modifying stored probabilities.
+Pair/issuer-balanced losses and descriptive year/ACTIVE/frozen-business-group
+metrics are reconstructed by native verification; observed-sector metrics are
+also reported. Retain zero-row business groups and explicit small denominators,
+with undefined ROC/AP as null. Reports use the same model/cohort rather than
+fitting or selecting subgroup-specific models. Produce all ten bundles for each
+of the three horizons and independently verify all thirty; only h20 calibrated
+logistic B-both versus A is the predeclared primary comparison.
 
 ## Colab
 
@@ -143,7 +203,25 @@ modern FinBERT extraction remain disclosed research limitations on either host.
 
 Hosted CI for `3c01d262` passed the committed offline pipeline, including the
 balanced catalyst schedule and v2 metadata guards, on Windows, Linux and Colab.
-That run verifies its own committed revision. The subsequent v3 envelope,
-source-v3 replay and canonical SGML admissibility require fresh checks before
-the first actual Model B fits. Source-v2 metadata replay passed, but its
-lower-bound mismatch keeps the scientific gate pending.
+That run verifies its own committed revision. The subsequent v3 envelope/header
+guards passed focused checks at frozen `100e1e48`, and source-v3 metadata replay
+completed. Hosted CI for `100e1e48` also passed all Windows/Linux regression
+jobs and the Linux Colab bootstrap in
+[run 37451417275](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/37451417275).
+This covers frozen `100e1e48`; the later isolated reporting, quality-v2
+preprocessing and compact-union changes passed 100 focused tests, whole
+Ruff/133-file format, strict mypy/66-source and four final native-model integration
+checks in 83.74 seconds. Their fresh commit/input freeze and hosted CI are pending.
+Canonical SGML admissibility and genuine FinBERT verification remain
+separate proofs and have now passed on the 250-inventory sample and genuine
+SEC-text smoke. Source-v2 is preserved as a completed metadata capture whose
+lower-bound mismatch failed document admissibility. Full feature/fitting gates
+remain open; the stopped legacy batch retains 1,494 partial checkpoints.
+The reporting patch separately passed Ruff, strict mypy, 28 synthetic research
+metric/evaluation tests and four focused native-model integration tests.
+Production quality-v2 tokenizer acceptance and genuine pinned CPU inference on
+the first ADBE/ADSK FIT event passed: 31.766 seconds, exact cache replay, all five
+asset hashes verified and 388 legacy cache files unchanged, with no network,
+LLM or outcomes. This timing is not compared with the different V/MA legacy
+smoke. New batch `development_quality_v2` still awaits freeze/launch; no actual
+research Model B fit or assessment result has been produced.

@@ -1,9 +1,11 @@
 # Research v2 development protocol
 
-Frozen design date: 2026-10-06, before constructing the added observations.
+Base design freeze: 2026-10-06, before constructing the added observations.
 The user delegated research design and implementation, with the goal of improving
 Model B over Model A. This permits a separate experiment, not modification of
 the completed 28-pair Phase 4 artifact or opening the 2024–2025 final test.
+Subsequent development amendments below are separately disclosed; they are not
+represented as decisions made before the initial quantitative label freeze.
 
 ## Population and target
 
@@ -19,6 +21,8 @@ Forecast all deduplicated fresh |z|≥2 estimable divergences. Preserve actual
 ACTIVE flags and report the ACTIVE subset separately; forecasting an ineligible
 relationship does not make it a tradable opportunity. This deliberately changes
 the prediction population and is not a replacement headline trading ladder.
+Its ACTIVE slice retains the broad registry's episode construction; it is not
+a separately rebuilt ACTIVE-only trading registry.
 
 ACTIVE retains the original pointwise 5% diagnostic rule. The roster and broad
 forecasting population are not screened on these p-values. No familywise error
@@ -58,6 +62,19 @@ improvement claim needs its paired interval below zero, coherent secondary
 metrics and adequate coverage. Economic profitability awaits the shared P6
 execution simulator; forecast improvement alone is not trading profitability.
 
+The research-only reporting completion supplies these promised losses and
+slices for all ten bundles per horizon. Natural-log loss uses float64 machine
+epsilon clipping internally; stored probabilities and tuning Brier losses stay
+unchanged. Pair-balanced loss averages each observed pair's mean loss equally;
+issuer-balanced loss averages each observed issuer's mean loss equally, counting
+both legs. These are assessment sensitivities, not training reweighting.
+Raw and calibrated descriptive reports retain every frozen business group,
+assessment year and ACTIVE level, including zero-row counts; sector reports use
+observed assessment sectors. Each slice has its own event/positive/pair/issuer
+denominators, discrimination, calibration and unchanged 0.65 coverage. Empty
+and one-class ROC/AP remain null. Paired Brier delta slices cover observed groups.
+Native verification reconstructs these reports; no subgroup chooses a model.
+
 ## Affordable text features
 
 The `sec-item-recency-v1` metadata block records each leg's admissible recent
@@ -69,9 +86,84 @@ SEC acceptance time, issuer continuity and exact source provenance determine
 admissibility. Local FinBERT produces positive/negative/neutral financial tone,
 not catalysts or reversion probabilities. Token-window coverage is explicit;
 unknown is not neutral. Freeze ProsusAI/finbert revision
-4556d13015211d73dccd3fdd39d39232506f3e43 and preprocessing before labels.
+4556d13015211d73dccd3fdd39d39232506f3e43. The initial preprocessing was
+`exact-sentence-nonoverlap-wordpiece-v1`; the FIT-input amendment below is
+separately versioned and does not rewrite that pre-label freeze.
 Its weights were published in 2020; retrospective use on earlier text is a
 disclosed modern-extractor limitation, not historical model availability.
+
+### FIT-input preprocessing amendment
+
+After quantitative cohorts and their counts had been constructed, but before
+any research model assessment or Model B fit, authorize
+`sec-sentence-quality-wordpiece-v2` for a new immutable evidence batch.
+The decision inspects only 19 source events in the FIT period, dated
+2006-01-03/04. It reads no outcome labels, model scores, calibration/assessment
+text or final-test data. The tokenizer-only diagnostic made no network or
+neural-inference calls. Its proof is
+`.acceptance/finbert_preprocessing_input_audit.json`, SHA-256
+`294c01de161c47ad16e06ad07ac89ae7fbf1f24ddf7c775b18b4ec97fc617855`.
+
+| Input diagnostic | Legacy v1 | Exact-line quality v2 |
+| --- | --- | --- |
+| Raw windows under each policy's segmentation | 8,720 | 8,292 |
+| Windows retained by the bounded scoring plan | 4,189 | 1,259 |
+| Median window WordPieces | 4 | 14 |
+| Retained tokens / unchanged full-source tokens | 26,109 / 39,879 | 20,957 / 39,879 |
+| Raw-token retention | 65.5% | 52.6% |
+| UNKNOWN issuer legs | 2 / 38 | 2 / 38 |
+
+Raw-window denominators differ: legacy splits newlines plus punctuation;
+quality-v2 uses physical lines. Both have the same 39,879 raw tokens. Production
+quality-v2 excludes 7,033 windows/18,922 tokens with no budget omissions in this
+sample and one empty chunk. All nineteen genuine legacy tone records replay
+exactly. The production receipt is
+`.acceptance/finbert_quality_v2_plan_acceptance.json`, SHA-256
+`ca0113d09e9c1d12a1d61b6286ad44fd58626516bfbd89e7cc1b2fe8f0d3f407`.
+
+A trimmed physical line qualifies with at least two alphabetic words of two or
+more characters and terminal `.`, `!` or `?` (optional closing quote/bracket),
+or at least six such words and alphabetic/(alphabetic+numeric) word ratio at
+least two thirds. There is no line joining or within-line punctuation splitting;
+score the first 64 eligible windows per chunk in source order. The guard keeps
+short prose such as `Sales fell.` without concatenating table rows. Exact source offsets and
+the full raw-token denominator remain attached to the inference inventory.
+Rejected, truncated and budget-unscored tokens remain explicit coverage gaps;
+a leg with no eligible text remains UNKNOWN. The guard is lexical, not a
+semantic narrative classifier: signature captions and other weak prose can
+remain. The narrow earliest-FIT sample is not representative corpus validation.
+Fewer windows do not prove lower padded attention cost, inference time or better
+predictions. FinBERT weights and the deterministic SEC source selector do not
+change.
+
+Preserve the legacy domain default, its proofs and exact caches. The research
+CLI defaults to `sec-sentence-quality-wordpiece-v2`; legacy reproduction uses
+`--sentiment-preprocessing exact-sentence-nonoverlap-wordpiece-v1`. Replace the
+stopped v1 job only after a new code/input freeze, using the distinct
+`development_quality_v2` batch. Keep the original partial batch immutable and
+reuse verified source/Gemma caches; new sentiment policy identities create new
+tone caches. Quantitative pairs, labels, dates, estimator grids, the 0.65
+threshold and the 500-event catalyst schedule remain unchanged. Full features,
+Model B fitting and assessment still await completion.
+
+The amended builder also aggregates compact feature rows instead of retaining
+all full packs in memory. The same FIT diagnostic estimates 1.37 GB of pack-only
+retention across 37,421 events under independent JSON-reloaded strings, excluding
+other process overhead. This is an extrapolation, not measured live RSS.
+Memory changes must reproduce the same immutable event/source inventories,
+feature values and ordering; they do not authorize evidence or cohort changes.
+
+The combined amendment passed 100 focused sentiment/intelligence/CLI tests,
+whole Ruff/format checks for 133 files, strict mypy for 66 source files and four
+final native-model integration tests in 83.74 seconds. Genuine quality-v2 CPU
+inference on ADBE/ADSK at the first FIT event, 2006-01-03T21:00Z, passed in
+31.766 seconds with exact cache replay, all five pinned asset hashes verified,
+388 existing legacy cache files unchanged and no network/LLM/outcome access.
+Its proof is `.acceptance/finbert_quality_real_sec_smoke.json`, SHA-256
+`582866c4f633775a41532b3b0a20914dbe1f13975848d27908034bf0a2059c1c`.
+This is a single-source engineering gate, not a representative NLP study or a
+speed comparison with the different V/MA legacy smoke. The new commit/input
+freeze, fresh hosted CI and replacement batch launch remain pending.
 
 Before actual Model B fits, research v2 prepares
 `sec-json-clock-envelope-v3` for SEC JSON availability. Among 250 matched
@@ -87,8 +179,7 @@ wall-clock interpretations, plus the inverse UTC-to-New-York-wall-clock
 candidate for the observed source lag. Preserve their lower and upper bounds
 and admit evidence only at the upper bound; v3 leaves the conservative v2 upper
 bound unchanged and widens its lower bound. Explicit nonzero offsets retain
-their exact
-stated interpretation. Missing acceptance times stay UNKNOWN; filing
+their exact stated interpretation. Missing acceptance times stay UNKNOWN; filing
 dates never recover them. If a relevant filing's availability interval crosses
 the signal cutoff or the 30-, 180- or 400-calendar-day selection boundary, the
 issuer's affected evidence coverage stays UNKNOWN, so uncertainty cannot prove
@@ -104,7 +195,23 @@ See [the replay policy](SEC_METADATA_RECAPTURE.md) for execution and provenance.
 The completed source-v2 metadata replay is preserved: its narrower interval
 excluded those 64 earlier SGML headers below its lower bound. Its successful
 hash/source replay does not establish SGML admissibility. Actual fitting remains
-blocked until the new envelope and canonical document replay pass fresh checks.
+subject to the corrected source/inference checks and completion of its feature
+batch, rather than relying on source-v2 metadata alone.
+The v3 metadata replay completed under frozen code `100e1e48`, with identical
+raw sources and filing population. Metadata reconstruction confirms its upper
+bound is unchanged for every filing. The separate canonical replay passed for
+250 cached accession inventories, with all sampled SGML headers inside the v3
+envelope and unchanged original response/retrieval identities, without HTTP.
+The genuine pinned CPU FinBERT smoke on V/MA SEC text at 2016-01-08 also passed:
+six chunks, 210 windows and exact cache replay. These engineering checks do not
+constitute a full 89,657-header audit or complete historical NLP study.
+Legacy batch `development_v3_100e1e4` is confirmed STOPPED and incomplete as
+of 2026-10-07 05:10 UTC. Its session/process are absent; the log ends at 1,494
+completed checkpoints at 03:33 UTC without traceback or terminal manifest.
+The cause is unknown, not recorded as an intentional stop or confirmed FAILED
+publication. Preserve those partial records. New batch `development_quality_v2`
+awaits its code/input freeze and launch; features and all actual matched A/B
+fits remain pending, with no predictive gain established.
 
 Use free Gemma for a smaller bounded catalyst pack with exact JSON schema,
 issuer/leg/timestamp checks, category-cue and exact-quote grounding, strict local
@@ -154,6 +261,13 @@ Write immutable source/protocol/roster/code manifests before constructing labels
 New research versions live in a separate workspace and database. Registered
 generations are hash-verified; resume cached work rather than recapture silently.
 CI uses deterministic fixtures and no real API or model-weight download.
+Hosted CI for frozen `100e1e48` passed the complete Windows/Linux regression
+jobs and Linux Colab bootstrap in
+[run 37451417275](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/37451417275).
+Later isolated reporting, quality-v2 preprocessing and compact-union changes
+passed their focused/local gates above; fresh committed hosted checks and a
+replacement code/input freeze remain pending. They do not rewrite the stopped
+legacy batch's frozen source or partial records.
 Run the same package commands in local Python 3.11 and the Colab bootstrap.
 Report negative or inconclusive comparisons without selecting favorable
 companies, throwing away UNKNOWN observations, or inspecting the final test.

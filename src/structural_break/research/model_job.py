@@ -17,11 +17,13 @@ from structural_break.config.paths import ProjectPaths, confined_path
 from structural_break.intelligence.event_features import EVENT_FEATURE_NAMES
 from structural_break.intelligence.sentiment import SENTIMENT_FEATURE_COLUMNS
 from structural_break.ml.features import FEATURE_COLUMNS
-from structural_break.ml.model import fit_sigmoid, predictive_metrics
+from structural_break.ml.model import fit_sigmoid
 from structural_break.research.evaluation import (
     ResearchModel,
+    assessment_slices,
     evaluate_matched_models,
     paired_assessment,
+    research_metrics,
 )
 from structural_break.research.protocol import canonical_bytes, experiment_config, identity
 from structural_break.research.runner import (
@@ -110,7 +112,12 @@ def train_research_models(
         on="event_id",
         validate="one_to_one",
     )
-    rows = rows.merge(pairs[["pair_id", "leg_a", "leg_b"]], on="pair_id", validate="many_to_one")
+    rows = rows.merge(
+        pairs[["pair_id", "leg_a", "leg_b", "business_group"]],
+        on="pair_id",
+        validate="many_to_one",
+    )
+    business_groups = tuple(sorted(pairs["business_group"].unique()))
     # A target-independent evidence registry shares a pair/time source pack
     # across horizon sensitivities, avoiding repeated text/API computation.
     mappings = pd.read_parquet(intelligence_directory / "event_mapping.parquet")
@@ -158,7 +165,9 @@ def train_research_models(
     existing = _registered_manifest(paths, generation)
     if existing is not None:
         return existing
-    result = evaluate_matched_models(rows, FEATURE_COLUMNS, blocks, protocol)
+    result = evaluate_matched_models(
+        rows, FEATURE_COLUMNS, blocks, protocol, business_groups=business_groups
+    )
     if computational_identity(paths.project_root) != computation:
         raise ValueError("Source changed during matched fitting")
     directory = paths.artifacts / "research" / generation
@@ -251,6 +260,10 @@ def verify_research_models(paths: ProjectPaths, research_version: str) -> dict[s
     errors: dict[str, float] = {}
     assessment = stored["research_partition"].eq("assessment")
     protocol = ResearchProtocol.model_validate(manifest["protocol"])
+    pairs = pd.read_parquet(universe_directory / "pair_universe.parquet")
+    business_groups = tuple(sorted(pairs["business_group"].unique()))
+    if report["assessment_slice_policy"]["business_group_universe"] != list(business_groups):
+        raise ValueError("Stored research subgroup inventory differs from the frozen universe")
     for item in manifest["model_files"]:
         path = confined_path(directory, item["path"])
         if sha256_file(path) != item["sha256"]:
@@ -279,20 +292,29 @@ def verify_research_models(paths: ProjectPaths, research_version: str) -> dict[s
             raise ValueError(
                 "Research calibrator does not reproduce on the independent calibration tail"
             )
-        expected_metrics = predictive_metrics(
-            stored.loc[assessment, "y_revert_success"].to_numpy(),
+        expected_metrics = research_metrics(
+            stored.loc[assessment],
             probabilities[assessment.to_numpy()],
             protocol.candidate_threshold,
         )
         if expected_metrics != report["models"][family][name]["calibrated_assessment"]:
             raise ValueError("Stored research assessment metrics do not reproduce")
-        raw_metrics = predictive_metrics(
-            stored.loc[assessment, "y_revert_success"].to_numpy(),
+        raw_metrics = research_metrics(
+            stored.loc[assessment],
             raw_probabilities[assessment.to_numpy()],
             protocol.candidate_threshold,
         )
         if raw_metrics != report["models"][family][name]["raw_assessment"]:
             raise ValueError("Stored raw research assessment metrics do not reproduce")
+        for scale, values in (
+            ("raw", raw_probabilities[assessment.to_numpy()]),
+            ("calibrated", probabilities[assessment.to_numpy()]),
+        ):
+            slices = assessment_slices(
+                stored.loc[assessment], values, protocol, business_groups=business_groups
+            )
+            if slices != report["models"][family][name][f"{scale}_assessment_slices"]:
+                raise ValueError("Stored research assessment subgroup metrics do not reproduce")
         if name != "A":
             paired = paired_assessment(
                 stored.loc[assessment],

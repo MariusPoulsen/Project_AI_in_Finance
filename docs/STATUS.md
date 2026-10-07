@@ -2,7 +2,7 @@
 
 ## Research v2 — authorized development redesign
 
-Date: 2026-10-06. Branch: `research-v2`. Status: **IN PROGRESS**.
+Updated: 2026-10-07 05:10 UTC. Branch: `research-v2`. Status: **IN PROGRESS**.
 The user delegated scientific design and implementation. The expanded genuine
 Model A/B comparison is pending; improvement has not yet been established.
 The completed original Phase 4 artifacts and 2024–2025 outcome lock are preserved.
@@ -20,18 +20,62 @@ Observed source captures:
 - Market: `market_0e7ddfd8382ca8a866f66bd1`; all 250 issuer requests and 11
   context tickers succeeded, with 1,222,930 price rows and 50,330 context rows.
   Curated equity history is 2004–2023, excluding final-test prices.
-- SEC metadata: `research_sec_a26f07f21c33a8d662ab87b0`; 250 issuers and 89,657
+- Original SEC metadata: `research_sec_a26f07f21c33a8d662ab87b0`; 250 issuers and 89,657
   filing rows, with zero missing SEC acceptance timestamps. Current-CIK history
   is not proof of predecessor completeness; events before the first observed
   accepted filing retain UNKNOWN source coverage.
+- Latest SEC metadata: `research_sec_5f856a4e440531e2742bf1d8`, using the v3
+  clock envelope. Its frozen zero-network replay retains all 735 original raw
+  responses, 250 complete issuers and 89,657 filings. Source-v1/v2 are preserved;
+  the earlier v2 lower-bound mismatch and v3 receipt are documented in
+  [SEC_METADATA_RECAPTURE.md](SEC_METADATA_RECAPTURE.md). Canonical replay of
+  250 cached inventories passed: every sampled official SGML header lies
+  within the v3 envelope, with body/retrieval identities preserved and no HTTP.
+
+The expanded quantitative registry completed all 736 pairs successfully.
+Legacy intelligence batch `development_v3_100e1e4` is confirmed STOPPED and
+incomplete. Its session/process are absent; the log ends at 1,494 completed
+checkpoints at 2026-10-07 03:33 UTC without traceback or terminal manifest.
+The cause is unknown, not recorded as an intentional stop or a confirmed FAILED
+publication. Preserve its partial checkpoints and verified caches. It used
+frozen source `100e1e48`, source_v3 and a separate 500-event catalyst pilot, with
+37,421 scheduled events and no `--max-events` limit or disabled inference.
+Replacement `development_quality_v2` awaits code/input freeze and launch.
+Full features and actual A/B fitting remain pending; final outcomes are locked.
+
+A separately versioned FIT-input amendment is tested in the isolated
+worktree: `sec-sentence-quality-wordpiece-v2`, plus a science-identical compact
+evidence-union memory change. The input-only audit examined nineteen FIT source
+events dated 2006-01-03/04 after quantitative cohort labels/counts existed,
+before any research model assessment. No labels, model scores,
+calibration/assessment text or final data informed it. Legacy windows had median
+four WordPieces (4,189 scored); the production exact-line guard retains 1,259 with
+median 14, retaining 20,957 / 39,879 raw tokens (52.6%). Both retain two UNKNOWN
+legs out of 38. The guard keeps short prose and word-rich lines without merging
+table rows, but does not prove narrative semantics. Full-source offsets/token
+denominators and partial coverage remain explicit. Production v2 has 8,292 raw
+physical-line windows, 7,033 excluded windows and 18,922 excluded tokens with no
+budget omissions in this sample; legacy's newline-plus-punctuation segmentation
+has 8,720 raw windows. Both retain the same 39,879-token denominator. Nineteen
+genuine legacy records replay exactly.
+
+The same narrow FIT audit estimates 1.37 GB of pack-only retention for the full
+union; it is not measured process RSS or a demonstrated speedup. Compact-row
+aggregation must preserve all immutable source/evidence identities and feature
+values. Local gates passed; a new code/input freeze and launch remain pending
+before replacing the stopped legacy batch. Preserve its partial records and verified source/Gemma
+caches; pairs, targets, model grids and the 500-event schedule do not change.
+This amendment was not part of the initial pre-label freeze.
 
 Implementation includes immutable/resumable pair and event generations, an
 independent research database, matched logistic/XGBoost metadata/tone/catalyst/both
 ablations, paired quarter-block assessment and native model/calibrator replay.
 Guarded Gemma is configured for free `gemma-4-26b-a4b-it`; Flash is reserved for
 P5. Local FinBERT uses the pinned ProsusAI revision and explicit token coverage.
-The real CPU adapter smoke passed on synthetic SEC fixture text and exact cache
-replay. A captured Gemma diagnostic final JSON passed offline validation after
+The genuine CPU FinBERT SEC-text smoke passed for V/MA at 2016-01-08: six chunks,
+210 windows, 53.235 seconds and exact cache replay, with all five pinned asset
+hashes verified. It used no network/LLM calls or final outcomes. A captured
+Gemma diagnostic final JSON passed offline validation after
 excluding explicit thought-channel parts. These are adapter checks, not completed
 historical NLP coverage or predictive results.
 
@@ -40,8 +84,29 @@ all installed dependencies are compatible. The 32 focused pipeline checks passed
 in 167.43 seconds, including causal two-pair registries for all three horizons,
 full evidence-to-model flow, replay of ten native bundles, failed-publication
 recovery, future-item exclusion and shared-cache/source tamper rejection.
-The full original-plus-v2 regression run and clean hosted portability checks are
-pending. See [the protocol](RESEARCH_V2_PROTOCOL.md) and
+The original-plus-v2 hosted regression and portability checks passed at
+`3c01d262` on Windows, Linux and Colab. The subsequent `100e1e48` v3 envelope
+and header pipeline passed focused local checks, the canonical 250-inventory
+SGML replay and the genuine FinBERT smoke. Its hosted CI remains a distinct
+check and now passed all Windows/Linux regression jobs and the Linux Colab
+bootstrap in
+[run 37451417275](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/37451417275).
+The isolated research reporting completion passed Ruff, strict mypy, 28 unit
+checks and four native-model integration checks. Every bundle will report raw
+and calibrated log loss, balanced losses and descriptive ACTIVE/year/observed-
+sector/frozen-business-group metrics, with independent replay and empty-group
+denominators. The combined quality/reporting/memory amendment passed 100 focused
+sentiment/intelligence/CLI tests, whole Ruff/format checks for 133 files, strict
+mypy for 66 source files and four final native-model integration checks in
+83.74 seconds. Genuine quality-v2 CPU inference on the first ADBE/ADSK FIT event
+at 2006-01-03 passed in 31.766 seconds with exact cache replay, all five pinned
+asset hashes verified and 388 existing legacy cache files unchanged. There was
+no network/LLM/outcome access. Proof:
+`.acceptance/finbert_quality_real_sec_smoke.json`, SHA-256
+`582866c4f633775a41532b3b0a20914dbe1f13975848d27908034bf0a2059c1c`.
+Do not compare this time with the different V/MA legacy smoke. New committed
+freeze/hosted checks and batch launch remain pending.
+See [the protocol](RESEARCH_V2_PROTOCOL.md) and
 [runbook](RESEARCH_V2_RUNBOOK.md) for commands and scientific limitations.
 
 ## Phase 0 — foundation
@@ -636,9 +701,11 @@ versioned source-v2 replay completed with zero network requests and identical
 filing membership/non-timing metadata. Its timestamp interval excluded 64 of
 250 sampled SGML headers below the lower bound: the corresponding JSON `Z`
 values were themselves four or five hours later. Its metadata replay receipt
-does not establish evidence admissibility. A source-v3 envelope is being
-prepared, preserving the conservative upper bound while widening the lower
-bound. All earlier sources and original Phase 4 artifacts remain intact.
+does not establish evidence admissibility. The source-v3 zero-network replay
+also completed, preserving the v2 upper bound for every filing and widening its
+lower bound. The subsequent canonical replay passed for all 250 sampled cached
+inventories, with original raw/retrieval identities unchanged and no HTTP.
+All earlier sources and original Phase 4 artifacts remain intact.
 
 The implemented v2 pipeline supports regularized matched A/B models, forward
 tuning through 2019, separate 2020–2021 calibration and 2022–2023 assessment,
@@ -648,9 +715,21 @@ population and ACTIVE subset are separate from the canonical experiment. See
 [the protocol](RESEARCH_V2_PROTOCOL.md) and [runbook](RESEARCH_V2_RUNBOOK.md).
 
 Hosted CI for `3c01d262` passed the committed offline pipeline, balanced catalyst
-schedule and v2 metadata guards on Windows, Linux and Colab. The subsequent v3
-envelope and SGML source checks require fresh verification. Actual Model B
-fitting is blocked until the v3 guards and
-canonical SGML replay pass. The expanded real registry, genuine text-feature
-batch and matched predictive comparisons are still in progress. No new predictive
-improvement claim is supported yet, and 2024–2025 outcomes remain locked.
+schedule and v2 metadata guards on Windows, Linux and Colab. At `100e1e48`, the
+v3 envelope/header checks, canonical 250-inventory SGML replay and genuine
+FinBERT SEC-text smoke passed; hosted Windows/Linux regression and Linux Colab
+bootstrap also passed in
+[run 37451417275](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/37451417275).
+That CI result covers frozen `100e1e48`, not later isolated reporting changes.
+The expanded real quantitative registry completed
+all 736 pairs; legacy intelligence batch `development_v3_100e1e4` is STOPPED
+and incomplete with 1,494 preserved checkpoints, cause unknown. The tested
+replacement `development_quality_v2` awaits code/input freeze and launch, with
+37,421 events and 500 catalyst events scheduled separately. Full feature coverage
+and matched fits remain pending. No new predictive improvement claim is
+supported yet, and 2024–2025
+outcomes remain locked.
+The separately versioned FIT-only quality-v2 preprocessing, reporting and
+compact-union amendments passed their local gates after cohort construction but
+before any actual research model assessment; only a new frozen batch may replace the legacy run.
+The original partial batch, policies/proofs and source/Gemma caches are retained.

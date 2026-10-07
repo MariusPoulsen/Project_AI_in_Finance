@@ -543,7 +543,7 @@ The user will prepare the final academic written report and presentation/video s
   including UNKNOWN source/inference rows. No assessment-based choice of winner,
   horizon, universe, threshold, or favorable companies is permitted.
 - Reserve Flash for later reasoning agents. FinBERT weights/revision and text
-  window preprocessing are fixed; its 2020 release is a disclosed retrospective
+  window preprocessing are versioned; its 2020 release is a disclosed retrospective
   extractor limitation for earlier observations. SEC text acceptance/issuer/quote
   admissibility remain required independently of model training date. Gemma is
   free only, locally schema/quote validated, paced, budgeted and quota-stopped;
@@ -570,12 +570,91 @@ The user will prepare the final academic written report and presentation/video s
   remains immutable; its interval excluded those 64 SGML headers below its
   lower bound. It is not full evidence admissibility acceptance. Derive a
   separate source_v3 from the exact source-v1 raw response inventory, frozen
-  code and zero HTTP requests; actual B fitting stays blocked until fresh
-  availability and canonical SGML replay checks pass.
+  code and zero HTTP requests; actual B fitting must bind the corrected,
+  validated source and inference pipeline.
+  Source-v3 metadata replay completed at frozen `100e1e48`, retaining all 735
+  response identities, 250 complete issuers and 89,657 filings. Its upper bound
+  is unchanged for every filing. The subsequent canonical replay passed for
+  250 cached accession inventories: all sampled official SGML headers fall
+  within the v3 envelope, with original body/retrieval identities preserved
+  and zero HTTP calls. Genuine pinned CPU FinBERT inference on V/MA SEC text
+  at 2016-01-08 also passed: six chunks, 210 windows, exact cache replay and
+  no LLM/network/final-outcome access. These are engineering gates, not full
+  historical feature coverage or evidence of predictive improvement.
 - A separate `--catalyst-max-events 500` pilot balances declared year/business-
   group strata without outcomes or scores while metadata/FinBERT may cover the
   full registry. Unscheduled Gemma rows stay UNKNOWN; disclose coverage and all
   ablations. `--max-events` continues to identify a partial text-source batch.
   Hosted CI `3c01d262` passed the committed schedule/v2 guards on Windows,
-  Linux and Colab. The subsequent v3 envelope/source replay and canonical
-  SGML admissibility gate remain pending until separately verified.
+  Linux and Colab. The subsequent v3 envelope/source replay, canonical
+  250-inventory SGML gate and genuine FinBERT smoke passed separately at
+  `100e1e48`. Hosted CI for `100e1e48` then passed the complete Windows/Linux
+  regression jobs and Linux Colab bootstrap in
+  [run 37451417275](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/37451417275).
+  These checks cover that committed revision; subsequent isolated log-loss and
+  subgroup-report completion changes require their own verification.
+  As of 2026-10-07 05:10 UTC, legacy batch `development_v3_100e1e4` is
+  STOPPED and incomplete: its session/process are absent and its log ends at
+  1,494 completed checkpoints at 03:33 UTC, without traceback or terminal
+  manifest. The cause is unknown; this is not an intentional stop or a confirmed
+  FAILED publication. Preserve the partial batch. A new `development_quality_v2`
+  code/input freeze and launch are pending; all actual A/B comparisons remain pending.
+- Development amendment on 2026-10-06, after constructing the quantitative
+  cohorts and observing their counts, but before any research model assessment:
+  use separately versioned FinBERT `sec-sentence-quality-wordpiece-v2` in a new
+  research evidence batch. This is not part of the initial pre-label freeze.
+  The decision uses only input-quality diagnostics from 19 FIT source events
+  dated 2006-01-03/04, with no outcome labels, model scores, calibration,
+  assessment or final-test text read. The proof is
+  `.acceptance/finbert_preprocessing_input_audit.json`, SHA-256
+  `294c01de161c47ad16e06ad07ac89ae7fbf1f24ddf7c775b18b4ec97fc617855`.
+  Legacy preprocessing scored 4,189 windows (median four WordPieces) and
+  26,109 of 39,879 full-source tokens. The chosen exact-line quality guard plans
+  1,259 windows (median 14) and retains 20,957 tokens, 52.6% of that unchanged
+  raw denominator; both policies leave two of 38 issuer legs UNKNOWN. These are
+  tokenizer/input diagnostics, not new neural scores, representative NLP
+  validation, a measured speedup or evidence of predictive improvement.
+  Production tokenizer acceptance confirms 8,292 raw physical-line windows,
+  1,259 eligible/scored and 7,033 excluded; legacy has 8,720 raw newline-plus-
+  punctuation windows. Both retain the same 39,879-token raw denominator.
+  V2 excludes 18,922 tokens and has no budget omissions in this sample; all
+  nineteen genuine legacy tone records replay exactly.
+  A trimmed line qualifies with at least two alphabetic words of two or more
+  characters and terminal `.`, `!` or `?` (optional closing quote/bracket), or
+  at least six such words and alphabetic/(alphabetic+numeric) word ratio at
+  least two thirds. Do not join lines or split punctuation within a line;
+  score the first 64 eligible windows per chunk in source order.
+  Preserve short sentences such as `Sales fell.` without merging table rows.
+  Lexical eligibility does not establish
+  narrative semantics; signature captions can remain. Preserve exact raw
+  offsets, full-source token denominators and explicit partial coverage.
+  Keep the domain's legacy default, prior proofs and caches immutable. Make the
+  research CLI default quality-v2, with
+  `--sentiment-preprocessing exact-sentence-nonoverlap-wordpiece-v1` for legacy
+  reproduction; CLI choices use full version strings. Only after a new code/input
+  freeze may a new batch replace the stopped legacy job; keep its partial batch and reuse verified
+  source/Gemma caches. Pair/label policies, model grids and catalyst schedule
+  remain unchanged. No actual research-v2 Model B fits have occurred.
+- The same amendment completes promised research reporting, without changing
+  fitting or selection: all ten bundles per horizon have raw/calibrated log
+  loss, pair/issuer-balanced losses and descriptive ACTIVE/year/observed-sector/
+  frozen-business-group metrics, independently replayed from native models.
+  Empty frozen business groups, assessment years and ACTIVE levels remain
+  explicit; one-class ROC/AP stay null. Natural-log loss clips only its internal
+  probability calculation at float64 machine epsilon, leaving stored scores,
+  the 0.65 threshold and Brier-based tuning unchanged. Existing paired Brier
+  delta slices describe observed groups.
+- Optimize evidence aggregation by retaining compact per-event feature rows
+  and immutable event records rather than all full source packs in the 37,421-
+  event union. The FIT diagnostic extrapolates pack-only retention to 1.37 GB,
+  assuming independent JSON-reloaded strings; this is not measured live RSS.
+  This memory optimization must preserve the same source inventory, evidence,
+  feature values, event order and matched cohort. The combined amendment passed
+  100 focused sentiment/intelligence/CLI tests, whole Ruff/format checks for 133
+  files, strict mypy for 66 source files and four final native-model integration
+  tests in 83.74 seconds. Genuine quality-v2 CPU inference on the first ADBE/ADSK
+  FIT event at 2006-01-03 passed in 31.766 seconds with exact cache replay, all
+  five pinned asset hashes verified, 388 legacy cache files unchanged and no
+  network/LLM/outcome access. Do not compare this timing with the different V/MA
+  legacy smoke event. New commit/input freeze, fresh hosted CI and
+  `development_quality_v2` launch remain pending; actual features/results are incomplete.

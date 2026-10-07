@@ -203,6 +203,7 @@ def test_intelligence_dispatch_never_passes_targets_and_retains_free_limits(
     assert options["provider"].model_name.startswith("gemma-")
     assert options["sentiment_backend"].device == "cpu"
     assert options["sentiment_backend"].local_files_only is True
+    assert options["sentiment_policy"].preprocessing_version == cli.QUALITY_PREPROCESSING_VERSION
     assert options["max_events"] == 3
     assert options["catalyst_max_events"] == 500
     assert options["max_retries"] == 1
@@ -210,6 +211,45 @@ def test_intelligence_dispatch_never_passes_targets_and_retains_free_limits(
     assert options["offline"] is True
     assert options["market_manifest_sha256"] == "d" * 64
     assert "synthetic-secret" not in json.dumps(options["provider_config"])
+
+
+@pytest.mark.parametrize(
+    "preprocessing",
+    ["exact-sentence-nonoverlap-wordpiece-v1", "sec-sentence-quality-wordpiece-v2"],
+)
+def test_preprocessing_choice_binds_the_evidence_policy(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, preprocessing: str
+) -> None:
+    paths, version, _ = registered_events(tmp_path, monkeypatch)
+    args = cli._parser().parse_args(
+        [
+            "build-intelligence",
+            "--registry-version",
+            version,
+            "--sentiment-preprocessing",
+            preprocessing,
+            "--no-finbert",
+            "--no-gemma",
+        ]
+    )
+    captured: dict[str, Any] = {}
+
+    def build(events: pd.DataFrame, *sources: Any, **options: Any) -> dict[str, Any]:
+        captured.update(options)
+        return {"event_count": len(events)}
+
+    monkeypatch.setattr(cli, "build_event_intelligence", build)
+    cli.run_command(args, paths, runtime())
+    assert captured["sentiment_policy"].preprocessing_version == preprocessing
+    assert captured["max_events"] is None
+    assert captured["catalyst_max_events"] == 500
+
+
+def test_unrecognized_preprocessing_is_rejected_before_a_batch() -> None:
+    with pytest.raises(SystemExit):
+        cli._parser().parse_args(
+            ["build-intelligence", "--sentiment-preprocessing", "unversioned-filter"]
+        )
 
 
 def test_nlp_ablation_flags_are_explicit_not_fallback_switches(
