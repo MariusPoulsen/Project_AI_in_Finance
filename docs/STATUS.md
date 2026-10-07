@@ -2,10 +2,29 @@
 
 ## Research v2 — authorized development redesign
 
-Updated: 2026-10-07 05:10 UTC. Branch: `research-v2`. Status: **IN PROGRESS**.
+Updated: 2026-10-07 09:12 UTC. Branch: `research-v2`. Status: **IN PROGRESS**.
 The user delegated scientific design and implementation. The expanded genuine
 Model A/B comparison is pending; improvement has not yet been established.
 The completed original Phase 4 artifacts and 2024–2025 outcome lock are preserved.
+The user has authorized making completed v2 the primary project version.
+Promotion to GitHub `main` and the default app/run path is pending the actual
+v2 evaluation and required gates. Retain v1 history/artifacts for reference and
+reproduction; this does not change the frozen protocol or establish B superiority.
+
+- [ ] Promote completed v2 to GitHub `main` and the default app/run path after
+  actual evaluation and required gates; preserve v1 reference/reproduction artifacts.
+
+The primary-release interface is `structural-break promote-primary
+--pipeline-receipt PATH --ci-gate CI_PATH`, using the exact completed pipeline-state receipt after
+all thirty fits. It checks source/CI gates, all six production CLI stages, full
+quality-v2 intelligence and three registered evaluations, then freshly replays
+every native bundle. It publishes immutable workspace `manifest.json` and
+`verification_receipt.json` and the exact `hosted_ci_gate.json` evidence bytes;
+the read-only default app accepts only checked
+versions. V1 remains at `app/reference_streamlit_app.py`. This release patch
+has passed focused synthetic readiness/CLI, 18 app and 54 SEC-cache recovery checks; its broader
+release gates and the actual primary publication remain pending. See
+[the promotion command](RESEARCH_V2_RUNBOOK.md#promote-v2-as-primary).
 
 The frozen v2 roster contains 250 current-survivor domestic issuers, 40 business
 groups and 736 fixed pairs, retaining all original 28 orientations. The primary
@@ -40,11 +59,42 @@ The cause is unknown, not recorded as an intentional stop or a confirmed FAILED
 publication. Preserve its partial checkpoints and verified caches. It used
 frozen source `100e1e48`, source_v3 and a separate 500-event catalyst pilot, with
 37,421 scheduled events and no `--max-events` limit or disabled inference.
-Replacement `development_quality_v2` awaits code/input freeze and launch.
+Replacement `development_quality_v2` first launched at 2026-10-07 05:17:15 UTC
+from frozen `2dd54bcb`. Its own inputs/schedule froze during guarded startup at
+05:19:55 UTC before event processing. Input SHA-256:
+`cf19099ac57ee7f5ba6ab3e37daa6d46dda49a7f4dc63893d6a06d1063f78fea`.
+The first quality attempt exited 1 after 1,494 checkpoints with `FileExistsError`:
+one unregistered SEC capture had three valid response/sidecar pairs but no
+completion manifest. This establishes that attempt's failure, not the cause of
+the earlier legacy stop. The recovery preserved all six original files and
+retrieval times, fetched one missing EX-99.1 and completed only that inventory;
+its manifest SHA-256 is
+`eaf379b638169a502f356d37f9e0ce98b959cb88c0c7d1192347c26f0d52eef2`.
+Recovery proof: `.acceptance/sec_orphan_recovery_000119312506199058.json`,
+SHA-256 `65ab238448b5d055ca80ed771ed62cc0cc7cbe6063272eb20e8c553a874216d7`.
+
+Resume 1 launched at 2026-10-07 08:58:15 UTC (launcher PID 16032, interpreter
+33024), reusing the 1,494 preserved quality checkpoints, exact inputs and frozen
+`2dd54bcb`/runtime hash `834f66f8...`. Launch proof:
+`.acceptance/research_quality_v2_resume_1_launch.json`, SHA-256
+`587e55d4ddc0f8d006a5b476d319c205a973055f27beed6c6dbe7a6a77447613`.
+It is **RUNNING**, replaying the preserved prefix before continuing the full
+37,421-event union. Corrected source_v3, quality-v2 FinBERT, the separate
+500-event catalyst pilot, `max_events: null` and enabled inference are unchanged.
 Full features and actual A/B fitting remain pending; final outcomes are locked.
 
-A separately versioned FIT-input amendment is tested in the isolated
-worktree: `sec-sentence-quality-wordpiece-v2`, plus a science-identical compact
+The ignored operational supervisor (PID 34252; launcher 2428) holds the exact
+resumed feature-process handle and waits for successful CLI exit, the complete
+37,421-event manifest and the explicit hosted-CI gate before running existing
+h20/h10/h30 fit/replay commands, ten bundles per horizon. State:
+`.acceptance/research_quality_v2_pipeline_state.json`; runner SHA-256
+`301df1bcb43ea19605f59d379fdce363f9d2ea40eee3e221d8c2a7a7b5cbbd05`.
+It is `WAITING_FOR_FULL_FEATURE_BATCH` with zero fitting stages recorded.
+This is an operational continuation, not a scheduled automation, provider-call
+retry or final-test unlock.
+
+A separately versioned FIT-input amendment is tested and committed at
+`2dd54bcb`: `sec-sentence-quality-wordpiece-v2`, plus a science-identical compact
 evidence-union memory change. The input-only audit examined nineteen FIT source
 events dated 2006-01-03/04 after quantitative cohort labels/counts existed,
 before any research model assessment. No labels, model scores,
@@ -62,9 +112,9 @@ genuine legacy records replay exactly.
 The same narrow FIT audit estimates 1.37 GB of pack-only retention for the full
 union; it is not measured process RSS or a demonstrated speedup. Compact-row
 aggregation must preserve all immutable source/evidence identities and feature
-values. Local gates passed; a new code/input freeze and launch remain pending
-before replacing the stopped legacy batch. Preserve its partial records and verified source/Gemma
-caches; pairs, targets, model grids and the 500-event schedule do not change.
+values. The new code/input freeze and launch followed the local gates. Preserve
+the stopped legacy batch's partial records and verified source/Gemma caches;
+pairs, targets, model grids and the 500-event schedule do not change.
 This amendment was not part of the initial pre-label freeze.
 
 Implementation includes immutable/resumable pair and event generations, an
@@ -91,7 +141,7 @@ SGML replay and the genuine FinBERT smoke. Its hosted CI remains a distinct
 check and now passed all Windows/Linux regression jobs and the Linux Colab
 bootstrap in
 [run 37451417275](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/37451417275).
-The isolated research reporting completion passed Ruff, strict mypy, 28 unit
+The research reporting completion passed Ruff, strict mypy, 28 unit
 checks and four native-model integration checks. Every bundle will report raw
 and calibrated log loss, balanced losses and descriptive ACTIVE/year/observed-
 sector/frozen-business-group metrics, with independent replay and empty-group
@@ -104,8 +154,23 @@ asset hashes verified and 388 existing legacy cache files unchanged. There was
 no network/LLM/outcome access. Proof:
 `.acceptance/finbert_quality_real_sec_smoke.json`, SHA-256
 `582866c4f633775a41532b3b0a20914dbe1f13975848d27908034bf0a2059c1c`.
-Do not compare this time with the different V/MA legacy smoke. New committed
-freeze/hosted checks and batch launch remain pending.
+Do not compare this time with the different V/MA legacy smoke. The frozen main
+runtime bytewise source hash is `834f66f8ec69f69ad2a283d0e2401651be5a0770863a79a55059142531bb116f`;
+the isolated smoke hash is `24f71761d9933172838458c6b698cc01b8fb8ed881925330a463f226e522e741`.
+At the clean `2dd54bcb` freeze, all 66 source files normalized identically;
+only two pre-existing CRLF/LF differences explain the bytewise hashes. The equivalence proof is
+`.acceptance/research_quality_runtime_source_equivalence.json`, SHA-256
+`ae0ac33d6b3dbe5e51409750576749e734fcb98c01297c859cb4d640d63b0a92`.
+
+Hosted CI for frozen `2dd54bcb` passed all Windows/Linux foundation jobs
+and the Linux Colab/NLP bootstrap in
+[PR run 37575503287](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/37575503287)
+and [branch run 37575496575](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/37575496575).
+The full structured result is `.acceptance/research_2dd54bc_hosted_ci.json`,
+SHA-256 `4311287edfcd2aa8fc1f095ffae2b099ec549f9ee5207c1f74d9d26f8b2c111e`.
+These checks cover the quality, reporting and compact-union amendments; they do
+not establish complete historical feature coverage or predictive improvement.
+
 See [the protocol](RESEARCH_V2_PROTOCOL.md) and
 [runbook](RESEARCH_V2_RUNBOOK.md) for commands and scientific limitations.
 
@@ -720,12 +785,17 @@ v3 envelope/header checks, canonical 250-inventory SGML replay and genuine
 FinBERT SEC-text smoke passed; hosted Windows/Linux regression and Linux Colab
 bootstrap also passed in
 [run 37451417275](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/37451417275).
-That CI result covers frozen `100e1e48`, not later isolated reporting changes.
+That CI result covers frozen `100e1e48`. Both new hosted runs for `2dd54bcb`
+also passed, covering the later quality/reporting/memory amendments; their full
+receipt is `.acceptance/research_2dd54bc_hosted_ci.json`.
 The expanded real quantitative registry completed
 all 736 pairs; legacy intelligence batch `development_v3_100e1e4` is STOPPED
 and incomplete with 1,494 preserved checkpoints, cause unknown. The tested
-replacement `development_quality_v2` awaits code/input freeze and launch, with
-37,421 events and 500 catalyst events scheduled separately. Full feature coverage
+replacement `development_quality_v2` first launched at 2026-10-07 05:17:15 UTC,
+failed with a verified incomplete SEC-capture `FileExistsError` after 1,494
+checkpoints, then resumed at 08:58:15 UTC after the preserving inventory repair.
+Resume 1 is RUNNING under unchanged `2dd54bcb` code/inputs, with 37,421 events
+and 500 catalyst events scheduled separately. Full feature coverage
 and matched fits remain pending. No new predictive improvement claim is
 supported yet, and 2024–2025
 outcomes remain locked.

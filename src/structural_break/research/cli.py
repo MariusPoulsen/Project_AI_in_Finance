@@ -42,6 +42,7 @@ _COMMANDS = (
     "build-intelligence",
     "train-models",
     "verify-models",
+    "promote-primary",
 )
 
 
@@ -117,6 +118,12 @@ def _parser() -> argparse.ArgumentParser:
         "--model-version", help="Explicit successfully registered evaluation version"
     )
     parser.add_argument("--batch-name", help="New immutable intelligence batch directory name")
+    parser.add_argument(
+        "--pipeline-receipt", type=Path, help="Completed, verified three-horizon pipeline receipt"
+    )
+    parser.add_argument(
+        "--ci-gate", type=Path, help="Exact hosted CI evidence bound by the receipt"
+    )
     parser.add_argument("--workers", type=int, default=2, choices=range(1, 5))
     parser.add_argument("--horizon", type=int)
     parser.add_argument(
@@ -165,6 +172,14 @@ def run_command(
     market_directory = confined_path(paths.workspace_root, "market/source_v1")
     sec_directory = confined_path(paths.workspace_root, f"sec_metadata/{segment(args.sec_source)}")
     contact = runtime.sec_user_agent.get_secret_value() if runtime.sec_user_agent else None
+    if args.command == "promote-primary":
+        if args.pipeline_receipt is None:
+            raise ValueError("promote-primary requires an explicit --pipeline-receipt")
+        if args.ci_gate is None:
+            raise ValueError("promote-primary requires explicit --ci-gate evidence")
+        from structural_break.research.primary import promote_primary_research
+
+        return promote_primary_research(paths, args.pipeline_receipt, ci_gate=args.ci_gate)
     if args.command == "freeze-universe":
         source = (
             args.sec_directory.read_bytes()
@@ -273,7 +288,10 @@ def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     try:
         project = find_project_root(args.project_root)
-        paths = ProjectPaths.resolve(project, args.workspace_root or project / "data/research_v2")
+        runtime = RuntimeSettings(_env_file=project / ".env")
+        paths = ProjectPaths.resolve(
+            project, args.workspace_root or runtime.workspace_root or project / "data/research_v2"
+        )
         if paths.workspace_root == project:
             raise ValueError(
                 "Research-v2 requires a separate workspace from the Phase 4 experiment"
@@ -283,7 +301,6 @@ def main(argv: list[str] | None = None) -> int:
             for value in (args.max_events, args.max_issuers, args.catalyst_max_events)
         ):
             raise ValueError("Explicit partial inventory limits must be positive")
-        runtime = RuntimeSettings(_env_file=project / ".env")
         result = run_command(args, paths, runtime)
         summary = {
             name: result[name]
@@ -291,6 +308,7 @@ def main(argv: list[str] | None = None) -> int:
                 "freeze_id",
                 "data_snapshot_id",
                 "research_version",
+                "primary_version",
                 "intelligence_version",
                 "included_security_count",
                 "included_pair_count",

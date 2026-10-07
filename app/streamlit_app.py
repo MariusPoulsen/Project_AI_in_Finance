@@ -1,4 +1,4 @@
-"""A read-only presentation shell for explicitly published research generations."""
+"""Primary v2 presentation of explicitly promoted, immutable research outputs."""
 
 from datetime import date
 from pathlib import Path
@@ -9,190 +9,165 @@ import streamlit as st
 
 from structural_break.config.models import RuntimeSettings
 from structural_break.config.paths import ProjectPaths
-from structural_break.services.app_queries import (
-    PairDetailView,
-    ResearchQueryService,
-    ResearchVersions,
-)
-
-DEVELOPMENT_END = date(2023, 12, 31)
+from structural_break.research.primary import PrimaryNotReadyError
+from structural_break.services.research_app import PrimaryResearchService, PrimaryResearchView
 
 
-def create_service() -> ResearchQueryService:
-    from structural_break.services.model_a import ModelARepository
-
+def create_service() -> PrimaryResearchService:
     root = Path(__file__).resolve().parents[1]
     runtime = RuntimeSettings(_env_file=root / ".env")
-    paths = ProjectPaths.resolve(root, runtime.workspace_root)
-    return ResearchQueryService(paths, ModelARepository(paths))
+    paths = ProjectPaths.resolve(root, runtime.workspace_root or root / "data/research_v2")
+    return PrimaryResearchService(paths)
 
 
-def render_versions(versions: ResearchVersions) -> None:
-    if versions.synthetic:
-        st.info("Synthetic research fixture")
-    st.caption(
-        f"Data: {versions.data_snapshot_id} · Relationships: {versions.relationship_version}"
-    )
-    st.caption("Final-test outcomes (2024–2025) remain locked. This app reads frozen outputs.")
+def _number(value: Any) -> str:
+    return "Unavailable" if value is None or pd.isna(value) else f"{float(value):.4f}"
 
 
-def _number(value: Any, digits: int = 3) -> str:
-    if value is None or pd.isna(value):
-        return "Unavailable"
-    return f"{float(value):.{digits}f}"
-
-
-def render_model(detail: PairDetailView) -> None:
-    st.subheader("Model A research replay")
-    if detail.versions.model is None:
-        st.info("No Model A generation is published for this relationship history.")
-        return
-    model = {**detail.versions.model, **detail.versions.model.get("model_manifest", {})}
-    st.caption(
-        f"Model: {model.get('model_version', 'Unavailable')} · "
-        f"Feature schema: {model.get('feature_schema_version', 'Unavailable')} · "
-        f"Calibrator: {model.get('calibrator_version', 'Unavailable')} · "
-        f"Policy: {model.get('ml_policy_version', model.get('policy_version', 'Unavailable'))}"
-    )
-    calibration_sample = (
-        detail.versions.model.get("metrics", {})
-        .get("partitions", {})
-        .get("validation", {})
-        .get("xgboost_calibrated", {})
-    )
-    sample_count = calibration_sample.get("n", 0)
-    successes = calibration_sample.get("positives")
-    if sample_count and successes in (0, sample_count):
-        st.info(
-            f"Validation contains {successes} successes in {sample_count} events. "
-            "Calibration uses a constant smoothed prior and cannot rank events. "
-            "These scores do not establish predictive performance."
-        )
-    if detail.predictions.empty:
-        st.info("No stored Model A prediction is available for this pair by the selected date.")
-        return
-    st.caption(
-        "Stored development-event scores use the frozen research model. "
-        "Training scores describe model fit. Validation outcomes fitted the calibrator, "
-        "so calibrated validation scores and metrics are descriptive of that fitted sample."
-    )
-    latest = detail.predictions.iloc[0]
-    columns = st.columns(3)
-    columns[0].metric("Calibrated P(revert)", _number(latest.get("calibrated_probability")))
-    columns[1].metric("Raw P(revert)", _number(latest.get("raw_probability")))
-    qualified = latest.get("ml_qualified")
-    columns[2].metric(
-        "Model A threshold",
-        "Unavailable" if pd.isna(qualified) else ("Pass" if qualified else "Below"),
+def render_comparison(
+    service: PrimaryResearchService,
+    view: PrimaryResearchView,
+    horizon: int,
+    *,
+    active_only: bool,
+) -> None:
+    st.header("Independent assessment: Model A and Model B")
+    rows = service.comparison(view, horizon, active_only=active_only)
+    primary = rows.loc[
+        rows["family"].eq(view.protocol["primary_family"])
+        & rows["variant"].isin(["A", "B_" + view.protocol["primary_b_variant"]])
+    ].set_index("variant")
+    columns = st.columns(2)
+    columns[0].metric("Model A Brier loss", _number(primary.loc["A", "brier"]))
+    columns[1].metric(
+        "Model B Brier loss",
+        _number(primary.loc["B_" + view.protocol["primary_b_variant"], "brier"]),
     )
     st.caption(
-        f"Event: {latest.get('event_id')} · Date: {latest.get('event_timestamp')} · "
-        f"Evaluation role: {latest.get('evaluation_role', latest.get('partition', 'Unavailable'))}"
+        "The fixed comparison is logistic A versus B-both (SEC metadata, tone and catalysts). "
+        "Lower Brier and log loss are better; a negative B-minus-A loss difference favors B. "
+        "All variants and families remain visible, including unfavorable results."
     )
-    drivers = [
-        *latest.get("top_shap_positive", []),
-        *latest.get("top_shap_negative", []),
+    st.dataframe(rows, hide_index=True, width="stretch")
+    model_b = view.reports[horizon]["models"][view.protocol["primary_family"]][
+        "B_" + view.protocol["primary_b_variant"]
     ]
-    if drivers:
-        st.dataframe(pd.DataFrame(drivers), hide_index=True, width="stretch")
+    if active_only:
+        st.caption("ACTIVE is an exploratory subset; no separate uncertainty interval is fitted.")
+    else:
+        st.subheader("Paired assessment uncertainty")
+        st.json(model_b["paired_assessment"], expanded=False)
         st.caption(
-            "Tree SHAP contributions explain the raw model margin; they are not causal effects."
+            "Calendar-quarter resampling is a temporal sensitivity with few blocks. "
+            "Shared issuers and dependence remain; forecast performance does not establish profit."
         )
-    else:
-        st.info("No stored SHAP explanation is available for this event.")
-    with st.expander("Stored event predictions"):
-        st.dataframe(detail.predictions, hide_index=True, width="stretch")
-
-
-def render_pair_detail(detail: PairDetailView) -> None:
-    st.header(detail.pair_id.replace("__", " / "))
-    if detail.state is None:
-        st.info("No usable pair state exists on the selected research session.")
-    else:
-        columns = st.columns(4)
-        columns[0].metric("Relationship", detail.state["pair_status"])
-        columns[1].metric("Frozen z-score", _number(detail.state.get("z_score")))
-        columns[2].metric("Hedge ratio β", _number(detail.state.get("beta")))
-        columns[3].metric("Signal available", str(detail.state.get("data_available_at")))
-    if detail.history.empty:
-        st.info("No spread history is available in this date range.")
-    else:
-        st.subheader("Frozen daily spread state")
-        st.line_chart(detail.history.set_index("trading_date")[["z_score"]])
-        st.line_chart(detail.history.set_index("trading_date")[["spread"]])
-    st.subheader("Effective monthly relationship")
-    if detail.snapshot is None:
-        st.info("No relationship estimate is effective at this date.")
-    else:
-        snapshot = detail.snapshot
+    with st.expander("Sample sizes, source coverage and descriptive groups"):
+        st.json(
+            {
+                "cohorts": view.reports[horizon]["cohorts"],
+                "text_coverage": view.reports[horizon]["text_coverage"],
+            },
+            expanded=False,
+        )
         st.caption(
-            f"Estimated: {snapshot.get('estimation_date')} · "
-            f"Effective: {snapshot.get('effective_start')} · "
-            f"Snapshot: {snapshot.get('relationship_snapshot_id')}"
+            "Coverage flags retain UNKNOWN observations in the matched A/B comparison. "
+            "The catalyst pilot uses its frozen schedule; unscheduled events stay UNKNOWN. "
+            "Year, sector, business-group and ACTIVE slices are descriptive."
         )
-        st.json(snapshot, expanded=False)
-    st.subheader("Fresh threshold crossings")
-    if detail.crossings.empty:
-        st.info("No fresh crossings are stored for this date range.")
-    else:
-        st.dataframe(detail.crossings, hide_index=True, width="stretch")
-        st.caption("Baseline 1 eligibility requires ACTIVE status at the crossing.")
-    render_model(detail)
+        st.json(model_b["calibrated_assessment_slices"], expanded=False)
 
 
-def main(service: ResearchQueryService | None = None) -> None:
-    st.set_page_config(page_title="Structural-Break Research", layout="wide")
-    st.title("Structural-Break Research")
-    st.caption("Quantitative pair research · frozen daily data · no live execution")
-    try:
-        service = service or create_service()
-        versions = service.versions()
-    except FileNotFoundError as error:
-        if error.filename is None:
-            st.info("No frozen research history is published. Run the documented batch jobs first.")
-        else:
-            st.error("A registered research artifact is missing. Verify the published manifests.")
-        return
-    except Exception:
-        st.error("Frozen research outputs cannot be loaded. Verify the published manifests.")
-        return
-    render_versions(versions)
-    upper = min(versions.last_session, DEVELOPMENT_END)
-    if versions.first_session > upper:
-        st.info("This history contains no unlocked development sessions.")
-        return
+def render_predictions(
+    service: PrimaryResearchService,
+    view: PrimaryResearchView,
+    horizon: int,
+    *,
+    active_only: bool,
+) -> None:
+    st.header("Stored development-event scores")
+    end = date.fromisoformat(view.protocol["development_end"])
     as_of = st.sidebar.date_input(
-        "Research as of", value=upper, min_value=versions.first_session, max_value=upper
+        "Research as of",
+        value=end,
+        min_value=date.fromisoformat(view.protocol["fit_start"]),
+        max_value=end,
     )
     if not isinstance(as_of, date):
         st.error("Select one research date.")
         return
-    page = st.sidebar.radio("Page", ("Scanner", "Pair Detail"))
+    rows = service.predictions(view, horizon, as_of=as_of, active_only=active_only)
+    if rows.empty:
+        st.info("No stored event scores are available for this selection.")
+        return
+    pair = st.sidebar.selectbox("Pair", ("All pairs", *sorted(rows["pair_id"].unique())))
+    if pair != "All pairs":
+        rows = rows.loc[rows["pair_id"].eq(pair)]
+    st.caption(
+        "Fit and calibration-period scores describe fitted samples. Only assessment-period "
+        "scores support the independent comparison. These are retrospective stored scores, "
+        "not forecasts issued on the historical date. The research threshold is not a trade signal."
+    )
+    st.dataframe(rows, hide_index=True, width="stretch")
+
+
+def main(service: PrimaryResearchService | None = None) -> None:
+    st.set_page_config(page_title="Structural-Break Research v2", layout="wide")
+    st.title("Structural-Break Research v2")
+    st.caption("Frozen research outputs · broader estimable-event population · no live execution")
+    st.caption("Final-test outcomes (2024–2025) remain locked.")
     try:
-        overview = service.scanner(as_of)
-        if overview.session is None:
-            st.info("No usable research session is available by this date.")
-            return
-        st.caption(f"Selected date: {as_of} · Last research session: {overview.session}")
-        if page == "Scanner":
-            st.header("Scanner")
-            if overview.rows.empty:
-                st.info("No usable pair states exist on this research session.")
-            else:
-                st.dataframe(overview.rows, hide_index=True, width="stretch")
-                st.caption(
-                    "Rows use the selected session's frozen relationship parameters. "
-                    "Unavailable pair observations are omitted."
-                )
-        else:
-            if not overview.pair_ids:
-                st.info("No fixed-orientation pairs are available.")
-                return
-            pair_id = st.sidebar.selectbox("Pair", overview.pair_ids)
-            history_days = st.sidebar.selectbox("History (calendar days)", (365, 730, 1095))
-            render_pair_detail(service.pair_detail(pair_id, as_of, lookback_days=history_days))
+        service = service or create_service()
+        versions = service.versions()
+        view = service.view()
+        selected = st.sidebar.selectbox(
+            "Verified research generation", versions, index=versions.index(view.primary_version)
+        )
+        if selected != view.primary_version:
+            view = service.view(selected)
+    except PrimaryNotReadyError:
+        st.info(
+            "V2 is the primary research version. Its complete evidence batch and all three "
+            "model evaluations must finish and pass independent verification before results "
+            "are published here."
+        )
+        return
     except Exception:
-        st.error("The selected frozen output cannot be loaded. Verify the research manifests.")
+        st.error(
+            "The selected v2 publication failed verification. Verify its registered artifacts."
+        )
+        return
+    st.caption(
+        f"Primary: {view.primary_version} · Registry: {view.registry_version} · "
+        f"Evidence: {view.intelligence_version}"
+    )
+    st.caption(
+        f"Fit: {view.protocol['fit_start']}–{view.protocol['fit_end']} · "
+        f"Calibration: {view.protocol['calibration_start']}–{view.protocol['calibration_end']} · "
+        f"Independent assessment: {view.protocol['assessment_start']}–"
+        f"{view.protocol['assessment_end']}"
+    )
+    horizon = st.sidebar.selectbox(
+        "Horizon (sessions)",
+        (view.protocol["primary_horizon"], *view.protocol["sensitivity_horizons"]),
+        format_func=lambda value: (
+            f"{value} — predeclared primary"
+            if value == view.protocol["primary_horizon"]
+            else f"{value} — sensitivity"
+        ),
+    )
+    active_only = st.sidebar.checkbox("ACTIVE at event only", value=False)
+    st.caption(
+        "The primary cohort includes estimable fresh divergences. ACTIVE marks eligibility "
+        "at the event and is an exploratory subset, not a reconstructed trading strategy."
+    )
+    page = st.sidebar.radio("Page", ("Model comparison", "Event scores"))
+    try:
+        if page == "Model comparison":
+            render_comparison(service, view, horizon, active_only=active_only)
+        else:
+            render_predictions(service, view, horizon, active_only=active_only)
+    except Exception:
+        st.error("The selected v2 output cannot be read. Verify the registered research artifacts.")
 
 
 if __name__ == "__main__":

@@ -1,19 +1,29 @@
-# Run the project in Google Colab
+# Run the primary research workflow in Google Colab
 
-Colab is a launcher for the same Python package and batch commands used locally.
-The project runs in its own Python 3.11 `.venv` using the committed `uv.lock`, even
-if Colab's host kernel uses a different Python version. Do not copy the Windows
-course `.venv` into Colab. No JupyterLab, ipykernel, widget or notebook package is
-required by this project.
+Colab launches the same Python package and explicit batch jobs used locally.
+The project runs in its own Python 3.11 `.venv` using the committed `uv.lock`,
+even when the notebook's host kernel uses another Python version. Do not copy the
+Windows course environment into Colab. No JupyterLab, ipykernel, widgets or notebook
+package is required by the project.
 
-## 1. Get the source
+Research v2 is the primary development workflow: 250 frozen issuers, 736 fixed
+pairs, separate SEC/FinBERT/Gemma evidence and matched A/B evaluation. Full feature
+generation, actual model evaluation and promotion to GitHub `main` are pending.
+Check [STATUS.md](STATUS.md) for the accepted source revision and gates before
+running or interpreting results. A source clone contains no generated research
+workspace, API credentials or FinBERT weights.
 
-Open a new Colab notebook. For this private repository, either upload a ZIP downloaded
-from GitHub and extract/rename its source folder to `/content/Project_AI_in_Finance`,
-or clone using the following cell.
-Use a short-lived GitHub token with read access to this repository when prompted.
-The token is hidden from output, passed only in the clone process environment, and
-never placed in the Git remote URL or repository files.
+## 1. Get the reviewed v2 source
+
+For a private repository, upload a GitHub source ZIP and extract it to
+`/content/Project_AI_in_Finance`, or use this hidden-token clone cell. Supply a
+short-lived token with read access. The token is passed only through the clone
+process environment; it is not stored in the remote URL, files or output.
+
+Choose a reviewed v2 commit/tag from the completion evidence. While promotion is
+pending, `origin/research-v2` is the research branch; do not assume the current
+`origin/main` already contains the promoted interface. After acceptance, use the
+recorded promotion commit/tag for a reproducible run.
 
 ```python
 import base64
@@ -22,7 +32,10 @@ import os
 import subprocess
 
 repository = "/content/Project_AI_in_Finance"
-token = getpass.getpass("GitHub token (read access to this private repo): ")
+source_ref = input("Reviewed v2 commit/tag or origin/research-v2: ").strip()
+if not source_ref or source_ref.startswith("-"):
+    raise ValueError("Enter an explicit reviewed source reference")
+token = getpass.getpass("GitHub token (read access): ")
 clone_env = os.environ.copy()
 clone_env.update(
     {
@@ -40,8 +53,6 @@ try:
         [
             "git",
             "clone",
-            "--branch",
-            "phase-4-model-b",
             "https://github.com/MariusPoulsen/Project_AI_in_Finance.git",
             repository,
         ],
@@ -50,15 +61,24 @@ try:
     )
 finally:
     del token, clone_env
+
+reviewed_commit = subprocess.check_output(
+    ["git", "rev-parse", "--verify", source_ref + "^{commit}"],
+    cwd=repository,
+    text=True,
+).strip()
+subprocess.run(
+    ["git", "checkout", "--detach", reviewed_commit],
+    cwd=repository,
+    check=True,
+)
+print("Source commit:", reviewed_commit)
 ```
 
-The branch above contains the Phase 4 implementation stacked on Phase 3. After the
-phase branches are merged, use `main` instead.
-For a reproducible research run, check out a reviewed commit or tag explicitly.
+For a public repository, an ordinary clone needs no token; still select the reviewed
+commit explicitly. A ZIP also needs a recorded source revision for reproduction.
 
-## 2. Install and verify the foundation, data, econometric and Models A/B pipelines
-
-Run these Colab cells:
+## 2. Install the locked Python 3.11 environment
 
 ```python
 %pip install uv==0.12.20
@@ -69,324 +89,254 @@ import subprocess
 import sys
 
 repository = "/content/Project_AI_in_Finance"
-
+workspace = "/content/research-v2-workspace"
 subprocess.run(
     [
         sys.executable,
-        "/content/Project_AI_in_Finance/scripts/colab_bootstrap.py",
+        repository + "/scripts/colab_bootstrap.py",
+        "--nlp",
         "--workspace-root",
-        "/content/structural-break-workspace",
-        "--data-fixture",
-        "--relationship-fixture",
-        "--ml-fixture",
-        "--intelligence-fixture",
+        "/content/bootstrap-checks",
     ],
     check=True,
 )
 ```
 
-The bootstrap installs Python 3.11 through uv, performs `uv sync --frozen`, validates
-configuration, builds the database and runs the offline storage fixture job.
-`--data-fixture` also ingests the complete synthetic Phase 1 fixture, replays its
-immutable raw sources and verifies the resulting snapshot through the local catalogue.
-`--relationship-fixture` independently builds and verifies artificial cointegrated,
-independent-walk and stationary-price histories through the actual Phase 2 job.
-It does not need the Phase 1 fixture or a provider account. The script prints the
-generated snapshot and relationship versions; each run uses fresh identities.
-`--ml-fixture` additionally builds the independent Phase 3 synthetic event dataset,
-trains the logistic benchmark/XGBoost Model A, calibrates and verifies the saved
-model generation. It requires no Phase 1/2 fixture or provider login. Omit the
-fixture flags to run only foundation checks. A CPU runtime is sufficient; the
-quantitative research stack installs with the default locked dependencies.
-Dependency/Python downloads require internet; fixture jobs do not call data sources
-or LLMs.
+The bootstrap installs Python 3.11 through uv, synchronizes the frozen environment
+and runs its offline checks in a separate fixture workspace. It does not construct
+the real study or call an LLM. Python/dependency installation requires internet.
+The `--nlp` flag installs and retains local FinBERT dependencies. Subsequent
+`uv run` commands must also retain `--extra nlp` when using that extra, or uv may
+remove it during synchronization.
 
-Subsequent commands use `uv run`, not the host kernel's `import structural_break`:
+The Linux lock selects CPU PyTorch and the current CLI uses CPU inference.
+Selecting a Colab GPU alone does not change this pipeline. Gemma uses direct Google
+REST; the optional `agents` extra and paid API access are not needed.
+
+The promoted primary CLI is `structural-break`; `structural-break-research`
+remains a compatible alias. On the pre-promotion source, set `research_cli` to
+`"structural-break-research"` below.
 
 ```python
+research_cli = "structural-break"  # Use the research alias before promotion.
 subprocess.run(
-    [
-        "uv",
-        "run",
-        "--frozen",
-        "structural-break",
-        "storage-smoke",
-        "--workspace-root",
-        "/content/structural-break-workspace",
-    ],
-    cwd="/content/Project_AI_in_Finance",
+    ["uv", "run", "--frozen", "--extra", "nlp", research_cli, "--help"],
+    cwd=repository,
     check=True,
 )
 ```
 
-To run the test suite, use:
+## 3. Select a workspace and credentials
 
-```python
-subprocess.run(
-    ["uv", "run", "--frozen", "--extra", "app", "pytest"],
-    cwd="/content/Project_AI_in_Finance",
-    check=True,
-)
-```
+Keep active DuckDB files, source checkpoints and the virtual environment on local
+`/content`, not an active Google Drive mount. Reproduction uses the verified
+frozen workspace and exact registered versions from the accepted publication.
+Restore that workspace before proceeding. To create a different source capture,
+use a new workspace and disclose its new identity.
 
-## 3. Ingest public research data
+Add Colab Secrets named `SB_SEC_USER_AGENT` and `SB_LLM_API_KEY` and grant the
+notebook access. The SEC value is a project name and real contact email, not a
+login. The Google key is for the free guarded Gemma extraction. No Yahoo, SEC
+account or database login is required. Never print secrets or put them in YAML,
+Git, notebook literals or command arguments.
 
-The data providers and local DuckDB database require no account login. Scripted SEC
-requests require a declared project name and real contact email in
-`SB_SEC_USER_AGENT`. Add this value to Colab Secrets and grant this notebook access,
-or enter it at the hidden prompt below. The value is passed only to the child
-process; it is not written to repository files or printed.
-
-```python
-import getpass
-import os
-from uuid import uuid4
-
-try:
-    from google.colab import userdata
-
-    sec_identity = userdata.get("SB_SEC_USER_AGENT")
-except Exception:
-    sec_identity = getpass.getpass("SEC User-Agent (project name and contact email): ")
-
-run_env = os.environ.copy()
-run_env["SB_SEC_USER_AGENT"] = sec_identity
-snapshot_id = "colab-research-" + uuid4().hex[:12]
-try:
-    subprocess.run(
-        [
-            "uv",
-            "run",
-            "--frozen",
-            "structural-break",
-            "ingest-data",
-            "--workspace-root",
-            "/content/structural-break-research",
-            "--snapshot-id",
-            snapshot_id,
-        ],
-        cwd=repository,
-        env=run_env,
-        check=True,
-    )
-finally:
-    del sec_identity, run_env
-print("Research snapshot:", snapshot_id)
-```
-
-This downloads the fixed 28-pair universe plus SPY/required sector ETFs for
-2014-01-01 through 2025-12-31, official VIX history and SEC submission metadata.
-Missing equity prices remain missing; blocking quality checks stop publication.
-VIX context uses the exact previous NYSE session. This command does not fit models
-or inspect headline final-test metrics. See [the data runbook](DATA_RUNBOOK.md)
-for source limitations, source failures and snapshot recovery.
-
-After a successful ingestion, verification and replay run without source access:
-
-```python
-replay_id = snapshot_id + "-replay"
-for arguments in (
-    ["replay-data", "--replay-from", snapshot_id, "--snapshot-id", replay_id],
-    ["verify-data"],
-):
-    subprocess.run(
-        [
-            "uv",
-            "run",
-            "--frozen",
-            "structural-break",
-            *arguments,
-            "--workspace-root",
-            "/content/structural-break-research",
-        ],
-        cwd=repository,
-        check=True,
-    )
-```
-
-Use a fresh replay ID for each new rebuild. Frozen source files and snapshot IDs
-are immutable. Subsequent historical queries read the active local snapshot.
-
-## 4. Build relationships from the frozen research data
-
-Once the Phase 1 snapshot is published in `/content/structural-break-research`, the
-econometric job uses those local files without new source access or credentials:
-
-```python
-for arguments in (
-    ["verify-data"],
-    ["build-relationships"],
-    ["verify-relationships"],
-):
-    subprocess.run(
-        [
-            "uv",
-            "run",
-            "--frozen",
-            "structural-break",
-            *arguments,
-            "--workspace-root",
-            "/content/structural-break-research",
-        ],
-        cwd=repository,
-        check=True,
-    )
-```
-
-The build defaults to the source history from 2014 through 2025. Add
-`--start YYYY-MM-DD`, `--end YYYY-MM-DD` or `--relationship-version NAME` to
-`build-relationships` when an explicit scope/version is required. Earlier supplied
-prices remain available for formation warm-up. Repeating the same registered
-identity verifies and returns its existing immutable outputs.
-
-The job writes monthly relationship attempts, frozen daily states and raw fresh
-crossings to versioned DuckDB analytics tables plus immutable Parquet artifacts.
-It does not create labels, simulate trades or compute final-test outcomes. Inspect
-representative diagnostics in synthetic/training/validation periods only; keep
-2024–2025 outcome/performance evaluation locked until the methodology is frozen
-and the final run is explicitly authorised. See
-[the econometrics runbook](ECONOMETRICS_RUNBOOK.md) for the scientific conventions
-and local historical query examples.
-
-## 5. Build the divergence dataset and Model A
-
-After publishing relationships in the research workspace, build the quantitative
-event dataset and train only on unlocked development observations:
-
-```python
-for arguments in (
-    ["build-events"],
-    ["train-model-a"],
-    ["verify-model-a"],
-):
-    subprocess.run(
-        [
-            "uv",
-            "run",
-            "--frozen",
-            "structural-break",
-            *arguments,
-            "--workspace-root",
-            "/content/structural-break-research",
-        ],
-        cwd=repository,
-        check=True,
-    )
-```
-
-The 2014–2015 prices supply the 504-session formation warm-up. Eligible training
-events begin in 2016 and run through 2021. Validation remains 2022–2023, with the
-10-session partition embargo and previous-session VIX convention. Final-test
-outcomes for 2024–2025 remain locked. The small real ACTIVE-event sample limits
-ranking and calibration claims. The predeclared candidate threshold stays 0.65;
-validation metrics fitted by the calibrator are explicitly descriptive.
-
-See [the ML runbook](ML_RUNBOOK.md) for the episode policy, model bundle, reload
-verification, SHAP interpretation and local read-only Streamlit launch. Colab
-supports the complete batch pipeline; public app hosting is delivered in Phase 8.
-No tunnel service or notebook-specific package is required for the research jobs.
-
-## 6. SEC intelligence and Model B
-
-The bootstrap's `--intelligence-fixture` option runs cached synthetic SEC documents,
-mock extraction, Model B fitting and native reload verification. No LLM key is
-needed for that path. It uses the same batch modules as local execution.
-
-For a real research workspace with registered P1/P2/P3 outputs and fitted Model A,
-create Colab secrets named `SB_LLM_API_KEY` and `SB_SEC_USER_AGENT`, grant this
-notebook access, and run the following cell. The key stays in the subprocess
-environment; it is not printed or written to the notebook. Optional live SDKs
-must remain installed through `--extra agents` on uv commands.
+Use this launcher so only commands requiring a credential receive it:
 
 ```python
 import os
 import subprocess
-from google.colab import userdata
 
-repo = "/content/Project_AI_in_Finance"
-research = "/content/structural-break-research"
-live_env = os.environ.copy()
-live_env["SB_LLM_API_KEY"] = userdata.get("SB_LLM_API_KEY")
-live_env["SB_SEC_USER_AGENT"] = userdata.get("SB_SEC_USER_AGENT")
-try:
-    subprocess.run(["uv", "sync", "--frozen", "--extra", "agents"], cwd=repo, check=True)
-    for command in ("build-intelligence", "verify-intelligence", "train-model-b", "verify-model-b"):
+
+def research_job(arguments, *, sec=False, gemma=False):
+    child_env = os.environ.copy()
+    try:
+        if sec or gemma:
+            from google.colab import userdata
+
+            if sec:
+                child_env["SB_SEC_USER_AGENT"] = userdata.get("SB_SEC_USER_AGENT")
+            if gemma:
+                child_env["SB_LLM_API_KEY"] = userdata.get("SB_LLM_API_KEY")
         subprocess.run(
             [
                 "uv",
                 "run",
                 "--frozen",
                 "--extra",
-                "agents",
-                "structural-break",
-                command,
+                "nlp",
+                research_cli,
+                *arguments,
                 "--workspace-root",
-                research,
+                workspace,
             ],
-            cwd=repo,
-            env=live_env,
+            cwd=repository,
+            env=child_env,
             check=True,
         )
-finally:
-    del live_env
+    finally:
+        del child_env
 ```
 
-Do not mix synthetic and real workspaces. The default live batch is limited to
-20 paced requests; quota exhaustion retains explicit UNKNOWN rows. Later explicit
-batches can resume those rows, preserving successful cached extractions. Model B
-fitting and verification do not call an LLM. See
-[the intelligence runbook](INTELLIGENCE_RUNBOOK.md) for frozen generation selection,
-recovery, coverage and interpretation.
+## 4. Sources, registry and SEC features
 
-## 7. Research v2 with local FinBERT and guarded Gemma
-
-The authorized broader experiment uses its own workspace and CLI. After cloning
-the research branch, retain the optional NLP extra in bootstrap and batch commands:
+For a new full workspace, run the stages explicitly:
 
 ```python
-import subprocess
+research_job(["freeze-universe"], sec=True)
+research_job(["capture-market"])
+research_job(["collect-sec", "--sec-source", "source_v3"], sec=True)
+research_job(["build-registry", "--workers", "2"])
+```
 
-subprocess.run(["python", "scripts/colab_bootstrap.py", "--nlp"], cwd=repo, check=True)
-subprocess.run(
-    ["uv", "run", "--frozen", "--extra", "nlp", "structural-break-research", "--help"],
-    cwd=repo,
-    check=True,
+The registry command prints `research_version`. Use that exact registered version;
+do not select a directory by modification time. The frozen roster has 250 issuers
+and 736 pairs, retaining the original 28 orientations. Development sources cover
+2004–2023; 2004–2005 provide formation warm-up. Equity gaps remain missing,
+previous-session VIX is used, and admissible SEC evidence uses conservative clock
+bounds and issuer continuity.
+
+The current full job schedules 37,421 distinct pair/time observations across the
+three horizons. This union is not the assessment sample or a success count.
+Source failures/exclusions and UNKNOWN evidence remain explicit. Partial source
+flags are dry runs, not complete studies. Keep computational package source
+unchanged while registry/model jobs run.
+
+```python
+registry_version = input("Exact successfully registered research_version: ").strip()
+batch_name = "development_quality_v2"
+research_job(
+    [
+        "build-intelligence",
+        "--registry-version",
+        registry_version,
+        "--batch-name",
+        batch_name,
+        "--sec-source",
+        "source_v3",
+        "--sentiment-preprocessing",
+        "sec-sentence-quality-wordpiece-v2",
+        "--catalyst-max-events",
+        "500",
+        "--download-model",
+    ],
+    sec=True,
+    gemma=True,
 )
 ```
 
-Use the exact source/registry/evidence/model commands in
-[RESEARCH_V2_RUNBOOK.md](RESEARCH_V2_RUNBOOK.md), supplying credentials through
-Colab Secrets as above. The frozen lock selects the CPU PyTorch index on Linux;
-Gemma uses direct REST. The broad development capture ends in 2023 and preserves
-the original P4 workspace. Keep the v2 workspace on `/content` while jobs run.
+`--download-model` permits acquiring the pinned public FinBERT assets; omit it
+once they are cached in `repository/data/cache/huggingface`. Local inference is
+cached by exact text, revision and preprocessing policy. The quality guard retains
+source offsets and raw coverage denominators. Excluded/unscored text is disclosed;
+UNKNOWN is not neutral.
 
-## 8. Preserve generated research state
+The separate 500-event Gemma pilot is balanced by year/business group without
+labels or scores, with a 1,000-call ceiling including retries. Unscheduled,
+unavailable or rejected catalysts remain UNKNOWN. The pilot does not limit full
+SEC source, metadata or FinBERT scheduling. Flash is reserved for later agents.
+Do not change the frozen schedule or policy to improve assessment results.
 
-Colab virtual machines are temporary. Keep the virtual environment and active
-DuckDB database on the local `/content` filesystem. After jobs close their database
-connections, archive the workspace and download it or copy the archive to mounted
-Google Drive. Restore it to local `/content` before the next session. The stores use
-atomic local-file publication and are not intended to operate an active database
-directly on a Google Drive mount.
+Use a new immutable batch for changed inputs. An identical interrupted invocation
+can reuse verified checkpoints; it cannot overwrite completed outputs. Read
+[the batch runbook](RESEARCH_V2_RUNBOOK.md) for recovery, exact source-v3 identities,
+legacy-policy replay and partial flags. The old incomplete evidence batch and the
+original experiment remain preserved.
+
+## 5. Fit and independently verify A/B
+
+Fit 2006–2019, tune on forward 2018/2019 folds, calibrate on 2020–2021 and assess
+on 2022–2023. Full target horizons are purged at partition/fold boundaries.
+**2024–2025 outcomes remain locked**; promotion to the primary workflow does not
+authorize opening them.
+
+```python
+for horizon in (20, 10, 30):
+    research_job(
+        [
+            "train-models",
+            "--registry-version",
+            registry_version,
+            "--batch-name",
+            batch_name,
+            "--horizon",
+            str(horizon),
+        ]
+    )
+```
+
+Each command prints an evaluation version. Verify all three, without API access:
+
+```python
+for horizon in (20, 10, 30):
+    model_version = input(f"Exact printed evaluation version for h{horizon}: ").strip()
+    research_job(["verify-models", "--model-version", model_version])
+```
+
+Verification reloads native estimators/calibrators and reconstructs the matched
+comparison and source/evidence parents. The primary is calibrated logistic B-both
+versus A at twenty sessions. Report all families/ablations and ten-/thirty-session
+sensitivities, denominators, successes, coverage and paired uncertainty. Negative
+and inconclusive results remain valid results; no B improvement is assumed.
+
+The survivor-conditioned roster, current business groups, retrospective Yahoo
+adjustments and modern FinBERT/Gemma historical extraction are disclosed research
+limits. Forecast improvement is not economic profitability. Read
+[the protocol](RESEARCH_V2_PROTOCOL.md) before interpreting reports.
+
+## 6. Preserve state and use the app
+
+Colab machines are temporary. After all jobs close database connections, archive
+the actual research workspace and download it or copy the archive to Google Drive.
+Restore to local `/content` before the next session; never run the active database
+directly on a Drive mount.
 
 ```python
 import shutil
 from google.colab import files
 
 archive = shutil.make_archive(
-    "/content/structural-break-workspace",
+    "/content/research-v2-workspace",
     "zip",
-    root_dir="/content/structural-break-workspace",
+    root_dir=workspace,
 )
 files.download(archive)
 ```
 
-The archive example uses the synthetic fixture workspace. For research ingestion,
-archive `/content/structural-break-research` instead. Restore to the same local path
-or rebuild the local catalogue from the stored source snapshot using the data
-runbook. Never put credentials in YAML or committed notebook cells. The bootstrap
-runs foundation checks and the selected Phase 1/2/3/4 acceptance commands; the local
-Streamlit shell reads a restored published workspace without retraining models.
+This archive includes workspace sources, checkpoints and fitted artifacts, not the
+repository's virtual environment, local `.env` or separate public FinBERT asset
+cache. Reinstall the frozen environment after restoring the reviewed source.
+Restore the asset cache separately or permit a fresh pinned download. Reverify
+the exact restored publications before reporting results; do not rewrite manifests
+to bypass a compatibility or checksum failure.
+
+The promoted read-only Streamlit app uses the accepted v2 publication; local launch
+is `uv run --frozen streamlit run app/streamlit_app.py`. A clone without the
+generated workspace cannot display actual results. Colab supports the batch
+workflow; a public app deployment/tunnel is not required for it. The accepted
+publication/readiness instructions are recorded in [STATUS.md](STATUS.md).
+
+## Original experiment and offline checks
+
+The original Phase 0–4 runbooks remain reference material:
+[data](DATA_RUNBOOK.md), [econometrics](ECONOMETRICS_RUNBOOK.md),
+[Model A](ML_RUNBOOK.md) and [SEC/Model B](INTELLIGENCE_RUNBOOK.md).
+Use their historical checkout/versions or the promoted
+`structural-break-reference` command with a separate original workspace.
+Its 2014–2025 sources and 2016–2021/2022–2023 train/validation dates are not the
+primary v2 chronology. The original final-outcome lock remains intact.
+
+The bootstrap's optional `--data-fixture --relationship-fixture --ml-fixture
+--intelligence-fixture` flags exercise the reference pipeline using synthetic
+data/mock extraction, not live providers. Keep those fixtures separate from the
+real workspace. Normal project tests also need no credentials, weights or API:
+
+```python
+subprocess.run(
+    ["uv", "run", "--frozen", "pytest"],
+    cwd=repository,
+    check=True,
+)
+```
 
 References: [uv Python installation](https://docs.astral.sh/uv/guides/install-python/),
 [uv frozen synchronization](https://docs.astral.sh/uv/concepts/projects/sync/),

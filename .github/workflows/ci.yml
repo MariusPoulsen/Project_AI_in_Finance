@@ -32,72 +32,72 @@ jobs:
       - run: uv run --frozen structural-break storage-smoke
       - name: Ingest complete synthetic data snapshot
         run: >-
-          uv run --frozen structural-break ingest-data
+          uv run --frozen structural-break-reference ingest-data
           --fixture tests/fixtures/phase1
           --workspace-root .acceptance/phase1-ci
           --snapshot-id phase1-ci-fixture
       - name: Rebuild curated data from immutable raw sources offline
         run: >-
-          uv run --frozen structural-break replay-data
+          uv run --frozen structural-break-reference replay-data
           --replay-from phase1-ci-fixture
           --snapshot-id phase1-ci-replay
           --workspace-root .acceptance/phase1-ci
       - name: Verify active data snapshot
         run: >-
-          uv run --frozen structural-break verify-data
+          uv run --frozen structural-break-reference verify-data
           --workspace-root .acceptance/phase1-ci
       - name: Build complete synthetic econometric history
         run: >-
-          uv run --frozen structural-break build-relationships
+          uv run --frozen structural-break-reference build-relationships
           --relationship-fixture
           --workspace-root .acceptance/phase2-ci
           --relationship-version fixture-p2-ci
       - name: Verify immutable econometric history
         run: >-
-          uv run --frozen structural-break verify-relationships
+          uv run --frozen structural-break-reference verify-relationships
           --workspace-root .acceptance/phase2-ci
       - name: Repeat the same build identity without replacing outputs
         run: >-
-          uv run --frozen structural-break build-relationships
+          uv run --frozen structural-break-reference build-relationships
           --relationship-fixture
           --workspace-root .acceptance/phase2-ci
           --relationship-version fixture-p2-ci
 
       - name: Build complete point-in-time synthetic events
         run: >-
-          uv run --frozen structural-break build-events --ml-fixture
+          uv run --frozen structural-break-reference build-events --ml-fixture
           --workspace-root .acceptance/phase3-ci
       - name: Train, calibrate and explain Model A offline
         run: >-
-          uv run --frozen structural-break train-model-a
+          uv run --frozen structural-break-reference train-model-a
           --workspace-root .acceptance/phase3-ci
       - name: Verify native model artifacts and reload inference
         run: >-
-          uv run --frozen structural-break verify-model-a
+          uv run --frozen structural-break-reference verify-model-a
           --workspace-root .acceptance/phase3-ci
       - name: Repeat model identity without replacing outputs
         run: >-
-          uv run --frozen structural-break train-model-a
+          uv run --frozen structural-break-reference train-model-a
           --workspace-root .acceptance/phase3-ci
       - name: Build point-in-time SEC evidence and mocked extractions
         run: >-
-          uv run --frozen structural-break build-intelligence --intelligence-fixture
+          uv run --frozen structural-break-reference build-intelligence --intelligence-fixture
           --workspace-root .acceptance/phase3-ci
       - name: Verify SEC evidence and parent lineage
         run: >-
-          uv run --frozen structural-break verify-intelligence
+          uv run --frozen structural-break-reference verify-intelligence
           --workspace-root .acceptance/phase3-ci
       - name: Train Model B from stored event features
         run: >-
-          uv run --frozen structural-break train-model-b
+          uv run --frozen structural-break-reference train-model-b
           --workspace-root .acceptance/phase3-ci
       - name: Reload and verify Model B
         run: >-
-          uv run --frozen structural-break verify-model-b
+          uv run --frozen structural-break-reference verify-model-b
           --workspace-root .acceptance/phase3-ci
       - name: Repeat Model B without extraction calls
         run: >-
-          uv run --frozen structural-break train-model-b
+          uv run --frozen structural-break-reference train-model-b
           --workspace-root .acceptance/phase3-ci
 
   colab-bootstrap:
@@ -118,6 +118,7 @@ jobs:
           --relationship-fixture
           --ml-fixture
           --intelligence-fixture
+          --research-fixture
       - name: Verify optional CPU NLP runtime
         run: >-
           uv run --frozen --extra nlp python -c

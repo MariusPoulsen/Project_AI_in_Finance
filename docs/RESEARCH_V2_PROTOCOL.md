@@ -138,10 +138,12 @@ change.
 
 Preserve the legacy domain default, its proofs and exact caches. The research
 CLI defaults to `sec-sentence-quality-wordpiece-v2`; legacy reproduction uses
-`--sentiment-preprocessing exact-sentence-nonoverlap-wordpiece-v1`. Replace the
-stopped v1 job only after a new code/input freeze, using the distinct
-`development_quality_v2` batch. Keep the original partial batch immutable and
-reuse verified source/Gemma caches; new sentiment policy identities create new
+`--sentiment-preprocessing exact-sentence-nonoverlap-wordpiece-v1`. The distinct
+`development_quality_v2` replacement launched at 2026-10-07 05:17:15 UTC only
+after freezing code at committed `2dd54bcb`. Guarded startup froze its own
+inputs/schedule at 05:19:55 UTC before event processing. After an operational
+SEC-cache failure, resume 1 launched at 08:58:15 UTC with these exact inputs.
+Keep the original partial batch immutable and reuse verified source/Gemma caches; new sentiment policy identities create new
 tone caches. Quantitative pairs, labels, dates, estimator grids, the 0.65
 threshold and the 500-event catalyst schedule remain unchanged. Full features,
 Model B fitting and assessment still await completion.
@@ -162,8 +164,10 @@ inference on ADBE/ADSK at the first FIT event, 2006-01-03T21:00Z, passed in
 Its proof is `.acceptance/finbert_quality_real_sec_smoke.json`, SHA-256
 `582866c4f633775a41532b3b0a20914dbe1f13975848d27908034bf0a2059c1c`.
 This is a single-source engineering gate, not a representative NLP study or a
-speed comparison with the different V/MA legacy smoke. The new commit/input
-freeze, fresh hosted CI and replacement batch launch remain pending.
+speed comparison with the different V/MA legacy smoke. The amended commit and
+batch inputs are frozen at `2dd54bcb`, the replacement batch is RUNNING and
+both fresh hosted runs passed. Full source/tone generation and model assessment
+remain separate, incomplete gates.
 
 Before actual Model B fits, research v2 prepares
 `sec-json-clock-envelope-v3` for SEC JSON availability. Among 250 matched
@@ -210,8 +214,19 @@ of 2026-10-07 05:10 UTC. Its session/process are absent; the log ends at 1,494
 completed checkpoints at 03:33 UTC without traceback or terminal manifest.
 The cause is unknown, not recorded as an intentional stop or confirmed FAILED
 publication. Preserve those partial records. New batch `development_quality_v2`
-awaits its code/input freeze and launch; features and all actual matched A/B
-fits remain pending, with no predictive gain established.
+first launched at 2026-10-07 05:17:15 UTC from frozen `2dd54bcb`; its input SHA-256 is
+`cf19099ac57ee7f5ba6ab3e37daa6d46dda49a7f4dc63893d6a06d1063f78fea`.
+That first quality attempt exited 1 at 1,494 checkpoints because three valid
+cached response/sidecar pairs lacked a completion manifest. A preserving repair
+completed that one unregistered SEC inventory, with one missing exhibit fetched;
+the frozen registry/policies/input manifest, original responses and retrieval
+timestamps were unchanged.
+Resume 1 launched at 08:58:15 UTC under the exact frozen code/inputs and is RUNNING,
+replaying the 1,494 preserved quality checkpoints. This does not explain the
+earlier legacy stop. It retains the full 37,421-event union and separate
+500-event catalyst schedule. Full features and all actual matched A/B fits
+remain pending, with no predictive gain established. Operational receipts are
+listed in [the runbook](RESEARCH_V2_RUNBOOK.md#sec-text-inference-and-fitting).
 
 Use free Gemma for a smaller bounded catalyst pack with exact JSON schema,
 issuer/leg/timestamp checks, category-cue and exact-quote grounding, strict local
@@ -264,10 +279,20 @@ CI uses deterministic fixtures and no real API or model-weight download.
 Hosted CI for frozen `100e1e48` passed the complete Windows/Linux regression
 jobs and Linux Colab bootstrap in
 [run 37451417275](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/37451417275).
-Later isolated reporting, quality-v2 preprocessing and compact-union changes
-passed their focused/local gates above; fresh committed hosted checks and a
-replacement code/input freeze remain pending. They do not rewrite the stopped
-legacy batch's frozen source or partial records.
+The reporting, quality-v2 preprocessing and compact-union changes passed their
+focused/local gates above and froze at `2dd54bcb`. Both new committed hosted
+runs passed. They do not rewrite the stopped legacy batch's frozen source or
+partial records.
+
+Hosted CI for frozen `2dd54bcb` passed all Windows/Linux foundation jobs
+and the Linux Colab/NLP bootstrap in
+[PR run 37575503287](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/37575503287)
+and [branch run 37575496575](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/37575496575).
+The full structured result is `.acceptance/research_2dd54bc_hosted_ci.json`,
+SHA-256 `4311287edfcd2aa8fc1f095ffae2b099ec549f9ee5207c1f74d9d26f8b2c111e`.
+These checks cover the quality, reporting and compact-union amendments; they do
+not establish complete historical feature coverage or predictive improvement.
+
 Run the same package commands in local Python 3.11 and the Colab bootstrap.
 Report negative or inconclusive comparisons without selecting favorable
 companies, throwing away UNKNOWN observations, or inspecting the final test.

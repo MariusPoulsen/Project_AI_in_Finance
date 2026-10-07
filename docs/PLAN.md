@@ -210,25 +210,30 @@ improvement result has been established. The original P4 acceptance remains vali
 - [x] Implement guarded free Gemma and pinned local FinBERT adapters.
 - [x] Implement metadata/tone/catalyst ablations on matched quantitative cohorts.
 - [x] Implement forward tuning, independent calibration and paired assessment replay.
-- [x] Pass the complete offline pipeline and original regression suite at frozen revision `100e1e48` (hosted CI run `37451417275` green; later isolated reporting changes require fresh verification).
+- [x] Pass the complete offline pipeline and original regression suite at frozen revision `2dd54bcb` (PR hosted run `37575503287` and branch run `37575496575` both green, including the quality/reporting/memory amendments).
 - [x] Verify the SEC v3 envelope, canonical 250-inventory SGML gate, balanced catalyst schedule, zero-network source-v3 replay and genuine pinned FinBERT SEC-text smoke.
 - [x] Generate the complete expanded development event registry (all 736 pairs completed successfully).
-- [x] Complete research-only raw/calibrated log loss, balanced losses and descriptive subgroup reporting/replay (Ruff/mypy, 28 unit checks and four model integration checks passed; not covered by the older hosted run).
+- [x] Complete research-only raw/calibrated log loss, balanced losses and descriptive subgroup reporting/replay (Ruff/mypy, 28 unit checks, four model integration checks and both new hosted runs passed).
 - [x] Verify the separately versioned FIT-input FinBERT quality-v2 amendment (production tokenizer receipt, exact 19-record legacy replay and genuine CPU/cache smoke passed; policies/proofs/caches preserved and post-cohort timing disclosed).
 - [x] Verify the science-identical compact evidence-union memory change (100 focused checks, whole Ruff/133-file format, mypy/66-source and final four-model integration checks passed).
-- [ ] Commit/freeze the amended code and `development_quality_v2` inputs, then launch the new immutable batch and obtain fresh hosted CI.
-- [ ] Generate genuine SEC text features and disclose inference/source coverage (legacy `development_v3_100e1e4` STOPPED with 1,494 partial checkpoints; new 37,421-event quality batch pending launch; Gemma pilot capped at 500 events).
+- [x] Commit/freeze the amended code at `2dd54bcb`, launch the new immutable batch at 2026-10-07 05:17:15 UTC, freeze its inputs during guarded startup before event processing and pass fresh hosted CI.
+- [ ] Generate genuine SEC text features and disclose inference/source coverage (legacy `development_v3_100e1e4` STOPPED/cause unknown; quality attempt exited 1 after 1,494 checkpoints with an incomplete SEC-inventory `FileExistsError`; same-input quality resume 1 RUNNING from 08:58:15 UTC over all 37,421 events, with Gemma capped at 500).
 - [ ] Fit and independently replay primary and sensitivity A/B comparisons.
 - [ ] Record actual sample counts, uncertainty and positive/negative comparison results.
-- [x] Verify Windows/Linux/Colab compatibility for frozen revision `100e1e48` (hosted CI run `37451417275` green; later isolated reporting changes are not covered by that run).
+- [ ] Complete full-suite/type/release gates for the primary readiness/app/CLI patch (46 focused synthetic readiness/CLI and 18 app checks passed; not actual study results).
+- [ ] After all thirty actual models and native replays finish, publish checked readiness with `structural-break promote-primary --pipeline-receipt .acceptance/research_quality_v2_pipeline_state.json`.
+- [ ] After actual v2 evaluation and required gates pass, promote v2 to GitHub `main` and the default app/run path, retaining v1 history and immutable artifacts for reference/reproduction.
+- [x] Verify Windows/Linux/Colab compatibility for frozen revision `2dd54bcb` (both hosted runs green; full structured receipt `.acceptance/research_2dd54bc_hosted_ci.json`).
 
 Commands and recovery rules are in `docs/RESEARCH_V2_RUNBOOK.md`.
 The legacy job is confirmed stopped as of 2026-10-07 05:10 UTC. Its log ends
 at 1,494 completed checkpoints at 03:33 UTC without traceback/terminal manifest;
 the cause is unknown, not recorded as an intentional stop or confirmed failure.
-Keep its partial directory and verified caches. Launch the replacement only
-after a new immutable code/input freeze; no actual research A/B assessment
-preceded the FIT-only amendment.
+Keep its partial directory and verified caches. The replacement used frozen
+`2dd54bcb` code at process launch; its immutable inputs were published during
+guarded startup before event processing, with SHA-256
+`cf19099ac57ee7f5ba6ab3e37daa6d46dda49a7f4dc63893d6a06d1063f78fea`.
+No actual research A/B assessment preceded the FIT-only amendment.
 
 ---
 

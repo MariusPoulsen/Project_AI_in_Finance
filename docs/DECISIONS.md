@@ -591,14 +591,25 @@ The user will prepare the final academic written report and presentation/video s
   `100e1e48`. Hosted CI for `100e1e48` then passed the complete Windows/Linux
   regression jobs and Linux Colab bootstrap in
   [run 37451417275](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/37451417275).
-  These checks cover that committed revision; subsequent isolated log-loss and
-  subgroup-report completion changes require their own verification.
+  Those checks cover their own committed revision; the quality/reporting/memory
+  amendment subsequently froze at `2dd54bcb` and passed both new hosted runs.
   As of 2026-10-07 05:10 UTC, legacy batch `development_v3_100e1e4` is
   STOPPED and incomplete: its session/process are absent and its log ends at
   1,494 completed checkpoints at 03:33 UTC, without traceback or terminal
   manifest. The cause is unknown; this is not an intentional stop or a confirmed
-  FAILED publication. Preserve the partial batch. A new `development_quality_v2`
-  code/input freeze and launch are pending; all actual A/B comparisons remain pending.
+  FAILED publication. Preserve the partial batch. New `development_quality_v2`
+  first launched at 2026-10-07 05:17:15 UTC from frozen `2dd54bcb`; its distinct
+  inputs froze during guarded startup before event work. That quality attempt
+  exited 1 after 1,494 checkpoints with a verified `FileExistsError` from an
+  unregistered SEC capture lacking its completion manifest. Complete only that
+  inventory from three valid original response/sidecar pairs plus one absent
+  exhibit, preserving all six original files and retrieval times. Recovery proof:
+  `.acceptance/sec_orphan_recovery_000119312506199058.json`, SHA-256
+  `65ab238448b5d055ca80ed771ed62cc0cc7cbe6063272eb20e8c553a874216d7`.
+  Resume 1 launched at 08:58:15 UTC under identical code/inputs and is RUNNING;
+  it replays the 1,494 preserved quality checkpoints. Do not attribute this
+  known quality-attempt failure to the unknown legacy-stop cause. All actual
+  A/B comparisons remain pending.
 - Development amendment on 2026-10-06, after constructing the quantitative
   cohorts and observing their counts, but before any research model assessment:
   use separately versioned FinBERT `sec-sentence-quality-wordpiece-v2` in a new
@@ -632,7 +643,9 @@ The user will prepare the final academic written report and presentation/video s
   research CLI default quality-v2, with
   `--sentiment-preprocessing exact-sentence-nonoverlap-wordpiece-v1` for legacy
   reproduction; CLI choices use full version strings. Only after a new code/input
-  freeze may a new batch replace the stopped legacy job; keep its partial batch and reuse verified
+  freeze may a new batch process replacement events. Code froze at `2dd54bcb`
+  before process launch; inputs froze during guarded startup before event work.
+  Keep the legacy partial batch and reuse verified
   source/Gemma caches. Pair/label policies, model grids and catalyst schedule
   remain unchanged. No actual research-v2 Model B fits have occurred.
 - The same amendment completes promised research reporting, without changing
@@ -656,5 +669,32 @@ The user will prepare the final academic written report and presentation/video s
   FIT event at 2006-01-03 passed in 31.766 seconds with exact cache replay, all
   five pinned asset hashes verified, 388 legacy cache files unchanged and no
   network/LLM/outcome access. Do not compare this timing with the different V/MA
-  legacy smoke event. New commit/input freeze, fresh hosted CI and
-  `development_quality_v2` launch remain pending; actual features/results are incomplete.
+  legacy smoke event. `development_quality_v2` launched from frozen `2dd54bcb`
+  at 2026-10-07 05:17:15 UTC with all 37,421 events and a separate 500-event
+  catalyst pilot; no `--max-events` or disabled inference was used. Its failed
+  first attempt and preserving resume above do not alter this research scope. Its
+  `inputs.json` SHA-256 is
+  `cf19099ac57ee7f5ba6ab3e37daa6d46dda49a7f4dc63893d6a06d1063f78fea`.
+  Both fresh hosted runs passed the amended commit. Full features and actual
+  A/B fits remain incomplete; no predictive gain has been established.
+
+## 21. Promote completed research v2 as the primary version
+
+The user authorized completing research v2 and then replacing v1 as the primary
+project version. After the full feature generation, all three predeclared model
+fits, independent native replay and required acceptance gates are complete,
+promote research v2 to GitHub `main` and the default app/run path. This promotion
+is pending. Retain v1 history, immutable artifacts and original acceptance
+results as reference/reproduction material; they will no longer be the default
+research authority. Do not overwrite immutable v1 source or result generations.
+
+This authorization changes the primary delivery path, not the frozen universe,
+cohorts, model grids, evaluation protocol or final-test lock. Record measured
+A/B results and their limitations, including negative or uncertain results;
+Model B outperformance is not established or guaranteed by promotion.
+Readiness publication uses `structural-break promote-primary --pipeline-receipt
+PATH --ci-gate CI_PATH` only after the complete three-horizon pipeline receipt, source/CI gates
+and fresh native verification of all thirty bundles. Publish immutable workspace
+`manifest.json`/`verification_receipt.json`/`hosted_ci_gate.json` and show only accepted versions in
+the read-only default app. Retain v1 at `app/reference_streamlit_app.py`.
+Workspace readiness publication does not itself merge GitHub `main`.

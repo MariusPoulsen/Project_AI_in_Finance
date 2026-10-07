@@ -176,7 +176,23 @@ source_v3, 37,421 scheduled events and a separate 500-event Gemma pilot, without
 `--max-events` or disabled inference. Feature completion and all actual A/B
 comparisons remain pending.
 
-The tested replacement evidence batch `development_quality_v2` uses the separately versioned
+The replacement evidence batch `development_quality_v2` first launched at
+2026-10-07 05:17:15 UTC from frozen `2dd54bcb`. Its first attempt failed at
+1,494 checkpoints with `FileExistsError` from one unregistered SEC body capture
+lacking a completion manifest. The preserving repair reused three valid
+response/sidecar pairs and original retrieval times, fetched one missing exhibit
+and completed only that inventory. Recovery proof:
+`.acceptance/sec_orphan_recovery_000119312506199058.json`, SHA-256
+`65ab238448b5d055ca80ed771ed62cc0cc7cbe6063272eb20e8c553a874216d7`;
+completed inventory SHA-256
+`eaf379b638169a502f356d37f9e0ce98b959cb88c0c7d1192347c26f0d52eef2`.
+This body-cache repair does not alter SEC metadata source_v1/v2/v3 and does not
+explain the unknown earlier legacy-stop cause. Resume 1 launched at 08:58:15 UTC
+under identical frozen code/inputs and is RUNNING, replaying the 1,494 preserved
+quality checkpoints. Launch proof:
+`.acceptance/research_quality_v2_resume_1_launch.json`, SHA-256
+`587e55d4ddc0f8d006a5b476d319c205a973055f27beed6c6dbe7a6a77447613`.
+The quality batch uses the separately versioned
 `sec-sentence-quality-wordpiece-v2` FinBERT amendment described in
 [the protocol](RESEARCH_V2_PROTOCOL.md#fit-input-preprocessing-amendment).
 It is based on nineteen FIT-only source inputs after quantitative cohorts were
@@ -200,5 +216,18 @@ proof is `.acceptance/finbert_quality_real_sec_smoke.json`, SHA-256
 Its time is not compared with the different V/MA legacy smoke event.
 The combined amendment passed 100 focused tests, whole Ruff/133-file format,
 strict mypy/66-source and four final native-model integration checks in
-83.74 seconds. New commit/input freeze, fresh hosted CI and launch remain
-pending; this document does not claim replacement completion or predictive gain.
+83.74 seconds. The code/input freeze and launch completed at `2dd54bcb`; its
+immutable input SHA-256 is
+`cf19099ac57ee7f5ba6ab3e37daa6d46dda49a7f4dc63893d6a06d1063f78fea`.
+Both fresh hosted runs passed. The new generation binds this accepted source_v3,
+without altering source_v1/v2/v3 or the stopped legacy checkpoints. This
+document does not claim replacement completion or predictive gain.
+
+Hosted CI for frozen `2dd54bcb` passed all Windows/Linux foundation jobs
+and the Linux Colab/NLP bootstrap in
+[PR run 37575503287](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/37575503287)
+and [branch run 37575496575](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/37575496575).
+The full structured result is `.acceptance/research_2dd54bc_hosted_ci.json`,
+SHA-256 `4311287edfcd2aa8fc1f095ffae2b099ec549f9ee5207c1f74d9d26f8b2c111e`.
+These checks cover the quality, reporting and compact-union amendments; they do
+not establish complete historical feature coverage or predictive improvement.

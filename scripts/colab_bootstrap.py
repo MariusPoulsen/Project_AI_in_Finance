@@ -36,6 +36,11 @@ def main() -> None:
         action="store_true",
         help="Also build SEC evidence, mock extractions and Model B offline",
     )
+    parser.add_argument(
+        "--research-fixture",
+        action="store_true",
+        help="Verify the primary research-v2 pipeline with offline integration fixtures",
+    )
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     uv = shutil.which("uv")
@@ -71,7 +76,7 @@ def main() -> None:
         )
         for job in jobs:
             subprocess.run(
-                [*run, "structural-break", *job, *options],
+                [*run, "structural-break-reference", *job, *options],
                 cwd=root,
                 check=True,
             )
@@ -88,7 +93,7 @@ def main() -> None:
             ("verify-relationships",),
         ):
             subprocess.run(
-                [*run, "structural-break", *relationship_job, *options],
+                [*run, "structural-break-reference", *relationship_job, *options],
                 cwd=root,
                 check=True,
             )
@@ -100,7 +105,7 @@ def main() -> None:
             ("verify-model-a",),
         ):
             subprocess.run(
-                [*run, "structural-break", *model_job, *options],
+                [*run, "structural-break-reference", *model_job, *options],
                 cwd=root,
                 check=True,
             )
@@ -113,11 +118,18 @@ def main() -> None:
             ("verify-model-b",),
         ):
             subprocess.run(
-                [*run, "structural-break", *intelligence_job, *options],
+                [*run, "structural-break-reference", *intelligence_job, *options],
                 cwd=root,
                 check=True,
             )
         print("Phase 4 SEC intelligence and Model B verified with synthetic provider outputs")
+    if args.research_fixture:
+        subprocess.run(
+            [*run, "pytest", "tests/integration/test_research_runner.py", "-q"],
+            cwd=root,
+            check=True,
+        )
+        print("Primary research-v2 offline pipeline and native-model integration verified")
 
 
 if __name__ == "__main__":

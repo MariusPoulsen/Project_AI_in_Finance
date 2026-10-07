@@ -269,6 +269,93 @@ def _embedded_documents(text: str) -> list[dict[str, str]]:
     return result
 
 
+def _cached_filing_response(
+    paths: ProjectPaths,
+    target: Path,
+    url: str,
+    kind: str,
+    original: str,
+    accepted: datetime,
+) -> dict[str, object] | None:
+    """Validate a complete response pair without replacing its retrieval receipt."""
+    sidecar = target.with_name(target.name + ".response.json")
+    if not sidecar.is_file():
+        if sidecar.exists() or target.exists():
+            raise ValueError("SEC cached body has no complete response metadata")
+        return None
+    value = json.loads(sidecar.read_bytes())
+    if not isinstance(value, dict):
+        raise ValueError("Invalid cached SEC response metadata")
+    record = cast(dict[str, object], value)
+    required = {
+        "document_type",
+        "document_filename",
+        "source_url",
+        "raw_file_path",
+        "sha256",
+        "http_status",
+        "retrieved_at_utc",
+        "status",
+        "error_reason",
+    }
+    if set(record) not in (required, required | {"response_url"}):
+        raise ValueError("Incomplete cached SEC response metadata")
+    expected = {
+        "document_type": kind,
+        "document_filename": original,
+        "source_url": url,
+        "raw_file_path": target.relative_to(paths.workspace_root).as_posix(),
+    }
+    if any(record[field] != expected_value for field, expected_value in expected.items()):
+        raise ValueError("Cached SEC response document identity mismatch")
+    status = record["status"]
+    http_status = record["http_status"]
+    if (
+        not isinstance(status, str)
+        or status not in {"DOWNLOADED", "FAILED"}
+        or (
+            http_status is not None
+            and (type(http_status) is not int or not 100 <= http_status <= 599)
+        )
+    ):
+        raise ValueError("Invalid cached SEC response status")
+    if (status == "DOWNLOADED" and record["error_reason"] is not None) or (
+        status == "FAILED" and not isinstance(record["error_reason"], str)
+    ):
+        raise ValueError("Invalid cached SEC response failure metadata")
+    digest = record["sha256"]
+    if digest is None:
+        # A request-level failure has no response bytes or observed retrieval time.
+        if (
+            status != "FAILED"
+            or target.exists()
+            or record["retrieved_at_utc"] is not None
+            or "response_url" in record
+        ):
+            raise ValueError("Incomplete cached SEC response body/hash metadata")
+        return record
+    if (
+        not isinstance(digest, str)
+        or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+        or not target.is_file()
+        or sha256_file(target) != digest
+    ):
+        raise ValueError("Immutable SEC response hash mismatch")
+    response_url = record.get("response_url")
+    if http_status is None or not isinstance(response_url, str):
+        raise ValueError("Incomplete cached SEC response retrieval metadata")
+    retrieved = _utc(record["retrieved_at_utc"], "cached SEC retrieved_at_utc")
+    if retrieved < accepted:
+        raise ValueError("SEC document acceptance cannot follow its cached retrieval")
+    validate_redirect(url, response_url)
+    empty = target.stat().st_size == 0
+    if (status == "DOWNLOADED" and (http_status != 200 or empty)) or (
+        status == "FAILED" and http_status == 200 and not empty
+    ):
+        raise ValueError("Cached SEC response status/body mismatch")
+    return record
+
+
 def cache_filing(
     paths: ProjectPaths,
     filing: Mapping[str, object],
@@ -279,8 +366,10 @@ def cache_filing(
 ) -> list[dict[str, object]]:
     """Cache an accession once, including source responses and failure states.
 
-    Ordinary reruns never recapture responses. ``attempt_id`` explicitly creates
-    another immutable capture under the accession, retaining failed originals.
+    Ordinary reruns never recapture responses. Interrupted online captures reuse
+    validated response pairs and fetch only missing documents before publishing
+    the manifest. ``attempt_id`` creates another immutable capture under the
+    accession, retaining failed originals. Offline misses remain read-only.
     """
     cik = normalize_cik(str(filing["cik"]))
     accession = str(filing["filing_id"])
@@ -328,9 +417,16 @@ def cache_filing(
             for _, url, kind, original in requests
         ]
     else:
+        # A crash can leave complete per-document receipts before the accession
+        # manifest. Validate all existing base pairs before making any request.
+        for relative, url, kind, original in requests:
+            _cached_filing_response(paths, folder / relative, url, kind, original, accepted)
 
         def capture(relative: str, url: str, kind: str, original: str) -> dict[str, object]:
             target = folder / relative
+            cached = _cached_filing_response(paths, target, url, kind, original, accepted)
+            if cached is not None:
+                return cached
             record: dict[str, object] = {
                 "document_type": kind,
                 "document_filename": original,

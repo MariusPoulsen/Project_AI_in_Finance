@@ -82,7 +82,7 @@ class FrozenService:
 
 
 def app_script(service) -> None:
-    from app.streamlit_app import main
+    from app.reference_streamlit_app import main
 
     main(service)
 

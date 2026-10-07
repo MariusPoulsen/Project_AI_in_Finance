@@ -168,6 +168,258 @@ def test_cache_mutated_raw_bytes_fail_instead_of_recapture(paths: ProjectPaths) 
     assert len(calls) == 4
 
 
+def _cache_folder(paths: ProjectPaths, selected: dict[str, object]) -> Path:
+    return paths.data_path(f"raw/sec/filings/{selected['cik']}/{selected['filing_id']}")
+
+
+def _response_snapshot(folder: Path) -> dict[Path, tuple[bytes, int]]:
+    return {
+        path: (path.read_bytes(), path.stat().st_mtime_ns)
+        for path in folder.rglob("*")
+        if path.is_file() and path.name != "response_manifest.json"
+    }
+
+
+@pytest.mark.parametrize("interrupt_at", ["submission", "exhibit"])
+def test_interrupted_cache_fetches_only_missing_documents_and_preserves_receipts(
+    paths: ProjectPaths, interrupt_at: str
+) -> None:
+    chosen, _ = select([filing(1)])
+    selected = chosen[0]
+    missing_name = (
+        str(selected["filing_id"]) + ".txt" if interrupt_at == "submission" else "ex99.htm"
+    )
+    initial_calls: list[str] = []
+    initial = get_fixture(initial_calls)
+
+    def interrupted(url: str) -> FetchedResponse:
+        if url.endswith("/" + missing_name):
+            raise RuntimeError("simulated process interruption")
+        return initial(url)
+
+    with pytest.raises(RuntimeError, match="interruption"):
+        cache_filing(paths, selected, interrupted)
+    folder = _cache_folder(paths, selected)
+    assert not (folder / "response_manifest.json").exists()
+    before = _response_snapshot(folder)
+    assert len(before) == (4 if interrupt_at == "submission" else 6)
+    resumed_calls: list[str] = []
+    resumed = get_fixture(resumed_calls)
+
+    def later_response(url: str) -> FetchedResponse:
+        response = resumed(url)
+        return FetchedResponse(response.body, response.url, 200, RETRIEVED + timedelta(days=1))
+
+    documents = cache_filing(paths, selected, later_response)
+    assert {url.rsplit("/", 1)[-1] for url in resumed_calls} == (
+        {str(selected["filing_id"]) + ".txt", "ex99.htm"}
+        if interrupt_at == "submission"
+        else {"ex99.htm"}
+    )
+    assert all(
+        (path.read_bytes(), path.stat().st_mtime_ns) == value for path, value in before.items()
+    )
+    assert all(row["status"] == "DOWNLOADED" for row in documents)
+    assert documents == cache_filing(paths, selected, get_fixture(resumed_calls), offline=True)
+    assert len(resumed_calls) == (2 if interrupt_at == "submission" else 1)
+
+
+def test_crash_before_manifest_recovers_every_pair_without_http_or_receipt_rewrites(
+    paths: ProjectPaths, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import structural_break.intelligence.evidence as evidence
+
+    chosen, _ = select([filing(1)])
+    original_write = evidence.write_bytes
+
+    def crash_manifest(path: Path, content: bytes) -> Path:
+        if path.name == "response_manifest.json":
+            raise RuntimeError("simulated manifest interruption")
+        return original_write(path, content)
+
+    monkeypatch.setattr(evidence, "write_bytes", crash_manifest)
+    with pytest.raises(RuntimeError, match="manifest interruption"):
+        cache_filing(paths, chosen[0], get_fixture([]))
+    folder = _cache_folder(paths, chosen[0])
+    before = _response_snapshot(folder)
+    assert len(before) == 8
+
+    def manifest_only(path: Path, content: bytes) -> Path:
+        assert path.name == "response_manifest.json", "Existing response must not be rewritten"
+        return original_write(path, content)
+
+    def forbidden_http(url: str) -> FetchedResponse:
+        pytest.fail(f"Completed response was refetched: {url}")
+
+    monkeypatch.setattr(evidence, "write_bytes", manifest_only)
+    documents = cache_filing(paths, chosen[0], forbidden_http)
+    assert all(row["retrieved_at_utc"] == RETRIEVED.isoformat() for row in documents)
+    assert all(
+        (path.read_bytes(), path.stat().st_mtime_ns) == value for path, value in before.items()
+    )
+    assert cache_filing(paths, chosen[0], forbidden_http, offline=True) == documents
+
+
+@pytest.mark.parametrize("failure_kind", ["request", "body", "empty"])
+def test_partial_failed_receipt_stays_failed_until_explicit_new_attempt(
+    paths: ProjectPaths, failure_kind: str
+) -> None:
+    chosen, _ = select([filing(1)])
+    selected = chosen[0]
+    initial = get_fixture([])
+
+    def interrupted(url: str) -> FetchedResponse:
+        if url.endswith("/" + str(selected["filing_id"]) + ".txt"):
+            raise RuntimeError("simulated process interruption")
+        if url.endswith("/primary.htm"):
+            if failure_kind == "request":
+                raise SourceError(url, 403)
+            return FetchedResponse(
+                b"Access denied" if failure_kind == "body" else b"",
+                url,
+                403 if failure_kind == "body" else 200,
+                RETRIEVED,
+            )
+        return initial(url)
+
+    with pytest.raises(RuntimeError, match="interruption"):
+        cache_filing(paths, selected, interrupted)
+    before = _response_snapshot(_cache_folder(paths, selected))
+    resumed_calls: list[str] = []
+    resumed = cache_filing(paths, selected, get_fixture(resumed_calls))
+    primary = next(row for row in resumed if row["document_type"] == "8-K")
+    assert primary["status"] == "FAILED"
+    assert primary["http_status"] == (200 if failure_kind == "empty" else 403)
+    assert not any(url.endswith("/primary.htm") for url in resumed_calls)
+    assert all(
+        (path.read_bytes(), path.stat().st_mtime_ns) == value for path, value in before.items()
+    )
+    if failure_kind == "request":
+        assert primary["retrieved_at_utc"] is None and primary["sha256"] is None
+    else:
+        assert primary["retrieved_at_utc"] == RETRIEVED.isoformat()
+        assert primary["sha256"] is not None
+    retried = cache_filing(paths, selected, get_fixture([]), attempt_id="explicit_recovery")
+    assert all(row["status"] == "DOWNLOADED" for row in retried)
+    assert all(
+        (path.read_bytes(), path.stat().st_mtime_ns) == value for path, value in before.items()
+    )
+    assert cache_filing(paths, selected, get_fixture([]), offline=True) == resumed
+
+
+def test_body_without_sidecar_fails_closed_before_http_after_crash(
+    paths: ProjectPaths, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import structural_break.intelligence.evidence as evidence
+
+    chosen, _ = select([filing(1)])
+    original_write = evidence.write_bytes
+
+    def crash_sidecar(path: Path, content: bytes) -> Path:
+        if path.name == "primary_document.html.response.json":
+            raise RuntimeError("simulated sidecar interruption")
+        return original_write(path, content)
+
+    monkeypatch.setattr(evidence, "write_bytes", crash_sidecar)
+    with pytest.raises(RuntimeError, match="sidecar interruption"):
+        cache_filing(paths, chosen[0], get_fixture([]))
+    monkeypatch.setattr(evidence, "write_bytes", original_write)
+    before = _response_snapshot(_cache_folder(paths, chosen[0]))
+    calls: list[str] = []
+    with pytest.raises(ValueError, match="no complete response metadata"):
+        cache_filing(paths, chosen[0], get_fixture(calls))
+    assert not calls
+    assert all(
+        (path.read_bytes(), path.stat().st_mtime_ns) == value for path, value in before.items()
+    )
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("source_url", "https://www.sec.gov/Archives/wrong.htm"),
+        ("raw_file_path", "data/raw/sec/foreign.htm"),
+        ("document_type", "10-K"),
+        ("document_filename", "foreign.htm"),
+        ("retrieved_at_utc", "2020-01-01T00:00:00+00:00"),
+        ("retrieved_at_utc", "2026-10-03"),
+        ("retrieved_at_utc", None),
+        ("response_url", "https://example.com/foreign.htm"),
+        ("status", "FAILED"),
+        ("status", "MISSING"),
+        ("http_status", 403),
+        ("http_status", True),
+        ("sha256", None),
+        ("sha256", "0" * 64),
+    ],
+)
+def test_partial_sidecar_tampering_is_blocking_without_refetch(
+    paths: ProjectPaths, field: str, value: object
+) -> None:
+    chosen, _ = select([filing(1)])
+    documents = cache_filing(paths, chosen[0], get_fixture([]))
+    folder = _cache_folder(paths, chosen[0])
+    (folder / "response_manifest.json").unlink()
+    primary = Path(str(documents[1]["local_path"]))
+    sidecar = primary.with_name(primary.name + ".response.json")
+    receipt = json.loads(sidecar.read_bytes())
+    receipt[field] = value
+    sidecar.write_text(json.dumps(receipt))
+    before = _response_snapshot(folder)
+    calls: list[str] = []
+    with pytest.raises(ValueError):
+        cache_filing(paths, chosen[0], get_fixture(calls))
+    assert not calls
+    assert not (folder / "response_manifest.json").exists()
+    assert all(
+        (path.read_bytes(), path.stat().st_mtime_ns) == value for path, value in before.items()
+    )
+
+
+@pytest.mark.parametrize("damage", ["body", "missing_body", "malformed", "missing_field"])
+def test_partial_cache_incomplete_or_corrupt_receipt_is_not_replaced(
+    paths: ProjectPaths, damage: str
+) -> None:
+    chosen, _ = select([filing(1)])
+    documents = cache_filing(paths, chosen[0], get_fixture([]))
+    folder = _cache_folder(paths, chosen[0])
+    (folder / "response_manifest.json").unlink()
+    primary = Path(str(documents[1]["local_path"]))
+    sidecar = primary.with_name(primary.name + ".response.json")
+    if damage == "body":
+        primary.write_bytes(b"mutated SEC response")
+    elif damage == "missing_body":
+        primary.unlink()
+    elif damage == "malformed":
+        sidecar.write_bytes(b"{not json")
+    else:
+        receipt = json.loads(sidecar.read_bytes())
+        del receipt["retrieved_at_utc"]
+        sidecar.write_text(json.dumps(receipt))
+    before = _response_snapshot(folder)
+    calls: list[str] = []
+    with pytest.raises(ValueError):
+        cache_filing(paths, chosen[0], get_fixture(calls))
+    assert not calls
+    assert all(
+        (path.read_bytes(), path.stat().st_mtime_ns) == value for path, value in before.items()
+    )
+
+
+def test_offline_partial_cache_remains_missing_and_read_only(paths: ProjectPaths) -> None:
+    chosen, _ = select([filing(1)])
+    cache_filing(paths, chosen[0], get_fixture([]))
+    folder = _cache_folder(paths, chosen[0])
+    (folder / "response_manifest.json").unlink()
+    before = _response_snapshot(folder)
+    calls: list[str] = []
+    documents = cache_filing(paths, chosen[0], get_fixture(calls), offline=True)
+    assert not calls and {row["status"] for row in documents} == {"MISSING"}
+    assert all(row["error_reason"] == "OFFLINE_CACHE_MISS" for row in documents)
+    assert not (folder / "response_manifest.json").exists()
+    assert _response_snapshot(folder) == before
+
+
 def test_cache_mutated_metadata_is_blocking(paths: ProjectPaths) -> None:
     chosen, _ = select([filing(1)])
     docs = cache_filing(paths, chosen[0], get_fixture([]))

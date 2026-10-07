@@ -367,8 +367,9 @@ def test_catalyst_pilot_limit_is_distinct_from_partial_source_inventory(
 
 
 @pytest.mark.parametrize("nlp", [False, True])
+@pytest.mark.parametrize("research_fixture", [False, True])
 def test_colab_keeps_optional_nlp_extra_in_every_uv_run(
-    monkeypatch: pytest.MonkeyPatch, nlp: bool
+    monkeypatch: pytest.MonkeyPatch, nlp: bool, research_fixture: bool
 ) -> None:
     commands: list[list[str]] = []
     monkeypatch.setattr(colab_bootstrap.shutil, "which", lambda name: "uv")
@@ -383,13 +384,26 @@ def test_colab_keeps_optional_nlp_extra_in_every_uv_run(
     ]
     if nlp:
         arguments.append("--nlp")
+    if research_fixture:
+        arguments.append("--research-fixture")
     monkeypatch.setattr(sys, "argv", arguments)
     colab_bootstrap.main()
     sync = next(command for command in commands if command[1] == "sync")
     runs = [command for command in commands if command[1] == "run"]
-    assert len(runs) == 15
+    assert len(runs) == 15 + int(research_fixture)
     assert ("--extra" in sync) is nlp
     assert all(("--extra" in command) is nlp for command in runs)
     if nlp:
         assert sync[sync.index("--extra") + 1] == "nlp"
         assert all(command[command.index("--extra") + 1] == "nlp" for command in runs)
+    primary = [command for command in runs if "structural-break" in command]
+    assert len(primary) == 3
+    assert all(
+        any(name in command for name in ("check-config", "init-db", "storage-smoke"))
+        for command in primary
+    )
+    assert len([command for command in runs if "structural-break-reference" in command]) == 12
+    assert (
+        any("tests/integration/test_research_runner.py" in command for command in runs)
+        is research_fixture
+    )
