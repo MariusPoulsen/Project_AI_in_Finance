@@ -62,6 +62,7 @@ from structural_break.research.availability import (
     ambiguous_cutoff,
     apply_availability_bounds,
 )
+from structural_break.research.parsing_cache import OperationParsingCache
 from structural_break.research.scheduling import (
     DEFAULT_CATALYST_EVENTS,
     MAX_CATALYST_CALLS,
@@ -774,7 +775,7 @@ def _event_pack(
     source_get: Callable[[str], FetchedResponse],
     *,
     offline: bool,
-    parsed_cache: OrderedDict[str, pd.DataFrame] | None = None,
+    parsed_cache: OperationParsingCache | OrderedDict[str, pd.DataFrame] | None = None,
 ) -> tuple[dict[str, Any], int]:
     policy = RESEARCH_EVIDENCE_POLICY
     selected, coverage = select_event_filings(
@@ -789,12 +790,13 @@ def _event_pack(
         key = _sha(documents)
         if parsed_cache is not None and key in parsed_cache:
             chunks = parsed_cache[key]
-            parsed_cache.move_to_end(key)
+            if isinstance(parsed_cache, OrderedDict):
+                parsed_cache.move_to_end(key)
         else:
             chunks = parse_documents(documents, policy)
             if parsed_cache is not None:
                 parsed_cache[key] = chunks
-                if len(parsed_cache) > 128:
+                if isinstance(parsed_cache, OrderedDict) and len(parsed_cache) > 128:
                     parsed_cache.popitem(last=False)
         parsed.append(chunks)
     chunks = pd.concat(parsed, ignore_index=True) if parsed else parse_documents([], policy)
@@ -997,130 +999,130 @@ def build_event_intelligence(
     backend = sentiment_backend or _UnavailableTone(tone_policy)
     records, extractions, tones, metadata_rows, audits = [], [], [], [], []
     selected_filing_ids: set[str] = set()
-    parsed_cache: OrderedDict[str, pd.DataFrame] = OrderedDict()
-    for index, event in enumerate(cast(list[dict[str, Any]], clean.to_dict("records"))):
-        event_filings = pair_filings[event["pair_id"]]
-        scheduled = max_events is None or index < max_events
-        catalyst_scheduled = scheduled and event["event_id"] in catalyst_ids
-        filename = "events/" + hashlib.sha256(event["event_id"].encode()).hexdigest() + ".json"
-        checkpoint = output_dir / filename
-        if checkpoint.exists():
-            record = _load_json(checkpoint)
-            if (
-                record["event"] != event
-                or record["scheduled"] is not scheduled
-                or record["catalyst_scheduled"] is not catalyst_scheduled
-            ):
-                raise ValueError("Research event checkpoint identity differs")
-            validate_stored_extraction(record["catalyst_pack"], record["extraction"])
-            expected_pack = (
-                _event_pack(
-                    event,
-                    event_filings,
-                    source_coverage,
-                    paths,
-                    _offline_only,
-                    offline=True,
-                    parsed_cache=parsed_cache,
-                )[0]
-                if scheduled
-                else _empty_pack(event, policy)
-            )
-            if record["pack"] != expected_pack:
-                raise ValueError("Research checkpoint evidence differs from raw reconstruction")
-            if record["catalyst_pack"] != (
-                expected_pack if catalyst_scheduled else _empty_pack(event, policy)
-            ):
-                raise ValueError("Research checkpoint catalyst evidence violates its schedule")
-        else:
-            selected_count = 0
-            pack = _empty_pack(event, policy)
-            if scheduled:
-                pack, selected_count = _event_pack(
-                    event,
-                    event_filings,
-                    source_coverage,
-                    paths,
-                    source_get,
-                    offline=offline,
-                    parsed_cache=parsed_cache,
+    with OperationParsingCache() as parsed_cache:
+        for index, event in enumerate(cast(list[dict[str, Any]], clean.to_dict("records"))):
+            event_filings = pair_filings[event["pair_id"]]
+            scheduled = max_events is None or index < max_events
+            catalyst_scheduled = scheduled and event["event_id"] in catalyst_ids
+            filename = "events/" + hashlib.sha256(event["event_id"].encode()).hexdigest() + ".json"
+            checkpoint = output_dir / filename
+            if checkpoint.exists():
+                record = _load_json(checkpoint)
+                if (
+                    record["event"] != event
+                    or record["scheduled"] is not scheduled
+                    or record["catalyst_scheduled"] is not catalyst_scheduled
+                ):
+                    raise ValueError("Research event checkpoint identity differs")
+                validate_stored_extraction(record["catalyst_pack"], record["extraction"])
+                expected_pack = (
+                    _event_pack(
+                        event,
+                        event_filings,
+                        source_coverage,
+                        paths,
+                        _offline_only,
+                        offline=True,
+                        parsed_cache=parsed_cache,
+                    )[0]
+                    if scheduled
+                    else _empty_pack(event, policy)
                 )
-            validate_pack(pack)
-            catalyst_pack = pack if catalyst_scheduled else _empty_pack(event, policy)
-            extraction = extract_pack(
-                catalyst_pack,
-                (provider or _disabled_provider) if catalyst_scheduled else _disabled_provider,
-                paths.data / "cache",
-                provider_name,
-                model_name,
-                prompt_version=prompt_version,
-                provider_config=provider_config,
-                timeout_seconds=timeout_seconds,
-                max_retries=max_retries,
-            )
-            tone = score_sentiment_pack(
-                pack,
-                backend,
-                paths.data / "cache" / "sentiment",
+                if record["pack"] != expected_pack:
+                    raise ValueError("Research checkpoint evidence differs from raw reconstruction")
+                if record["catalyst_pack"] != (
+                    expected_pack if catalyst_scheduled else _empty_pack(event, policy)
+                ):
+                    raise ValueError("Research checkpoint catalyst evidence violates its schedule")
+            else:
+                selected_count = 0
+                pack = _empty_pack(event, policy)
+                if scheduled:
+                    pack, selected_count = _event_pack(
+                        event,
+                        event_filings,
+                        source_coverage,
+                        paths,
+                        source_get,
+                        offline=offline,
+                        parsed_cache=parsed_cache,
+                    )
+                validate_pack(pack)
+                catalyst_pack = pack if catalyst_scheduled else _empty_pack(event, policy)
+                extraction = extract_pack(
+                    catalyst_pack,
+                    (provider or _disabled_provider) if catalyst_scheduled else _disabled_provider,
+                    paths.data / "cache",
+                    provider_name,
+                    model_name,
+                    prompt_version=prompt_version,
+                    provider_config=provider_config,
+                    timeout_seconds=timeout_seconds,
+                    max_retries=max_retries,
+                )
+                tone = score_sentiment_pack(
+                    pack,
+                    backend,
+                    paths.data / "cache" / "sentiment",
+                    leg_security_ids=[event["leg_a_security_id"], event["leg_b_security_id"]],
+                    policy=tone_policy,
+                )
+                record = {
+                    "event": event,
+                    "scheduled": scheduled,
+                    "catalyst_scheduled": catalyst_scheduled,
+                    "pack": pack,
+                    "catalyst_pack": catalyst_pack,
+                    "extraction": extraction,
+                    "tone": tone,
+                    "selected_filing_count": selected_count,
+                }
+                write_bytes(checkpoint, json_bytes(record))
+            extractions.append(record["extraction"])
+            # Full text packs are persisted in immutable checkpoints. Retaining only
+            # their filing-ID union keeps memory bounded by selected source captures.
+            selected_filing_ids.update(record["pack"].get("selected_filing_ids", []))
+            tone_features = validate_sentiment_result(
+                record["pack"],
+                record["tone"],
                 leg_security_ids=[event["leg_a_security_id"], event["leg_b_security_id"]],
                 policy=tone_policy,
             )
-            record = {
-                "event": event,
-                "scheduled": scheduled,
-                "catalyst_scheduled": catalyst_scheduled,
-                "pack": pack,
-                "catalyst_pack": catalyst_pack,
-                "extraction": extraction,
-                "tone": tone,
-                "selected_filing_count": selected_count,
-            }
-            write_bytes(checkpoint, json_bytes(record))
-        extractions.append(record["extraction"])
-        # Full text packs are persisted in immutable checkpoints. Retaining only
-        # their filing-ID union keeps memory bounded by selected source captures.
-        selected_filing_ids.update(record["pack"].get("selected_filing_ids", []))
-        tone_features = validate_sentiment_result(
-            record["pack"],
-            record["tone"],
-            leg_security_ids=[event["leg_a_security_id"], event["leg_b_security_id"]],
-            policy=tone_policy,
-        )
-        tones.append(dict(event_id=event["event_id"], **tone_features))
-        metadata_rows.append(
-            dict(
-                event_id=event["event_id"],
-                **metadata_event_features(event, event_filings, source_coverage),
+            tones.append(dict(event_id=event["event_id"], **tone_features))
+            metadata_rows.append(
+                dict(
+                    event_id=event["event_id"],
+                    **metadata_event_features(event, event_filings, source_coverage),
+                )
             )
-        )
-        audits.append(
-            {
-                "event_id": event["event_id"],
-                "pair_id": event["pair_id"],
-                "event_timestamp": event["event_timestamp"],
-                "scheduled": scheduled,
-                "catalyst_scheduled": catalyst_scheduled,
-                "catalyst_status": record["extraction"]["status"],
-                "reason_codes": record["extraction"]["reason_codes"],
-                "coverage_a": record["pack"]["coverage"]["A"]["status"],
-                "coverage_b": record["pack"]["coverage"]["B"]["status"],
-                "tone_a": record["tone"]["legs"]["A"]["status"],
-                "tone_b": record["tone"]["legs"]["B"]["status"],
-            }
-        )
-        records.append({"file": filename, "sha256": sha256_file(checkpoint)})
-        if progress:
-            progress(
+            audits.append(
                 {
-                    "stage": "EVENT_INTELLIGENCE",
                     "event_id": event["event_id"],
+                    "pair_id": event["pair_id"],
+                    "event_timestamp": event["event_timestamp"],
                     "scheduled": scheduled,
                     "catalyst_scheduled": catalyst_scheduled,
-                    "status": record["extraction"]["status"],
-                    "completed": index + 1,
-                    "total": len(clean),
+                    "catalyst_status": record["extraction"]["status"],
+                    "reason_codes": record["extraction"]["reason_codes"],
+                    "coverage_a": record["pack"]["coverage"]["A"]["status"],
+                    "coverage_b": record["pack"]["coverage"]["B"]["status"],
+                    "tone_a": record["tone"]["legs"]["A"]["status"],
+                    "tone_b": record["tone"]["legs"]["B"]["status"],
                 }
             )
+            records.append({"file": filename, "sha256": sha256_file(checkpoint)})
+            if progress:
+                progress(
+                    {
+                        "stage": "EVENT_INTELLIGENCE",
+                        "event_id": event["event_id"],
+                        "scheduled": scheduled,
+                        "catalyst_scheduled": catalyst_scheduled,
+                        "status": record["extraction"]["status"],
+                        "completed": index + 1,
+                        "total": len(clean),
+                    }
+                )
     identity = {"inputs": inputs, "records": records}
     version = "research_intelligence_" + _sha(identity)[:24]
     features = (
@@ -1245,77 +1247,86 @@ def verify_event_intelligence(
     selected_filing_ids: set[str] = set()
     canonical_rows = canonical.to_dict("records")
     records = manifest["source_identity"]["records"]
-    parsed_cache: OrderedDict[str, pd.DataFrame] = OrderedDict()
-    if len(records) != len(canonical_rows):
-        raise ValueError("Research checkpoints do not cover the exact event registry")
-    for index, row in enumerate(records):
-        if manifest["files"].get(row["file"]) != row["sha256"]:
-            raise ValueError("Research checkpoint source identity checksum differs")
-        record = _load_json(confined_path(directory, row["file"]))
-        event = record["event"]
-        scheduled = inputs["max_events"] is None or index < inputs["max_events"]
-        catalyst_scheduled = scheduled and event["event_id"] in catalyst_ids
-        if (
-            event != canonical_rows[index]
-            or record["scheduled"] is not scheduled
-            or record["catalyst_scheduled"] is not catalyst_scheduled
-        ):
-            raise ValueError("Research checkpoint event or label-blind scheduling differs")
-        event_filings = pair_filings[event["pair_id"]]
-        validate_pack(record["pack"])
-        validate_stored_extraction(record["catalyst_pack"], record["extraction"])
-        expected_pack = (
-            _event_pack(
-                record["event"],
-                event_filings,
-                source_coverage,
-                paths,
-                _offline_only,
-                offline=True,
-                parsed_cache=parsed_cache,
-            )[0]
-            if record["scheduled"]
-            else _empty_pack(record["event"], RESEARCH_EVIDENCE_POLICY)
-        )
-        if record["pack"] != expected_pack:
-            raise ValueError("Research evidence differs from raw-source scientific reconstruction")
-        selected_filing_ids.update(record["pack"].get("selected_filing_ids", []))
-        if record["catalyst_pack"] != (
-            expected_pack if catalyst_scheduled else _empty_pack(event, RESEARCH_EVIDENCE_POLICY)
-        ) or (not catalyst_scheduled and record["extraction"]["status"] != "UNKNOWN"):
-            raise ValueError("Research catalyst evidence or response violates the frozen schedule")
-        for chunk in record["pack"]["chunks"]:
-            if sha256_file(confined_path(cache_root, chunk["raw_file_path"])) != chunk["sha256"]:
-                raise ValueError("Research intelligence evidence raw provenance differs")
-        extractions.append(record["extraction"])
-        tone_features = validate_sentiment_result(
-            record["pack"],
-            record["tone"],
-            leg_security_ids=[event["leg_a_security_id"], event["leg_b_security_id"]],
-            policy=tone_policy,
-        )
-        tones.append(dict(event_id=event["event_id"], **tone_features))
-        metadata_rows.append(
-            dict(
-                event_id=event["event_id"],
-                **metadata_event_features(event, event_filings, source_coverage),
+    with OperationParsingCache() as parsed_cache:
+        if len(records) != len(canonical_rows):
+            raise ValueError("Research checkpoints do not cover the exact event registry")
+        for index, row in enumerate(records):
+            if manifest["files"].get(row["file"]) != row["sha256"]:
+                raise ValueError("Research checkpoint source identity checksum differs")
+            record = _load_json(confined_path(directory, row["file"]))
+            event = record["event"]
+            scheduled = inputs["max_events"] is None or index < inputs["max_events"]
+            catalyst_scheduled = scheduled and event["event_id"] in catalyst_ids
+            if (
+                event != canonical_rows[index]
+                or record["scheduled"] is not scheduled
+                or record["catalyst_scheduled"] is not catalyst_scheduled
+            ):
+                raise ValueError("Research checkpoint event or label-blind scheduling differs")
+            event_filings = pair_filings[event["pair_id"]]
+            validate_pack(record["pack"])
+            validate_stored_extraction(record["catalyst_pack"], record["extraction"])
+            expected_pack = (
+                _event_pack(
+                    record["event"],
+                    event_filings,
+                    source_coverage,
+                    paths,
+                    _offline_only,
+                    offline=True,
+                    parsed_cache=parsed_cache,
+                )[0]
+                if record["scheduled"]
+                else _empty_pack(record["event"], RESEARCH_EVIDENCE_POLICY)
             )
-        )
-        audits.append(
-            {
-                "event_id": event["event_id"],
-                "pair_id": event["pair_id"],
-                "event_timestamp": event["event_timestamp"],
-                "scheduled": scheduled,
-                "catalyst_scheduled": catalyst_scheduled,
-                "catalyst_status": record["extraction"]["status"],
-                "reason_codes": record["extraction"]["reason_codes"],
-                "coverage_a": record["pack"]["coverage"]["A"]["status"],
-                "coverage_b": record["pack"]["coverage"]["B"]["status"],
-                "tone_a": record["tone"]["legs"]["A"]["status"],
-                "tone_b": record["tone"]["legs"]["B"]["status"],
-            }
-        )
+            if record["pack"] != expected_pack:
+                raise ValueError(
+                    "Research evidence differs from raw-source scientific reconstruction"
+                )
+            selected_filing_ids.update(record["pack"].get("selected_filing_ids", []))
+            if record["catalyst_pack"] != (
+                expected_pack
+                if catalyst_scheduled
+                else _empty_pack(event, RESEARCH_EVIDENCE_POLICY)
+            ) or (not catalyst_scheduled and record["extraction"]["status"] != "UNKNOWN"):
+                raise ValueError(
+                    "Research catalyst evidence or response violates the frozen schedule"
+                )
+            for chunk in record["pack"]["chunks"]:
+                if (
+                    sha256_file(confined_path(cache_root, chunk["raw_file_path"]))
+                    != chunk["sha256"]
+                ):
+                    raise ValueError("Research intelligence evidence raw provenance differs")
+            extractions.append(record["extraction"])
+            tone_features = validate_sentiment_result(
+                record["pack"],
+                record["tone"],
+                leg_security_ids=[event["leg_a_security_id"], event["leg_b_security_id"]],
+                policy=tone_policy,
+            )
+            tones.append(dict(event_id=event["event_id"], **tone_features))
+            metadata_rows.append(
+                dict(
+                    event_id=event["event_id"],
+                    **metadata_event_features(event, event_filings, source_coverage),
+                )
+            )
+            audits.append(
+                {
+                    "event_id": event["event_id"],
+                    "pair_id": event["pair_id"],
+                    "event_timestamp": event["event_timestamp"],
+                    "scheduled": scheduled,
+                    "catalyst_scheduled": catalyst_scheduled,
+                    "catalyst_status": record["extraction"]["status"],
+                    "reason_codes": record["extraction"]["reason_codes"],
+                    "coverage_a": record["pack"]["coverage"]["A"]["status"],
+                    "coverage_b": record["pack"]["coverage"]["B"]["status"],
+                    "tone_a": record["tone"]["legs"]["A"]["status"],
+                    "tone_b": record["tone"]["legs"]["B"]["status"],
+                }
+            )
     if _cache_inventory(selected_filing_ids, paths, filings) != manifest["cache_files"]:
         raise ValueError("Research intelligence source cache inventory/checksum differs")
     expected = (

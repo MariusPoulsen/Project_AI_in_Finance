@@ -7,7 +7,9 @@ and 736 fixed pairs, uses earlier history, and separates fitting, calibration an
 assessment. The completed original Phase 0–4 experiment remains a reproducible
 reference; its artifacts are not overwritten.
 
-**Release state:** the full v2 feature job is running. Its scheduled development
+**Release state:** the partial quality-v2 feature batch was intentionally stopped
+with 1,494 checkpoints preserved. The replacement `development_primary_v2` awaits
+the reviewed operational fix and source freeze. The full scheduled development
 union contains 37,421 distinct pair/time events; this is not an assessment sample
 size or a count of successes. Actual model fits, independent verification and
 main-branch promotion are pending. No improvement of B over A has been established.
@@ -42,8 +44,10 @@ in the current PowerShell session.
 V2 defaults to `data/research_v2`, with a separate local DuckDB database and immutable
 source, evidence and model generations. Use `--project-root` when launching from
 another directory and pass `--workspace-root` explicitly to use another workspace.
-Relative workspace paths resolve against the repository. Keep the original
-workspace separate. Source checkouts do not include generated data or model weights.
+Relative workspace paths resolve against the repository. `SB_WORKSPACE_ROOT` also
+sets the workspace for the CLI and read-only app; an explicit CLI path takes
+precedence. Keep the original workspace separate. Source checkouts do not include
+generated data or model weights.
 
 For real source jobs, put the following in the ignored local `.env` or the process
 environment:
@@ -73,10 +77,10 @@ when reproducing the accepted study; do not create a fresh vendor capture and
 call it the same research run.
 
 ```shell
-uv run --frozen --extra nlp structural-break build-intelligence --registry-version REGISTRY_VERSION --batch-name development_quality_v2 --sec-source source_v3 --sentiment-preprocessing sec-sentence-quality-wordpiece-v2 --catalyst-max-events 500 --download-model
-uv run --frozen --extra nlp structural-break train-models --registry-version REGISTRY_VERSION --batch-name development_quality_v2 --horizon 20
-uv run --frozen --extra nlp structural-break train-models --registry-version REGISTRY_VERSION --batch-name development_quality_v2 --horizon 10
-uv run --frozen --extra nlp structural-break train-models --registry-version REGISTRY_VERSION --batch-name development_quality_v2 --horizon 30
+uv run --frozen --extra nlp structural-break build-intelligence --registry-version REGISTRY_VERSION --batch-name development_primary_v2 --sec-source source_v3 --sentiment-preprocessing sec-sentence-quality-wordpiece-v2 --catalyst-max-events 500 --download-model
+uv run --frozen --extra nlp structural-break train-models --registry-version REGISTRY_VERSION --batch-name development_primary_v2 --horizon 20
+uv run --frozen --extra nlp structural-break train-models --registry-version REGISTRY_VERSION --batch-name development_primary_v2 --horizon 10
+uv run --frozen --extra nlp structural-break train-models --registry-version REGISTRY_VERSION --batch-name development_primary_v2 --horizon 30
 uv run --frozen --extra nlp structural-break verify-models --model-version MODEL_VERSION
 ```
 
@@ -121,6 +125,19 @@ available in earlier years. The earlier 28-pair assessment was already observed.
 See the protocol for these limits and the eight-quarter assessment uncertainty.
 
 ## Read-only app and verification
+
+After all three genuine model evaluations and independent verifications succeed,
+publish readiness using their completed pipeline receipt and its bound hosted-CI
+evidence:
+
+```shell
+uv run --frozen structural-break promote-primary --pipeline-receipt PIPELINE_RECEIPT --ci-gate CI_GATE_RECEIPT
+```
+
+This command prints `primary_version` and records the accepted publication only
+after fresh source and native-model checks. Use exact receipts for the reviewed
+generation; fixture success or an incomplete pipeline cannot publish readiness.
+Publication does not establish B improvement or unlock final-test outcomes.
 
 The promoted primary app is launched with:
 

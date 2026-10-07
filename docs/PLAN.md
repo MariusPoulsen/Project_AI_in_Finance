@@ -217,11 +217,13 @@ improvement result has been established. The original P4 acceptance remains vali
 - [x] Verify the separately versioned FIT-input FinBERT quality-v2 amendment (production tokenizer receipt, exact 19-record legacy replay and genuine CPU/cache smoke passed; policies/proofs/caches preserved and post-cohort timing disclosed).
 - [x] Verify the science-identical compact evidence-union memory change (100 focused checks, whole Ruff/133-file format, mypy/66-source and final four-model integration checks passed).
 - [x] Commit/freeze the amended code at `2dd54bcb`, launch the new immutable batch at 2026-10-07 05:17:15 UTC, freeze its inputs during guarded startup before event processing and pass fresh hosted CI.
-- [ ] Generate genuine SEC text features and disclose inference/source coverage (legacy `development_v3_100e1e4` STOPPED/cause unknown; quality attempt exited 1 after 1,494 checkpoints with an incomplete SEC-inventory `FileExistsError`; same-input quality resume 1 RUNNING from 08:58:15 UTC over all 37,421 events, with Gemma capped at 500).
+- [ ] Generate genuine SEC text features and disclose inference/source coverage (legacy stop cause unknown; quality first attempt failed on the repaired orphan inventory; resume 1 deliberately stopped during old-prefix replay at 09:40:28 UTC, preserving all 1,494 files; new full 37,421-event `development_primary_v2` launch pending, Gemma capped at 500).
+- [x] Implement and verify the operation-local parsed-frame cache (128 RAM entries plus private spill): 95 focused checks and all 18 actual source-only forced-eviction pack comparisons passed; a fresh verifier-style cache independently parsed eleven inputs. Four native integration checks (128.76 seconds), Ruff/142-file format and default mypy/77-source-script-app also passed; whole-job gain is unmeasured.
+- [ ] Freeze the amended builder/new inputs and pass its exact-head CI, inventory/copy the 1,494 preserved checkpoints with an explicit receipt, independently reconstruct them, then launch `development_primary_v2`.
 - [ ] Fit and independently replay primary and sensitivity A/B comparisons.
 - [ ] Record actual sample counts, uncertainty and positive/negative comparison results.
-- [ ] Complete full-suite/type/release gates for the primary readiness/app/CLI patch (46 focused synthetic readiness/CLI and 18 app checks passed; not actual study results).
-- [ ] After all thirty actual models and native replays finish, publish checked readiness with `structural-break promote-primary --pipeline-receipt .acceptance/research_quality_v2_pipeline_state.json`.
+- [ ] Complete whole-suite and hosted release gates for the primary readiness/app/CLI patch (49 focused readiness/CLI, 18 app and 54 SEC checks passed; default mypy for 77 source, script and app files passed; broad local pytest was cancelled, not passed; `98356bf` both hosted runs passed all six jobs; the later cache source needs its own exact-head CI).
+- [ ] After all thirty actual models and native replays finish, publish checked readiness with `structural-break promote-primary --pipeline-receipt PIPELINE_RECEIPT --ci-gate CI_GATE` bound to the final completed generation, archiving the exact CI bytes.
 - [ ] After actual v2 evaluation and required gates pass, promote v2 to GitHub `main` and the default app/run path, retaining v1 history and immutable artifacts for reference/reproduction.
 - [x] Verify Windows/Linux/Colab compatibility for frozen revision `2dd54bcb` (both hosted runs green; full structured receipt `.acceptance/research_2dd54bc_hosted_ci.json`).
 
@@ -233,7 +235,11 @@ Keep its partial directory and verified caches. The replacement used frozen
 `2dd54bcb` code at process launch; its immutable inputs were published during
 guarded startup before event processing, with SHA-256
 `cf19099ac57ee7f5ba6ab3e37daa6d46dda49a7f4dc63893d6a06d1063f78fea`.
-No actual research A/B assessment preceded the FIT-only amendment.
+No actual research A/B assessment preceded the FIT-only amendment. The later
+three-FIT-event source-only profile motivates the operation-local parsing
+amendment in DECISIONS section 22. Its 95 focused checks and exact 18-pack
+benchmark passed; full-job gain is unmeasured, and the final source/input
+freeze, exact-head CI, checkpoint transition and new batch launch remain pending.
 
 ---
 

@@ -110,6 +110,11 @@ ACTIVE screening.
 - Promotion requires explicit accepted publication identities and independent
   verification. App readiness must fail clearly for missing/incomplete artifacts,
   with no automatic fallback to a sensitivity or a newer unverified directory.
+  Use `structural-break promote-primary --pipeline-receipt PATH --ci-gate PATH`
+  only with the completed genuine three-horizon receipt and its bound hosted-CI
+  evidence. The job performs fresh source/native replay before publication.
+  Set `SB_WORKSPACE_ROOT` for a relocated workspace in both CLI and app; an
+  explicit CLI `--workspace-root` takes precedence.
 
 ## Execute the plan and resolve ambiguity
 

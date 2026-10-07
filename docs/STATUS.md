@@ -2,7 +2,7 @@
 
 ## Research v2 — authorized development redesign
 
-Updated: 2026-10-07 09:12 UTC. Branch: `research-v2`. Status: **IN PROGRESS**.
+Updated: 2026-10-07 10:05 UTC. Branch: `research-v2`. Status: **IN PROGRESS**.
 The user delegated scientific design and implementation. The expanded genuine
 Model A/B comparison is pending; improvement has not yet been established.
 The completed original Phase 4 artifacts and 2024–2025 outcome lock are preserved.
@@ -22,8 +22,11 @@ every native bundle. It publishes immutable workspace `manifest.json` and
 `verification_receipt.json` and the exact `hosted_ci_gate.json` evidence bytes;
 the read-only default app accepts only checked
 versions. V1 remains at `app/reference_streamlit_app.py`. This release patch
-has passed focused synthetic readiness/CLI, 18 app and 54 SEC-cache recovery checks; its broader
-release gates and the actual primary publication remain pending. See
+has passed 49 focused synthetic readiness/CLI, 18 app and 54 SEC-cache recovery
+checks; default mypy for 77 source, script and app files passed. Broad local
+pytest was cancelled, not passed. Both hosted `98356bf` runs passed all six jobs. The cache source needs new
+exact-head CI, and actual primary
+publication remains pending. See
 [the promotion command](RESEARCH_V2_RUNBOOK.md#promote-v2-as-primary).
 
 The frozen v2 roster contains 250 current-survivor domestic issuers, 40 business
@@ -78,8 +81,12 @@ Resume 1 launched at 2026-10-07 08:58:15 UTC (launcher PID 16032, interpreter
 `2dd54bcb`/runtime hash `834f66f8...`. Launch proof:
 `.acceptance/research_quality_v2_resume_1_launch.json`, SHA-256
 `587e55d4ddc0f8d006a5b476d319c205a973055f27beed6c6dbe7a6a77447613`.
-It is **RUNNING**, replaying the preserved prefix before continuing the full
-37,421-event union. Corrected source_v3, quality-v2 FinBERT, the separate
+At 09:40:28 UTC the worker was **DELIBERATELY STOPPED** while replaying index
+1,209 below the 1,494 preserved files, before any new acquisition/inference
+branch. Controlled-stop proof:
+`.acceptance/research_quality_v2_controlled_stop.json`, SHA-256
+`53224184ed64f61c3db3c0d8167968de287634301926e246f7f72d1c818fa4e8`.
+All old files and receipts remain preserved; no full feature manifest exists. Corrected source_v3, quality-v2 FinBERT, the separate
 500-event catalyst pilot, `max_events: null` and enabled inference are unchanged.
 Full features and actual A/B fitting remain pending; final outcomes are locked.
 
@@ -89,9 +96,38 @@ resumed feature-process handle and waits for successful CLI exit, the complete
 h20/h10/h30 fit/replay commands, ten bundles per horizon. State:
 `.acceptance/research_quality_v2_pipeline_state.json`; runner SHA-256
 `301df1bcb43ea19605f59d379fdce363f9d2ea40eee3e221d8c2a7a7b5cbbd05`.
-It is `WAITING_FOR_FULL_FEATURE_BATCH` with zero fitting stages recorded.
+That supervisor reached `STOPPED_AT_GATE` at 09:40:29 UTC, with zero fitting
+stages recorded and all four resume/supervisor processes absent.
 This is an operational continuation, not a scheduled automation, provider-call
 retry or final-test unlock.
+
+A source-only profile of three existing FIT 2006 events measured a parsing
+bottleneck before any actual A/B assessment: exact pack/tone replay passed,
+pack rebuilds totaled 8.052 seconds cold versus 1.310 hot, and HTML parsing was
+about 82% of cold cumulative work. No APIs, neural inference or outcomes were
+used. The concurrent host/unflushed OS cache prevent a full-job speedup or ETA
+claim. Profile receipt SHA-256:
+`fb2e345f1e872969fb2d7aa5a7dbf3d9defd4fb0af37307b383b5ca360a2a325`.
+
+The fresh-empty per-operation parsed-frame cache (128 RAM entries plus private
+spill) is implemented for builder and independent verifier. Raw-hash,
+SGML and cutoff checks stay mandatory; no builder parser-cache artifact may be
+trusted by verification. Ninety-five focused checks and all eighteen respective
+checkpoint-pack comparisons passed. Under forced one-hot-frame eviction,
+baseline parsing made 22 calls versus eleven builder calls; a fresh verifier-
+style operation independently made eleven and trusted no builder spill. This
+was not the full verifier/job or a whole-production speedup test. Benchmark
+receipt SHA-256:
+`5c8e02a0b6500583d32bba763d1c93cb729d3b572db5218465e3904ea3f9834c`.
+The amended cache also passed four native model/evidence integration tests in
+128.76 seconds, whole Ruff/142-file format checks and default mypy for 77 source, script and app
+files. These are engineering/synthetic integration checks, not actual study
+fits. The final amended source still requires its own exact-head hosted CI.
+Final source/input freeze, exact-head CI, explicit 1,494-file checkpoint-copy/
+reconstruction receipt and new immutable
+`development_primary_v2` launch are pending. Text policy, full 37,421-event
+scope, catalyst schedule and scientific protocol are unchanged. Actual fits,
+primary/main promotion and predictive gains remain unestablished.
 
 A separately versioned FIT-input amendment is tested and committed at
 `2dd54bcb`: `sec-sentence-quality-wordpiece-v2`, plus a science-identical compact
@@ -129,7 +165,7 @@ Gemma diagnostic final JSON passed offline validation after
 excluding explicit thought-channel parts. These are adapter checks, not completed
 historical NLP coverage or predictive results.
 
-Observed local checks: Ruff lint passed; strict mypy passed for 70 source files;
+Observed local checks: Ruff lint passed; default mypy passed for 77 source, script and app files;
 all installed dependencies are compatible. The 32 focused pipeline checks passed
 in 167.43 seconds, including causal two-pair registries for all three horizons,
 full evidence-to-model flow, replay of ten native bundles, failed-publication
@@ -794,8 +830,11 @@ and incomplete with 1,494 preserved checkpoints, cause unknown. The tested
 replacement `development_quality_v2` first launched at 2026-10-07 05:17:15 UTC,
 failed with a verified incomplete SEC-capture `FileExistsError` after 1,494
 checkpoints, then resumed at 08:58:15 UTC after the preserving inventory repair.
-Resume 1 is RUNNING under unchanged `2dd54bcb` code/inputs, with 37,421 events
-and 500 catalyst events scheduled separately. Full feature coverage
+Resume 1 was deliberately stopped at 09:40:28 UTC during preserved-prefix
+replay; no new acquisition/inference branch had begun. The planned immutable
+`development_primary_v2` batch retains 37,421 events and the separate 500-event
+catalyst schedule after cache acceptance, a fresh code/input freeze and guarded
+checkpoint-copy/reconstruction receipts. Full feature coverage
 and matched fits remain pending. No new predictive improvement claim is
 supported yet, and 2024–2025
 outcomes remain locked.

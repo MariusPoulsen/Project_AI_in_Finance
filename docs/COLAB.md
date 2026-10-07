@@ -195,15 +195,18 @@ and 736 pairs, retaining the original 28 orientations. Development sources cover
 previous-session VIX is used, and admissible SEC evidence uses conservative clock
 bounds and issuer continuity.
 
-The current full job schedules 37,421 distinct pair/time observations across the
-three horizons. This union is not the assessment sample or a success count.
+The full job schedules 37,421 distinct pair/time observations across the three
+horizons. The earlier partial quality batch was intentionally stopped with 1,494
+checkpoints preserved; the replacement `development_primary_v2` awaits reviewed
+operational fixes and source freeze. This union is not the assessment sample or
+a success count.
 Source failures/exclusions and UNKNOWN evidence remain explicit. Partial source
 flags are dry runs, not complete studies. Keep computational package source
 unchanged while registry/model jobs run.
 
 ```python
 registry_version = input("Exact successfully registered research_version: ").strip()
-batch_name = "development_quality_v2"
+batch_name = "development_primary_v2"
 research_job(
     [
         "build-intelligence",
@@ -278,6 +281,20 @@ versus A at twenty sessions. Report all families/ablations and ten-/thirty-sessi
 sensitivities, denominators, successes, coverage and paired uncertainty. Negative
 and inconclusive results remain valid results; no B improvement is assumed.
 
+Once the genuine three-horizon pipeline is complete, publish the exact verified
+generation using its completed operational receipt and bound hosted-CI evidence:
+
+```python
+pipeline_receipt = input("Completed verified pipeline receipt path: ").strip()
+ci_gate = input("Exact bound hosted-CI receipt path: ").strip()
+research_job(["promote-primary", "--pipeline-receipt", pipeline_receipt, "--ci-gate", ci_gate])
+```
+
+The command performs fresh source and native-model checks, then prints
+`primary_version`. An incomplete run or fixture receipt cannot publish readiness.
+Restore these exact receipts with the workspace when publishing from another
+machine; do not fabricate completion evidence or choose another generation.
+
 The survivor-conditioned roster, current business groups, retrospective Yahoo
 adjustments and modern FinBERT/Gemma historical extraction are disclosed research
 limits. Forecast improvement is not economic profitability. Read
@@ -314,6 +331,9 @@ is `uv run --frozen streamlit run app/streamlit_app.py`. A clone without the
 generated workspace cannot display actual results. Colab supports the batch
 workflow; a public app deployment/tunnel is not required for it. The accepted
 publication/readiness instructions are recorded in [STATUS.md](STATUS.md).
+For a relocated local workspace, set `SB_WORKSPACE_ROOT` in the ignored local
+environment before launching the app. The CLI also accepts this setting, with
+explicit `--workspace-root` taking precedence.
 
 ## Original experiment and offline checks
 

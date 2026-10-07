@@ -188,8 +188,10 @@ completed inventory SHA-256
 `eaf379b638169a502f356d37f9e0ce98b959cb88c0c7d1192347c26f0d52eef2`.
 This body-cache repair does not alter SEC metadata source_v1/v2/v3 and does not
 explain the unknown earlier legacy-stop cause. Resume 1 launched at 08:58:15 UTC
-under identical frozen code/inputs and is RUNNING, replaying the 1,494 preserved
-quality checkpoints. Launch proof:
+under identical frozen code/inputs. It was deliberately stopped at 09:40:28 UTC
+at replay index 1,209 before any new acquisition/inference branch. All 1,494
+quality checkpoints and source snapshots remain preserved; the new parsing-cache
+transition and `development_primary_v2` launch are pending. Launch proof:
 `.acceptance/research_quality_v2_resume_1_launch.json`, SHA-256
 `587e55d4ddc0f8d006a5b476d319c205a973055f27beed6c6dbe7a6a77447613`.
 The quality batch uses the separately versioned
@@ -231,3 +233,23 @@ The full structured result is `.acceptance/research_2dd54bc_hosted_ci.json`,
 SHA-256 `4311287edfcd2aa8fc1f095ffae2b099ec549f9ee5207c1f74d9d26f8b2c111e`.
 These checks cover the quality, reporting and compact-union amendments; they do
 not establish complete historical feature coverage or predictive improvement.
+
+The later operation-local parsing amendment does not change this accepted SEC
+metadata source or its time envelope. A source-only three-FIT-event profile
+motivated private 128-entry RAM/spill caching. Implementation, 95 focused
+checks and eighteen exact corresponding pack comparisons passed: forced
+one-hot-frame baseline parsing 22 calls, builder eleven and a fresh verifier-
+style operation its own eleven without trusting builder spill. Receipt:
+`.acceptance/quality_v2_operation_spill_benchmark.json`, SHA-256
+`5c8e02a0b6500583d32bba763d1c93cb729d3b572db5218465e3904ea3f9834c`.
+The full independent verifier/job was not invoked. The amended cache also passed four native model/evidence integration tests in
+128.76 seconds, whole Ruff/142-file format checks and default mypy for 77 source, script and app
+files. These are engineering/synthetic integration checks, not actual study
+fits. The final amended source still requires its own exact-head hosted CI.
+Final source/input freeze,
+exact-head CI, transition and new `development_primary_v2` launch remain pending. Every builder and independent
+verifier starts empty and retains raw-hash, SGML and cutoff checks rather than
+trusting a persisted builder parser cache. Preserve the controlled-stopped
+quality generation's 1,494 exact files. Adopt them only with a frozen new input
+identity, explicit copy inventory and independent full raw reconstruction.
+The profile is not a whole-job speedup claim; actual A/B fits remain pending.

@@ -30,6 +30,7 @@ from structural_break.research.intelligence import (
     verify_event_intelligence,
     verify_sec_metadata,
 )
+from structural_break.research.parsing_cache import OperationParsingCache
 from structural_break.research.universe import freeze_universe
 from structural_break.storage.files import sha256_file
 
@@ -241,6 +242,98 @@ def test_bounded_event_pipeline_has_all48_features_and_keeps_every_event(
         event_registry_id="fixture-events",
     )
     assert repeat == manifest and calls == ["earlier"]
+
+
+def test_operation_spill_parses_once_and_independent_verifier_starts_fresh(
+    freeze: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    metadata_dir = tmp_path / "metadata"
+    collect_sec_metadata(freeze, metadata_dir, get=source([]))
+    output = tmp_path / "intelligence"
+    caches: list[OperationParsingCache] = []
+    parse_keys: list[list[str]] = []
+    spill_reads: list[int] = []
+    active: list[int] = []
+    parse = intelligence.parse_documents
+
+    class OneHotCache(OperationParsingCache):
+        def __init__(self) -> None:
+            assert not active, "Builder cache must close before independent verifier starts"
+            super().__init__(max_hot_frames=1)
+            self.operation_index = len(caches)
+            caches.append(self)
+            parse_keys.append([])
+            spill_reads.append(0)
+
+        def __enter__(self):
+            active.append(self.operation_index)
+            return super().__enter__()
+
+        def __getitem__(self, key: str) -> pd.DataFrame:
+            if key not in self._hot:
+                spill_reads[self.operation_index] += 1
+            return super().__getitem__(key)
+
+        def __exit__(self, *args: Any) -> None:
+            super().__exit__(*args)
+            active.pop()
+
+    def tracked_parse(documents, policy):
+        assert active, "Every operation must own an empty, scoped parsing cache"
+        parse_keys[active[-1]].append(intelligence._sha(documents))
+        return parse(documents, policy)
+
+    monkeypatch.setattr(intelligence, "OperationParsingCache", OneHotCache)
+    monkeypatch.setattr(intelligence, "parse_documents", tracked_parse)
+    manifest = build_event_intelligence(
+        event_rows(), freeze, metadata_dir, output, provider=None, get=source([])
+    )
+    assert len(caches) == 2  # builder and its fully independent raw verifier
+    assert verify_event_intelligence(output, freeze, metadata_dir) == manifest
+    assert len(caches) == 3
+    assert len(parse_keys[0]) > 1  # every pass must force genuine hot-frame eviction
+    assert parse_keys[0] == parse_keys[1] == parse_keys[2]
+    assert all(len(keys) == len(set(keys)) for keys in parse_keys)
+    assert all(reads > 0 for reads in spill_reads)
+    assert all(cache._closed and not cache._directory.exists() for cache in caches)
+    assert not active
+    frame = pd.read_parquet(output / "features.parquet")
+    assert frame.sentiment_a_unknown.eq(1).all() and frame.sentiment_b_unknown.eq(1).all()
+
+
+def test_raw_source_tampering_is_checked_before_reusing_a_parsed_cache_hit(
+    freeze: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    metadata_dir = tmp_path / "metadata"
+    collect_sec_metadata(freeze, metadata_dir, get=source([]))
+    output = tmp_path / "intelligence"
+    event_pack = intelligence._event_pack
+    calls = 0
+    caches: list[OperationParsingCache] = []
+
+    class TrackedCache(OperationParsingCache):
+        def __init__(self) -> None:
+            super().__init__()
+            caches.append(self)
+
+    def mutate_before_second_event(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            assert caches[0].entry_count > 0
+            body = next((output / "data/raw/sec/filings").glob("**/primary_document.html"))
+            body.write_bytes(body.read_bytes() + b"changed source")
+        return event_pack(*args, **kwargs)
+
+    monkeypatch.setattr(intelligence, "OperationParsingCache", TrackedCache)
+    monkeypatch.setattr(intelligence, "_event_pack", mutate_before_second_event)
+    with pytest.raises(ValueError, match="hash mismatch|checksum"):
+        build_event_intelligence(
+            event_rows(), freeze, metadata_dir, output, provider=None, get=source([])
+        )
+    assert calls == 2 and len(caches) == 1
+    assert caches[0]._closed and not caches[0]._directory.exists()
+    assert not (output / "manifest.json").exists()
 
 
 def test_quota_keeps_rows_and_does_not_hide_tone_features(freeze: Path, tmp_path: Path) -> None:

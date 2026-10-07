@@ -77,8 +77,10 @@ Replace `REGISTRY_VERSION` below with the printed version. The actual expanded
 registry is `research_registry_0bd415d2a5af1f4891dc1f0d`. Immutable batch
 `development_quality_v2` first launched at 2026-10-07 05:17:15 UTC from frozen
 commit `2dd54bcb068eadd57212b809d1770a99c033b81d`. The first attempt failed as
-described below; resume 1 launched at 08:58:15 UTC under identical code/inputs
-and is RUNNING. Source/tone completion and actual A/B fits remain pending.
+described below; resume 1 launched at 08:58:15 UTC under identical code/inputs,
+then was deliberately stopped at 09:40:28 UTC during old-prefix replay. New
+`development_primary_v2` is planned after the completed focused cache checks
+and a fresh code/input freeze with its own exact-head CI. Source/tone completion and actual A/B fits remain pending.
 
 Legacy batch `development_v3_100e1e4` used frozen main source
 `100e1e48`, with 37,421 scheduled events, `--sec-source source_v3` and
@@ -128,8 +130,14 @@ hash. Its receipt is `.acceptance/research_quality_v2_resume_1_launch.json`,
 SHA-256 `587e55d4ddc0f8d006a5b476d319c205a973055f27beed6c6dbe7a6a77447613`.
 Progress: `.acceptance/research_full_intelligence_quality_v2_resume1.log` and
 `.acceptance/research_full_intelligence_quality_v2_resume1.stderr.log`.
-The resumed command replays the preserved prefix before continuing; replayed
-checkpoint counts are not a completed 37,421-event manifest.
+The resumed command replayed the preserved prefix. At 09:40:28 UTC it was
+deliberately stopped with replay index 1,209 below the 1,494 preserved files,
+before any new event acquisition/inference branch. Controlled-stop receipt:
+`.acceptance/research_quality_v2_controlled_stop.json`, SHA-256
+`53224184ed64f61c3db3c0d8167968de287634301926e246f7f72d1c818fa4e8`.
+The supervisor recorded `STOPPED_AT_GATE` at 09:40:29 UTC, with zero model
+stages and final data locked. Keep the generation and terminal receipts;
+replayed checkpoint counts do not establish a full 37,421-event manifest.
 
 An ignored operational supervisor,
 `.acceptance/run_research_quality_pipeline.py`, SHA-256
@@ -140,8 +148,9 @@ CLI exit, the complete 37,421-event manifest and the explicit frozen gate
 `.acceptance/research_quality_v2_ci_gate.json` before invoking the existing production CLI for h20/h10/h30 fits (ten bundles
 per horizon) and independent native verification. The actual supervisor PID is
 34252, with launcher PID 2428; state is recorded in
-`.acceptance/research_quality_v2_pipeline_state.json`. At this update it is
-`WAITING_FOR_FULL_FEATURE_BATCH` with no fitting stages recorded. This is an
+`.acceptance/research_quality_v2_pipeline_state.json`. That old supervisor is
+now `STOPPED_AT_GATE` after the controlled interruption, with no fitting stages
+recorded. This is an
 operational continuation, not a scheduled automation or provider-call retry;
 it cannot unlock final data. Launching it does not prove feature/model completion.
 
@@ -268,6 +277,53 @@ Keep the virtual environment and active database on `/content`, and archive the
 closed workspace between sessions. A current-survivor Yahoo/SEC roster and
 modern FinBERT extraction remain disclosed research limitations on either host.
 
+## Parsing profile and guarded batch transition
+
+The old generation is preserved after a controlled stop, not completed.
+`.acceptance/quality_v2_replay_stage_profile.json` (SHA-256
+`fb2e345f1e872969fb2d7aa5a7dbf3d9defd4fb0af37307b383b5ca360a2a325`)
+profiles only the first three existing FIT 2006 events at frozen source
+`2dd54bcb`/`834f66f8...`. Exact pack/tone replay passed; their pack rebuilds
+were 8.052 seconds with a cold process-local parsed-frame cache and 1.310 hot.
+`parse_documents` used 6.602 of 8.050 cumulative seconds. The runner hash is
+`8674c4ce76b1ce6833f5176b1d90552d8f76462f94ae5ea14c575d2c5be1a6ea`.
+No APIs, neural inference or outcomes were used; OS caches were not flushed and
+the host was concurrently active. Do not extrapolate a full-job ETA or speedup.
+
+A bounded 128-entry RAM cache with private disk spill is implemented for one
+operation at a time. Each builder and verifier must start empty, retain
+raw-hash/SGML/cutoff checks and independently parse each distinct verified raw
+inventory; verifier reuse of a builder-generated parser cache is forbidden.
+The implementation passed 95 focused checks. The source-only forced-eviction
+benchmark `.acceptance/quality_v2_operation_spill_benchmark.json`, SHA-256
+`5c8e02a0b6500583d32bba763d1c93cb729d3b572db5218465e3904ea3f9834c`,
+used the same three FIT 2006 inputs with only one hot frame: repeated parsing
+fell from 22 baseline calls to 11 builder calls for eleven distinct inventories.
+A fresh verifier-style operation made its own eleven parses and reused no
+builder spill. All eighteen pack reconstructions matched their respective
+original checkpoint bytes, with exact pandas-frame checks. The full independent
+verifier/job was not invoked. Fixed operation order, unflushed OS caches and
+artificial one-frame eviction prevent a full-production speedup or ETA claim.
+The amended cache also passed four native model/evidence integration tests in
+128.76 seconds, whole Ruff/142-file format checks and default mypy for 77 source, script and app
+files. These are engineering/synthetic integration checks, not actual study
+fits. The final amended source still requires its own exact-head hosted CI.
+These checks cover the bounded cache and sample equivalence; the new source
+freeze, exact-head CI and full guarded checkpoint transition remain pending.
+
+Changed builder identity requires a new immutable batch, planned as
+`development_primary_v2`. Preserve the old 1,494 files and source/inference
+caches. Before launch, freeze the final code and its inputs, record a hash-
+verified checkpoint inventory/copy receipt, and reconstruct each adopted prefix
+record from verified raw sources. Reuse must reproduce the complete evidence
+and feature values rather than merely accept the copied JSON. Do not overwrite
+`development_quality_v2/inputs.json` or call it complete. Focused cache
+acceptance has passed; transition receipt, final source/input freeze, exact-head
+CI and new launch remain pending.
+Only after the full 37,421-event manifest may the supervisor fit/replay all
+thirty models and prepare the promotion receipt. Future commands must name the
+new batch and its exact pipeline/CI receipts; none is a result of the old stop.
+
 ## Promote v2 as primary
 
 The user authorized replacing v1 as the primary project after v2 evaluation and
@@ -278,7 +334,9 @@ supervisor has completed all thirty models and their independent replay, run:
 uv run --frozen --extra nlp structural-break promote-primary --pipeline-receipt .acceptance/research_quality_v2_pipeline_state.json --ci-gate .acceptance/research_quality_v2_ci_gate.json
 ```
 
-The explicit receipt must have status
+The paths above are illustrative until the new generation finishes. Supply the
+exact completed pipeline receipt and CI gate for that generation, not the
+preserved stopped quality-v2 state. The explicit receipt must have status
 `ALL_THREE_HORIZONS_FITTED_AND_INDEPENDENTLY_VERIFIED`. The release command
 requires its frozen source and successful hosted-CI gate, six separate successful
 production CLI stage receipts, the full all-events-retained quality-v2
@@ -289,18 +347,28 @@ the actual study.
 
 The printed primary version identifies
 `data/research_v2/artifacts/research/PRIMARY_VERSION/manifest.json` and
-`verification_receipt.json` and `hosted_ci_gate.json`. Keep these immutable: they bind the input pipeline
-receipt, frozen source parents, three evaluations and fresh native checks. The
+`verification_receipt.json` and `hosted_ci_gate.json`. The publisher snapshots
+the exact pipeline and CI-gate bytes before fresh native replay, binds the CI
+checksum and parsed object, and archives the identical gate body. Read-only
+loading checks the archived bytes/proof checksums and parent bindings. Keep
+these artifacts immutable: they bind the input pipeline receipt, frozen source
+parents, three evaluations and fresh native checks. The
 primary app reads only accepted registered versions and their checked artifacts;
 it does not fit models or silently display v1 as the v2 result. The retained v1
 app is `app/reference_streamlit_app.py`. Workspace readiness publication and
 GitHub `main`/default-app promotion are separate delivery steps; both actual
 promotion and predictive results remain pending.
 
-The primary-release patch has passed 46 focused synthetic readiness/CLI checks
-and 18 app checks. Full-suite/type/release checks remain separate open gates;
-the existing green `2dd54bcb` runs verify the frozen study code, not this later
-release patch. These tests do not establish actual fit results or B superiority.
+The primary-release patch has passed 49 focused synthetic readiness/CLI checks
+(16 readiness, seven primary CLI and 26 research CLI), 18 app and 54 SEC checks;
+default mypy for 77 source, script and app files passed. The broad local pytest
+run was cancelled during host contention/source edits and is not a pass. Hosted
+`98356bf` both release runs passed all six jobs. Full structured receipt:
+`.acceptance/research_98356bf_hosted_ci.json`, SHA-256
+`3536c28aaa383120be82983b0899e0aca152dd3308ed66fb844694dbadd1214a`.
+The cache amendment needs a new exact-head CI after its freeze. The earlier green
+`2dd54bcb` gate covers the frozen model code; future primary/cache-release CI
+is separate. These tests do not establish actual fit results or B superiority.
 
 ## Acceptance state
 
@@ -337,5 +405,8 @@ Production quality-v2 tokenizer acceptance and genuine pinned CPU inference on
 the first ADBE/ADSK FIT event passed: 31.766 seconds, exact cache replay, all five
 asset hashes verified and 388 legacy cache files unchanged, with no network,
 LLM or outcomes. This timing is not compared with the different V/MA legacy
-smoke. New batch `development_quality_v2` is RUNNING under its own immutable
-freeze; no actual research Model B fit or assessment result has been produced.
+smoke. Old `development_quality_v2` is deliberately stopped and preserved.
+Cache implementation, 95 focused checks and the exact eighteen-pack benchmark
+passed; final source/input freeze, exact-head CI, guarded transition and new
+`development_primary_v2` launch remain pending; no actual research Model B fit or assessment result has
+been produced.

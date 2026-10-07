@@ -606,8 +606,10 @@ The user will prepare the final academic written report and presentation/video s
   exhibit, preserving all six original files and retrieval times. Recovery proof:
   `.acceptance/sec_orphan_recovery_000119312506199058.json`, SHA-256
   `65ab238448b5d055ca80ed771ed62cc0cc7cbe6063272eb20e8c553a874216d7`.
-  Resume 1 launched at 08:58:15 UTC under identical code/inputs and is RUNNING;
-  it replays the 1,494 preserved quality checkpoints. Do not attribute this
+  Resume 1 launched at 08:58:15 UTC under identical code/inputs. It was
+  deliberately stopped at 09:40:28 UTC while replaying checkpoint 1,209 of the
+  1,494 preserved quality files; no new acquisition/inference branch had begun.
+  The stopped generation is preserved; the parsing amendment is in section 22. Do not attribute this
   known quality-attempt failure to the unknown legacy-stop cause. All actual
   A/B comparisons remain pending.
 - Development amendment on 2026-10-06, after constructing the quantitative
@@ -693,8 +695,65 @@ cohorts, model grids, evaluation protocol or final-test lock. Record measured
 A/B results and their limitations, including negative or uncertain results;
 Model B outperformance is not established or guaranteed by promotion.
 Readiness publication uses `structural-break promote-primary --pipeline-receipt
-PATH --ci-gate CI_PATH` only after the complete three-horizon pipeline receipt, source/CI gates
-and fresh native verification of all thirty bundles. Publish immutable workspace
-`manifest.json`/`verification_receipt.json`/`hosted_ci_gate.json` and show only accepted versions in
-the read-only default app. Retain v1 at `app/reference_streamlit_app.py`.
+PATH --ci-gate CI_PATH` only after the complete three-horizon pipeline receipt,
+source/CI gates and fresh native verification of all thirty bundles. Capture
+the exact CI-gate bytes before replay and bind both their checksum and parsed
+object to the receipt. Publish immutable workspace `manifest.json`,
+`verification_receipt.json` and byte-for-byte `hosted_ci_gate.json`; show only
+accepted versions in the read-only default app. Retain v1 at `app/reference_streamlit_app.py`.
 Workspace readiness publication does not itself merge GitHub `main`.
+
+## 22. Source-only parsing amendment before model assessment
+
+On 2026-10-07, after quantitative cohorts and the partial quality-v2 features
+existed but before any actual A/B model assessment, a source-only profile used
+the first three completed FIT 2006 events at frozen `2dd54bcb`. Cold and hot
+process-local parsed-frame passes exactly reproduced their evidence packs and
+stored tone features. The three pack rebuilds totaled 8.052 seconds cold and
+1.310 seconds hot; `parse_documents` accounted for 6.602 of 8.050 cumulative
+seconds (about 82%). There were no API calls, neural-runtime imports/inference or outcome
+reads. Metadata was compared between passes, not to persisted event metadata.
+Receipt: `.acceptance/quality_v2_replay_stage_profile.json`, SHA-256
+`fb2e345f1e872969fb2d7aa5a7dbf3d9defd4fb0af37307b383b5ca360a2a325`;
+runner SHA-256
+`8674c4ce76b1ce6833f5176b1d90552d8f76462f94ae5ea14c575d2c5be1a6ea`.
+The host was concurrently active and OS caches were not flushed. This diagnoses
+a narrow replay bottleneck; it is not a measured full-job speedup or ETA.
+
+The operation-local exact parsed-frame cache is implemented with at most 128
+RAM entries and private disk spill. Every builder and every independent verifier
+starts with an empty cache and parses each distinct verified raw inventory once
+per operation. Do not reuse or trust builder-generated parser-cache artifacts
+in verification. Preserve raw-hash, SGML-clock, cutoff, evidence, full-token-
+denominator and event-feature checks. The optimization must leave text policy,
+catalyst schedule, scientific protocol, quantitative cohorts and models unchanged.
+The implementation passed 95 focused checks. The source-only forced-eviction
+benchmark `.acceptance/quality_v2_operation_spill_benchmark.json`, SHA-256
+`5c8e02a0b6500583d32bba763d1c93cb729d3b572db5218465e3904ea3f9834c`,
+used the same three FIT 2006 inputs with only one hot frame: repeated parsing
+fell from 22 baseline calls to 11 builder calls for eleven distinct inventories.
+A fresh verifier-style operation made its own eleven parses and reused no
+builder spill. All eighteen pack reconstructions matched their respective
+original checkpoint bytes, with exact pandas-frame checks. The full independent
+verifier/job was not invoked. Fixed operation order, unflushed OS caches and
+artificial one-frame eviction prevent a full-production speedup or ETA claim.
+The amended cache also passed four native model/evidence integration tests in
+128.76 seconds, whole Ruff/142-file format checks and default mypy for 77 source, script and app
+files. These are engineering/synthetic integration checks, not actual study
+fits. The final amended source still requires its own exact-head hosted CI.
+New source/input freeze, exact-head CI, checkpoint transition and launch are
+pending.
+
+At 09:40:28 UTC root deliberately stopped the old worker during checkpoint
+replay at index 1,209, below the 1,494 preserved files; no new acquisition or
+inference branch had begun. Stop receipt:
+`.acceptance/research_quality_v2_controlled_stop.json`, SHA-256
+`53224184ed64f61c3db3c0d8167968de287634301926e246f7f72d1c818fa4e8`.
+The old supervisor subsequently recorded `STOPPED_AT_GATE` with zero model
+stages. Preserve the old generation and receipts. Because builder code identity
+changes, freeze a new source/input generation and use planned batch
+`development_primary_v2`; inventory/copy the 1,494 old checkpoint bytes with an
+explicit transition receipt and independently reconstruct them before reuse.
+Do not relabel the old batch or silently resume it with changed source. Cache
+source/input freeze, exact-head CI, transition, new launch, actual fits and
+main/primary promotion remain pending; final-test outcomes stay locked.

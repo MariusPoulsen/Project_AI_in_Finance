@@ -142,7 +142,8 @@ CLI defaults to `sec-sentence-quality-wordpiece-v2`; legacy reproduction uses
 `development_quality_v2` replacement launched at 2026-10-07 05:17:15 UTC only
 after freezing code at committed `2dd54bcb`. Guarded startup froze its own
 inputs/schedule at 05:19:55 UTC before event processing. After an operational
-SEC-cache failure, resume 1 launched at 08:58:15 UTC with these exact inputs.
+SEC-cache failure, resume 1 launched at 08:58:15 UTC with these exact inputs and
+was deliberately stopped at 09:40:28 UTC during preserved-checkpoint replay.
 Keep the original partial batch immutable and reuse verified source/Gemma caches; new sentiment policy identities create new
 tone caches. Quantitative pairs, labels, dates, estimator grids, the 0.65
 threshold and the 500-event catalyst schedule remain unchanged. Full features,
@@ -165,9 +166,38 @@ Its proof is `.acceptance/finbert_quality_real_sec_smoke.json`, SHA-256
 `582866c4f633775a41532b3b0a20914dbe1f13975848d27908034bf0a2059c1c`.
 This is a single-source engineering gate, not a representative NLP study or a
 speed comparison with the different V/MA legacy smoke. The amended commit and
-batch inputs are frozen at `2dd54bcb`, the replacement batch is RUNNING and
-both fresh hosted runs passed. Full source/tone generation and model assessment
+batch inputs were frozen at `2dd54bcb` and both hosted runs passed. The quality
+generation is now deliberately stopped and preserved; the new parsing amendment
+and batch transition below still require their own gates. Full source/tone generation and model assessment
 remain separate, incomplete gates.
+
+## Source-only parsing amendment
+
+The post-cohort operational amendment in DECISIONS section 22 precedes every
+actual A/B assessment. A frozen-source, API/inference/outcome-free profile of
+three completed FIT 2006 events exactly replayed packs and stored tone features:
+8.052 seconds cold versus 1.310 hot for their pack rebuilds, with parsing about
+82% of cold cumulative work. The concurrent host and unflushed OS cache prevent
+a full-job speedup or ETA claim. It does not change evidence, text policy,
+cohorts, labels, grids or the fixed catalyst schedule.
+
+The implemented cache holds 128 parsed inventories in RAM with private
+operation-local spill. Each builder/verifier begins empty and independently reconstructs
+verified raw sources once per distinct inventory; verification must not trust a
+builder-produced parser cache. All raw/SGML/cutoff checks remain in place.
+Ninety-five focused checks and eighteen exact pack reconstructions passed in
+the forced-one-frame source-only benchmark: baseline parsing 22 calls, new
+builder eleven, and a fresh verifier-style operation its own eleven. This is
+not the full verifier/job or a measured production speedup. The amended cache also passed four native model/evidence integration tests in
+128.76 seconds, whole Ruff/142-file format checks and default mypy for 77 source, script and app
+files. These are engineering/synthetic integration checks, not actual study
+fits. The final amended source still requires its own exact-head hosted CI.
+A new source/input
+freeze and exact-head CI are pending. The controlled
+old-prefix stop preserves all 1,494 quality checkpoints. Planned immutable batch
+`development_primary_v2` requires a byte-inventory/copy receipt and full raw-
+source reconstruction before adopting that prefix. Transition, launch, actual
+fits and primary/main promotion remain pending; final outcomes stay locked.
 
 Before actual Model B fits, research v2 prepares
 `sec-json-clock-envelope-v3` for SEC JSON availability. Among 250 matched
@@ -221,8 +251,10 @@ cached response/sidecar pairs lacked a completion manifest. A preserving repair
 completed that one unregistered SEC inventory, with one missing exhibit fetched;
 the frozen registry/policies/input manifest, original responses and retrieval
 timestamps were unchanged.
-Resume 1 launched at 08:58:15 UTC under the exact frozen code/inputs and is RUNNING,
-replaying the 1,494 preserved quality checkpoints. This does not explain the
+Resume 1 launched at 08:58:15 UTC under the exact frozen code/inputs. Root
+deliberately stopped its worker at 09:40:28 UTC after 1,209 preserved-prefix
+replays, before any new acquisition/inference branch. All 1,494 old checkpoint
+bytes remain preserved; the new operation-local parsing transition is pending. This does not explain the
 earlier legacy stop. It retains the full 37,421-event union and separate
 500-event catalyst schedule. Full features and all actual matched A/B fits
 remain pending, with no predictive gain established. Operational receipts are
