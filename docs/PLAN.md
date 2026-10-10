@@ -211,6 +211,7 @@ and recovery records are archived, rather than repeated in this plan.
 - [x] Verify quality-v2 preprocessing, compact aggregation, operation-local parsing and native reporting with offline engineering checks.
 - [x] Freeze detached source `a02aadf` and pass its exact Windows/Linux/Colab hosted CI.
 - [x] Audit and copy 2,290 preserved checkpoints unchanged; launch the full 37,421-event `development_detached_v2` build with the frozen 500-event catalyst schedule.
+- [-] Recover the interrupted 4,727-checkpoint attempt into `development_prefetch_v2` with bounded parallel source preparation, a fresh audit and a new source/CI freeze; retain unchanged scientific inputs.
 - [ ] Complete genuine SEC/metadata/FinBERT feature generation and disclose source/inference coverage.
 - [ ] Fit all thirty primary and sensitivity bundles and independently replay native inference, reports and matched A/B comparisons.
 - [ ] Record actual denominators, positive outcomes, paired uncertainty and positive/negative comparison results.
@@ -220,8 +221,8 @@ and recovery records are archived, rather than repeated in this plan.
 
 The detached worker performs feature generation only. Model fits, independent
 verification, publication and merge are separate gates. It does not open the
-2024–2025 final test or establish Model B improvement. Parallel cleanup remains
-isolated until the frozen worker exits. Commands and recovery are in
+2024–2025 final test or establish Model B improvement. The old worker has exited;
+cleanup and recovery are integrated before the next frozen launch. Commands are in
 `docs/RESEARCH_V2_RUNBOOK.md`.
 
 ---

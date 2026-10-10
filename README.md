@@ -5,8 +5,10 @@ system comparing quantitative Model A with SEC-augmented Model B. Research v2
 uses 250 frozen issuers and 736 fixed business-peer pairs, with separate fitting,
 calibration and assessment periods.
 
-**Current delivery:** the full 37,421-event feature build is running independently
-on the local machine as `development_detached_v2`, frozen at `a02aadf`. This count
+**Current delivery:** the 37,421-event feature build stopped at 4,727 preserved
+checkpoints. Recovery uses a new audited batch, `development_prefetch_v2`, with
+bounded parallel SEC preparation and one unchanged CPU FinBERT model. Saved
+launch/progress/exit receipts establish its actual running state. This count
 is the development union, not an assessment sample or a success count. Actual
 model fits, independent verification, publication and GitHub `main` promotion
 remain pending. Model B improvement has not been established. See

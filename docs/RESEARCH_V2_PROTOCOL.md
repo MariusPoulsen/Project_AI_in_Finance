@@ -262,6 +262,13 @@ and publication still freshly reconstruct every event. Preserve all previous
 source/policy/cache generations and receipt identities. Narrow profiles and
 engineering fixtures do not establish a whole-job speedup or predictive gain.
 
+The opt-in source-prefetch amendment in DECISIONS section 24 overlaps only the
+next chronological event's acquisition/parsing with current-event inference.
+One producer owns HTTP pacing and the parser cache; one coordinator retains
+unchanged Gemma order, FinBERT batches, cache/checkpoint writes and final assembly.
+At most one future event is prepared. It adds no model process, evidence window,
+provider budget or scientific input; independent verification still starts empty.
+
 ## Reproducibility and limits
 
 Write immutable source/protocol/roster/code manifests before constructing labels.

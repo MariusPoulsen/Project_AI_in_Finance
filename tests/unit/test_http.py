@@ -1,5 +1,6 @@
 """HTTP failure, pacing, identity and redirect checks without live requests."""
 
+import http.client
 import urllib.error
 import urllib.request
 from datetime import UTC, datetime
@@ -29,18 +30,36 @@ class FakeClock:
 
 
 class FakeResponse:
-    def __init__(self, body: bytes = b"source bytes", status: int = 200, url: str = SEC_URL):
+    def __init__(
+        self,
+        body: bytes = b"source bytes",
+        status: int = 200,
+        url: str = SEC_URL,
+        *,
+        read_error: Exception | None = None,
+        exit_error: Exception | None = None,
+    ):
         self.body = body
         self.status = status
         self.url = url
+        self.read_error = read_error
+        self.exit_error = exit_error
+        self.read_calls = 0
+        self.exit_calls = 0
 
     def read(self) -> bytes:
+        self.read_calls += 1
+        if self.read_error is not None:
+            raise self.read_error
         return self.body
 
     def __enter__(self) -> "FakeResponse":
         return self
 
     def __exit__(self, *_: object) -> None:
+        self.exit_calls += 1
+        if self.exit_error is not None:
+            raise self.exit_error
         return None
 
 
@@ -176,6 +195,109 @@ def test_transport_failure_retries_and_stops_at_configured_attempt_count(
     assert clock.delays == [1, 2]
     assert caught.value.status_code is None
     assert TEST_AGENT not in str(caught.value)
+
+
+_DROPPED_CONNECTION_ERRORS = [
+    pytest.param(http.client.RemoteDisconnected("peer closed"), id="remote-disconnected"),
+    pytest.param(ConnectionResetError("peer reset"), id="connection-reset"),
+    pytest.param(ConnectionAbortedError("connection aborted"), id="connection-aborted"),
+    pytest.param(BrokenPipeError("broken pipe"), id="broken-pipe"),
+    pytest.param(http.client.IncompleteRead(b"partial", 100), id="incomplete-read"),
+]
+
+
+def transport_outcome(error: Exception, stage: str) -> FakeResponse | Exception:
+    if stage == "open":
+        return error
+    if stage == "read":
+        return FakeResponse(read_error=error)
+    return FakeResponse(exit_error=error)
+
+
+@pytest.mark.parametrize("error", _DROPPED_CONNECTION_ERRORS)
+@pytest.mark.parametrize("stage", ["open", "read", "close"])
+def test_dropped_response_retries_without_returning_partial_bytes(
+    monkeypatch: pytest.MonkeyPatch, error: Exception, stage: str
+) -> None:
+    dropped = transport_outcome(error, stage)
+    complete = FakeResponse(b"complete source bytes")
+    client, opener, clock = client_with_outcomes(monkeypatch, [dropped, complete])
+    response = client.get(SEC_URL)
+    assert response.body == b"complete source bytes"
+    assert response.url == SEC_URL and response.status_code == 200
+    assert len(opener.calls) == 2
+    assert clock.delays == [1]
+    assert all(call[0].get_header("User-agent") == TEST_AGENT for call in opener.calls)
+    assert all(call[0].get_header("Accept-encoding") == "identity" for call in opener.calls)
+    assert complete.exit_calls == 1
+    if isinstance(dropped, FakeResponse):
+        assert dropped.exit_calls == 1
+
+
+@pytest.mark.parametrize("error", _DROPPED_CONNECTION_ERRORS)
+@pytest.mark.parametrize("stage", ["open", "read", "close"])
+def test_dropped_response_exhausts_only_existing_attempt_budget(
+    monkeypatch: pytest.MonkeyPatch, error: Exception, stage: str
+) -> None:
+    outcomes = [transport_outcome(error, stage) for _ in range(3)]
+    client, opener, clock = client_with_outcomes(monkeypatch, outcomes, attempts=3)
+    with pytest.raises(SourceError) as caught:
+        client.get(SEC_URL)
+    assert len(opener.calls) == 3
+    assert clock.delays == [1, 2]
+    assert caught.value.url == SEC_URL
+    assert caught.value.status_code == (None if stage == "open" else 200)
+    assert TEST_AGENT not in str(caught.value)
+    assert b"partial".decode() not in str(caught.value)
+    for outcome in outcomes:
+        if isinstance(outcome, FakeResponse):
+            assert outcome.exit_calls == 1
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        PermissionError("not a transport failure"),
+        ValueError("invalid source"),
+        http.client.BadStatusLine("malformed response"),
+    ],
+)
+@pytest.mark.parametrize("stage", ["open", "read"])
+def test_nontransient_response_failure_is_never_retried(
+    monkeypatch: pytest.MonkeyPatch, error: Exception, stage: str
+) -> None:
+    failed = transport_outcome(error, stage)
+    client, opener, clock = client_with_outcomes(monkeypatch, [failed])
+    with pytest.raises(type(error)):
+        client.get(SEC_URL)
+    assert len(opener.calls) == 1
+    assert not clock.delays
+    if isinstance(failed, FakeResponse):
+        assert failed.exit_calls == 1
+
+
+@pytest.mark.parametrize("status", [401, 403, 404])
+def test_permanent_status_is_not_retried_when_response_cleanup_disconnects(
+    monkeypatch: pytest.MonkeyPatch, status: int
+) -> None:
+    failed = FakeResponse(status=status, exit_error=http.client.RemoteDisconnected("peer closed"))
+    client, opener, clock = client_with_outcomes(monkeypatch, [failed])
+    with pytest.raises(SourceError) as caught:
+        client.get(SEC_URL)
+    assert caught.value.status_code == status
+    assert len(opener.calls) == 1 and not clock.delays
+    assert failed.read_calls == 0 and failed.exit_calls == 1
+
+
+def test_rejected_redirect_is_not_retried_when_response_cleanup_disconnects(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    failed = FakeResponse(url=CBOE_URL, exit_error=http.client.RemoteDisconnected("peer closed"))
+    client, opener, clock = client_with_outcomes(monkeypatch, [failed])
+    with pytest.raises(ValueError, match="same public provider"):
+        client.get(SEC_URL)
+    assert len(opener.calls) == 1 and not clock.delays
+    assert failed.read_calls == 0 and failed.exit_calls == 1
 
 
 @pytest.mark.parametrize("status", [401, 403, 404])

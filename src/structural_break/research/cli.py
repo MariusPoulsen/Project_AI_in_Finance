@@ -135,7 +135,16 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--ci-gate", type=Path, help="Exact hosted CI evidence bound by the receipt"
     )
-    parser.add_argument("--workers", type=int, default=2, choices=range(1, 5))
+    parser.add_argument(
+        "--workers", type=int, default=2, choices=range(1, 5), help="Registry workers only"
+    )
+    parser.add_argument(
+        "--source-prefetch",
+        type=int,
+        choices=(0, 1),
+        default=0,
+        help="Overlap one next-event SEC source preparation with current-event inference",
+    )
     parser.add_argument("--horizon", type=int)
     parser.add_argument(
         "--max-events", type=int, help="Explicit partial source/inference inventory"
@@ -341,6 +350,7 @@ def run_command(
             item["sha256"] for item in parent["inputs"] if item["role"] == "market"
         ),
         progress=progress_callback,
+        source_prefetch=bool(getattr(args, "source_prefetch", 0)),
         resume_audit=getattr(args, "resume_audit", None),
         resume_audit_sha256=getattr(args, "resume_audit_sha256", None),
         checkpoint_source=getattr(args, "checkpoint_source", None),

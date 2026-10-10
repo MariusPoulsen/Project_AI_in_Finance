@@ -33,6 +33,6 @@ are retained. Status in a snapshot is historical.
 
 The seven original PDFs are preserved unchanged in [pdfs/](pdfs/). Markdown
 [component specifications](../specs/README.md) are the normal coding-agent read path.
-The multi-agent PDF is the only present full-scope source for that missing Markdown
-specification; it must be recovered/reviewed before implementing that subsystem.
+The user supplied the [multi-agent Markdown specification](../specs/04_MULTI_AGENT_PIPELINE.md)
+on 2026-10-10; the corresponding PDF remains an original source archive.
 These archives are not the user's academic report or presentation.

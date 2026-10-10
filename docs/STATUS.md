@@ -23,33 +23,39 @@ historical feature coverage or Model B improvement.
 
 ## Current feature generation
 
-`development_detached_v2` launched from frozen source
-`a02aadff17f4be98699780108292e51b95603361` through a WMI service-parent worker.
-The pre-launch audit verified and copied 2,290 existing checkpoint files unchanged;
-remaining events use the full frozen pipeline. Live counts and terminal status
-belong to the saved operational records, not this static document:
+`development_detached_v2` exited 1 on 2026-10-10 at 04:29:49 UTC with
+`RemoteDisconnected`, after saving 4,727 checkpoints. Its workers are absent
+and no complete manifest exists. The exact failed request was not recorded.
+The preserved failed-attempt baseline binds every checkpoint byte:
 
 ```text
-.acceptance/intelligence_20261010T002415Z_e7f267814826/launch.json
-.acceptance/intelligence_20261010T002415Z_e7f267814826/progress.json
-.acceptance/intelligence_20261010T002415Z_e7f267814826/stdout.log
-.acceptance/intelligence_20261010T002415Z_e7f267814826/stderr.log
-.acceptance/intelligence_20261010T002415Z_e7f267814826/exit.json
+.acceptance/detached_v2_failed_attempt_20261010T051843Z_6a54dac86d30/receipt.json
 ```
 
-Audit: `.acceptance/detached_v2_checkpoint_audit.json`, SHA-256
-`db64230b1259f0824e43041860e423c34491f9c00de831503cfbdf36b17dc839`.
-New immutable inputs SHA-256:
-`1aee1fa15376e5b842e3519d3dbb285750f129a47906e6be6626bc17487f4e43`.
-Only engineering code identity changed from the stopped batch's scientific inputs.
-The source, registry, quality-v2 policy, catalyst schedule and final lock were preserved.
+Baseline SHA-256:
+`0a23c5445e4c35353117087b870920406c85fdbb432c17cfa1c8ed94d524242c`.
+The original launch logs and receipts remain preserved. Its original source and
+inputs are unchanged; the prior 2,290-checkpoint audit cannot authorize new code.
 
-Recovery verification passed 82 focused recovery/CLI/intelligence/worker checks,
-67 evidence checks, Ruff, 147-file formatting and strict mypy for 79 files.
-The network-free detachment fixture survived its launching shell and wrote exit 0.
-The exact source's [PR CI](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/38008174822)
-and [branch CI](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/38008170961)
-both passed Windows/Linux and Colab jobs. These are engineering gates, not study outcomes.
+Recovery targets a distinct `development_prefetch_v2` batch after a new source
+freeze, engineering checks and a fresh SHA-bound audit of all 4,727 checkpoints.
+The mode overlaps one next-event SEC preparation with current-event scoring,
+sharing one CPU model and preserving inference settings, event order, the
+500-event Gemma schedule and final lock. Interrupted public-source transfers use
+the existing bounded retry policy. No measured whole-job speedup is established.
+
+Actual audit, launch, progress and exit facts belong to the new operational
+receipts. The [runbook](RESEARCH_V2_RUNBOOK.md) describes the exact recovery and
+manual-status commands; never infer a live worker from this static snapshot.
+
+Local engineering validation passed 139 HTTP/CLI/launch checks, 50 intelligence/
+checkpoint regressions plus both final audited-reuse cases, and 192 evidence/
+extraction/SEC/schedule/parser/progress checks. Cold serial/prefetch fixtures are
+byte-identical; deterministic barriers verify genuine overlap, one outstanding
+source task, owner-thread confinement and ordered failure cleanup. Ruff passes,
+all 155 Python files are formatted, strict mypy passes for 79 source files, the
+PowerShell launcher parses, and all 132 local documentation links resolve.
+These checks do not establish historical model gains or complete study acceptance.
 
 A complete feature `manifest.json` is still required. Audited feature-build success
 records independent raw verification as pending; later model/native/publication
@@ -66,8 +72,8 @@ are not valid release receipts for this generation.
    check the read-only app, then merge the accepted v2 release to GitHub `main`.
 
 The detached worker only builds features. No automatic fitting, publication or
-merge follows it. Keep its live source checkout frozen; parallel documentation
-cleanup is prepared separately. See [the runbook](RESEARCH_V2_RUNBOOK.md) for
+merge follows it. Keep its live source checkout frozen after launch. See
+[the runbook](RESEARCH_V2_RUNBOOK.md) for
 manual status, recovery, evaluation and publication commands.
 
 The [original experiment](archive/README.md#original-experiment), source snapshots,

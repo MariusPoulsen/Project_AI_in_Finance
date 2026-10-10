@@ -54,6 +54,24 @@ def test_detached_worker_accepts_only_sha_bound_fixed_command(tmp_path: Path) ->
         _load_plan(path, "0" * 64)
 
 
+def test_detached_worker_binds_single_source_prefetch_to_launch_plan(tmp_path: Path) -> None:
+    plan, path = _plan(tmp_path)
+    plan["source_prefetch"] = True
+    plan["arguments"].extend(["--source-prefetch", "1"])
+    assert _load_plan(path, _write(path, plan)) == plan
+    plan["source_prefetch"] = False
+    with pytest.raises(ValueError, match="frozen intelligence protocol"):
+        _load_plan(path, _write(path, plan))
+
+
+@pytest.mark.parametrize("mode", [1, "true", None])
+def test_detached_worker_rejects_ambiguous_prefetch_plan(tmp_path: Path, mode: Any) -> None:
+    plan, path = _plan(tmp_path)
+    plan["source_prefetch"] = mode
+    with pytest.raises(ValueError, match="operational boolean"):
+        _load_plan(path, _write(path, plan))
+
+
 @pytest.mark.parametrize(
     ("option", "replacement"),
     [

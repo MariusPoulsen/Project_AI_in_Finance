@@ -209,8 +209,39 @@ def test_intelligence_dispatch_never_passes_targets_and_retains_free_limits(
     assert options["max_retries"] == 1
     assert options["cache_workspace"] == paths.workspace_root / "cache"
     assert options["offline"] is True
+    assert options["source_prefetch"] is False
     assert options["market_manifest_sha256"] == "d" * 64
     assert "synthetic-secret" not in json.dumps(options["provider_config"])
+
+
+def test_source_prefetch_dispatch_preserves_population_and_frozen_policy(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    paths, version, _ = registered_events(tmp_path, monkeypatch)
+    args = cli._parser().parse_args(
+        ["build-intelligence", "--registry-version", version, "--source-prefetch", "1"]
+    )
+    captured: dict[str, Any] = {}
+
+    def build(events: pd.DataFrame, *sources: Any, **options: Any) -> dict[str, Any]:
+        captured.update(events=events, options=options)
+        return {"event_count": len(events)}
+
+    monkeypatch.setattr(cli, "build_event_intelligence", build)
+    assert cli.run_command(args, paths, runtime())["event_count"] == 4
+    options = captured["options"]
+    assert options["source_prefetch"] is True
+    assert options["max_events"] is None
+    assert options["catalyst_max_events"] == 500
+    assert options["sentiment_backend"].device == "cpu"
+    assert options["sentiment_policy"].batch_size == 8
+    assert options["sentiment_policy"].preprocessing_version == cli.QUALITY_PREPROCESSING_VERSION
+
+
+def test_source_prefetch_rejects_unbounded_or_ambiguous_modes() -> None:
+    for value in ("2", "-1", "true"):
+        with pytest.raises(SystemExit):
+            cli._parser().parse_args(["build-intelligence", "--source-prefetch", value])
 
 
 @pytest.mark.parametrize(

@@ -110,6 +110,11 @@ def _load_plan(path: Path, expected_sha256: str) -> dict[str, Any]:
         "--resume-audit-sha256": plan["resume_audit_sha256"],
         "--progress-file": plan["progress"],
     }
+    source_prefetch = plan.get("source_prefetch", False)
+    if type(source_prefetch) is not bool:
+        raise ValueError("Source prefetch must be an explicit operational boolean")
+    if source_prefetch:
+        expected["--source-prefetch"] = "1"
     if options != expected or len(options) * 2 != len(arguments[4:]):
         raise ValueError("Detached command changes the frozen intelligence protocol")
     if plan["final_test_unlocked"] is not False or plan["max_events"] is not None:

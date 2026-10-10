@@ -1,6 +1,6 @@
 # Point-in-Time Event Intelligence, Multi-Agent Investigation & Decision Control
 
-> **Agent-use specification.** Canonical implementation decisions are in [`../DECISIONS.md`](../DECISIONS.md). This Markdown is the coding-agent source of truth for this subsystem. The PDF in `docs/PDFs/` is archival/human-readable only.
+> **Agent-use specification.** Canonical implementation decisions are in [`../DECISIONS.md`](../DECISIONS.md). This Markdown is the coding-agent source of truth for this subsystem. The PDF in `docs/archive/pdfs/` is archival/human-readable only. Current decisions and the frozen v2 protocol override older working defaults here.
 
 # 1. Role, system boundary, and end-to-end workflow
 

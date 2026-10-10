@@ -331,3 +331,31 @@ atomic progress, a service-parent worker and durable exit status. Use
 fit models, publish, retry failed jobs, unlock the final test or merge `main`.
 Keep the live checkout frozen until its worker exits. Parallel repository cleanup
 is prepared in an isolated checkout and is integrated only after the active job.
+
+## 24. Bounded source prefetch and interrupted-connection recovery
+
+On 2026-10-10 the user clarified that parallelism should accelerate the full
+37,421-event feature computation. The preceding detached attempt exited 1 at
+4,727 completed checkpoints with `RemoteDisconnected`; the exact failing request
+was not recorded. Preserve its original bytes, logs and terminal receipts. Its
+baseline is `.acceptance/detached_v2_failed_attempt_20261010T051843Z_6a54dac86d30/receipt.json`,
+SHA-256 `0a23c5445e4c35353117087b870920406c85fdbb432c17cfa1c8ed94d524242c`.
+
+The engineering design overlaps the next chronological event's SEC acquisition
+and parsing with the current event's extraction and local tone scoring. Permit
+only one outstanding source future, with one producer owning its HTTP pacing and
+operation-local parser cache. The coordinator alone performs Gemma/FinBERT calls,
+tone/extraction-cache writes, checkpoint publication, progress and canonical final
+assembly. Share one CPU model; do not multiply model processes or provider budgets.
+Inference batch size, window selection, pinned assets, evidence policy, population,
+source-v3 clock envelope, catalyst schedule, A/B definitions and final lock stay fixed.
+The opt-in `--source-prefetch 1` is operational and recorded in the launch plan.
+
+Disconnected/incomplete public-source transfers use the existing bounded HTTP
+attempt/backoff policy. Discard partial bodies; permanent HTTP errors and rejected
+redirects remain hard failures. This adds no Gemma retries or model fallbacks.
+Prepare and test changes in isolation, audit all retained checkpoints against the
+frozen stopped-attempt baseline, and use new immutable batch `development_prefetch_v2`.
+The audit permits only the engineering builder-code hash difference in scientific
+inputs. Independent verification remains fresh raw replay. Do not claim a measured
+whole-job speedup from synthetic concurrency tests or a cache-only replay benchmark.

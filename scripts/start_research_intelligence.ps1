@@ -25,6 +25,7 @@ param(
     [string] $WorkspaceRoot,
     [ValidatePattern('^[a-z][a-z0-9_]{2,99}$')]
     [string] $BatchName = 'development_detached_v2',
+    [switch] $SourcePrefetch,
     [string] $GitExecutable
 )
 
@@ -160,6 +161,7 @@ try {
         '--catalyst-max-events', '500', '--resume-audit', $ResumeAudit,
         '--resume-audit-sha256', $actualAuditSha256, '--progress-file', $progressPath
     )
+    if ($SourcePrefetch) { $arguments += @('--source-prefetch', '1') }
     $argumentLine = ($arguments | ForEach-Object { ConvertTo-WindowsArgument $_ }) -join ' '
     $command = (ConvertTo-WindowsArgument $python) + ' ' + $argumentLine
     $receipt = [ordered]@{
@@ -175,6 +177,7 @@ try {
         sentiment_preprocessing = 'sec-sentence-quality-wordpiece-v2'
         catalyst_max_events = 500
         max_events = $null
+        source_prefetch = [bool] $SourcePrefetch
         final_test_unlocked = $false
         resume_audit = $ResumeAudit
         resume_audit_sha256 = $actualAuditSha256

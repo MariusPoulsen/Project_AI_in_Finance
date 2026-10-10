@@ -12,10 +12,12 @@ import json
 import re
 from collections import OrderedDict
 from collections.abc import Callable, Collection, Mapping, Sequence
+from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import asdict
 from datetime import UTC, date, datetime
 from pathlib import Path
-from typing import Any, cast
+from types import TracebackType
+from typing import Any, Self, cast
 
 import pandas as pd
 
@@ -886,6 +888,95 @@ def _cache_inventory(
     return inventory
 
 
+class _SourcePackPreparation:
+    """One outstanding source task, with parser state confined to its owner.
+
+    The coordinator consumes a pack before submitting the next event. No source
+    task runs inference, extraction or checkpoint publication. In serial mode
+    the same operation-private parsing cache stays on the calling thread.
+    """
+
+    def __init__(
+        self,
+        prepare: Callable[[int, OperationParsingCache], tuple[dict[str, Any], int]],
+        *,
+        enabled: bool,
+    ) -> None:
+        self._prepare = prepare
+        self._enabled = enabled
+        self._cache: OperationParsingCache | None = None
+        self._executor: ThreadPoolExecutor | None = None
+        self._future: Future[tuple[dict[str, Any], int]] | None = None
+        self._future_index: int | None = None
+        self._open = False
+
+    def _produce(self, index: int) -> tuple[dict[str, Any], int]:
+        if self._cache is None:
+            self._cache = OperationParsingCache().__enter__()
+        return self._prepare(index, self._cache)
+
+    def get(self, index: int) -> tuple[dict[str, Any], int]:
+        if not self._open:
+            raise RuntimeError("Source preparation is not open")
+        if self._executor is None:
+            return self._produce(index)
+        if self._future is None:
+            self.prefetch(index)
+        if self._future_index != index or self._future is None:
+            raise RuntimeError("Source preparation must be consumed in event order")
+        future = self._future
+        try:
+            return future.result()
+        finally:
+            self._future = None
+            self._future_index = None
+
+    def prefetch(self, index: int) -> None:
+        if not self._open:
+            raise RuntimeError("Source preparation is not open")
+        if self._executor is None:
+            return
+        if self._future is not None:
+            raise RuntimeError("Only one event source task may be outstanding")
+        self._future_index = index
+        self._future = self._executor.submit(self._produce, index)
+
+    def _close_cache(self) -> None:
+        if self._cache is not None:
+            self._cache.__exit__(None, None, None)
+            self._cache = None
+
+    def __enter__(self) -> Self:
+        if self._open:
+            raise RuntimeError("Source preparation is already open")
+        self._open = True
+        if self._enabled:
+            self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="sec-source")
+        return self
+
+    def __exit__(
+        self,
+        exception_type: type[BaseException] | None,
+        exception: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        self._open = False
+        if self._executor is None:
+            self._close_cache()
+            return
+        try:
+            if self._future is not None:
+                self._future.cancel()
+            # Queued behind an already running preparation: close on the same
+            # thread only after it has finished all source/cache operations.
+            self._executor.submit(self._close_cache).result()
+        finally:
+            self._executor.shutdown(wait=True, cancel_futures=True)
+            self._executor = None
+            self._future = None
+            self._future_index = None
+
+
 def build_event_intelligence(
     events: pd.DataFrame,
     frozen_universe_dir: Path,
@@ -916,6 +1007,7 @@ def build_event_intelligence(
     checkpoint_baseline: Path | None = None,
     checkpoint_baseline_sha256: str | None = None,
     audit_output: Path | None = None,
+    source_prefetch: bool = False,
 ) -> dict[str, Any]:
     """Retain 31 catalyst, 17 tone and 14 metadata features for every input event.
 
@@ -927,6 +1019,8 @@ def build_event_intelligence(
     """
     if max_events is not None and (type(max_events) is not int or max_events < 1):
         raise ValueError("Research event batch limit must be a positive integer")
+    if type(source_prefetch) is not bool:
+        raise ValueError("Source prefetch must be an explicit boolean")
     if not 0 < timeout_seconds <= 300 or not 0 <= max_retries <= 5:
         raise ValueError("Research extraction timeout exceeds bounded controls")
     freeze = verify_universe_freeze(frozen_universe_dir)
@@ -1065,16 +1159,58 @@ def build_event_intelligence(
     paths = ProjectPaths(
         Path(__file__).resolve().parents[3], (cache_workspace or output_dir).resolve()
     )
-    source_get = get or HttpClient(sec_user_agent).get
+    # The prefetched path creates and uses its HTTP client exclusively on the
+    # source thread. The serial default retains the original eager construction.
+    source_get = get if source_prefetch else get or HttpClient(sec_user_agent).get
     backend = sentiment_backend or _UnavailableTone(tone_policy)
     records, extractions, tones, metadata_rows, audits = [], [], [], [], []
     selected_filing_ids: set[str] = set()
-    with OperationParsingCache() as parsed_cache:
-        for index, event in enumerate(cast(list[dict[str, Any]], clean.to_dict("records"))):
+    event_records = cast(list[dict[str, Any]], clean.to_dict("records"))
+
+    def checkpoint_name(event: Mapping[str, Any]) -> str:
+        return "events/" + hashlib.sha256(event["event_id"].encode()).hexdigest() + ".json"
+
+    def requires_source(index: int) -> bool:
+        if index >= len(event_records) or max_events is not None and index >= max_events:
+            return False
+        filename = checkpoint_name(event_records[index])
+        return not (
+            (output_dir / filename).exists()
+            and verified_checkpoints is not None
+            and filename in verified_checkpoints.filenames
+        )
+
+    def prepare_source(
+        index: int, parsed_cache: OperationParsingCache
+    ) -> tuple[dict[str, Any], int]:
+        nonlocal source_get
+        event = event_records[index]
+        stored = (output_dir / checkpoint_name(event)).exists()
+        if not stored and source_get is None:
+            source_get = HttpClient(sec_user_agent).get
+        return _event_pack(
+            event,
+            pair_filings[event["pair_id"]],
+            source_coverage,
+            paths,
+            _offline_only if stored else cast(Callable[[str], FetchedResponse], source_get),
+            offline=True if stored else offline,
+            parsed_cache=parsed_cache,
+        )
+
+    if source_prefetch and progress:
+        progress({"stage": "SOURCE_PREFETCH_ENABLED", "max_outstanding_source_events": 1})
+    with _SourcePackPreparation(prepare_source, enabled=source_prefetch) as preparation:
+        for index, event in enumerate(event_records):
+            # Do not retain the previous event's full pack while the next source
+            # pack and this event's inference coexist.
+            pack: dict[str, Any] = {}
+            expected_pack: dict[str, Any] = {}
+            catalyst_pack: dict[str, Any] = {}
             event_filings = pair_filings[event["pair_id"]]
             scheduled = max_events is None or index < max_events
             catalyst_scheduled = scheduled and event["event_id"] in catalyst_ids
-            filename = "events/" + hashlib.sha256(event["event_id"].encode()).hexdigest() + ".json"
+            filename = checkpoint_name(event)
             checkpoint = output_dir / filename
             reused_tone_features = None
             if checkpoint.exists():
@@ -1096,19 +1232,7 @@ def build_event_intelligence(
                 expected_pack = (
                     record["pack"]
                     if audited
-                    else (
-                        _event_pack(
-                            event,
-                            event_filings,
-                            source_coverage,
-                            paths,
-                            _offline_only,
-                            offline=True,
-                            parsed_cache=parsed_cache,
-                        )[0]
-                        if scheduled
-                        else _empty_pack(event, policy)
-                    )
+                    else (preparation.get(index)[0] if scheduled else _empty_pack(event, policy))
                 )
                 if record["pack"] != expected_pack:
                     raise ValueError("Research checkpoint evidence differs from raw reconstruction")
@@ -1118,20 +1242,16 @@ def build_event_intelligence(
                     raise ValueError("Research checkpoint catalyst evidence violates its schedule")
                 if audited and verified_checkpoints is not None:
                     reused_tone_features = verified_checkpoints.tone_features(filename)
+                if source_prefetch and requires_source(index + 1):
+                    preparation.prefetch(index + 1)
             else:
                 selected_count = 0
                 pack = _empty_pack(event, policy)
                 if scheduled:
-                    pack, selected_count = _event_pack(
-                        event,
-                        event_filings,
-                        source_coverage,
-                        paths,
-                        source_get,
-                        offline=offline,
-                        parsed_cache=parsed_cache,
-                    )
+                    pack, selected_count = preparation.get(index)
                 validate_pack(pack)
+                if source_prefetch and requires_source(index + 1):
+                    preparation.prefetch(index + 1)
                 catalyst_pack = pack if catalyst_scheduled else _empty_pack(event, policy)
                 extraction = extract_pack(
                     catalyst_pack,
@@ -1211,6 +1331,7 @@ def build_event_intelligence(
                         "total": len(clean),
                     }
                 )
+            del record, pack, expected_pack, catalyst_pack
     identity = {"inputs": inputs, "records": records}
     version = "research_intelligence_" + _sha(identity)[:24]
     features = (

@@ -1,7 +1,9 @@
 """Offline end-to-end research SEC capture, bounded extraction and gap retention."""
 
+import hashlib
 import json
 import re
+import threading
 import weakref
 from datetime import UTC, date, datetime
 from pathlib import Path
@@ -17,9 +19,12 @@ from structural_break.data.http import FetchedResponse, SourceError
 from structural_break.intelligence.event_features import EVENT_FEATURE_NAMES
 from structural_break.intelligence.extraction import ProviderFailure
 from structural_break.intelligence.sentiment import (
+    FINBERT_ASSETS_SHA256,
     FINBERT_MODEL,
     FINBERT_REVISION,
+    QUALITY_PREPROCESSING_VERSION,
     SENTIMENT_FEATURE_COLUMNS,
+    FinBERTPolicy,
 )
 from structural_break.research import intelligence
 from structural_break.research.intelligence import (
@@ -147,6 +152,10 @@ class Tone:
         return [{"positive": 0.7, "negative": 0.1, "neutral": 0.2} for _ in windows]
 
 
+def checkpoint_path(output: Path, event_id: str) -> Path:
+    return output / "events" / (hashlib.sha256(event_id.encode()).hexdigest() + ".json")
+
+
 def provider(calls: list[str]):
     def call(request: dict[str, Any]) -> dict[str, Any]:
         pack = json.loads(request["messages"][1]["content"])
@@ -242,6 +251,349 @@ def test_bounded_event_pipeline_has_all48_features_and_keeps_every_event(
         event_registry_id="fixture-events",
     )
     assert repeat == manifest and calls == ["earlier"]
+
+
+@pytest.mark.parametrize("max_events", [None, 1])
+def test_source_prefetch_matches_cold_serial_bytes(
+    freeze: Path, tmp_path: Path, max_events: int | None
+) -> None:
+    metadata = tmp_path / "metadata"
+    collect_sec_metadata(freeze, metadata, get=source([]))
+    manifests = []
+    outputs = []
+    call_sequences = []
+    for enabled in (False, True):
+        output = tmp_path / str(enabled)
+        outputs.append(output)
+        calls: list[str] = []
+        call_sequences.append(calls)
+        manifests.append(
+            build_event_intelligence(
+                event_rows(),
+                freeze,
+                metadata,
+                output,
+                provider=provider(calls),
+                get=source([]),
+                sentiment_backend=Tone(),
+                max_events=max_events,
+                cache_workspace=tmp_path / (str(enabled) + "_cache"),
+                source_prefetch=enabled,
+            )
+        )
+    assert manifests[0] == manifests[1]
+    assert (
+        call_sequences[0]
+        == call_sequences[1]
+        == (["earlier", "later"] if max_events is None else ["earlier"])
+    )
+    assert "source_prefetch" not in manifests[0]["inputs"]
+    for filename in [*manifests[0]["files"], "manifest.json"]:
+        assert (outputs[0] / filename).read_bytes() == (outputs[1] / filename).read_bytes()
+
+
+def test_source_prefetch_overlaps_one_next_event_and_confines_owners(
+    freeze: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    metadata = tmp_path / "metadata"
+    collect_sec_metadata(freeze, metadata, get=source([]))
+    output = tmp_path / "intelligence"
+    events = pd.concat(
+        [
+            event_rows(),
+            pd.DataFrame(
+                [
+                    {
+                        "event_id": "third",
+                        "pair_id": "KO__PEP",
+                        "event_timestamp": "2022-03-14T21:00Z",
+                    }
+                ]
+            ),
+        ],
+        ignore_index=True,
+    )
+    coordinator = threading.get_ident()
+    next_started, inference_started = threading.Event(), threading.Event()
+    source_events: list[str] = []
+    http_owners: list[int] = []
+    cache_owners: list[list[int]] = []
+    extraction_events: list[str] = []
+    event_pack, extraction, write = (
+        intelligence._event_pack,
+        intelligence.extract_pack,
+        intelligence.write_bytes,
+    )
+
+    class OwnedCache(OperationParsingCache):
+        def __init__(self) -> None:
+            super().__init__()
+            self.owners = [threading.get_ident()]
+            cache_owners.append(self.owners)
+
+        def close(self) -> None:
+            self.owners.append(threading.get_ident())
+            super().close()
+
+    class OwnedHttp:
+        def __init__(self, *_args, **_kwargs) -> None:
+            http_owners.append(threading.get_ident())
+
+        def get(self, url: str) -> FetchedResponse:
+            assert threading.get_ident() == http_owners[0] != coordinator
+            return source([])(url)
+
+    def prepare(event, *args, **kwargs):
+        if threading.get_ident() != coordinator:
+            source_events.append(event["event_id"])
+            if event["event_id"] == "later":
+                next_started.set()
+                assert inference_started.wait(5), "Source and model work did not overlap"
+            elif event["event_id"] == "third":
+                assert checkpoint_path(output, "earlier").exists(), "Prefetched beyond next event"
+        return event_pack(event, *args, **kwargs)
+
+    def extract(pack, *args, **kwargs):
+        assert threading.get_ident() == coordinator
+        extraction_events.append(pack["event_id"])
+        return extraction(pack, *args, **kwargs)
+
+    def publish(path, body):
+        if path.parent.name == "events":
+            assert threading.get_ident() == coordinator
+        return write(path, body)
+
+    class CoordinatedTone(Tone):
+        def predict(self, windows):
+            assert threading.get_ident() == coordinator
+            if not inference_started.is_set():
+                assert next_started.wait(5), "Next event was not prepared during inference"
+                inference_started.set()
+            return super().predict(windows)
+
+    monkeypatch.setattr(intelligence, "OperationParsingCache", OwnedCache)
+    monkeypatch.setattr(intelligence, "HttpClient", OwnedHttp)
+    monkeypatch.setattr(intelligence, "_event_pack", prepare)
+    monkeypatch.setattr(intelligence, "extract_pack", extract)
+    monkeypatch.setattr(intelligence, "write_bytes", publish)
+    manifest = build_event_intelligence(
+        events,
+        freeze,
+        metadata,
+        output,
+        provider=None,
+        sentiment_backend=CoordinatedTone(),
+        source_prefetch=True,
+    )
+    assert source_events == extraction_events == ["earlier", "later", "third"]
+    assert http_owners == [cache_owners[0][0]]
+    assert len(cache_owners) == 2  # Source owner, then fresh independent verifier.
+    assert all(len(owners) == 2 and owners[0] == owners[1] for owners in cache_owners)
+    assert cache_owners[0][0] != coordinator == cache_owners[1][0]
+    assert [
+        json.loads((output / row["file"]).read_bytes())["event"]["event_id"]
+        for row in manifest["source_identity"]["records"]
+    ] == source_events
+
+
+@pytest.mark.parametrize("failure_owner", ["source", "coordinator"])
+def test_source_prefetch_errors_stop_in_order_and_close_source_cache(
+    freeze: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure_owner: str
+) -> None:
+    metadata = tmp_path / "metadata"
+    collect_sec_metadata(freeze, metadata, get=source([]))
+    output = tmp_path / "intelligence"
+    coordinator = threading.get_ident()
+    next_started, release_source = threading.Event(), threading.Event()
+    source_events: list[str] = []
+    caches: list[OperationParsingCache] = []
+    event_pack, extraction = intelligence._event_pack, intelligence.extract_pack
+
+    class OwnedCache(OperationParsingCache):
+        def __init__(self) -> None:
+            super().__init__()
+            self.owner = threading.get_ident()
+            caches.append(self)
+
+        def close(self) -> None:
+            assert threading.get_ident() == self.owner != coordinator
+            super().close()
+
+    def prepare(event, *args, **kwargs):
+        assert threading.get_ident() != coordinator
+        source_events.append(event["event_id"])
+        if event["event_id"] == "later":
+            next_started.set()
+            if failure_owner == "source":
+                raise ValueError("source failure")
+            assert release_source.wait(5)
+        return event_pack(event, *args, **kwargs)
+
+    def extract(pack, *args, **kwargs):
+        assert threading.get_ident() == coordinator
+        assert pack["event_id"] == "earlier", "Future error was not propagated in order"
+        assert next_started.wait(5)
+        if failure_owner == "coordinator":
+            release_source.set()
+            raise ValueError("coordinator failure")
+        return extraction(pack, *args, **kwargs)
+
+    monkeypatch.setattr(intelligence, "OperationParsingCache", OwnedCache)
+    monkeypatch.setattr(intelligence, "_event_pack", prepare)
+    monkeypatch.setattr(intelligence, "extract_pack", extract)
+    with pytest.raises(ValueError, match=failure_owner + " failure"):
+        build_event_intelligence(
+            event_rows(),
+            freeze,
+            metadata,
+            output,
+            provider=None,
+            sentiment_backend=Tone(),
+            get=source([]),
+            source_prefetch=True,
+        )
+    assert source_events == ["earlier", "later"]
+    assert checkpoint_path(output, "earlier").exists() == (failure_owner == "source")
+    assert not checkpoint_path(output, "later").exists()
+    assert not (output / "manifest.json").exists()
+    assert len(caches) == 1 and caches[0]._closed and not caches[0]._directory.exists()
+    assert not any(thread.name.startswith("sec-source") for thread in threading.enumerate())
+
+
+def test_source_prefetch_cannot_queue_or_consume_another_event_early() -> None:
+    started, release = threading.Event(), threading.Event()
+
+    def prepare(index, _cache):
+        started.set()
+        assert release.wait(5)
+        return {"event_index": index}, 0
+
+    with intelligence._SourcePackPreparation(prepare, enabled=True) as preparation:
+        preparation.prefetch(0)
+        assert started.wait(5)
+        try:
+            with pytest.raises(RuntimeError, match="Only one"):
+                preparation.prefetch(1)
+            with pytest.raises(RuntimeError, match="event order"):
+                preparation.get(1)
+        finally:
+            release.set()
+        assert preparation.get(0) == ({"event_index": 0}, 0)
+
+
+@pytest.mark.parametrize("checkpoint_count", [1, 2])
+def test_source_prefetch_reuses_sha_audited_checkpoints_without_source_or_inference(
+    freeze: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, checkpoint_count: int
+) -> None:
+    metadata = tmp_path / "metadata"
+    collect_sec_metadata(freeze, metadata, get=source([]))
+    workspace, old, new = tmp_path / "cache", tmp_path / "old", tmp_path / "new"
+    baseline, audit = tmp_path / "baseline.json", tmp_path / "audit.json"
+    raw_get = source([])
+
+    def clocked_source(url: str) -> FetchedResponse:
+        response = raw_get(url)
+        if url.endswith(".txt"):
+            clock = b"20220308163000" if "22000002" in url else b"20220201163000"
+            return FetchedResponse(
+                b"<ACCEPTANCE-DATETIME>" + clock + b"\n" + response.body,
+                response.url,
+                response.status_code,
+                response.retrieved_at,
+            )
+        return response
+
+    class AssetBoundTone(Tone):
+        runtime = {"model_assets_sha256": dict(FINBERT_ASSETS_SHA256)}
+
+    settings = {
+        "provider": None,
+        "sentiment_backend": AssetBoundTone(),
+        "sentiment_policy": FinBERTPolicy(preprocessing_version=QUALITY_PREPROCESSING_VERSION),
+        "cache_workspace": workspace,
+        "catalyst_max_events": 1,
+        "event_registry_id": "frozen-registry-fixture",
+    }
+    original = build_event_intelligence(
+        event_rows(), freeze, metadata, old, get=clocked_source, **settings
+    )
+    (old / "manifest.json").unlink()
+    if checkpoint_count == 1:
+        checkpoint_path(old, "later").unlink()
+    baseline.write_bytes(
+        intelligence.json_bytes(
+            {
+                "recorded_processes_absent": True,
+                "checkpoint_count": checkpoint_count,
+                "inputs_sha256": sha256_file(old / "inputs.json"),
+                "catalyst_schedule_sha256": sha256_file(old / "catalyst_schedule.json"),
+                "checkpoint_inventory": [
+                    {
+                        "filename": path.name,
+                        "sha256": sha256_file(path),
+                        "size_bytes": path.stat().st_size,
+                    }
+                    for path in sorted((old / "events").iterdir())
+                ],
+            }
+        )
+    )
+    build_event_intelligence(
+        event_rows(),
+        freeze,
+        metadata,
+        new,
+        checkpoint_source=old,
+        checkpoint_baseline=baseline,
+        checkpoint_baseline_sha256=sha256_file(baseline),
+        audit_output=audit,
+        source_prefetch=True,
+        **settings,
+    )
+
+    def forbidden(*args, **kwargs):
+        pytest.fail("Audited checkpoints must not prepare sources or run inference")
+
+    source_events: list[str] = []
+    raw_pack = intelligence._event_pack
+
+    def fresh_source(event, *args, **kwargs):
+        assert checkpoint_count == 1 and event["event_id"] == "later"
+        source_events.append(event["event_id"])
+        return raw_pack(event, *args, **kwargs)
+
+    monkeypatch.setattr(intelligence, "_event_pack", fresh_source)
+    for name in ("extract_pack", "score_sentiment_pack", "validate_sentiment_result"):
+        original_operation = getattr(intelligence, name)
+
+        def only_fresh_event(event_or_pack, *args, operation=original_operation, **kwargs):
+            assert checkpoint_count == 1 and event_or_pack["event_id"] == "later", (
+                "Audited event must not replay sources or inference"
+            )
+            return operation(event_or_pack, *args, **kwargs)
+
+        monkeypatch.setattr(intelligence, name, only_fresh_event)
+    monkeypatch.setattr(AssetBoundTone, "predict", forbidden)
+    result = build_event_intelligence(
+        event_rows(),
+        freeze,
+        metadata,
+        new,
+        get=forbidden,
+        resume_audit=audit,
+        resume_audit_sha256=sha256_file(audit),
+        source_prefetch=True,
+        **settings,
+    )
+    assert result["inputs"] == original["inputs"]
+    assert result["source_identity"] == original["source_identity"]
+    assert result["event_count"] == 2
+    assert source_events == (["later"] if checkpoint_count == 1 else [])
+    assert result["checkpoint_recovery"]["independent_full_raw_verification_complete"] is False
+    assert result["files"] == original["files"]
+    for filename in original["files"]:
+        if (old / filename).exists():
+            assert (old / filename).read_bytes() == (new / filename).read_bytes()
 
 
 def test_operation_spill_parses_once_and_independent_verifier_starts_fresh(
