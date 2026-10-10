@@ -3,7 +3,7 @@
 Base design freeze: 2026-10-06, before constructing the added observations.
 The user delegated research design and implementation, with the goal of improving
 Model B over Model A. This permits a separate experiment, not modification of
-the completed 28-pair Phase 4 artifact or opening the 2024–2025 final test.
+the completed 28-pair reference artifact or opening the 2024–2025 final test.
 Subsequent development amendments below are separately disclosed; they are not
 represented as decisions made before the initial quantitative label freeze.
 
@@ -43,6 +43,12 @@ the full horizon even if convergence happens earlier. The already observed
 original 28-pair assessment results are development information, not a newly
 untouched test. No source capture or outcome construction after 2023 is needed.
 
+The equity-close information set uses the exact previous XNYS session's VIX,
+never same-day VIX or a stale carry-forward when that session is missing. Retain
+its source date and conservative 16:16 America/New_York observation proxy;
+historical CSV publication times remain unknown. Shared causal formation,
+episode and censoring mechanics remain governed by DECISIONS sections 6–7.
+
 Primary estimators are strongly regularized logistic A and B, selecting among
 C=0.01,0.1,1 by mean forward Brier loss. Small, identical-budget XGBoost grids
 are secondary. Models A/B share quantitative columns, every observation,
@@ -59,7 +65,7 @@ Only eight assessment blocks exist: disclose the limited uncertainty estimate.
 Report the number of positive outcomes and distinct issuers/periods. One-class
 metrics stay undefined. A point estimate below zero is suggestive; a stronger
 improvement claim needs its paired interval below zero, coherent secondary
-metrics and adequate coverage. Economic profitability awaits the shared P6
+metrics and adequate coverage. Economic profitability awaits the shared
 execution simulator; forecast improvement alone is not trading profitability.
 
 The research-only reporting completion supplies these promised losses and
@@ -138,127 +144,13 @@ change.
 
 Preserve the legacy domain default, its proofs and exact caches. The research
 CLI defaults to `sec-sentence-quality-wordpiece-v2`; legacy reproduction uses
-`--sentiment-preprocessing exact-sentence-nonoverlap-wordpiece-v1`. The distinct
-`development_quality_v2` replacement launched at 2026-10-07 05:17:15 UTC only
-after freezing code at committed `2dd54bcb`. Guarded startup froze its own
-inputs/schedule at 05:19:55 UTC before event processing. After an operational
-SEC-cache failure, resume 1 launched at 08:58:15 UTC with these exact inputs and
-was deliberately stopped at 09:40:28 UTC during preserved-checkpoint replay.
-Keep the original partial batch immutable and reuse verified source/Gemma caches; new sentiment policy identities create new
-tone caches. Quantitative pairs, labels, dates, estimator grids, the 0.65
-threshold and the 500-event catalyst schedule remain unchanged. Full features,
-Model B fitting and assessment still await completion.
+`--sentiment-preprocessing exact-sentence-nonoverlap-wordpiece-v1`. New sentiment
+policy identities require a separate immutable generation. Quantitative pairs,
+labels, dates, estimator grids, the 0.65 threshold and the 500-event catalyst
+schedule remain unchanged. Operational attempts and benchmark receipts are in
+[protocol history](archive/RESEARCH_V2_PROTOCOL_HISTORY.md).
 
-The amended builder also aggregates compact feature rows instead of retaining
-all full packs in memory. The same FIT diagnostic estimates 1.37 GB of pack-only
-retention across 37,421 events under independent JSON-reloaded strings, excluding
-other process overhead. This is an extrapolation, not measured live RSS.
-Memory changes must reproduce the same immutable event/source inventories,
-feature values and ordering; they do not authorize evidence or cohort changes.
-
-The combined amendment passed 100 focused sentiment/intelligence/CLI tests,
-whole Ruff/format checks for 133 files, strict mypy for 66 source files and four
-final native-model integration tests in 83.74 seconds. Genuine quality-v2 CPU
-inference on ADBE/ADSK at the first FIT event, 2006-01-03T21:00Z, passed in
-31.766 seconds with exact cache replay, all five pinned asset hashes verified,
-388 existing legacy cache files unchanged and no network/LLM/outcome access.
-Its proof is `.acceptance/finbert_quality_real_sec_smoke.json`, SHA-256
-`582866c4f633775a41532b3b0a20914dbe1f13975848d27908034bf0a2059c1c`.
-This is a single-source engineering gate, not a representative NLP study or a
-speed comparison with the different V/MA legacy smoke. The amended commit and
-batch inputs were frozen at `2dd54bcb` and both hosted runs passed. The quality
-generation is now deliberately stopped and preserved; the new parsing amendment
-and batch transition below still require their own gates. Full source/tone generation and model assessment
-remain separate, incomplete gates.
-
-## Source-only parsing amendment
-
-The post-cohort operational amendment in DECISIONS section 22 precedes every
-actual A/B assessment. A frozen-source, API/inference/outcome-free profile of
-three completed FIT 2006 events exactly replayed packs and stored tone features:
-8.052 seconds cold versus 1.310 hot for their pack rebuilds, with parsing about
-82% of cold cumulative work. The concurrent host and unflushed OS cache prevent
-a full-job speedup or ETA claim. It does not change evidence, text policy,
-cohorts, labels, grids or the fixed catalyst schedule.
-
-The implemented cache holds 128 parsed inventories in RAM with private
-operation-local spill. Each builder/verifier begins empty and independently reconstructs
-verified raw sources once per distinct inventory; verification must not trust a
-builder-produced parser cache. All raw/SGML/cutoff checks remain in place.
-Ninety-five focused checks and eighteen exact pack reconstructions passed in
-the forced-one-frame source-only benchmark: baseline parsing 22 calls, new
-builder eleven, and a fresh verifier-style operation its own eleven. This is
-not the full verifier/job or a measured production speedup. The amended cache also passed four native model/evidence integration tests in
-128.76 seconds, whole Ruff/142-file format checks and default mypy for 77 source, script and app
-files. These are engineering/synthetic integration checks, not actual study
-fits. The final amended source still requires its own exact-head hosted CI.
-A new source/input
-freeze and exact-head CI are pending. The controlled
-old-prefix stop preserves all 1,494 quality checkpoints. Planned immutable batch
-`development_primary_v2` requires a byte-inventory/copy receipt and full raw-
-source reconstruction before adopting that prefix. Transition, launch, actual
-fits and primary/main promotion remain pending; final outcomes stay locked.
-
-Before actual Model B fits, research v2 prepares
-`sec-json-clock-envelope-v3` for SEC JSON availability. Among 250 matched
-successful cached captures with hash-verified source headers, 186 JSON timestamps
-matched SGML acceptance times; 49 JSON `Z` values were themselves four hours
-later and 15 five hours later. This is source timestamp lag, not an error caused
-only by parsing naive timestamps. No premature case occurred in that sample.
-This is a 250-capture diagnostic, not a full audit of the 89,657 filing rows or
-proof that every other acceptance timestamp is correct.
-
-For absent or zero JSON offsets, including `Z`, consider both UTC and New York
-wall-clock interpretations, plus the inverse UTC-to-New-York-wall-clock
-candidate for the observed source lag. Preserve their lower and upper bounds
-and admit evidence only at the upper bound; v3 leaves the conservative v2 upper
-bound unchanged and widens its lower bound. Explicit nonzero offsets retain
-their exact stated interpretation. Missing acceptance times stay UNKNOWN; filing
-dates never recover them. If a relevant filing's availability interval crosses
-the signal cutoff or the 30-, 180- or 400-calendar-day selection boundary, the
-issuer's affected evidence coverage stays UNKNOWN, so uncertainty cannot prove
-absence. These conservative bounds can postpone otherwise admissible evidence.
-
-Rebuild SEC metadata in a new immutable `sec_metadata/source_v3` using only the
-hash-verified response bytes and sidecars of `source_v1`, with network access
-blocked. The new manifest binds the availability policy and implementation; a
-separate replay receipt binds the exact parent manifest, complete raw inventory,
-frozen code and derived manifest. Recompute normalized metadata and features;
-do not relabel or overwrite old source, evidence or original Phase 4 artifacts.
-See [the replay policy](SEC_METADATA_RECAPTURE.md) for execution and provenance.
-The completed source-v2 metadata replay is preserved: its narrower interval
-excluded those 64 earlier SGML headers below its lower bound. Its successful
-hash/source replay does not establish SGML admissibility. Actual fitting remains
-subject to the corrected source/inference checks and completion of its feature
-batch, rather than relying on source-v2 metadata alone.
-The v3 metadata replay completed under frozen code `100e1e48`, with identical
-raw sources and filing population. Metadata reconstruction confirms its upper
-bound is unchanged for every filing. The separate canonical replay passed for
-250 cached accession inventories, with all sampled SGML headers inside the v3
-envelope and unchanged original response/retrieval identities, without HTTP.
-The genuine pinned CPU FinBERT smoke on V/MA SEC text at 2016-01-08 also passed:
-six chunks, 210 windows and exact cache replay. These engineering checks do not
-constitute a full 89,657-header audit or complete historical NLP study.
-Legacy batch `development_v3_100e1e4` is confirmed STOPPED and incomplete as
-of 2026-10-07 05:10 UTC. Its session/process are absent; the log ends at 1,494
-completed checkpoints at 03:33 UTC without traceback or terminal manifest.
-The cause is unknown, not recorded as an intentional stop or confirmed FAILED
-publication. Preserve those partial records. New batch `development_quality_v2`
-first launched at 2026-10-07 05:17:15 UTC from frozen `2dd54bcb`; its input SHA-256 is
-`cf19099ac57ee7f5ba6ab3e37daa6d46dda49a7f4dc63893d6a06d1063f78fea`.
-That first quality attempt exited 1 at 1,494 checkpoints because three valid
-cached response/sidecar pairs lacked a completion manifest. A preserving repair
-completed that one unregistered SEC inventory, with one missing exhibit fetched;
-the frozen registry/policies/input manifest, original responses and retrieval
-timestamps were unchanged.
-Resume 1 launched at 08:58:15 UTC under the exact frozen code/inputs. Root
-deliberately stopped its worker at 09:40:28 UTC after 1,209 preserved-prefix
-replays, before any new acquisition/inference branch. All 1,494 old checkpoint
-bytes remain preserved; the new operation-local parsing transition is pending. This does not explain the
-earlier legacy stop. It retains the full 37,421-event union and separate
-500-event catalyst schedule. Full features and all actual matched A/B fits
-remain pending, with no predictive gain established. Operational receipts are
-listed in [the runbook](RESEARCH_V2_RUNBOOK.md#sec-text-inference-and-fitting).
+### Guarded catalyst processing
 
 Use free Gemma for a smaller bounded catalyst pack with exact JSON schema,
 issuer/leg/timestamp checks, category-cue and exact-quote grounding, strict local
@@ -302,29 +194,86 @@ financial-tone classification. Google's [pricing](https://ai.google.dev/gemini-a
 lists free Gemma service; [quotas](https://ai.google.dev/gemini-api/docs/rate-limits)
 are project-specific and actual capacity is not guaranteed.
 
+## SEC availability
+
+The accepted SEC availability policy is
+`sec-json-clock-envelope-v3`, corrected before actual Model B fitting. Among 250 matched
+successful cached captures with hash-verified source headers, 186 JSON timestamps
+matched SGML acceptance times; 49 JSON `Z` values were themselves four hours
+later and 15 five hours later. This is source timestamp lag, not an error caused
+only by parsing naive timestamps. No premature case occurred in that sample.
+This is a 250-capture diagnostic, not a full audit of the 89,657 filing rows or
+proof that every other acceptance timestamp is correct.
+
+For absent or zero JSON offsets, including `Z`, consider both UTC and New York
+wall-clock interpretations, plus the inverse UTC-to-New-York-wall-clock
+candidate for the observed source lag. Preserve their lower and upper bounds
+and admit evidence only at the upper bound; v3 leaves the conservative v2 upper
+bound unchanged and widens its lower bound. Explicit nonzero offsets retain
+their exact stated interpretation. Missing acceptance times stay UNKNOWN; filing
+dates never recover them. If a relevant filing's availability interval crosses
+the signal cutoff or the 30-, 180- or 400-calendar-day selection boundary, the
+issuer's affected evidence coverage stays UNKNOWN, so uncertainty cannot prove
+absence. These conservative bounds can postpone otherwise admissible evidence.
+
+Rebuild SEC metadata in a new immutable `sec_metadata/source_v3` using only the
+hash-verified response bytes and sidecars of `source_v1`, with network access
+blocked. The new manifest binds the availability policy and implementation; a
+separate replay receipt binds the exact parent manifest, complete raw inventory,
+frozen code and derived manifest. Recompute normalized metadata and features;
+do not relabel or overwrite old source, evidence or original reference artifacts.
+See [the replay policy](SEC_METADATA_RECAPTURE.md) for execution and provenance.
+The completed source-v2 metadata replay is preserved: its narrower interval
+excluded those 64 earlier SGML headers below its lower bound. Its successful
+hash/source replay does not establish SGML admissibility. Actual fitting remains
+subject to the corrected source/inference checks and completion of its feature
+batch, rather than relying on source-v2 metadata alone.
+The v3 metadata replay completed under frozen code `100e1e48`, with identical
+raw sources and filing population. Metadata reconstruction confirms its upper
+bound is unchanged for every filing. The separate canonical replay passed for
+250 cached accession inventories, with all sampled SGML headers inside the v3
+envelope and unchanged original response/retrieval identities, without HTTP.
+The genuine pinned CPU FinBERT smoke on V/MA SEC text at 2016-01-08 also passed:
+six chunks, 210 windows and exact cache replay. These engineering checks do not
+constitute a full 89,657-header audit or complete historical NLP study.
+## Parsing and audited recovery
+
+The source-only parsing amendment in DECISIONS section 22 preceded actual
+expanded A/B assessment. Use at most 128 parsed inventories in RAM with private
+operation-local spill. Every independent verifier starts empty and reconstructs
+verified raw sources once per distinct inventory; it must not trust a persisted
+builder parser cache. Preserve raw-hash, SGML-clock, cutoff, full-token-denominator
+and event-feature checks. Compact aggregation may retain feature rows and immutable
+event records instead of full packs, while reproducing exactly the same source
+inventory, feature values, event order and matched cohort.
+
+The detached recovery amendment in [DECISIONS section 23](DECISIONS.md#23-detached-audited-intelligence-recovery)
+permits a preflight-verified prefix to load exact saved checkpoints without
+repeating HTML/stored-tone replay. The audit binds unchanged scientific inputs,
+raw responses, source parents, the fixed schedule and stored outputs. Only the
+engineering builder code identity may differ in that explicit transition. Verified
+exact primary/EX-99 document aliases collapse to one logical document without
+changing source/chunk identities, selection budgets or raw captures; conflicting
+claims still fail.
+
+An audited feature build defers its duplicate final raw replay and explicitly
+records independent verification as pending. Fitting, native model verification
+and publication still freshly reconstruct every event. Preserve all previous
+source/policy/cache generations and receipt identities. Narrow profiles and
+engineering fixtures do not establish a whole-job speedup or predictive gain.
+
 ## Reproducibility and limits
 
 Write immutable source/protocol/roster/code manifests before constructing labels.
 New research versions live in a separate workspace and database. Registered
 generations are hash-verified; resume cached work rather than recapture silently.
 CI uses deterministic fixtures and no real API or model-weight download.
-Hosted CI for frozen `100e1e48` passed the complete Windows/Linux regression
-jobs and Linux Colab bootstrap in
-[run 37451417275](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/37451417275).
-The reporting, quality-v2 preprocessing and compact-union changes passed their
-focused/local gates above and froze at `2dd54bcb`. Both new committed hosted
-runs passed. They do not rewrite the stopped legacy batch's frozen source or
-partial records.
-
-Hosted CI for frozen `2dd54bcb` passed all Windows/Linux foundation jobs
-and the Linux Colab/NLP bootstrap in
-[PR run 37575503287](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/37575503287)
-and [branch run 37575496575](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/37575496575).
-The full structured result is `.acceptance/research_2dd54bc_hosted_ci.json`,
-SHA-256 `4311287edfcd2aa8fc1f095ffae2b099ec549f9ee5207c1f74d9d26f8b2c111e`.
-These checks cover the quality, reporting and compact-union amendments; they do
-not establish complete historical feature coverage or predictive improvement.
+Retain the actual decision timing of post-cohort amendments, their FIT-only
+diagnostics and limitations; do not relabel them as pre-label decisions.
 
 Run the same package commands in local Python 3.11 and the Colab bootstrap.
 Report negative or inconclusive comparisons without selecting favorable
 companies, throwing away UNKNOWN observations, or inspecting the final test.
+Current acceptance gates are in [STATUS.md](STATUS.md), operational commands in
+[the runbook](RESEARCH_V2_RUNBOOK.md), and prior attempts/receipts in
+[the archive](archive/README.md).

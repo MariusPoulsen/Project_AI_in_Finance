@@ -1,6 +1,6 @@
 # Data Architecture and Source Strategy
 
-> **Agent-use specification.** Canonical implementation decisions are in [`../DECISIONS.md`](../DECISIONS.md). This Markdown is the coding-agent source of truth for this subsystem. The PDF in `docs/PDFs/` is archival/human-readable only.
+> **Agent-use specification.** Canonical implementation decisions are in [`../DECISIONS.md`](../DECISIONS.md). This Markdown is the coding-agent source of truth for this subsystem. The PDF in `docs/archive/pdfs/` is archival/human-readable only.
 
 # 1. Purpose, scope, and non-negotiable data rules
 

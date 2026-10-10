@@ -1,3 +1,8 @@
+> **Original experiment reference.** These instructions describe the recorded
+> 28-pair source/config generations. Use their original workspace and freeze;
+> the active expanded workflow is in [the v2 runbook](../../RESEARCH_V2_RUNBOOK.md).
+> Commands below use the explicit reference CLI.
+
 # Econometric history runbook
 
 Phase 2 reconstructs monthly relationships and daily signal state from a frozen
@@ -13,8 +18,8 @@ agent or app dependency group is needed. A complete artificial fixture works
 independently of Phase 1 ingestion:
 
 ```shell
-uv run --frozen structural-break build-relationships --relationship-fixture --workspace-root .acceptance/phase2 --relationship-version fixture-p2
-uv run --frozen structural-break verify-relationships --workspace-root .acceptance/phase2
+uv run --frozen structural-break-reference build-relationships --relationship-fixture --workspace-root .acceptance/phase2 --relationship-version fixture-p2
+uv run --frozen structural-break-reference verify-relationships --workspace-root .acceptance/phase2
 ```
 
 The fixture contains shared-trend/mean-reverting, independent-random-walk and
@@ -25,9 +30,9 @@ verification without network or credentials.
 For project data, select the workspace containing the verified Phase 1 snapshot:
 
 ```shell
-uv run --frozen structural-break verify-data
-uv run --frozen structural-break build-relationships
-uv run --frozen structural-break verify-relationships
+uv run --frozen structural-break-reference verify-data
+uv run --frozen structural-break-reference build-relationships
+uv run --frozen structural-break-reference verify-relationships
 ```
 
 All commands accept `--project-root` and `--workspace-root`. The default range is
@@ -161,7 +166,7 @@ use synthetic, training or validation dates and compare fitted diagnostics,
 frozen spread/z plots and the effective interval. Keep final-test outcome metrics
 closed until explicit final-run authorisation.
 
-[The diagnostic inspection script](../scripts/inspect_relationships.py) exports
+[The diagnostic inspection script](../../../scripts/inspect_relationships.py) exports
 z-score/cointegration plots plus a JSON diagnostic record without outcomes:
 
 ```shell
@@ -183,5 +188,5 @@ archived before a fresh attempt, while registered immutable versions are verifie
 and reused. Provider logins are not involved in Phase 2.
 
 Google Colab runs the same commands in its isolated Python 3.11 environment;
-[the Colab instructions](COLAB.md) include the fixture bootstrap and project-data
+[the Colab instructions](../../COLAB.md) include the fixture bootstrap and project-data
 build. Archive the completed local workspace after database connections close.

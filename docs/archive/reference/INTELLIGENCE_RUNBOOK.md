@@ -1,3 +1,8 @@
+> **Original experiment reference.** These instructions describe the recorded
+> 28-pair source/config generations. Use their original workspace and freeze;
+> the active expanded workflow is in [the v2 runbook](../../RESEARCH_V2_RUNBOOK.md).
+> Commands below use the explicit reference CLI.
+
 # SEC intelligence and Model B
 
 Phase 4 uses the frozen Phase 3 event population and Model A features. The event
@@ -10,12 +15,12 @@ indicators. The final 2024–2025 outcome lock remains closed.
 These commands require no credentials, source network or LLM requests:
 
 ```shell
-uv run --frozen structural-break build-events --ml-fixture --workspace-root .acceptance/phase4
-uv run --frozen structural-break train-model-a --workspace-root .acceptance/phase4
-uv run --frozen structural-break build-intelligence --intelligence-fixture --workspace-root .acceptance/phase4
-uv run --frozen structural-break verify-intelligence --workspace-root .acceptance/phase4
-uv run --frozen structural-break train-model-b --workspace-root .acceptance/phase4
-uv run --frozen structural-break verify-model-b --workspace-root .acceptance/phase4
+uv run --frozen structural-break-reference build-events --ml-fixture --workspace-root .acceptance/phase4
+uv run --frozen structural-break-reference train-model-a --workspace-root .acceptance/phase4
+uv run --frozen structural-break-reference build-intelligence --intelligence-fixture --workspace-root .acceptance/phase4
+uv run --frozen structural-break-reference verify-intelligence --workspace-root .acceptance/phase4
+uv run --frozen structural-break-reference train-model-b --workspace-root .acceptance/phase4
+uv run --frozen structural-break-reference verify-model-b --workspace-root .acceptance/phase4
 ```
 
 Fixture documents and provider responses are explicitly synthetic. Their metrics
@@ -42,10 +47,10 @@ not a claim that Google grants that many calls.
 
 ```shell
 uv sync --frozen --extra agents
-uv run --frozen --extra agents structural-break build-intelligence --event-version events_6451711be4cb02d63a38d13b
-uv run --frozen --extra agents structural-break verify-intelligence
-uv run --frozen --extra agents structural-break train-model-b
-uv run --frozen --extra agents structural-break verify-model-b
+uv run --frozen --extra agents structural-break-reference build-intelligence --event-version events_6451711be4cb02d63a38d13b
+uv run --frozen --extra agents structural-break-reference verify-intelligence
+uv run --frozen --extra agents structural-break-reference train-model-b
+uv run --frozen --extra agents structural-break-reference verify-model-b
 ```
 
 Keep `--extra agents` on live commands because default uv synchronization may
@@ -67,7 +72,7 @@ creates a new immutable evidence generation. Refit Model B against that new
 generation if required. Old evidence and models remain readable.
 
 ```shell
-uv run --frozen --extra agents structural-break build-intelligence --offline --event-version events_6451711be4cb02d63a38d13b
+uv run --frozen --extra agents structural-break-reference build-intelligence --offline --event-version events_6451711be4cb02d63a38d13b
 ```
 
 Literal offline mode never calls a provider, including an injected one. Uncached
@@ -79,7 +84,7 @@ Failed accession downloads are retained for audit. An explicit new attempt can
 recover them without replacing the first response inventory:
 
 ```shell
-uv run --frozen --extra agents structural-break build-intelligence --sec-retry-attempt retry-20261004 --event-version events_6451711be4cb02d63a38d13b
+uv run --frozen --extra agents structural-break-reference build-intelligence --sec-retry-attempt retry-20261004 --event-version events_6451711be4cb02d63a38d13b
 ```
 
 The attempt identifier must be new for a fresh capture. It recaptures the selected
@@ -145,5 +150,5 @@ The paired comparison retains the full eligible validation cohort and reports
 additional UNKNOWN/NONE/available/supported slices. Raw validation scores are
 holdout diagnostics. Calibrated validation scores are calibration-fit descriptive.
 Seven all-negative validation events cannot establish discrimination, calibration
-generalisation or Model B superiority. See `RESEARCH_REDESIGN.md` for a separate
+generalisation or Model B superiority. See [the historical redesign proposal](../RESEARCH_REDESIGN.md) for a separate
 protocol proposal; the current phase does not change the canonical research rules.

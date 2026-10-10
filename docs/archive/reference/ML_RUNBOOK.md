@@ -1,3 +1,8 @@
+> **Original experiment reference.** These instructions describe the recorded
+> 28-pair source/config generations. Use their original workspace and freeze;
+> the active expanded workflow is in [the v2 runbook](../../RESEARCH_V2_RUNBOOK.md).
+> Commands below use the explicit reference CLI.
+
 # Divergence dataset, Model A and the read-only app
 
 Phase 3 turns frozen quantitative relationships into one observation per divergence
@@ -12,9 +17,9 @@ Streamlit dependencies install by default; `--extra app` remains a supported ali
 
 ```shell
 uv sync --frozen --extra app
-uv run --frozen structural-break build-events --ml-fixture --workspace-root .acceptance/phase3 --event-version fixture-events-p3
-uv run --frozen structural-break train-model-a --workspace-root .acceptance/phase3 --model-version fixture-model-a-p3
-uv run --frozen structural-break verify-model-a --workspace-root .acceptance/phase3
+uv run --frozen structural-break-reference build-events --ml-fixture --workspace-root .acceptance/phase3 --event-version fixture-events-p3
+uv run --frozen structural-break-reference train-model-a --workspace-root .acceptance/phase3 --model-version fixture-model-a-p3
+uv run --frozen structural-break-reference verify-model-a --workspace-root .acceptance/phase3
 ```
 
 The independent Phase 3 fixture provides known event paths, quantitative inputs and
@@ -25,11 +30,11 @@ network after package installation. Synthetic metrics describe the fixture only.
 For real research, first verify the active Phase 1 and Phase 2 generations, then run:
 
 ```shell
-uv run --frozen structural-break verify-data
-uv run --frozen structural-break verify-relationships
-uv run --frozen structural-break build-events
-uv run --frozen structural-break train-model-a
-uv run --frozen structural-break verify-model-a
+uv run --frozen structural-break-reference verify-data
+uv run --frozen structural-break-reference verify-relationships
+uv run --frozen structural-break-reference build-events
+uv run --frozen structural-break-reference train-model-a
+uv run --frozen structural-break-reference verify-model-a
 ```
 
 These commands use the local frozen source and econometric history. Dataset/model
@@ -107,7 +112,7 @@ seven validation events (zero successes). Calibration therefore saves
 this limitation. Raw scores and Tree SHAP remain available for research diagnostics,
 but this validation sample cannot establish useful ranking or calibrated forecasts.
 The 2016–2017 extension adds 16 eligible training episodes after deduplication.
-See [the acceptance record](STATUS.md) for partition counts and development metrics.
+See [the acceptance record](../IMPLEMENTATION_HISTORY.md) for partition counts and development metrics.
 
 The real validation sample is too small to support reliable threshold optimisation.
 The working candidate threshold remains the prespecified 0.65, with a development

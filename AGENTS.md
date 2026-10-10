@@ -8,7 +8,7 @@ The user owns the final academic report and presentation/video.
 
 The authorized primary workflow is research v2. Complete its actual feature/model
 and independent-verification gates before promoting it to GitHub `main`. Promotion
-changes the default workflow; it does not overwrite the original Phase 0–4 sources,
+changes the default workflow; it does not overwrite the original experiment sources,
 protocol, artifacts or Git history. Pending results must remain pending, and Model B
 improvement is a research objective rather than an assumed outcome.
 
@@ -22,7 +22,7 @@ Before substantial work, read in this order:
 3. For primary research, `docs/RESEARCH_V2_PROTOCOL.md` and the relevant section of
    `docs/RESEARCH_V2_RUNBOOK.md`; otherwise only the relevant specification(s).
 
-Use `docs/specs/README.md` to find component specifications. Original-phase runbooks
+Use `docs/specs/README.md` to find component specifications. Original experiment runbooks in `docs/archive/reference/`
 and configurations remain reference contracts; their old dates/populations are not
 the primary v2 defaults. Do not parse the archival PDFs when Markdown equivalents exist.
 
@@ -36,10 +36,10 @@ the primary v2 defaults. Do not parse the archival PDFs when Markdown equivalent
 - V2 uses the separate `data/research_v2` workspace and exact registered generation
   identities. Preserve original workspaces, versioned configurations and stored
   source bytes. Do not select generations from directory modification times.
-- The promoted `structural-break` command is the primary research CLI;
+- In this checkout, `structural-break` is the primary research CLI;
   `structural-break-research` remains compatible, and `structural-break-reference`
-  exposes the original foundation/phase commands. During pending promotion, use
-  the existing research alias. Keep reference reproduction explicit.
+  exposes the original reference commands. GitHub `main` remains on the earlier
+  release until v2 acceptance. Keep reference reproduction explicit.
 - Do not add models, data sources or subsystems merely for sophistication.
 
 ## Scientific invariants

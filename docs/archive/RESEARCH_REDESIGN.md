@@ -1,3 +1,5 @@
+> **Historical proposal.** The accepted design is [the frozen v2 protocol](../RESEARCH_V2_PROTOCOL.md); planning ranges and proposed alternatives below are not active methodology.
+
 # Research redesign proposal after Phase 4
 
 **Status: implementation authorized on 2026-10-06 in a separate research version.**
@@ -9,9 +11,9 @@ sample and longer history, followed by simpler models and a clearer separation
 of calibration from evaluation. More LLM reasoning on the existing seven
 validation observations cannot establish predictive usefulness. The existing
 28-pair experiment remains an immutable reference, and 2024–2025 outcomes remain
-locked under [DECISIONS.md](DECISIONS.md).
+locked under [DECISIONS.md](../DECISIONS.md).
 
-The concrete predeclared implementation is [RESEARCH_V2_PROTOCOL.md](RESEARCH_V2_PROTOCOL.md).
+The concrete predeclared implementation is [RESEARCH_V2_PROTOCOL.md](../RESEARCH_V2_PROTOCOL.md).
 The historical proposal and scarcity audit below remain the motivation, not a
 claim that the expanded experiment has passed acceptance or improved prediction.
 
@@ -22,7 +24,7 @@ The audit binds the frozen relationship generation
 `events_6451711be4cb02d63a38d13b`. Queries explicitly restrict observation dates to
 2016–2023; no final-test outcomes were read. The generated local audit is
 `.acceptance/p4_scarcity_report.json`; the published Phase 3 acceptance report and
-[STATUS.md](STATUS.md) provide the corresponding model and label counts.
+[STATUS.md](IMPLEMENTATION_HISTORY.md) provide the corresponding model and label counts.
 
 | Development funnel | 2016–2023 | Validation 2022–2023 |
 | --- | ---: | ---: |

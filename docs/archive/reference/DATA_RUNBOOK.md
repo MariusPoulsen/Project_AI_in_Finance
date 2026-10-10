@@ -1,4 +1,9 @@
-# Phase 1 data runbook
+> **Original experiment reference.** These instructions describe the recorded
+> 28-pair source/config generations. Use their original workspace and freeze;
+> the active expanded workflow is in [the v2 runbook](../../RESEARCH_V2_RUNBOOK.md).
+> Commands below use the explicit reference CLI.
+
+# Original data capture and replay
 
 The installed package owns all ingestion, validation and publication. No database
 server, provider login or notebook kernel is required. The default window is
@@ -12,14 +17,14 @@ After `uv sync --frozen`, copy `.env.example` to an ignored local `.env` and set
 identifier is sent only to SEC hosts. Do not put it in YAML, Git or shared logs.
 
 ```shell
-uv run --frozen structural-break ingest-data
-uv run --frozen structural-break verify-data
+uv run --frozen structural-break-reference ingest-data
+uv run --frozen structural-break-reference verify-data
 ```
 
 An automatically generated snapshot ID is printed on success. To name it explicitly:
 
 ```shell
-uv run --frozen structural-break ingest-data --snapshot-id my_data_freeze
+uv run --frozen structural-break-reference ingest-data --snapshot-id my_data_freeze
 ```
 
 Use a new ID for every capture. Existing immutable identities cannot be replaced.
@@ -36,8 +41,8 @@ downloads 65 market series: those equities, SPY and eight sector ETFs.
 ## Reproduce a freeze offline
 
 ```shell
-uv run --frozen structural-break replay-data --replay-from my_data_freeze --snapshot-id my_data_replay
-uv run --frozen structural-break verify-data
+uv run --frozen structural-break-reference replay-data --replay-from my_data_freeze --snapshot-id my_data_replay
+uv run --frozen structural-break-reference verify-data
 ```
 
 Replay requires a successfully registered source snapshot, its original final/raw
@@ -63,9 +68,9 @@ workspace for Drive storage. See `COLAB.md`.
 ## Offline fixture acceptance
 
 ```shell
-uv run --frozen structural-break ingest-data --fixture tests/fixtures/phase1 --workspace-root .acceptance/phase1 --snapshot-id fixture_capture
-uv run --frozen structural-break replay-data --workspace-root .acceptance/phase1 --replay-from fixture_capture --snapshot-id fixture_replay
-uv run --frozen structural-break verify-data --workspace-root .acceptance/phase1
+uv run --frozen structural-break-reference ingest-data --fixture tests/fixtures/phase1 --workspace-root .acceptance/phase1 --snapshot-id fixture_capture
+uv run --frozen structural-break-reference replay-data --workspace-root .acceptance/phase1 --replay-from fixture_capture --snapshot-id fixture_replay
+uv run --frozen structural-break-reference verify-data --workspace-root .acceptance/phase1
 ```
 
 The fixture is explicitly synthetic: 38 exchange sessions in 2021, 65 price series,

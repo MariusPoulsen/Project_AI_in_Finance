@@ -1,6 +1,12 @@
-# Foundation fixtures
+# Offline fixtures
 
-The four market rows and document are synthetic storage fixtures, not research
-data or claims about historical prices. They exercise CSV → Arrow → Parquet →
-DuckDB, immutable documents, artifact manifests and run registrations. Later
-phases add scientifically meaningful synthetic pair and agent fixtures.
+These small synthetic inputs test storage, relationships, model fitting and
+evidence handling without credentials, network access or downloaded weights.
+They are not historical research data or accepted study results. Directory and
+fixture identities remain fixed for reproducible tests.
+
+The root market rows and document exercise CSV → Arrow → Parquet → DuckDB,
+immutable document storage, artifact manifests and run registrations. Component
+fixtures extend this with controlled histories and mocked extraction outputs.
+See the [test configuration](../../pyproject.toml) and
+[reference runbooks](../../docs/archive/README.md) for their usage.

@@ -1,16 +1,25 @@
-# Presentation layer
+# Read-only research app
 
-Phase 3 provides Scanner and Pair Detail in `streamlit_app.py`. They call the typed
-read-only `ResearchQueryService`, displaying frozen relationship history and any
-published Model A predictions. App callbacks do not run analytical batch jobs.
+`streamlit_app.py` displays accepted research-v2 model comparisons and stored
+event scores through `PrimaryResearchService`. It exposes the primary
+20-session comparison, predeclared 10/30-session sensitivities, source coverage,
+uncertainty and descriptive subsets. Development dates end in 2023; final-test
+outcomes remain locked.
 
 ```shell
-uv run --frozen --extra app streamlit run app/streamlit_app.py
+uv run --frozen --extra nlp streamlit run app/streamlit_app.py
 ```
 
-Set `SB_WORKSPACE_ROOT` to select another published workspace. Missing outputs have
-explicit empty states; the app does not invent data or model probabilities. Phase 3
-limits the research date selector to development history through 2023. Full pages,
-event evidence, agents and strategy evaluation are delivered in their owning phases.
-See [the ML runbook](../docs/ML_RUNBOOK.md) for fixture/research builds and limitations.
+The default workspace is `data/research_v2`. Set `SB_WORKSPACE_ROOT` in the
+ignored `.env` or process environment to select a restored workspace.
 
+Results appear only after a complete, independently verified generation is
+explicitly published. Missing outputs show a pending state; failed verification
+shows an error. Browsing does not download sources, call providers, fit models
+or write analytical results. The current actual study is still awaiting feature
+completion, model fitting and acceptance: see [status](../docs/STATUS.md) and
+the [publication runbook](../docs/RESEARCH_V2_RUNBOOK.md).
+
+`reference_streamlit_app.py` preserves the original Scanner and Pair Detail
+interface for its recorded workspace. Reproduction instructions live in the
+[reference archive](../docs/archive/README.md).

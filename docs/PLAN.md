@@ -42,14 +42,14 @@ If a criterion cannot be completed, record it as BLOCKED with the exact reason a
 ---
 ## P0 — Repository, environment and storage foundation
 
-Status: complete; all P0 acceptance gates passed. See `docs/STATUS.md` for evidence.
+Status: complete; all P0 acceptance gates passed. See `docs/archive/IMPLEMENTATION_HISTORY.md` for evidence.
 Stopped at the P0 boundary; P1 requires a separate instruction.
 
 ### Build
 
 - [x] Create the repository skeleton from the Software Engineering specification.
 - [x] Add Python 3.11, `pyproject.toml`, `uv.lock`, `.python-version`, `.env.example`, `.gitignore`.
-- [x] Keep the canonical agent-facing Markdown specifications under `docs/specs/`; PDFs may remain under `docs/PDFs/` as archival/human-readable copies.
+- [x] Keep the canonical agent-facing Markdown specifications under `docs/specs/`; PDFs remain under `docs/archive/pdfs/` as archival/human-readable copies.
 - [x] Implement typed configuration loading for universe, data, econometrics, ML, agents, decision, backtest and app settings.
 - [x] Implement structured logging and run IDs.
 - [x] Implement the canonical directory resolver from `docs/DECISIONS.md`.
@@ -70,7 +70,7 @@ Stopped at the P0 boundary; P1 requires a separate instruction.
 
 ## P1 — Data ingestion, reference data and lineage
 
-Status: complete; all P1 acceptance gates passed on 2026-10-03. See `docs/STATUS.md`
+Status: complete; all P1 acceptance gates passed on 2026-10-03. See `docs/archive/IMPLEMENTATION_HISTORY.md`
 for live freeze, offline reproduction and hosted acceptance evidence. Stopped at P1.
 
 ### Build
@@ -127,7 +127,7 @@ for live freeze, offline reproduction and hosted acceptance evidence. Stopped at
 
 ## P3 — Divergence dataset, Model A and minimal app shell
 
-Status: complete; all P3 acceptance gates passed on 2026-10-03. See `docs/STATUS.md`
+Status: complete; all P3 acceptance gates passed on 2026-10-03. See `docs/archive/IMPLEMENTATION_HISTORY.md`
 for frozen-data counts, development metrics, reload/app checks and hosted CI.
 Stopped at P3. Sparse one-class validation limits predictive conclusions.
 
@@ -166,7 +166,7 @@ Stopped at P3. Sparse one-class validation limits predictive conclusions.
 ## P4 — Point-in-time SEC event intelligence and Model B
 
 Status: complete; all P4 acceptance gates passed on 2026-10-05. See
-`docs/STATUS.md` for the genuine partial extraction pilot, stored-model replay,
+`docs/archive/IMPLEMENTATION_HISTORY.md` for the genuine partial extraction pilot, stored-model replay,
 paired validation limits and Windows/Linux/Colab evidence. Stopped at P4.
 Final-test outcomes remain locked; P5 has not begun.
 
@@ -200,46 +200,29 @@ Final-test outcomes remain locked; P5 has not begun.
 
 ## Research v2 — authorized development redesign
 
-Status: implementation and source capture in progress; no expanded predictive
-improvement result has been established. The original P4 acceptance remains valid.
+Status: **IN PROGRESS**. Current delivery gates are in `docs/STATUS.md`; the
+scientific authority is `docs/RESEARCH_V2_PROTOCOL.md`. Detailed prior acceptance
+and recovery records are archived, rather than repeated in this plan.
 
-- [x] Freeze the business-peer roster, orientations and development-only protocol.
-- [x] Capture and independently reconstruct 2004–2023 market sources for 250 issuers.
-- [x] Capture and independently reconstruct SEC metadata for the frozen issuers.
-- [x] Implement resumable per-pair causal registries for 10/20/30-session horizons.
-- [x] Implement guarded free Gemma and pinned local FinBERT adapters.
-- [x] Implement metadata/tone/catalyst ablations on matched quantitative cohorts.
-- [x] Implement forward tuning, independent calibration and paired assessment replay.
-- [x] Pass the complete offline pipeline and original regression suite at frozen revision `2dd54bcb` (PR hosted run `37575503287` and branch run `37575496575` both green, including the quality/reporting/memory amendments).
-- [x] Verify the SEC v3 envelope, canonical 250-inventory SGML gate, balanced catalyst schedule, zero-network source-v3 replay and genuine pinned FinBERT SEC-text smoke.
-- [x] Generate the complete expanded development event registry (all 736 pairs completed successfully).
-- [x] Complete research-only raw/calibrated log loss, balanced losses and descriptive subgroup reporting/replay (Ruff/mypy, 28 unit checks, four model integration checks and both new hosted runs passed).
-- [x] Verify the separately versioned FIT-input FinBERT quality-v2 amendment (production tokenizer receipt, exact 19-record legacy replay and genuine CPU/cache smoke passed; policies/proofs/caches preserved and post-cohort timing disclosed).
-- [x] Verify the science-identical compact evidence-union memory change (100 focused checks, whole Ruff/133-file format, mypy/66-source and final four-model integration checks passed).
-- [x] Commit/freeze the amended code at `2dd54bcb`, launch the new immutable batch at 2026-10-07 05:17:15 UTC, freeze its inputs during guarded startup before event processing and pass fresh hosted CI.
-- [ ] Generate genuine SEC text features and disclose inference/source coverage (legacy stop cause unknown; quality first attempt failed on the repaired orphan inventory; resume 1 deliberately stopped during old-prefix replay at 09:40:28 UTC, preserving all 1,494 files; new full 37,421-event `development_primary_v2` launch pending, Gemma capped at 500).
-- [x] Implement and verify the operation-local parsed-frame cache (128 RAM entries plus private spill): 95 focused checks and all 18 actual source-only forced-eviction pack comparisons passed; a fresh verifier-style cache independently parsed eleven inputs. Four native integration checks (128.76 seconds), Ruff/142-file format and default mypy/77-source-script-app also passed; whole-job gain is unmeasured.
-- [ ] Freeze the amended builder/new inputs and pass its exact-head CI, inventory/copy the 1,494 preserved checkpoints with an explicit receipt, independently reconstruct them, then launch `development_primary_v2`.
-- [ ] Fit and independently replay primary and sensitivity A/B comparisons.
-- [ ] Record actual sample counts, uncertainty and positive/negative comparison results.
-- [ ] Complete whole-suite and hosted release gates for the primary readiness/app/CLI patch (49 focused readiness/CLI, 18 app and 54 SEC checks passed; default mypy for 77 source, script and app files passed; broad local pytest was cancelled, not passed; `98356bf` both hosted runs passed all six jobs; the later cache source needs its own exact-head CI).
-- [ ] After all thirty actual models and native replays finish, publish checked readiness with `structural-break promote-primary --pipeline-receipt PIPELINE_RECEIPT --ci-gate CI_GATE` bound to the final completed generation, archiving the exact CI bytes.
-- [ ] After actual v2 evaluation and required gates pass, promote v2 to GitHub `main` and the default app/run path, retaining v1 history and immutable artifacts for reference/reproduction.
-- [x] Verify Windows/Linux/Colab compatibility for frozen revision `2dd54bcb` (both hosted runs green; full structured receipt `.acceptance/research_2dd54bc_hosted_ci.json`).
+- [x] Freeze the 250-issuer, 40-group, 736-pair business-peer roster and original orientations.
+- [x] Capture and verify 2004–2023 market sources and corrected SEC `source_v3`.
+- [x] Complete the 10/20/30-session quantitative registries for all 736 pairs.
+- [x] Implement free guarded Gemma, pinned FinBERT, metadata/tone/catalyst ablations and matched A/B evaluation.
+- [x] Verify quality-v2 preprocessing, compact aggregation, operation-local parsing and native reporting with offline engineering checks.
+- [x] Freeze detached source `a02aadf` and pass its exact Windows/Linux/Colab hosted CI.
+- [x] Audit and copy 2,290 preserved checkpoints unchanged; launch the full 37,421-event `development_detached_v2` build with the frozen 500-event catalyst schedule.
+- [ ] Complete genuine SEC/metadata/FinBERT feature generation and disclose source/inference coverage.
+- [ ] Fit all thirty primary and sensitivity bundles and independently replay native inference, reports and matched A/B comparisons.
+- [ ] Record actual denominators, positive outcomes, paired uncertainty and positive/negative comparison results.
+- [ ] Complete the current source/CI/app release gates and genuine six-stage pipeline receipt for the detached generation.
+- [ ] Publish verified readiness using `structural-break promote-primary --pipeline-receipt PIPELINE_RECEIPT --ci-gate CI_GATE` bound to the accepted generation.
+- [ ] Promote accepted v2 to GitHub `main` and the default app/run path, retaining original Git history and immutable reference artifacts.
 
-Commands and recovery rules are in `docs/RESEARCH_V2_RUNBOOK.md`.
-The legacy job is confirmed stopped as of 2026-10-07 05:10 UTC. Its log ends
-at 1,494 completed checkpoints at 03:33 UTC without traceback/terminal manifest;
-the cause is unknown, not recorded as an intentional stop or confirmed failure.
-Keep its partial directory and verified caches. The replacement used frozen
-`2dd54bcb` code at process launch; its immutable inputs were published during
-guarded startup before event processing, with SHA-256
-`cf19099ac57ee7f5ba6ab3e37daa6d46dda49a7f4dc63893d6a06d1063f78fea`.
-No actual research A/B assessment preceded the FIT-only amendment. The later
-three-FIT-event source-only profile motivates the operation-local parsing
-amendment in DECISIONS section 22. Its 95 focused checks and exact 18-pack
-benchmark passed; full-job gain is unmeasured, and the final source/input
-freeze, exact-head CI, checkpoint transition and new batch launch remain pending.
+The detached worker performs feature generation only. Model fits, independent
+verification, publication and merge are separate gates. It does not open the
+2024–2025 final test or establish Model B improvement. Parallel cleanup remains
+isolated until the frozen worker exits. Commands and recovery are in
+`docs/RESEARCH_V2_RUNBOOK.md`.
 
 ---
 
