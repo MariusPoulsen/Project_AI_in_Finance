@@ -183,9 +183,12 @@ def prepare_checkpoint_audit(
     """
     from structural_break.research.intelligence import (
         RESEARCH_EVIDENCE_POLICY,
+        SubmissionClockState,
         _empty_pack,
         _offline_only,
         _pair_filing_indices,
+        _submission_clock_state,
+        _validate_empty_clock_coverage,
         _validate_submission_clock,
         verify_sec_metadata,
     )
@@ -207,6 +210,7 @@ def prepare_checkpoint_audit(
     paths = ProjectPaths(Path(__file__).resolve().parents[3], cache_workspace.resolve())
     # One current raw-response validation per distinct accession, not per event.
     documents: dict[str, list[dict[str, object]]] = {}
+    clock_states: dict[str, SubmissionClockState] = {}
     earliest_cutoffs: dict[str, pd.Timestamp] = {}
     selected_rows: dict[str, dict[str, Any]] = {}
     checked: dict[str, dict[str, Any]] = {}
@@ -248,8 +252,21 @@ def prepare_checkpoint_audit(
                 if accession not in documents:
                     documents[accession] = cache_filing(paths, filing, _offline_only, offline=True)
                     selected_rows[accession] = dict(filing)
+                    clock_states[accession] = _submission_clock_state(
+                        documents[accession], filing, pd.Timestamp(event["evidence_cutoff"])
+                    )
                 cutoff = pd.Timestamp(event["evidence_cutoff"])
                 earliest_cutoffs[accession] = min(earliest_cutoffs.get(accession, cutoff), cutoff)
+            _validate_empty_clock_coverage(
+                pack,
+                selected,
+                {
+                    str(filing["filing_id"])
+                    for filing in selected
+                    if clock_states[str(filing["filing_id"])]
+                    is SubmissionClockState.EMPTY_ACCEPTANCE
+                },
+            )
             selected_index = {str(row["filing_id"]): row for row in selected}
             for chunk in pack["chunks"]:
                 chunk_filing = selected_index.get(chunk["filing_id"])

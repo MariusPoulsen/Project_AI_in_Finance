@@ -23,39 +23,37 @@ historical feature coverage or Model B improvement.
 
 ## Current feature generation
 
-`development_detached_v2` exited 1 on 2026-10-10 at 04:29:49 UTC with
-`RemoteDisconnected`, after saving 4,727 checkpoints. Its workers are absent
-and no complete manifest exists. The exact failed request was not recorded.
-The preserved failed-attempt baseline binds every checkpoint byte:
+`development_prefetch_v2` exited 1 on 2026-10-10 at 08:30:41 UTC after
+6,835 saved checkpoints (18.3% of 37,421). Its recorded workers are absent and no
+complete manifest exists. The source-only diagnosis found an explicitly empty
+official acceptance field in NOC accession `0000950134-09-000321`.
+Its original source, raw captures, checkpoint bytes, logs and terminal receipts
+remain preserved. The earlier 4,727-checkpoint audit cannot authorize new code.
 
-```text
-.acceptance/detached_v2_failed_attempt_20261010T051843Z_6a54dac86d30/receipt.json
-```
-
-Baseline SHA-256:
-`0a23c5445e4c35353117087b870920406c85fdbb432c17cfa1c8ed94d524242c`.
-The original launch logs and receipts remain preserved. Its original source and
-inputs are unchanged; the prior 2,290-checkpoint audit cannot authorize new code.
-
-Recovery targets a distinct `development_prefetch_v2` batch after a new source
-freeze, engineering checks and a fresh SHA-bound audit of all 4,727 checkpoints.
-The mode overlaps one next-event SEC preparation with current-event scoring,
-sharing one CPU model and preserving inference settings, event order, the
-500-event Gemma schedule and final lock. Interrupted public-source transfers use
-the existing bounded retry policy. No measured whole-job speedup is established.
+Recovery targets distinct `development_clockgap_v2` after a tested source freeze
+and fresh SHA-bound audit of all 6,835 checkpoints. The
+[disclosed amendment](DECISIONS.md#25-explicitly-empty-official-acceptance-clocks)
+keeps that accession selected but excludes its unavailable-clock text and records
+the coverage gap; metadata features remain under the frozen source-v3 policy.
+It never infers a date or drops events. Malformed, duplicate and contradictory
+clocks still fail. The one-next-event source overlap, one CPU model, inference
+settings, 500-event schedule, model definitions and final lock stay fixed.
 
 Actual audit, launch, progress and exit facts belong to the new operational
 receipts. The [runbook](RESEARCH_V2_RUNBOOK.md) describes the exact recovery and
 manual-status commands; never infer a live worker from this static snapshot.
 
-Local engineering validation passed 139 HTTP/CLI/launch checks, 50 intelligence/
-checkpoint regressions plus both final audited-reuse cases, and 192 evidence/
-extraction/SEC/schedule/parser/progress checks. Cold serial/prefetch fixtures are
-byte-identical; deterministic barriers verify genuine overlap, one outstanding
-source task, owner-thread confinement and ordered failure cleanup. Ruff passes,
-all 155 Python files are formatted, strict mypy passes for 79 source files, the
-PowerShell launcher parses, and all 132 local documentation links resolve.
-These checks do not establish historical model gains or complete study acceptance.
+The empty-clock repair passed 135 focused regression cases across the suite and
+corrected fixture follow-ups, 354 additional offline HTTP/CLI/source/tone/launch
+regressions, Ruff, formatting of 155 Python files and strict mypy for 79 files.
+Read-only cached-source acceptance reproduced six completed
+packs exactly and processed three pending inputs, including the failed event,
+with identical serial/threaded packs and no network, provider, neural or outcome
+access. Its gap retains usable text from both legs and excludes the untimed
+accession. The preserved baseline binds all 6,835 checkpoints and 85,340 raw
+capture files; all 62,978 source hashes from the prior audit remain unchanged.
+Audit and launch evidence belong to exact operational receipts. These checks
+do not establish historical model gains, a whole-job speedup or study acceptance.
 
 A complete feature `manifest.json` is still required. Audited feature-build success
 records independent raw verification as pending; later model/native/publication

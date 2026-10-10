@@ -17,7 +17,12 @@ from structural_break.config.models import ProjectConfig
 from structural_break.config.paths import ProjectPaths
 from structural_break.data.http import FetchedResponse, SourceError
 from structural_break.intelligence.event_features import EVENT_FEATURE_NAMES
-from structural_break.intelligence.extraction import ProviderFailure
+from structural_break.intelligence.extraction import (
+    CatalystResponse,
+    ProviderFailure,
+    extract_pack,
+    validate_response,
+)
 from structural_break.intelligence.sentiment import (
     FINBERT_ASSETS_SHA256,
     FINBERT_MODEL,
@@ -154,6 +159,108 @@ class Tone:
 
 def checkpoint_path(output: Path, event_id: str) -> Path:
     return output / "events" / (hashlib.sha256(event_id.encode()).hexdigest() + ".json")
+
+
+def test_empty_recent_clock_keeps_valid_periodic_text_and_prevents_absence_claims(
+    freeze: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    metadata, output, workspace = tmp_path / "metadata", tmp_path / "output", tmp_path / "cache"
+    collect_sec_metadata(freeze, metadata, get=source([]))
+    raw_get = source([])
+    excluded = "0009000000-22-000002"
+
+    def clocked_get(url: str) -> FetchedResponse:
+        response = raw_get(url)
+        empty = excluded in url
+        body = response.body
+        if url.endswith(".txt"):
+            header = (
+                b"<ACCEPTANCE-DATETIME>\n\nACCESSION NUMBER: preserved\n"
+                if empty
+                else b"<ACCEPTANCE-DATETIME>20220308163000\n"
+                if "22000002" in url
+                else b"<ACCEPTANCE-DATETIME>20220201163000\n"
+            )
+            body = header + body
+        if empty:
+            body = body.replace(b"Quarterly earnings", b"FORBIDDEN_UNTIMED_TEXT earnings")
+        return FetchedResponse(body, response.url, response.status_code, response.retrieved_at)
+
+    original_parse = intelligence.parse_documents
+
+    def checked_parse(documents, policy):
+        assert all(document["filing_id"] != excluded for document in documents)
+        return original_parse(documents, policy)
+
+    class CheckedTone(Tone):
+        def token_ids(self, text: str) -> list[int]:
+            assert "FORBIDDEN_UNTIMED_TEXT" not in text
+            return super().token_ids(text)
+
+    monkeypatch.setattr(intelligence, "parse_documents", checked_parse)
+    manifest = build_event_intelligence(
+        event_rows(),
+        freeze,
+        metadata,
+        output,
+        provider=None,
+        sentiment_backend=CheckedTone(),
+        cache_workspace=workspace,
+        get=clocked_get,
+    )
+    assert manifest["event_count"] == 2 and manifest["all_events_retained"] is True
+    record = json.loads(checkpoint_path(output, "earlier").read_bytes())
+    pack = record["pack"]
+    assert record["selected_filing_count"] == len(pack["selected_filing_ids"]) == 4
+    assert excluded in pack["selected_filing_ids"]
+    gap = pack["coverage"]["A"]
+    assert gap["status"] == "PARTIAL" and gap["empty_acceptance_filing_ids"] == [excluded]
+    assert gap["failed_filing_ids"] == [excluded]
+    assert pack["coverage"]["B"]["status"] == "COMPLETE"
+    assert {chunk["leg"] for chunk in pack["chunks"]} == {"A", "B"}
+    assert all(chunk["filing_id"] != excluded for chunk in pack["chunks"])
+    assert record["tone"]["legs"]["A"]["status"] == "PARTIAL"
+    assert record["tone"]["legs"]["A"]["source_coverage_status"] == "PARTIAL"
+    assert record["tone"]["legs"]["B"]["status"] == "SUCCESS"
+    none = CatalystResponse(
+        event_type="NONE",
+        affected_leg="NONE",
+        direction="UNKNOWN",
+        materiality="UNKNOWN",
+        relationship_relevance="NONE",
+        extraction_confidence=None,
+        citations=[],
+    )
+    with pytest.raises(ValueError, match="cannot establish NONE"):
+        validate_response(none, pack)
+
+    def supported_other_leg(request: dict[str, Any]) -> dict[str, Any]:
+        evidence = json.loads(request["messages"][1]["content"])
+        assert "FORBIDDEN_UNTIMED_TEXT" not in request["messages"][1]["content"]
+        chunk = next(chunk for chunk in evidence["chunks"] if chunk["leg"] == "B")
+        return {
+            "event_type": "EARNINGS",
+            "affected_leg": "B",
+            "direction": "POSITIVE",
+            "materiality": "MEDIUM",
+            "relationship_relevance": "INDIRECT",
+            "extraction_confidence": 0.8,
+            "citations": [
+                {
+                    "chunk_id": chunk["chunk_id"],
+                    "leg": "B",
+                    "quote": "Quarterly earnings and revenue increased substantially.",
+                }
+            ],
+        }
+
+    extraction = extract_pack(
+        pack, supported_other_leg, tmp_path / "fixture_extraction", "fixture", "fixture"
+    )
+    assert extraction["status"] == "SUCCESS" and extraction["one_sided_event"] is False
+    features = pd.read_parquet(output / "features.parquet").set_index("event_id")
+    assert features.loc["earlier", "sec_a_recent_8k_count_30d"] == 1
+    assert features.loc["earlier", "sec_a_metadata_coverage_unknown"] == 0
 
 
 def provider(calls: list[str]):

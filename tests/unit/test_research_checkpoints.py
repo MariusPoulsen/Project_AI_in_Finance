@@ -1,5 +1,6 @@
 """Offline engineering resume checks never replace independent evidence replay."""
 
+import hashlib
 import json
 import shutil
 from datetime import UTC, datetime
@@ -40,7 +41,9 @@ class Tone:
 
 
 @pytest.fixture
-def batch(tmp_path: Path, project_root: Path, config: ProjectConfig) -> dict[str, Any]:
+def batch(
+    tmp_path: Path, project_root: Path, config: ProjectConfig, request: pytest.FixtureRequest
+) -> dict[str, Any]:
     roster = yaml.safe_load((project_root / "configs/research_v2_universe.yaml").read_bytes())
     roster["groups"] = [roster["groups"][0]]
     roster["groups"][0]["tickers"] = ["KO", "PEP", "KDP"]
@@ -59,6 +62,7 @@ def batch(tmp_path: Path, project_root: Path, config: ProjectConfig) -> dict[str
     freeze_universe(roster_path, ProjectConfig.model_validate(settings), directory, universe)
 
     def get(url: str) -> FetchedResponse:
+        empty = getattr(request, "param", None) == "empty-clock" and "0009000000-22" in url
         if "submissions/" in url:
             cik = url.split("CIK")[1][:10]
             body = json.dumps(
@@ -80,8 +84,13 @@ def batch(tmp_path: Path, project_root: Path, config: ProjectConfig) -> dict[str
         elif url.endswith("index.json"):
             body = b'{"directory":{"item":[{"name":"report.htm","type":"file"}]}}'
         elif url.endswith(".txt"):
+            header = (
+                b"<ACCEPTANCE-DATETIME>\n\nACCESSION NUMBER: preserved\n"
+                if empty
+                else b"<ACCEPTANCE-DATETIME>20220308163000\n"
+            )
             body = (
-                b"<ACCEPTANCE-DATETIME>20220308163000\n<DOCUMENT>\n<TYPE>10-K\n"
+                header + b"<DOCUMENT>\n<TYPE>10-K\n"
                 b"<SEQUENCE>1\n<FILENAME>report.htm\n<TEXT><p>Sales grew substantially.</p>"
                 b"</TEXT>\n</DOCUMENT>"
             )
@@ -148,6 +157,87 @@ def batch(tmp_path: Path, project_root: Path, config: ProjectConfig) -> dict[str
         "baseline_receipt_sha256": sha256_file(baseline),
         "receipt_path": tmp_path / "audit.json",
     }
+
+
+@pytest.mark.parametrize("batch", ["empty-clock"], indirect=True)
+def test_empty_clock_batch_replays_and_audits_explicit_gap_without_excluded_text(
+    batch: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    records = [
+        json.loads(path.read_bytes()) for path in sorted((batch["source_dir"] / "events").iterdir())
+    ]
+    excluded = "0009000000-22-000001"
+    for record in records:
+        pack = record["pack"]
+        assert record["selected_filing_count"] == 2
+        assert pack["selected_filing_ids"] == [excluded, "0009000001-22-000001"]
+        coverage = pack["coverage"]["A"]
+        assert coverage["status"] == "UNKNOWN"
+        assert coverage["selected_filing_ids"] == coverage["failed_filing_ids"] == [excluded]
+        assert coverage["available_filing_ids"] == []
+        assert coverage["empty_acceptance_filing_ids"] == [excluded]
+        assert coverage["empty_acceptance_filing_count"] == 1
+        assert pack["coverage_status"] == "PARTIAL"
+        assert pack["chunks"] and {row["leg"] for row in pack["chunks"]} == {"B"}
+        assert record["tone"]["legs"]["A"]["status"] == "UNKNOWN"
+        assert record["tone"]["legs"]["A"]["token_count"] == 0
+        assert all(value is None for value in record["tone"]["legs"]["A"]["probabilities"].values())
+        assert record["tone"]["legs"]["B"]["status"] == "SUCCESS"
+        assert record["extraction"]["event_type"] == "UNKNOWN"
+
+    def forbidden(*args, **kwargs):
+        pytest.fail("Checkpoint audit must not parse text or call inference/provider")
+
+    monkeypatch.setattr(intelligence, "parse_documents", forbidden)
+    monkeypatch.setattr(intelligence, "score_sentiment_pack", forbidden)
+    monkeypatch.setattr(intelligence, "extract_pack", forbidden)
+    receipt = prepare_checkpoint_audit(**batch)
+    assert receipt["checkpoint_count"] == 2
+    assert len(verify(batch).checkpoints) == 2
+    assert any(excluded in filename for filename in receipt["source_files"])
+
+
+@pytest.mark.parametrize("batch", ["empty-clock"], indirect=True)
+@pytest.mark.parametrize(
+    "forgery", ["complete_leg", "complete_pack", "absent_gap", "bool_count", "excluded_chunk"]
+)
+def test_audit_rejects_forged_empty_clock_coverage_even_with_bound_checkpoint_bytes(
+    batch: dict[str, Any], forgery: str
+) -> None:
+    path = next((batch["source_dir"] / "events").iterdir())
+    record = json.loads(path.read_bytes())
+    coverage = record["pack"]["coverage"]["A"]
+    if forgery == "complete_leg":
+        coverage["status"] = "COMPLETE"
+    elif forgery == "complete_pack":
+        record["pack"]["coverage_status"] = "COMPLETE"
+    elif forgery == "absent_gap":
+        del coverage["empty_acceptance_filing_ids"]
+    elif forgery == "bool_count":
+        coverage["empty_acceptance_filing_count"] = True
+    else:
+        record["pack"]["chunks"].append(
+            dict(
+                record["pack"]["chunks"][0],
+                chunk_id="forged_empty_clock_chunk",
+                filing_id="0009000000-22-000001",
+                security_id="US:KO",
+                leg="A",
+            )
+        )
+    record["pack"]["evidence_hash"] = hashlib.sha256(
+        json_bytes({key: value for key, value in record["pack"].items() if key != "evidence_hash"})
+    ).hexdigest()
+    if record["catalyst_scheduled"]:
+        record["catalyst_pack"] = record["pack"]
+    path.write_bytes(json_bytes(record))
+    baseline = json.loads(batch["baseline_receipt_path"].read_bytes())
+    entry = next(row for row in baseline["checkpoint_inventory"] if row["filename"] == path.name)
+    entry.update(sha256=sha256_file(path), size_bytes=path.stat().st_size)
+    batch["baseline_receipt_path"].write_bytes(json_bytes(baseline))
+    batch["baseline_receipt_sha256"] = sha256_file(batch["baseline_receipt_path"])
+    with pytest.raises(ValueError, match="empty-clock|Empty SEC"):
+        prepare_checkpoint_audit(**batch)
 
 
 def verify(batch: dict[str, Any]):

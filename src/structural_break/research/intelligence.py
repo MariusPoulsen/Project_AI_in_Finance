@@ -15,6 +15,7 @@ from collections.abc import Callable, Collection, Mapping, Sequence
 from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import asdict
 from datetime import UTC, date, datetime
+from enum import Enum
 from pathlib import Path
 from types import TracebackType
 from typing import Any, Self, cast
@@ -725,16 +726,22 @@ def metadata_event_features(
     return {name: values[name] for name in METADATA_FEATURE_COLUMNS}
 
 
-def _validate_submission_clock(
+class SubmissionClockState(Enum):
+    VERIFIED = "VERIFIED"
+    ABSENT = "ABSENT"
+    EMPTY_ACCEPTANCE = "EMPTY_ACCEPTANCE"
+
+
+def _submission_clock_state(
     documents: Sequence[Mapping[str, Any]], filing: Mapping[str, Any], cutoff: pd.Timestamp
-) -> bool:
+) -> SubmissionClockState:
     """Fail closed on contradictory available top-level official SGML clocks.
 
     Missing headers are not evidence of an exact acceptance time. Existing
     source gaps remain explicit; only a present, valid header is audited here.
     Embedded documents can quote historical headers and are excluded.
     """
-    verified = False
+    verified, empty = False, False
     for document in documents:
         if document["document_type"] != "SUBMISSION" or document["status"] != "DOWNLOADED":
             continue
@@ -749,7 +756,28 @@ def _validate_submission_clock(
             preamble,
             flags=re.I | re.M,
         )
-        if len(markers) != 1 or len(matches) != 1:
+        if len(markers) != 1:
+            raise ValueError("Official SEC submission acceptance header is ambiguous or malformed")
+        if not matches:
+            blank = re.search(
+                rb"<ACCEPTANCE-DATETIME>[ \t]*(?:</ACCEPTANCE-DATETIME>)?[ \t]*\r?$",
+                preamble,
+                flags=re.I | re.M,
+            )
+            # Only a genuinely empty field is a recoverable source gap. A clock
+            # moved to the next line or a malformed nonempty value still fails.
+            following = preamble[blank.end() :].lstrip(b" \t\r\n") if blank else b""
+            if (
+                blank is None
+                or following
+                and not re.match(rb"(?:<[^>]+>|[A-Z][A-Z \t-]*:)", following, flags=re.I)
+            ):
+                raise ValueError(
+                    "Official SEC submission acceptance header is ambiguous or malformed"
+                )
+            empty = True
+            continue
+        if len(matches) != 1:
             raise ValueError("Official SEC submission acceptance header is ambiguous or malformed")
         accepted, _ = parse_acceptance_timestamp(matches[0].decode("ascii"))
         assert accepted is not None
@@ -766,7 +794,53 @@ def _validate_submission_clock(
         ):
             raise ValueError("Official SEC submission acceptance contradicts its bounds or cutoff")
         verified = True
-    return verified
+    return (
+        SubmissionClockState.EMPTY_ACCEPTANCE
+        if empty
+        else SubmissionClockState.VERIFIED
+        if verified
+        else SubmissionClockState.ABSENT
+    )
+
+
+def _validate_submission_clock(
+    documents: Sequence[Mapping[str, Any]], filing: Mapping[str, Any], cutoff: pd.Timestamp
+) -> bool:
+    """Retain the legacy boolean API without claiming an empty clock is verified."""
+    return _submission_clock_state(documents, filing, cutoff) is SubmissionClockState.VERIFIED
+
+
+def _validate_empty_clock_coverage(
+    pack: Mapping[str, Any], selected: Sequence[Mapping[str, Any]], empty_ids: set[str]
+) -> None:
+    """Audit source gaps without reading excluded text or trusting stored coverage."""
+    if any(chunk["filing_id"] in empty_ids for chunk in pack["chunks"]):
+        raise ValueError("Empty SEC acceptance clock cannot supply evidence text")
+    if empty_ids and pack["coverage_status"] != ("PARTIAL" if pack["chunks"] else "UNKNOWN"):
+        raise ValueError("SEC empty-clock aggregate coverage cannot claim complete evidence")
+    for leg in ("A", "B"):
+        expected = sorted(
+            str(row["filing_id"])
+            for row in selected
+            if row["leg"] == leg and str(row["filing_id"]) in empty_ids
+        )
+        info = pack["coverage"][leg]
+        if not expected:
+            if "empty_acceptance_filing_ids" in info or "empty_acceptance_filing_count" in info:
+                raise ValueError("SEC empty-clock coverage invents an excluded filing")
+            continue
+        status = "PARTIAL" if any(chunk["leg"] == leg for chunk in pack["chunks"]) else "UNKNOWN"
+        if (
+            info.get("empty_acceptance_filing_ids") != expected
+            or type(info.get("empty_acceptance_filing_count")) is not int
+            or info.get("empty_acceptance_filing_count") != len(expected)
+            or info.get("status") != status
+            or info.get("reason") != "EMPTY_SEC_ACCEPTANCE_TIMESTAMP"
+            or not set(expected).issubset(info.get("failed_filing_ids", []))
+            or not set(expected).issubset(info.get("selected_filing_ids", []))
+            or set(expected).intersection(info.get("available_filing_ids", []))
+        ):
+            raise ValueError("SEC empty-clock coverage fails to retain the selected source gap")
 
 
 def _event_pack(
@@ -784,11 +858,15 @@ def _event_pack(
         event, filings, [event["leg_a_security_id"], event["leg_b_security_id"]], policy
     )
     parsed = []
+    empty_ids: set[str] = set()
     for filing in selected:
         # cache_filing checks the current raw bytes and response metadata even
         # when this operation has already parsed the exact document inventory.
         documents = cache_filing(paths, filing, source_get, offline=offline)
-        _validate_submission_clock(documents, filing, pd.Timestamp(event["evidence_cutoff"]))
+        clock = _submission_clock_state(documents, filing, pd.Timestamp(event["evidence_cutoff"]))
+        if clock is SubmissionClockState.EMPTY_ACCEPTANCE:
+            empty_ids.add(str(filing["filing_id"]))
+            continue
         key = _sha(documents)
         if parsed_cache is not None and key in parsed_cache:
             chunks = parsed_cache[key]
@@ -813,6 +891,20 @@ def _event_pack(
                 "PARTIAL" if any(chunk["leg"] == leg for chunk in pack["chunks"]) else "UNKNOWN"
             )
             pack["coverage"][leg]["reason"] = "SEC_METADATA_OR_TIME_COVERAGE_INCOMPLETE"
+        excluded = sorted(
+            str(row["filing_id"])
+            for row in selected
+            if row["leg"] == leg and str(row["filing_id"]) in empty_ids
+        )
+        if excluded:
+            pack["coverage"][leg].update(
+                status=(
+                    "PARTIAL" if any(chunk["leg"] == leg for chunk in pack["chunks"]) else "UNKNOWN"
+                ),
+                reason="EMPTY_SEC_ACCEPTANCE_TIMESTAMP",
+                empty_acceptance_filing_ids=excluded,
+                empty_acceptance_filing_count=len(excluded),
+            )
     pack["coverage_status"] = (
         "COMPLETE"
         if all(pack["coverage"][leg]["status"] == "COMPLETE" for leg in ("A", "B"))
@@ -820,6 +912,7 @@ def _event_pack(
         if pack["chunks"]
         else "UNKNOWN"
     )
+    _validate_empty_clock_coverage(pack, selected, empty_ids)
     pack.pop("evidence_hash", None)
     pack["evidence_hash"] = _sha(pack)
     return pack, len(selected)

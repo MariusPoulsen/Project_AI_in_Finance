@@ -359,3 +359,39 @@ frozen stopped-attempt baseline, and use new immutable batch `development_prefet
 The audit permits only the engineering builder-code hash difference in scientific
 inputs. Independent verification remains fresh raw replay. Do not claim a measured
 whole-job speedup from synthetic concurrency tests or a cache-only replay benchmark.
+
+## 25. Explicitly empty official acceptance clocks
+
+On 2026-10-10 the source-prefetch attempt exited 1 after 6,835 checkpoints.
+The user authorized continuation. Source-only diagnosis identified NOC accession
+`0000950134-09-000321`, whose official submission has one top-level
+`<ACCEPTANCE-DATETIME>` field containing only whitespace. Its raw response SHA-256
+is `1ef7c17b421958602c140526c8d35183d10d619df40e6f02ec9fdd75c53718c4`.
+This amendment follows quantitative cohort construction and counts, but precedes
+expanded Model B fitting and A/B assessment. Diagnosis reads cached source and
+event identities, without outcomes, model scores or final-test data.
+
+Treat only a unique, genuinely empty top-level official acceptance field as
+unavailable source text. Retain the selected accession, all response bytes and
+sidecars, selected-filing denominators and every event. Exclude that accession's
+primary/exhibit text before parsing, extraction or tone inference; mark its
+affected leg's coverage gap explicitly. Other admissible sources can supply partial
+evidence. Incomplete coverage cannot establish `NONE` or confirmed one-sided
+absence. Never infer acceptance from filing/header/document dates, backfill an
+older filing or neutral tone, drop an event, or relax the source-v3 clock envelope.
+Frozen metadata-only features continue using the unchanged source-v3 JSON bounds.
+
+Nonempty malformed values, duplicate acceptance markers and contradictory valid
+clocks remain hard failures. The existing absent-marker policy is unchanged and
+does not assert an exact verified SGML clock. Builder, checkpoint audit and fresh
+independent replay apply the same empty-clock exclusion. The audit must reject a
+saved checkpoint that uses excluded text or fails to disclose its coverage gap;
+it cannot bless a changed feature value merely because old bytes were preserved.
+
+Preserve the failed `development_prefetch_v2` source, logs and 6,835 checkpoints.
+Freeze and test the repair, bind a new failed-attempt baseline and audit all retained
+checkpoints before the distinct immutable `development_clockgap_v2` generation.
+The registry, 37,421-event population, SEC source-v3 bytes, evidence budgets,
+quality-v2 FinBERT, pinned assets, 500-event schedule, matched A/B definitions and
+2024–2025 outcome lock remain fixed. Main promotion and independent raw/native
+verification remain pending.

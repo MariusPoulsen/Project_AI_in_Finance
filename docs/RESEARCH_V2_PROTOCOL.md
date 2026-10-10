@@ -236,6 +236,19 @@ envelope and unchanged original response/retrieval identities, without HTTP.
 The genuine pinned CPU FinBERT smoke on V/MA SEC text at 2016-01-08 also passed:
 six chunks, 210 windows and exact cache replay. These engineering checks do not
 constitute a full 89,657-header audit or complete historical NLP study.
+
+The empty-clock amendment in [DECISIONS section 25](DECISIONS.md#25-explicitly-empty-official-acceptance-clocks)
+was decided after quantitative cohorts/counts existed, before expanded B fitting
+or A/B assessment, using cached source diagnosis without outcomes. A unique
+explicitly empty top-level SGML acceptance field makes that accession's text
+unavailable. Keep its raw/selected-filing denominators and event; disclose the
+affected leg's missing-clock gap, with UNKNOWN or PARTIAL evidence and no inference
+from the excluded text. Filing/header dates never substitute, older filings never
+backfill, and incomplete evidence cannot prove absence. Frozen source-v3 metadata
+features remain unchanged. Malformed nonempty, duplicate and contradictory clocks
+still fail; absent-marker legacy handling is unchanged. Audit and independent raw
+replay enforce the same exclusion before parser or neural/provider processing.
+
 ## Parsing and audited recovery
 
 The source-only parsing amendment in DECISIONS section 22 preceded actual

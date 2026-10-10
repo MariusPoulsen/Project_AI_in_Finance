@@ -8,9 +8,11 @@ objective; it has not yet been established.
 
 ## Current build
 
-The prior worker exited 1 at 4,727 checkpoints on 2026-10-10 with
-`RemoteDisconnected`. Its logs, source and checkpoints are preserved. The
-replacement generation uses bounded source prefetch and a fresh audit; it runs
+The prior `development_prefetch_v2` worker exited 1 at 6,835 checkpoints on
+2026-10-10 because an official SEC acceptance field was explicitly empty.
+Its logs, source and checkpoints are preserved. The replacement excludes that
+accession's unavailable-clock text, retains selected-source/event denominators,
+and uses bounded source prefetch and a fresh audit. It runs
 independently of this chat after launch and does not start training or publication.
 Keep the running checkout's computational source frozen; prepare later changes
 in isolation. Do not duplicate a live build or restart older stopped controllers.
@@ -18,16 +20,16 @@ in isolation. Do not duplicate a live build or restart older stopped controllers
 | Input | Frozen identity |
 |---|---|
 | Registry | `research_registry_0bd415d2a5af1f4891dc1f0d` |
-| Recovery intelligence batch | `development_prefetch_v2` |
+| Recovery intelligence batch | `development_clockgap_v2` |
 | Computational revision | Exact committed HEAD bound by its fresh audit/launch |
 | Event population | 37,421; all events retained |
 | SEC metadata | `source_v3` / `research_sec_5f856a4e440531e2742bf1d8` |
 | SEC manifest SHA-256 | `39a6e5e417a2c3e8ddfa75c04564453c0157a37ca43b46ad1b14a3e0935853a9` |
 | FinBERT preprocessing | `sec-sentence-quality-wordpiece-v2` |
 | Catalyst schedule | 500 target-blind events |
-| Preserved checkpoints | 4,727; copy unchanged after the fresh audit passes |
-| Stopped-attempt baseline | `.acceptance/detached_v2_failed_attempt_20261010T051843Z_6a54dac86d30/receipt.json` |
-| Baseline SHA-256 | `0a23c5445e4c35353117087b870920406c85fdbb432c17cfa1c8ed94d524242c` |
+| Preserved checkpoints | 6,835; copy unchanged after the fresh audit passes |
+| Stopped-attempt baseline | `.acceptance/prefetch_v2_failed_attempt_20261010T124036Z_6a9612c44002/receipt.json` |
+| Baseline SHA-256 | `135d100da726a98ba077babec0260c52bf899e18dfd84d41c3ab83541868c470` |
 | Operational overlap | One next-event source task; one CPU model; `--source-prefetch 1` |
 
 From the repository root, check progress manually:
@@ -110,15 +112,15 @@ a SHA-bound stopped-attempt baseline, then audit the source/checkpoint identitie
 The current stopped-attempt transition uses:
 
 ```powershell
-$baseline = '.acceptance/detached_v2_failed_attempt_20261010T051843Z_6a54dac86d30/receipt.json'
-$baselineSha = '0a23c5445e4c35353117087b870920406c85fdbb432c17cfa1c8ed94d524242c'
+$baseline = '.acceptance/prefetch_v2_failed_attempt_20261010T124036Z_6a9612c44002/receipt.json'
+$baselineSha = '135d100da726a98ba077babec0260c52bf899e18dfd84d41c3ab83541868c470'
 $audit = '.acceptance/NEW_AUDIT_RECEIPT.json'
 & .\.venv\Scripts\python.exe -u -m structural_break.research.cli audit-checkpoints `
   --registry-version research_registry_0bd415d2a5af1f4891dc1f0d `
-  --batch-name development_prefetch_v2 --sec-source source_v3 `
+  --batch-name development_clockgap_v2 --sec-source source_v3 `
   --sentiment-preprocessing sec-sentence-quality-wordpiece-v2 `
   --catalyst-max-events 500 `
-  --checkpoint-source data/research_v2/intelligence/development_detached_v2 `
+  --checkpoint-source data/research_v2/intelligence/development_prefetch_v2 `
   --checkpoint-baseline $baseline --checkpoint-baseline-sha256 $baselineSha `
   --audit-output $audit
 ```
@@ -129,15 +131,20 @@ The audit checks frozen inputs, event identities, schedule,
 checkpoint bytes, raw SEC inventories/SGML clocks and stored extraction/tone
 features, then copies the same checkpoint bytes. It makes no provider or neural
 calls and does not replace independent raw-text acceptance.
+An explicitly empty unique official acceptance field excludes that accession's
+text without replacing dates or selecting an older source. Its selected filing
+ID/count and failed-source gap remain explicit. The audit rejects old checkpoints
+that used excluded text or omitted the gap; malformed, duplicate or contradictory
+clocks still fail. Fresh independent replay applies the identical rule.
 
 After the audit succeeds, supply its exact SHA, the tested committed source HEAD
 and the verified target checkpoint count to the detached launcher:
 
 ```powershell
 $auditSha = (Get-FileHash -LiteralPath $audit -Algorithm SHA256).Hash.ToLowerInvariant()
-& .\scripts\start_research_intelligence.ps1 -BatchName development_prefetch_v2 `
+& .\scripts\start_research_intelligence.ps1 -BatchName development_clockgap_v2 `
   -ResumeAudit $audit -ResumeAuditSha256 $auditSha `
-  -ExpectedHead EXACT_COMMITTED_HEAD -CompletedCheckpointCount 4727 -SourcePrefetch
+  -ExpectedHead EXACT_COMMITTED_HEAD -CompletedCheckpointCount 6835 -SourcePrefetch
 ```
 
 The launcher rejects duplicate live builds and changed tracked source, writes a
@@ -158,11 +165,11 @@ Wait for successful feature exit and the complete 37,421-event manifest. Run
 training and a separate verification for each horizon in the order 20, 10, 30:
 
 ```shell
-uv run --frozen --extra nlp structural-break-research train-models --registry-version research_registry_0bd415d2a5af1f4891dc1f0d --batch-name development_prefetch_v2 --horizon 20
+uv run --frozen --extra nlp structural-break-research train-models --registry-version research_registry_0bd415d2a5af1f4891dc1f0d --batch-name development_clockgap_v2 --horizon 20
 uv run --frozen --extra nlp structural-break-research verify-models --model-version PRINTED_H20_EVALUATION_VERSION
-uv run --frozen --extra nlp structural-break-research train-models --registry-version research_registry_0bd415d2a5af1f4891dc1f0d --batch-name development_prefetch_v2 --horizon 10
+uv run --frozen --extra nlp structural-break-research train-models --registry-version research_registry_0bd415d2a5af1f4891dc1f0d --batch-name development_clockgap_v2 --horizon 10
 uv run --frozen --extra nlp structural-break-research verify-models --model-version PRINTED_H10_EVALUATION_VERSION
-uv run --frozen --extra nlp structural-break-research train-models --registry-version research_registry_0bd415d2a5af1f4891dc1f0d --batch-name development_prefetch_v2 --horizon 30
+uv run --frozen --extra nlp structural-break-research train-models --registry-version research_registry_0bd415d2a5af1f4891dc1f0d --batch-name development_clockgap_v2 --horizon 30
 uv run --frozen --extra nlp structural-break-research verify-models --model-version PRINTED_H30_EVALUATION_VERSION
 ```
 

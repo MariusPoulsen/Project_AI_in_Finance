@@ -21,9 +21,11 @@ from structural_break.research.availability import (
     apply_availability_bounds,
 )
 from structural_break.research.intelligence import (
+    SubmissionClockState,
     _event_inputs,
     _normalized_metadata,
     _source_get,
+    _submission_clock_state,
     _validate_submission_clock,
     collect_sec_metadata,
     verify_sec_metadata,
@@ -297,6 +299,68 @@ def test_non_submission_document_cannot_provide_the_official_acceptance_clock() 
     assert (
         _validate_submission_clock([document], _header_filing(), pd.Timestamp("2023-01-01T00:00Z"))
         is False
+    )
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        b"<ACCEPTANCE-DATETIME>\n\nACCESSION NUMBER: preserved\n",
+        b"<acceptance-datetime> \t\r\n\r\n<ACCESSION-NUMBER>preserved\r\n",
+        b"<ACCEPTANCE-DATETIME></ACCEPTANCE-DATETIME>\n",
+    ],
+)
+def test_unique_empty_acceptance_field_is_an_unverified_source_gap(
+    tmp_path: Path, field: bytes
+) -> None:
+    document = _header_document(tmp_path, field)
+    cutoff = pd.Timestamp("2023-01-01T00:00Z")
+    assert (
+        _submission_clock_state([document], _header_filing(), cutoff)
+        is SubmissionClockState.EMPTY_ACCEPTANCE
+    )
+    assert _validate_submission_clock([document], _header_filing(), cutoff) is False
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        b"<ACCEPTANCE-DATETIME>\n20220518070659\n",
+        b"<ACCEPTANCE-DATETIME>oops\n",
+        b"<ACCEPTANCE-DATETIME> \n<ACCEPTANCE-DATETIME>\n",
+    ],
+)
+def test_empty_field_recovery_cannot_swallow_nonempty_or_duplicate_clocks(
+    tmp_path: Path, field: bytes
+) -> None:
+    document = _header_document(tmp_path, field)
+    with pytest.raises(ValueError, match="ambiguous|malformed"):
+        _submission_clock_state([document], _header_filing(), pd.Timestamp("2023-01-01T00:00Z"))
+
+
+def test_empty_clock_does_not_short_circuit_other_submission_validation(tmp_path: Path) -> None:
+    empty = _header_document(tmp_path, b"<ACCEPTANCE-DATETIME>\n")
+    other_path = tmp_path / "other_submission.txt"
+    other_path.write_bytes(b"<ACCEPTANCE-DATETIME>20220518070659\n")
+    other = dict(empty, local_path=str(other_path))
+    cutoff = pd.Timestamp("2023-01-01T00:00Z")
+    assert (
+        _submission_clock_state([empty, other], _header_filing(), cutoff)
+        is SubmissionClockState.EMPTY_ACCEPTANCE
+    )
+    other_path.write_bytes(b"<ACCEPTANCE-DATETIME>oops\n")
+    with pytest.raises(ValueError, match="ambiguous|malformed"):
+        _submission_clock_state([empty, other], _header_filing(), cutoff)
+    other_path.write_bytes(b"<ACCEPTANCE-DATETIME>20220518070659\n")
+    with pytest.raises(ValueError, match="contradicts"):
+        _submission_clock_state([empty, other], _header_filing(), pd.Timestamp("2022-05-18T10:00Z"))
+
+
+def test_markerless_clock_retains_legacy_absence_without_exact_verification(tmp_path: Path) -> None:
+    document = _header_document(tmp_path, b"<SEC-HEADER>\nNo clock\n</SEC-HEADER>\n")
+    assert (
+        _submission_clock_state([document], _header_filing(), pd.Timestamp("2023-01-01T00:00Z"))
+        is SubmissionClockState.ABSENT
     )
 
 
