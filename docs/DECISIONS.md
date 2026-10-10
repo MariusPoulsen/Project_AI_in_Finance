@@ -757,3 +757,47 @@ explicit transition receipt and independently reconstruct them before reuse.
 Do not relabel the old batch or silently resume it with changed source. Cache
 source/input freeze, exact-head CI, transition, new launch, actual fits and
 main/primary promotion remain pending; final-test outcomes stay locked.
+
+## 23. Detached, audited intelligence recovery
+
+On 2026-10-10 the user explicitly requested a detached local feature build,
+without repeated chat polling or checkpoint replay. This is an engineering
+amendment before any actual expanded A/B assessment. Preserve the same registry,
+37,421-event union, SEC `source_v3`, quality-v2 FinBERT policy, pinned assets,
+500-event target-blind catalyst schedule, model definitions and final-test lock.
+
+The earlier `47ce2ee` source and six hosted CI jobs passed. Its genuine
+`development_primary_v2` worker subsequently exited 1 at 2,290 checkpoints on
+2026-10-07 23:05 UTC. The pipeline and publication supervisors stopped with zero
+model stages. Preserve all original attempt files and the checkpoint baseline
+`.acceptance/primary_v2_failed_attempt1_20261007T230523Z/receipt.json`, SHA-256
+`b5c29ff2b0a9580fa2ab3c0a6ff7c5ed635c3ba2fb7f72bc3a19265ef1c26bbb`.
+
+The next KMB/PG event failed because one official KMB document was captured as
+both primary and EX-99, producing duplicate stable chunk IDs. Collapse only
+exact verified logical-document aliases to the primary representation, retaining
+original chunk IDs and every raw response/sidecar. Conflicting issuer, timestamp,
+URL, content, role or raw-path claims still fail. This repairs duplicate text
+counting; it changes no selection budget or source-admissibility rule.
+
+Use the new immutable batch `development_detached_v2` because computational
+source changed. An explicit checkpoint audit binds the stopped baseline, exact
+checkpoint bytes, original/new inputs (only builder code hash may differ), event
+identities, frozen schedule, raw SEC inventories/SGML clocks and validated stored
+extraction/tone features. Copy verified checkpoint bytes unchanged. At startup,
+check the audit's externally supplied SHA, parent/source files and checkpoint
+hashes; recheck each checkpoint when loaded. These checks permit skipping repeated
+HTML reconstruction and stored-tone validation for that audited prefix only.
+They do not establish fresh raw-text replay or scientific acceptance. Independent
+verification and publication continue to reconstruct every evidence pack.
+In this audited feature-only build, omit the duplicate raw replay after writing
+the complete manifest and explicitly record independent verification as pending.
+Training, native verification and publication still require their unchanged fresh
+raw replay; a completed feature manifest alone cannot satisfy those gates.
+
+Launch the full build with file-backed stdout/stderr and atomic progress through
+`scripts/start_research_intelligence.ps1`. Verify its fixed command and process
+independence before reporting launch. Ordinary status checks are manual through
+`scripts/check_research_intelligence.ps1`; do not keep the chat polling. No automatic
+provider retries, model fitting, publication, final-test unlock or GitHub-main
+promotion are authorized by the launcher itself.

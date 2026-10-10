@@ -1,5 +1,29 @@
 # Implementation status
 
+## Detached feature-build handoff — 2026-10-10
+
+The current engineering task prepares `development_detached_v2`, retaining the
+frozen 37,421-event protocol and 500-event Gemma schedule. Original
+`development_primary_v2` stopped after 2,290 checkpoints on 2026-10-07; its
+immutable stopped-attempt receipt and all checkpoints are preserved. The failure
+was a duplicate primary/EX-99 document alias, not a timestamp or provider failure.
+The corrected parser and explicit audit permit safe prefix reuse without repeated
+raw-text reconstruction. Fresh independent scientific replay remains required.
+
+Engineering verification passed: 82 focused recovery/CLI/intelligence/worker checks,
+67 evidence checks, whole Ruff and 147-file formatting checks, and strict mypy
+for 79 source/script/app files. A network-free WMI worker fixture completed after
+its launching shell had exited and wrote a genuine exit-0 receipt; proof is
+`.acceptance/detached_worker_fixture_cd3dc1953874443898e50befe41c6a09/independence-proof.json`.
+These are resumability checks, not completed research features or model results.
+
+The detached launcher writes its exact PID/creation identity, command, logs and
+manual status command to a unique `.acceptance/intelligence_*/launch.json`.
+Actual completion requires the full batch's `manifest.json`; no expanded A/B
+results, accepted primary publication or GitHub `main` promotion are claimed here.
+Earlier pending freeze/CI/launch statements below describe the older amendment;
+the actual stopped `47ce2ee` attempt is recorded in DECISIONS section 23.
+
 ## Research v2 — authorized development redesign
 
 Updated: 2026-10-07 10:05 UTC. Branch: `research-v2`. Status: **IN PROGRESS**.

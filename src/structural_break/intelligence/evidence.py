@@ -625,6 +625,49 @@ def parse_documents(
         for doc in documents
         if doc["status"] == "DOWNLOADED" and doc["document_type"] not in {"INDEX", "SUBMISSION"}
     }
+    # EDGAR can name one official document as both the primary and an EX-99
+    # attachment. Its separately captured roles must not count the text twice.
+    # Retain the primary role only for exact aliases; raw captures stay intact.
+    aliases: dict[tuple[str, str], list[Mapping[str, object]]] = {}
+    for document in documents:
+        if document["status"] == "DOWNLOADED" and document["document_type"] not in {
+            "INDEX",
+            "SUBMISSION",
+        }:
+            key = (str(document["filing_id"]), str(document["document_filename"]))
+            aliases.setdefault(key, []).append(document)
+    shared_fields = (
+        "filing_id",
+        "security_id",
+        "leg",
+        "cik",
+        "form",
+        "is_amendment",
+        "document_filename",
+        "acceptance_datetime_utc",
+        "source_url",
+        "sha256",
+    )
+    canonical: dict[tuple[str, str], Mapping[str, object]] = {}
+    for key, group in aliases.items():
+        if len(group) < 2:
+            continue
+        first = group[0]
+        roles = {str(row["document_type"]) for row in group}
+        raw_paths = {str(row.get("raw_file_path")) for row in group}
+        if (
+            len(roles) != len(group)
+            or len(raw_paths) != len(group)
+            or any(
+                not isinstance(row.get("raw_file_path"), str) or not row["raw_file_path"]
+                for row in group
+            )
+            or str(first["form"]) not in roles
+            or any(role != str(first["form"]) and not role.startswith("EX-99") for role in roles)
+            or any(row.get(field) != first.get(field) for row in group for field in shared_fields)
+        ):
+            raise ValueError("Conflicting SEC document aliases share an accession filename")
+        canonical[key] = next(row for row in group if row["document_type"] == row["form"])
     for document in documents:
         base = {name: document.get(name) for name in CHUNK_COLUMNS}
         if document["status"] != "DOWNLOADED":
@@ -633,6 +676,9 @@ def parse_documents(
         raw_path = Path(str(document["local_path"]))
         if sha256_file(raw_path) != document["sha256"]:
             raise ValueError("SEC response changed before parsing")
+        key = (str(document["filing_id"]), str(document["document_filename"]))
+        if key in canonical and document is not canonical[key]:
+            continue
         if document["document_type"] == "INDEX":
             if document.get("parse_status") == "INVALID_INDEX":
                 rows.append({**base, "status": "INVALID_INDEX", "chunk_id": None})

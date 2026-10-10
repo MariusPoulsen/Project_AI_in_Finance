@@ -502,6 +502,97 @@ def test_parsing_excludes_scripts_and_preserves_section_raw_and_text_hashes(
     pd.testing.assert_frame_equal(chunks, parse_documents(documents))
 
 
+def _primary_exhibit_alias(
+    paths: ProjectPaths,
+) -> tuple[list[dict[str, object]], dict[str, dict[str, object]], list[dict[str, object]]]:
+    chosen, coverage = select([filing(1)])
+    original = get_fixture([])
+
+    def get(url: str) -> FetchedResponse:
+        if url.endswith("/index.json"):
+            body = b'{"directory":{"item":[{"name":"primary.htm"}]}}'
+        elif url.endswith(".txt"):
+            body = (
+                b"<DOCUMENT>\n<TYPE>EX-99.1\n<SEQUENCE>1\n<FILENAME>primary.htm\n"
+                b"<TEXT><p>Earnings declined.</p></TEXT>\n</DOCUMENT>"
+            )
+        else:
+            return original(url)
+        return FetchedResponse(body, url, 200, RETRIEVED)
+
+    return chosen, coverage, cache_filing(paths, chosen[0], get)
+
+
+def test_primary_exhibit_alias_counts_once_with_original_ids_and_all_raw_captures(
+    paths: ProjectPaths,
+) -> None:
+    chosen, coverage, documents = _primary_exhibit_alias(paths)
+    folder = _cache_folder(paths, chosen[0])
+    snapshot = _response_snapshot(folder)
+    manifest = (folder / "response_manifest.json").read_bytes()
+    assert len(documents) == 4 and len(snapshot) == 8
+    assert all(row["status"] == "DOWNLOADED" for row in documents)
+    primary_only = [row for row in documents if row["document_type"] != "EX-99.1"]
+    baseline = parse_documents(primary_only)
+    chunks = parse_documents(documents)
+    pd.testing.assert_frame_equal(chunks, baseline)
+    pd.testing.assert_frame_equal(chunks, parse_documents(list(reversed(documents))))
+    assert chunks["chunk_id"].is_unique and set(chunks["document_type"]) == {"8-K"}
+    assert build_evidence_pack(event(), chosen, chunks, coverage) == build_evidence_pack(
+        event(), chosen, baseline, coverage
+    )
+    assert _response_snapshot(folder) == snapshot
+    assert (folder / "response_manifest.json").read_bytes() == manifest
+    assert len(json.loads(manifest)["documents"]) == 4
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("security_id", "sec_PEP"),
+        ("cik", "0000077476"),
+        ("leg", "B"),
+        ("form", "10-Q"),
+        ("acceptance_datetime_utc", CUTOFF.isoformat()),
+        ("source_url", "https://www.sec.gov/Archives/edgar/data/foreign.htm"),
+        ("sha256", "0" * 64),
+        ("raw_file_path", None),
+        ("document_type", "8-K"),
+    ],
+)
+def test_primary_exhibit_alias_conflicting_identity_fails_closed(
+    paths: ProjectPaths, field: str, value: object
+) -> None:
+    _, _, documents = _primary_exhibit_alias(paths)
+    alias = next(row for row in documents if row["document_type"] == "EX-99.1")
+    alias[field] = value
+    with pytest.raises(ValueError, match="Conflicting SEC document aliases"):
+        parse_documents(documents)
+
+
+@pytest.mark.parametrize("update_claimed_hash", [False, True])
+def test_primary_exhibit_alias_changed_body_cannot_be_hidden_by_canonical_primary(
+    paths: ProjectPaths, update_claimed_hash: bool
+) -> None:
+    _, _, documents = _primary_exhibit_alias(paths)
+    alias = next(row for row in documents if row["document_type"] == "EX-99.1")
+    raw_path = Path(str(alias["local_path"]))
+    body = b"<p>Conflicting exhibit content.</p>"
+    raw_path.write_bytes(body)
+    if update_claimed_hash:
+        alias["sha256"] = hashlib.sha256(body).hexdigest()
+    with pytest.raises(ValueError, match="Conflicting SEC document aliases|changed before parsing"):
+        parse_documents(documents)
+
+
+def test_pack_still_rejects_duplicate_chunk_ids(paths: ProjectPaths) -> None:
+    chosen, coverage, documents = _primary_exhibit_alias(paths)
+    chunks = parse_documents(documents)
+    duplicated = pd.concat([chunks, chunks.iloc[[0]]], ignore_index=True)
+    with pytest.raises(ValueError, match="unique stable IDs"):
+        build_evidence_pack(event(), chosen, duplicated, coverage)
+
+
 def test_complete_submission_recovers_embedded_exhibit_and_retains_failure(
     paths: ProjectPaths,
 ) -> None:

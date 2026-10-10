@@ -73,6 +73,51 @@ still pending.
 
 ## SEC text, inference and fitting
 
+### Detached audited recovery on Windows
+
+The current engineering recovery uses `development_detached_v2`; preserve the
+failed `development_primary_v2` directory. Freeze and test the changed source
+before auditing. The baseline SHA below fixes all 2,290 completed original files.
+
+```powershell
+$baseline = '.acceptance/primary_v2_failed_attempt1_20261007T230523Z/receipt.json'
+$baselineSha = 'b5c29ff2b0a9580fa2ab3c0a6ff7c5ed635c3ba2fb7f72bc3a19265ef1c26bbb'
+$audit = '.acceptance/detached_v2_checkpoint_audit.json'
+& .\.venv\Scripts\python.exe -u -m structural_break.research.cli audit-checkpoints `
+  --registry-version research_registry_0bd415d2a5af1f4891dc1f0d `
+  --batch-name development_detached_v2 --sec-source source_v3 `
+  --sentiment-preprocessing sec-sentence-quality-wordpiece-v2 `
+  --catalyst-max-events 500 `
+  --checkpoint-source data/research_v2/intelligence/development_primary_v2 `
+  --checkpoint-baseline $baseline --checkpoint-baseline-sha256 $baselineSha `
+  --audit-output $audit
+```
+
+This command validates stored outputs and raw response integrity once, then copies
+the same checkpoint bytes into the new batch. It makes no provider/neural calls
+and does not replace independent raw-text verification. The new audit receipt is
+immutable; use a new path for another audit. After it succeeds, supply the exact
+new committed Git HEAD and audit SHA to the launcher:
+
+```powershell
+$auditSha = (Get-FileHash -LiteralPath $audit -Algorithm SHA256).Hash.ToLowerInvariant()
+& .\scripts\start_research_intelligence.ps1 -ResumeAudit $audit `
+  -ResumeAuditSha256 $auditSha -ExpectedHead EXACT_COMMITTED_HEAD `
+  -CompletedCheckpointCount 2290
+```
+
+The launcher returns immediately with a unique receipt, stdout/stderr/progress
+paths and its exact manual status command. It prevents duplicate live builds and
+preserves the complete event population; no partial-event or disabled-inference
+flags are used. Run the returned status command when needed, without an ongoing
+chat monitor. `SUCCESS` and a complete feature manifest are feature-build outputs;
+three-horizon model/native verification and primary/main promotion remain separate.
+The audited builder defers its duplicate final raw replay and records independent
+verification as pending. Training and publication still perform their mandatory
+fresh raw replay of every event before accepting these features.
+On Colab/Linux, use the same research CLI audit/recovery options in that runtime;
+the Windows detached launcher is not a Colab process manager.
+
 Replace `REGISTRY_VERSION` below with the printed version. The actual expanded
 registry is `research_registry_0bd415d2a5af1f4891dc1f0d`. Immutable batch
 `development_quality_v2` first launched at 2026-10-07 05:17:15 UTC from frozen

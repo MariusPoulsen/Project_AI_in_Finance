@@ -107,6 +107,11 @@ ACTIVE screening.
   coordinate synchronization after the active frozen jobs finish.
 - Never repair a failed checksum by rewriting a registered manifest. Verify
   checkpoint identity before resuming; do not assume a RUNNING record is dead.
+- For the explicitly authorized detached recovery, follow DECISIONS section 23:
+  a SHA-bound checkpoint preflight may avoid repeated builder replay of verified
+  stored outputs. Independent scientific verification remains a fresh raw replay.
+  Let detached jobs run without continued chat polling; report the manual status
+  command and keep source frozen until the worker exits.
 - Promotion requires explicit accepted publication identities and independent
   verification. App readiness must fail clearly for missing/incomplete artifacts,
   with no automatic fallback to a sensitivity or a newer unverified directory.

@@ -910,6 +910,12 @@ def build_event_intelligence(
     event_registry_id: str = "content-addressed-event-inputs",
     market_manifest_sha256: str | None = None,
     progress: Progress | None = None,
+    resume_audit: Path | None = None,
+    resume_audit_sha256: str | None = None,
+    checkpoint_source: Path | None = None,
+    checkpoint_baseline: Path | None = None,
+    checkpoint_baseline_sha256: str | None = None,
+    audit_output: Path | None = None,
 ) -> dict[str, Any]:
     """Retain 31 catalyst, 17 tone and 14 metadata features for every input event.
 
@@ -976,6 +982,44 @@ def build_event_intelligence(
     # Credentials are never accepted as manifest/provider configuration.
     if set(inputs["provider_config"]) - {"max_tokens", "max_completion_tokens", "top_p", "seed"}:
         raise ValueError("Research provider credentials must stay outside cache metadata")
+    if audit_output is not None:
+        from structural_break.research.checkpoints import prepare_checkpoint_audit
+
+        if (
+            checkpoint_source is None
+            or checkpoint_baseline is None
+            or checkpoint_baseline_sha256 is None
+            or cache_workspace is None
+            or resume_audit is not None
+        ):
+            raise ValueError("Checkpoint audit requires an explicit source and frozen baseline")
+        audit = prepare_checkpoint_audit(
+            checkpoint_source,
+            clean,
+            inputs,
+            catalyst_schedule,
+            frozen_universe_dir=frozen_universe_dir,
+            sec_metadata_dir=sec_metadata_dir,
+            cache_workspace=cache_workspace,
+            target_dir=output_dir,
+            baseline_receipt_path=checkpoint_baseline,
+            baseline_receipt_sha256=checkpoint_baseline_sha256,
+            receipt_path=audit_output,
+        )
+        for filename, checked in audit["checkpoints"].items():
+            body = confined_path(checkpoint_source, filename).read_bytes()
+            if hashlib.sha256(body).hexdigest() != checked["sha256"]:
+                raise ValueError("Original checkpoint changed during audited transfer")
+            write_bytes(confined_path(output_dir, filename), body)
+        write_bytes(output_dir / "inputs.json", json_bytes(inputs))
+        write_bytes(output_dir / "catalyst_schedule.json", json_bytes(catalyst_schedule))
+        return {
+            **audit,
+            "audit_path": str(audit_output.resolve()),
+            "audit_sha256": sha256_file(audit_output),
+        }
+    if any(value is not None for value in (checkpoint_source, checkpoint_baseline)):
+        raise ValueError("Checkpoint transfer is permitted only in the explicit audit command")
     if (output_dir / "manifest.json").exists():
         manifest = verify_event_intelligence(
             output_dir, frozen_universe_dir, sec_metadata_dir, cache_workspace=cache_workspace
@@ -987,6 +1031,32 @@ def build_event_intelligence(
         raise ValueError("Interrupted intelligence checkpoint belongs to different batch inputs")
     write_bytes(output_dir / "inputs.json", json_bytes(inputs))
     write_bytes(output_dir / "catalyst_schedule.json", json_bytes(catalyst_schedule))
+    verified_checkpoints = None
+    if resume_audit is not None:
+        from structural_break.research.checkpoints import verify_checkpoint_audit
+
+        if resume_audit_sha256 is None or cache_workspace is None:
+            raise ValueError("Fast checkpoint recovery requires its exact audit checksum")
+        verified_checkpoints = verify_checkpoint_audit(
+            resume_audit,
+            output_dir,
+            inputs,
+            clean,
+            catalyst_schedule,
+            frozen_universe_dir=frozen_universe_dir,
+            sec_metadata_dir=sec_metadata_dir,
+            cache_workspace=cache_workspace,
+            expected_audit_sha256=resume_audit_sha256,
+        )
+        if progress:
+            progress(
+                {
+                    "stage": "CHECKPOINT_AUDIT_APPLIED",
+                    "completed_checkpoint_count": len(verified_checkpoints.filenames),
+                }
+            )
+    elif resume_audit_sha256 is not None:
+        raise ValueError("An audit checksum requires its explicit audit receipt")
     filings = pd.read_parquet(sec_metadata_dir / "filings.parquet")
     pair_filings = _pair_filing_indices(clean, filings)
     source_coverage = _coverage_bounds(
@@ -1006,8 +1076,16 @@ def build_event_intelligence(
             catalyst_scheduled = scheduled and event["event_id"] in catalyst_ids
             filename = "events/" + hashlib.sha256(event["event_id"].encode()).hexdigest() + ".json"
             checkpoint = output_dir / filename
+            reused_tone_features = None
             if checkpoint.exists():
-                record = _load_json(checkpoint)
+                audited = (
+                    verified_checkpoints is not None and filename in verified_checkpoints.filenames
+                )
+                record = (
+                    verified_checkpoints.load_record(filename)
+                    if audited and verified_checkpoints is not None
+                    else _load_json(checkpoint)
+                )
                 if (
                     record["event"] != event
                     or record["scheduled"] is not scheduled
@@ -1016,17 +1094,21 @@ def build_event_intelligence(
                     raise ValueError("Research event checkpoint identity differs")
                 validate_stored_extraction(record["catalyst_pack"], record["extraction"])
                 expected_pack = (
-                    _event_pack(
-                        event,
-                        event_filings,
-                        source_coverage,
-                        paths,
-                        _offline_only,
-                        offline=True,
-                        parsed_cache=parsed_cache,
-                    )[0]
-                    if scheduled
-                    else _empty_pack(event, policy)
+                    record["pack"]
+                    if audited
+                    else (
+                        _event_pack(
+                            event,
+                            event_filings,
+                            source_coverage,
+                            paths,
+                            _offline_only,
+                            offline=True,
+                            parsed_cache=parsed_cache,
+                        )[0]
+                        if scheduled
+                        else _empty_pack(event, policy)
+                    )
                 )
                 if record["pack"] != expected_pack:
                     raise ValueError("Research checkpoint evidence differs from raw reconstruction")
@@ -1034,6 +1116,8 @@ def build_event_intelligence(
                     expected_pack if catalyst_scheduled else _empty_pack(event, policy)
                 ):
                     raise ValueError("Research checkpoint catalyst evidence violates its schedule")
+                if audited and verified_checkpoints is not None:
+                    reused_tone_features = verified_checkpoints.tone_features(filename)
             else:
                 selected_count = 0
                 pack = _empty_pack(event, policy)
@@ -1082,11 +1166,15 @@ def build_event_intelligence(
             # Full text packs are persisted in immutable checkpoints. Retaining only
             # their filing-ID union keeps memory bounded by selected source captures.
             selected_filing_ids.update(record["pack"].get("selected_filing_ids", []))
-            tone_features = validate_sentiment_result(
-                record["pack"],
-                record["tone"],
-                leg_security_ids=[event["leg_a_security_id"], event["leg_b_security_id"]],
-                policy=tone_policy,
+            tone_features = (
+                reused_tone_features
+                if reused_tone_features is not None
+                else validate_sentiment_result(
+                    record["pack"],
+                    record["tone"],
+                    leg_security_ids=[event["leg_a_security_id"], event["leg_b_security_id"]],
+                    policy=tone_policy,
+                )
             )
             tones.append(dict(event_id=event["event_id"], **tone_features))
             metadata_rows.append(
@@ -1175,10 +1263,25 @@ def build_event_intelligence(
         "final_test_outcomes_inspected": False,
         "representative_nlp_study_complete": False,
     }
+    if resume_audit is not None:
+        manifest["checkpoint_recovery"] = {
+            "audit_sha256": resume_audit_sha256,
+            "raw_replay_skipped_for_preflight_verified_checkpoints_only": True,
+            "independent_full_raw_verification_complete": False,
+        }
     write_bytes(output_dir / "manifest.json", json_bytes(manifest))
-    verify_event_intelligence(
-        output_dir, frozen_universe_dir, sec_metadata_dir, cache_workspace=cache_workspace
-    )
+    if resume_audit is None:
+        verify_event_intelligence(
+            output_dir, frozen_universe_dir, sec_metadata_dir, cache_workspace=cache_workspace
+        )
+    elif progress:
+        progress(
+            {
+                "stage": "FEATURE_MANIFEST_WRITTEN_RAW_VERIFICATION_PENDING",
+                "completed_checkpoint_count": len(records),
+                "independent_full_raw_verification_complete": False,
+            }
+        )
     return manifest
 
 

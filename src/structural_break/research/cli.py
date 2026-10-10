@@ -8,6 +8,7 @@ import io
 import json
 import os
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -40,6 +41,7 @@ _COMMANDS = (
     "collect-sec",
     "build-registry",
     "build-intelligence",
+    "audit-checkpoints",
     "train-models",
     "verify-models",
     "promote-primary",
@@ -118,6 +120,15 @@ def _parser() -> argparse.ArgumentParser:
         "--model-version", help="Explicit successfully registered evaluation version"
     )
     parser.add_argument("--batch-name", help="New immutable intelligence batch directory name")
+    parser.add_argument("--resume-audit", type=Path, help="Previously verified checkpoint audit")
+    parser.add_argument("--resume-audit-sha256", help="Exact checksum of the checkpoint audit")
+    parser.add_argument("--checkpoint-source", type=Path, help="Preserved partial batch to audit")
+    parser.add_argument(
+        "--checkpoint-baseline", type=Path, help="Frozen checkpoint inventory receipt"
+    )
+    parser.add_argument("--checkpoint-baseline-sha256", help="Exact baseline receipt checksum")
+    parser.add_argument("--audit-output", type=Path, help="New immutable checkpoint audit receipt")
+    parser.add_argument("--progress-file", type=Path, help="Atomic operational progress JSON file")
     parser.add_argument(
         "--pipeline-receipt", type=Path, help="Completed, verified three-horizon pipeline receipt"
     )
@@ -162,8 +173,56 @@ def _progress(record: dict[str, Any]) -> None:
     print(json.dumps(record, sort_keys=True, allow_nan=False), flush=True)
 
 
+class _FileProgress:
+    """Best-effort operational status; stdout remains the authoritative job log."""
+
+    def __init__(self, path: Path, command: str, batch: str | None) -> None:
+        self.path = path.resolve()
+        if self.path.exists():
+            raise ValueError("A detached run requires a new progress file")
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.state: dict[str, Any] = {
+            "schema_version": "research-job-progress-v1",
+            "command": command,
+            "batch_name": batch,
+            "pid": os.getpid(),
+            "started_at_utc": datetime.now(UTC).isoformat(),
+            "completed_checkpoint_count": 0,
+            "final_test_unlocked": False,
+        }
+        self({"status": "STARTING"})
+
+    def __call__(self, record: dict[str, Any]) -> None:
+        _progress(record)
+        self.state.update(record)
+        self.state["observed_at_utc"] = datetime.now(UTC).isoformat()
+        if record.get("stage") == "EVENT_INTELLIGENCE":
+            self.state["status"] = "RUNNING"
+            self.state["completed_checkpoint_count"] = max(
+                self.state["completed_checkpoint_count"], record["completed"]
+            )
+        if record.get("stage") == "CHECKPOINT_AUDIT_APPLIED":
+            self.state["status"] = "RUNNING"
+        temporary = self.path.with_name(self.path.name + f".{os.getpid()}.tmp")
+        try:
+            temporary.write_text(
+                json.dumps(self.state, sort_keys=True, indent=2, allow_nan=False), encoding="utf-8"
+            )
+            temporary.replace(self.path)
+        except OSError as error:
+            # A transient status-file lock must not stop canonical computation.
+            print(
+                json.dumps({"status": "PROGRESS_WRITE_FAILED", "error_type": type(error).__name__}),
+                file=sys.stderr,
+                flush=True,
+            )
+
+
 def run_command(
-    args: argparse.Namespace, paths: ProjectPaths, runtime: RuntimeSettings
+    args: argparse.Namespace,
+    paths: ProjectPaths,
+    runtime: RuntimeSettings,
+    progress: Any = None,
 ) -> dict[str, Any]:
     """Dispatch one authorized job; no implicit next-stage execution or final run."""
     protocol_path = args.protocol or paths.project_root / "configs/research_v2.yaml"
@@ -172,6 +231,7 @@ def run_command(
     market_directory = confined_path(paths.workspace_root, "market/source_v1")
     sec_directory = confined_path(paths.workspace_root, f"sec_metadata/{segment(args.sec_source)}")
     contact = runtime.sec_user_agent.get_secret_value() if runtime.sec_user_agent else None
+    progress_callback = progress or _progress
     if args.command == "promote-primary":
         if args.pipeline_receipt is None:
             raise ValueError("promote-primary requires an explicit --pipeline-receipt")
@@ -199,7 +259,7 @@ def run_command(
             protocol.data_start,
             protocol.development_end,
             tickers=args.tickers,
-            progress=_progress,
+            progress=progress_callback,
         )
     if args.command == "collect-sec":
         return collect_sec_metadata(
@@ -209,7 +269,7 @@ def run_command(
             protocol.development_end,
             max_issuers=args.max_issuers,
             sec_user_agent=contact,
-            progress=_progress,
+            progress=progress_callback,
         )
     if args.command == "build-registry":
         return build_research_registry(
@@ -280,12 +340,19 @@ def run_command(
         market_manifest_sha256=next(
             item["sha256"] for item in parent["inputs"] if item["role"] == "market"
         ),
-        progress=_progress,
+        progress=progress_callback,
+        resume_audit=getattr(args, "resume_audit", None),
+        resume_audit_sha256=getattr(args, "resume_audit_sha256", None),
+        checkpoint_source=getattr(args, "checkpoint_source", None),
+        checkpoint_baseline=getattr(args, "checkpoint_baseline", None),
+        checkpoint_baseline_sha256=getattr(args, "checkpoint_baseline_sha256", None),
+        audit_output=getattr(args, "audit_output", None),
     )
 
 
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
+    progress = None
     try:
         project = find_project_root(args.project_root)
         runtime = RuntimeSettings(_env_file=project / ".env")
@@ -301,7 +368,21 @@ def main(argv: list[str] | None = None) -> int:
             for value in (args.max_events, args.max_issuers, args.catalyst_max_events)
         ):
             raise ValueError("Explicit partial inventory limits must be positive")
-        result = run_command(args, paths, runtime)
+        if args.command == "audit-checkpoints" and args.audit_output is None:
+            raise ValueError("audit-checkpoints requires a new --audit-output receipt")
+        if args.command != "audit-checkpoints" and args.audit_output is not None:
+            raise ValueError("--audit-output is restricted to audit-checkpoints")
+        if args.progress_file is not None:
+            if not args.progress_file.resolve().is_relative_to(project / ".acceptance"):
+                raise ValueError(
+                    "Operational progress must stay in the project acceptance directory"
+                )
+            progress = _FileProgress(args.progress_file, args.command, args.batch_name)
+        result = (
+            run_command(args, paths, runtime)
+            if progress is None
+            else run_command(args, paths, runtime, progress=progress)
+        )
         summary = {
             name: result[name]
             for name in (
@@ -321,13 +402,18 @@ def main(argv: list[str] | None = None) -> int:
                 "native_max_errors",
                 "paired_comparison_reproduced",
                 "final_test_read",
+                "checkpoint_count",
+                "audit_sha256",
+                "audit_path",
             )
             if name in result
         }
-        _progress({"status": "SUCCESS", "command": args.command, **summary})
+        (progress or _progress)({"status": "SUCCESS", "command": args.command, **summary})
         return 0
     except Exception as error:
         # Provider/source/validation exception text may contain credentials.
+        if progress is not None:
+            progress({"status": "FAILED", "error_type": type(error).__name__})
         print(
             json.dumps(
                 {"status": "FAILED", "command": args.command, "error_type": type(error).__name__}
