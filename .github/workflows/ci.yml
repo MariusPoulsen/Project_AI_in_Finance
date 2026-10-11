@@ -63,6 +63,10 @@ jobs:
         run: |
           uv run --frozen structural-break-backtest --fixture --output-dir .acceptance/phase6-ci
           uv run --frozen structural-break-backtest --fixture --output-dir .acceptance/phase6-ci
+      - name: Build the synthetic five-rung comparison and immutable rerun
+        run: |
+          uv run --frozen structural-break-backtest ladder --fixture --output-dir .acceptance/phase6-ladder-ci
+          uv run --frozen structural-break-backtest ladder --fixture --output-dir .acceptance/phase6-ladder-ci
       - run: uv run --frozen structural-break init-db
       - run: uv run --frozen structural-break storage-smoke
       - run: uv run --frozen structural-break storage-smoke

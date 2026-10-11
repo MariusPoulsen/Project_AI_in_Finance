@@ -1,9 +1,12 @@
 # Shared event simulator runbook
 
-Phase 6 starts with a synthetic, event-level execution engine. It is prepared
-on isolated branch `phase6/shared-simulator` while v2's live source and
+Phase 6 starts with a synthetic, event-level execution engine and capability
+comparison reports. It is prepared on isolated branch
+`phase6/shared-simulator` while v2's live source and
 checkpoints remain frozen. [Decision 28](DECISIONS.md#28-phase-6-fixed-share-development-simulator)
-and [the specification](specs/05_BACKTESTING_EVALUATION.md) govern this slice.
+and [the specification](specs/05_BACKTESTING_EVALUATION.md) govern execution.
+[Decision 29](DECISIONS.md#29-phase-6-fixture-ladder-and-coverage-reporting)
+governs fixture selection and coverage reporting.
 It does not download prices, fit models, call an LLM, run a portfolio backtest
 or unlock 2024-2025 outcomes. Historical economic assessment remains pending.
 
@@ -76,6 +79,72 @@ named `partial_mae` and `partial_mfe` describe only the observed prefix of an
 UNPRICED path, including entry zero, while final `mae`/`mfe` stay null. Exclude
 these prefixes from completed-event excursion statistics.
 
+## Run and verify the synthetic capability comparison
+
+The ladder command runs the synthetic event inventory through Baseline 0,
+Baseline 1, Model A, Model B and Full System. It uses stored fixture scores and
+controller decisions; it does not fit models, invoke agents or access v2 data.
+
+```powershell
+uv run --frozen structural-break-backtest ladder --fixture --output-dir .acceptance/phase6-ladder
+```
+
+The command reports the immutable manifest path. Verify that exact manifest
+explicitly, replacing the placeholder below with its returned path:
+
+```powershell
+uv run --frozen structural-break-backtest verify --manifest MANIFEST.json
+```
+
+Verification checks bound input/config/code/output identities, reconstructs the
+selection and reporting, and reruns synthetic execution. A changed checksum
+fails; verification cannot rewrite it. Matching replay is idempotent. A changed
+scenario, inventory, implementation or declared Python/package runtime receives
+a different content identity. Verification requires the manifest's exact bound
+source and runtime versions; path relocation alone does not change the identity.
+
+The content-addressed `experiments/<experiment_id>/` directory contains
+`input.json`, `policy.json`, `execution-config.json`, separate `labels.json`,
+`rows.json`, `report.json`, `summary.md` and the SHA-bound `manifest.json`.
+`rows.json` is the complete event/selection/execution inventory. Read the
+summary beside the machine-readable report and manifest, rather than treating
+a summary file alone as accepted research output. Supplied `--input`,
+`--policy`, `--config` and optional `--labels` files are fixture contracts;
+they cannot declare themselves genuine accepted market/model data.
+
+Baseline 0 selects a fresh estimable crossing using the same admissible current
+relationship parameters for the previous and signal-close z-scores. Baseline 1
+adds historical ACTIVE. A and B independently add their own frozen calibrated
+probability at the shared fixture threshold; B need not pass A. Full adds a
+stored CANDIDATE to B. All rungs share the event engine and its execution gates.
+The engine simulates each fresh raw event once, including counterfactuals for
+events rejected by higher filters. Nonfresh and unavailable signals retain rows.
+
+Read coverage before returns: each variant reports input/eligible/selected,
+available labels and COMPLETE/NOT_ENTERED/UNPRICED execution counts. Mean and
+median returns use only COMPLETE selected trades; missing execution is not zero.
+Supervised success comes from the separate bound label input and cannot be
+inferred from net return or an exit reason. The same counterfactual result
+supplies rejected-event summaries, with its own denominator.
+
+Descriptive predictive/calibration metrics use only estimable fresh divergences,
+regardless of historical ACTIVE status or later selection. The report counts
+nonfresh/unknown crossings excluded from that forecast population, missing
+scores and missing labels. Common-score A/B metrics use the same available
+score-and-label rows. These fixture tables do not replace canonical v2's broad
+matched forecasting reports or paired calendar-quarter uncertainty.
+
+Adjacent comparisons name the common required-data population and the actual
+selected intersection separately. On common data, A/B selection still runs
+independently. B/Full reporting retains all scheduled B candidates, including
+missing, failed and stored ABSTAIN results. Unscheduled rows are separate. Only
+an explicit NO TRADE counts as a veto; REVIEW, ABSTAIN and unavailable decisions
+have distinct withholding counts. Empty denominators yield null rates.
+
+These artifacts are synthetic engineering examples. They cannot demonstrate
+model improvement, agent evidence quality or investable performance, and they
+do not supply portfolio NAV/Sharpe/drawdown or economic uncertainty estimates.
+
 ## Production policy and future data adapter
 
 `configs/phase6_execution.json` is deliberately DEVELOPMENT/DRAFT. Costs,
@@ -113,13 +182,20 @@ The synthetic acceptance boundary checks direction/units, exact entry/exit
 timing, convergence versus an equilibrium overshoot, same-side stops,
 timeouts, gaps, turnover costs, borrow duration, missing/truncated/lifecycle
 paths, final-test refusal and immutable artifacts with network sockets blocked.
-All 75 focused simulator tests pass with sockets blocked, and the combined
-Phase 5/6 suite passes 255 tests after integration. Local repository Ruff,
-formatting, strict mypy and lockfile checks pass; the console fixture repeats
-with an identical immutable result identity. Hosted full regression remains a
-separate check on the branch commit. Genuine historical execution, the five-rung filters,
-common-subset/coverage reporting, portfolio allocation and economic metrics
-remain pending after fixture acceptance.
+The current Phase 6 suite passes 201 tests with sockets blocked: 75 simulator,
+57 ladder, 32 reporting and 37 experiment tests. The current combined Phase 5/6
+suite passes 381 tests; 255 was the earlier simulator slice. Local repository
+Ruff, formatting, full strict mypy and lockfile checks pass. The single-event
+console fixture repeats with an identical immutable result identity. The
+14-row ladder publishes its manifest, independently verifies as
+`VERIFIED_SYNTHETIC_REPLAY` and repeats with the same immutable experiment
+identity. The initial simulator commit
+`7a954f0` passed the full hosted Linux regression in
+[CI run 38109378392](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/38109378392).
+The subsequent fixture ladder/reporting commit requires fresh hosted checks.
+That new slice has its own engineering checks; it does not complete genuine historical
+execution or accepted v2/controller integration. Portfolio allocation,
+economic uncertainty and the production assumption freeze remain pending.
 
 The final-test lock is separate: no 2024-2025 outcome/performance run is
 authorized by this implementation, a DRAFT-policy check, v2 promotion or

@@ -155,13 +155,32 @@ and entry short notional; production assumptions remain explicitly DRAFT.
 The event simulator is implemented and 75 blocked-socket tests pass, including
 hand-calculated frozen-unit P&L, actual exit turnover, next-open timing,
 10/20/30-session timeouts, incomplete price paths, exact formation usability and
-final-test refusal. The combined Phase 5/6 suite passes 255 tests after branch
-integration. Repository Ruff, formatting, mypy and lockfile checks pass locally.
+final-test refusal. This initial Phase 5/6 slice passed 255 tests after branch
+integration. Repository Ruff, formatting, mypy and lockfile checks passed locally.
 The console fixture writes immutable input/config/result artifacts and produces
-the same content identity on replay. Full hosted regression for this exact branch
-is a separate pending check. Genuine captured
-market inputs, accepted v2/controller bindings, all five selection filters,
-historical economic metrics, portfolio accounting and economic bootstrap are
+the same content identity on replay. The initial simulator commit `7a954f0`
+passed the full hosted Linux regression in
+[CI run 38109378392](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/38109378392).
+Genuine captured market inputs, accepted v2/controller bindings, historical
+five-rung integration/economic metrics, portfolio accounting and economic bootstrap are
 pending. The [runbook](BACKTEST_RUNBOOK.md) gives the synthetic command and
 the production refusal boundary. This work leaves v2 source/checkpoints and
 its forecast protocol unchanged and does not authorize final-test outcomes.
+
+The next authorized Phase 6 slice implements a fixture-only capability ladder and
+coverage-first event reports on the same isolated branch. A/B filters apply
+independently at the shared frozen fixture threshold; Full is B plus a stored
+CANDIDATE. Rejected-event counterfactuals use the common simulator. Common-data
+availability, actual selection intersections and scheduled B investigation
+coverage have separate denominators; missing/failed/ABSTAIN results remain
+visible and only NO TRADE is called a veto. Labels are a separate reporting
+input, not a selection variable or a sign of net return. All 201 Phase 6 tests
+pass with sockets blocked (75 simulator, 57 ladder, 32 reporting and 37
+experiment); the current combined Phase 5/6 suite passes 381 tests. Repository
+Ruff/formatting, full strict mypy and lockfile checks pass. The console ladder
+publishes all 14 synthetic rows; fresh verification returns
+`VERIFIED_SYNTHETIC_REPLAY` and an identical rerun retains the same immutable
+experiment identity. Hosted CI for the expanded Phase 6 commit is pending.
+Genuine source/model/controller bindings, human quality, portfolio accounting,
+economic uncertainty and production assumptions
+remain open under [decision 29](DECISIONS.md#29-phase-6-fixture-ladder-and-coverage-reporting).

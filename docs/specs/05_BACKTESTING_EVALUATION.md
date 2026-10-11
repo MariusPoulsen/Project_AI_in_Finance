@@ -55,11 +55,11 @@ Before the final test is opened, write a machine-readable experiment manifest co
 
 | **Version**                   | **What changes**                                                                  | **Automated acceptance rule**                                                             |
 |-------------------------------|-----------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
-| Baseline 0 - threshold only   | Trade every fresh divergence crossing in the curated pair universe.               | Fresh \|z\| crossing; ignores cointegration/lifecycle validity.                           |
+| Baseline 0 - threshold only   | Select every estimable fresh divergence crossing in the curated pair universe.    | Prior \|z\| below and signal-close \|z\| at/above the frozen threshold, both under the same admissible current snapshot; ignores lifecycle validity. |
 | Baseline 1 - valid pairs only | Add econometric eligibility.                                                      | Fresh crossing AND pair ACTIVE at event time.                                             |
 | Model A - ML filter           | Add calibrated quantitative-model selection; logistic is primary. | Baseline 1 event AND calibrated A P(revert) >= frozen ML threshold. |
 | Model B - ML + event features | Add structured point-in-time SEC metadata/tone/catalyst features; logistic B-both is primary. | Baseline 1 event AND calibrated B P(revert) >= the matched frozen threshold. |
-| Full system                   | Add point-in-time event intelligence, agents and deterministic controller.        | Only final status CANDIDATE enters simulated trade; REVIEW/NO TRADE/ABSTAIN are withheld. |
+| Full system                   | Add point-in-time event intelligence, agents and deterministic controller.        | Model B accepted AND stored final status CANDIDATE; REVIEW/NO TRADE/ABSTAIN are withheld. |
 
 One change per rung
 
@@ -68,7 +68,10 @@ The Full System then uses the underlying admissible evidence and structured
 extraction in the agent/controller layer, so the incremental value of reasoning
 can be measured separately from tabular event features. Keep the complete
 predeclared model-family/feature-block comparisons; economic results must name
-the stored model identities driving acceptance.
+the stored model identities driving acceptance. A and B independently filter
+Baseline 1 at the same threshold. B does not inherit A's acceptance. Only the
+Full System is a subset of B. Shared execution eligibility follows selection
+and cannot silently alter the forecast population.
 
 # 4. Raw signal universe versus ML event universe
 
@@ -85,11 +88,26 @@ Baseline 0 requires threshold crossings even when a pair is not currently cointe
 
 When comparing two adjacent rungs, report results on both the natural eligible universe and a common matched subset where both versions have the required data. This prevents a layer from appearing better merely because missing data removed difficult observations.
 
+Keep three denominators distinct: each variant's natural population, the
+common required-data population and the intersection of the variants' selected
+events. The common-data set is established before acceptance and may contain
+events that neither variant selects. On that set, compare the independent
+selection rules as well as the shared selected-event outcomes. Do not describe
+the accepted intersection alone as a matched capability comparison.
+
 Every proposed simulation retains an explicit disposition, including failed
 execution. Unknown returns are excluded from return calculations with their
 denominator and reason reported; they are never converted to zero or silently
 dropped. A quota-limited Full-System schedule requires a separately frozen,
 target-blind schedule and a matched B comparison, not a whole-cohort claim.
+
+For the fixture ladder, apply selection without labels and simulate each fresh
+raw event once with the shared engine. Persist each event row with a disposition
+for every variant, including unknown predictions, unscheduled agents and
+unavailable executions.
+The same event result supplies accepted and rejected counterfactual reporting.
+Supervised development labels enter through a separate bound reporting input;
+no price-derived return or exit reason is relabeled as supervised success.
 
 # 5. Simulated pair construction and position sizing
 
@@ -217,6 +235,13 @@ entry zero; they cannot enter completed-event excursion statistics.
 - Rejected-event counterfactual success/failure and return distribution, using the same simulator.
 - Candidate retention rate: accepted / eligible events.
 
+Each selection table must disclose input, eligible, selected, prediction/agent
+availability and labeled counts. Economic summaries use COMPLETE selected
+trades and separately report selected NOT_ENTERED and UNPRICED counts and
+reasons. Counterfactual summaries use the same engine and disclose their own
+priced/labeled denominators. Missing labels and prices are neither failures nor
+zero returns. Undefined rates and empty mean/median summaries remain null.
+
 # 9. Portfolio-level simulation
 
 Event-level analysis is primary because it measures selection quality directly. A secondary portfolio simulation converts accepted events into one daily strategy return series for Sharpe/drawdown reporting.
@@ -259,6 +284,13 @@ $$
 **Accuracy is not a headline metric**
 
 A naive classifier can look good under imbalance. Ranking, calibration, and accepted-event precision/recall are more informative for this application.
+
+The fixture comparison uses estimable fresh divergences for its descriptive
+forecast metrics, regardless of ACTIVE or economic selection. Report separately
+the retained all-input inventory, nonfresh/unknown-crossing exclusions, missing
+scores and labels. The common-score A/B comparison uses matched labels on the
+same fresh population. It does not replace the canonical full v2 assessment or
+introduce new uncertainty intervals through this engineering slice.
 
 # 11. Calibration and selection-efficiency evaluation
 
@@ -317,30 +349,44 @@ changes to the production feature set.
 # 13. Agent/controller evaluation
 
 $$
-\mathrm{Failure\ Rejection\ Rate}=\frac{\#\{y=0\text{ events withheld}\}}{\#\{y=0\text{ Model B events}\}}.
+\mathrm{Failure\ Rejection\ Rate}=\frac{\#\{y=0\text{ scheduled B candidates with NO TRADE}\}}{\#\{y=0\text{ labeled scheduled B candidates}\}}.
 $$
 
 $$
-\mathrm{False\ Veto\ Rate}=\frac{\#\{y=1\text{ events withheld}\}}{\#\{y=1\text{ Model B events}\}}.
+\mathrm{False\ Veto\ Rate}=\frac{\#\{y=1\text{ scheduled B candidates with NO TRADE}\}}{\#\{y=1\text{ labeled scheduled B candidates}\}}.
 $$
 
 | **Metric**                        | **Definition / interpretation**                                                                        |
 |-----------------------------------|--------------------------------------------------------------------------------------------------------|
-| Failed-opportunity rejection rate | Share of Model B failures converted to REVIEW/NO TRADE/ABSTAIN by the full system.                     |
-| False-veto rate                   | Share of Model B successes withheld by the full system.                                                |
-| Candidate retention               | Share of Model B eligible events that remain CANDIDATE.                                                |
+| Failed-opportunity rejection rate | Share of labeled, scheduled B failures with an explicit NO TRADE decision. |
+| False-veto rate                   | Share of labeled, scheduled B successes with an explicit NO TRADE decision. |
+| All-withheld failure/success rate | Separate share withheld as NO TRADE/REVIEW/ABSTAIN or unavailable; never describe all withholding as a confirmed veto. |
+| Candidate retention               | Share of scheduled B candidates that remain CANDIDATE; missing/failed scheduled results stay in the denominator. |
 | Net failure reduction             | Change in number/rate of failed simulated trades after agent/controller gate.                          |
 | Tail-loss reduction               | Change in worst/lower-tail event returns and drawdown contribution.                                    |
-| Abstention rate                   | Share withheld because the system cannot make a defensible classification.                             |
+| Abstention/availability coverage  | Scheduled B rows split into stored ABSTAIN, missing/failed results, REVIEW, NO TRADE and CANDIDATE; report unscheduled B rows separately. |
 | Reason-code distribution          | Why opportunities were withheld: high break risk, data failure, low score, market-stress warning, etc. |
 
 ## 13.1 Interpretation trade-off
 
 A system that rejects every event has perfect failure rejection but zero usefulness. Agent evaluation must therefore report failure rejection and false-veto/retention together.
 
+Freeze the scheduled B population before investigation. Missing/failed results
+must remain in its inventory, rather than conditioning the denominator on
+successful completion. A genuinely stored ABSTAIN is distinguishable from an
+unavailable result even when both withhold selection. Coverage rates do not
+establish evidence quality; genuine human source/interpretation review is a
+separate gate. The fixture slice reports descriptive event counts and returns,
+without portfolio Sharpe, drawdown, uncertainty intervals or significance claims.
+
 # 14. Human-labelled NLP evaluation subset
 
-The agent layer requires direct evaluation of its evidence-processing quality, not only downstream returns. Build a stratified human-labelled subset from historical events before inspecting full-system test outcomes.
+The agent layer requires direct evaluation of its evidence-processing quality,
+not only downstream returns. Decision 27 governs the source-review inventory:
+freeze a target-blind event-identity sample before annotation and conceal model
+probabilities, suggested extraction labels and outcomes from the source reviewer.
+Evaluate advocate/synthesis interpretation separately from source extraction
+format/provenance. Do not choose favorable outcomes to establish semantic quality.
 
 | **Label field**          | **Human annotation**                                             |
 |--------------------------|------------------------------------------------------------------|
@@ -353,7 +399,7 @@ The agent layer requires direct evaluation of its evidence-processing quality, n
 | source completeness note | Whether available SEC evidence appears sufficient for the label. |
 
 - Minimum 50 events; aim for about 100 if group capacity permits.
-- Stratify across sectors, years, successful/failed events, and events with/without recent 8-Ks.
+- Report sector/year, source-coverage and event-type coverage after the frozen review; any development success/failure composition is a later reporting join, not sample selection or reviewer input.
 - Report per-field accuracy and macro-F1 for categorical fields where class counts support it.
 - Report evidence-validity rate separately from event-classification accuracy.
 
@@ -427,7 +473,7 @@ Every evaluation output should be keyed by experiment_id containing data snapsho
 | Evaluation ladder      | Side-by-side table of B0, B1, Model A, Model B, Full System event counts and key outcomes.                        |
 | Equity curves          | Net portfolio curves under identical cost convention; clearly label gross/net and variant.                        |
 | Predictive diagnostics | ROC/PR, calibration curve, Brier, probability-bucket success rates.                                               |
-| Selection funnel       | Raw signals -> valid pairs -> ML accepted -> Model B accepted -> final CANDIDATE, with reasons for rejection. |
+| Selection funnel       | Raw signals -> valid pairs -> independent A/B acceptance branches; B -> final CANDIDATE, with missing and withheld reasons. |
 | Agent impact           | Failure rejection, false-veto, abstention, break-risk buckets, rejected-trade counterfactual returns.             |
 | Robustness controls    | Sector/year/market-stress filters; cost/borrow scenario selector.                                                 |
 | Trade/event table      | Sortable event-level entry/exit, status, P(revert), break risk, return, exit reason and links to Pair Detail.     |

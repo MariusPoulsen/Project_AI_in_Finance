@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
 
 from structural_break.backtest.contracts import ExecutionConfig, PairTradeRequest
@@ -17,7 +18,85 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
+def _ladder(arguments: list[str]) -> None:
+    # Preserve the small single-event launcher without loading report tooling
+    # until the user explicitly requests a ladder experiment.
+    from structural_break.backtest.experiment import (
+        LadderInputDocument,
+        LadderLabelDocument,
+        read_bounded,
+        run_ladder_experiment,
+        strict_json,
+    )
+    from structural_break.backtest.ladder_contracts import LadderPolicy
+    from structural_break.backtest.ladder_fixtures import fixture_ladder
+
+    parser = argparse.ArgumentParser(description="Synthetic five-rung comparison experiment")
+    inputs = parser.add_mutually_exclusive_group(required=True)
+    inputs.add_argument("--fixture", action="store_true")
+    inputs.add_argument("--input", type=Path)
+    parser.add_argument("--policy", type=Path)
+    parser.add_argument("--config", type=Path)
+    parser.add_argument("--labels", type=Path, help="Separate complete-window evaluation labels")
+    parser.add_argument("--output-dir", type=Path, required=True)
+    args = parser.parse_args(arguments)
+    if args.fixture:
+        if args.policy or args.config or args.labels:
+            parser.error("--fixture cannot be combined with supplied policies or labels")
+        events, policy, config, labels = fixture_ladder()
+    else:
+        if not args.policy or not args.config:
+            parser.error("--input requires --policy and --config")
+        payloads = {
+            name: read_bounded(path)
+            for name, path in (
+                ("inputs", args.input),
+                ("policy", args.policy),
+                ("config", args.config),
+            )
+        }
+        for raw in payloads.values():
+            strict_json(raw)
+        events = LadderInputDocument.model_validate_json(payloads["inputs"]).events
+        policy = LadderPolicy.model_validate_json(payloads["policy"])
+        config = ExecutionConfig.model_validate_json(payloads["config"])
+        labels = ()
+        if args.labels:
+            raw = read_bounded(args.labels)
+            strict_json(raw)
+            labels = LadderLabelDocument.model_validate_json(raw).labels
+    manifest = run_ladder_experiment(events, policy, config, args.output_dir, labels=labels)
+    print(
+        json.dumps(
+            {
+                "mode": "SYNTHETIC_FIXTURE",
+                "event_count": len(events),
+                "manifest": str(manifest),
+                "summary": str(manifest.parent / "summary.md"),
+                "scientific_acceptance": False,
+                "final_test_unlocked": False,
+            },
+            indent=2,
+        )
+    )
+
+
+def _verify(arguments: list[str]) -> None:
+    from structural_break.backtest.experiment import verify_ladder_experiment
+
+    parser = argparse.ArgumentParser(description="Independently verify a synthetic ladder manifest")
+    parser.add_argument("--manifest", type=Path, required=True)
+    args = parser.parse_args(arguments)
+    print(json.dumps(verify_ladder_experiment(args.manifest), indent=2))
+
+
 def main() -> None:
+    if len(sys.argv) > 1 and sys.argv[1] == "ladder":
+        _ladder(sys.argv[2:])
+        return
+    if len(sys.argv) > 1 and sys.argv[1] == "verify":
+        _verify(sys.argv[2:])
+        return
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--fixture", action="store_true", help="Run the synthetic 10% gross example"

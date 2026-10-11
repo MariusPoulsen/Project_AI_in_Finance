@@ -581,6 +581,69 @@ bootstrap; the older calendar-month economic-bootstrap proposal is separate
 and must be specified/frozen before economic assessment. Do not silently
 redefine forecast uncertainty through the new simulator.
 
+## 29. Phase 6 fixture ladder and coverage reporting
+
+On 2026-10-11 the user authorized the next Phase 6 engineering slice while
+the detached v2 feature build continues. Extend the isolated shared-simulator
+branch with frozen capability selection, event-level reporting and immutable
+verification using synthetic inputs only. This does not open genuine historical
+assessment, change the v2 research protocol or synchronize computational code
+into its running checkout.
+
+Baseline 0 requires an estimable fresh divergence under the admissible current
+relationship snapshot: evaluate the prior and signal-close spread with those
+same current parameters, rather than comparing z-scores from two different
+rolling fits. Baseline 1 adds historical ACTIVE status at signal time. A and B
+each independently add their own frozen calibrated probability at the same
+declared threshold to Baseline 1. B is not required to pass A. The Full System
+adds a stored CANDIDATE controller decision to the B-accepted set; REVIEW,
+NO TRADE and ABSTAIN are withheld. Execution eligibility, including positive
+beta and available next-open prices, stays a separate shared-engine gate.
+
+Persist every input event and every variant's selection/disposition. Simulate
+each fresh raw event once under the common execution policy, preserving
+rejected-event counterfactuals and explicit unavailable/unpriced reasons. A
+counterfactual is the outcome of this same frozen simulator, not a prediction
+or an agent label.
+Retain rows lacking A/B predictions, agent results, labels or prices. Selection
+must not read supervised targets; join target identities and development-only
+labels through a separate reporting input. Convergence and positive net return
+cannot substitute for the supervised success label.
+
+Adjacent-rung comparisons disclose natural populations, common required-data
+availability and the intersection of actual selected events separately. The
+common-data population is not the selected intersection. A/B economic selection
+tables do not replace the broad matched v2 forecasting analysis. Fixture
+forecast metrics use estimable fresh events regardless of ACTIVE status and
+report exclusions for nonfresh or unknown crossings separately. Every reported
+return uses COMPLETE, priced trades only and names its selected, missing,
+NOT_ENTERED and UNPRICED denominators. Label rates use only available bound
+labels, with unavailable labels counted separately; zero eligible observations
+produce an explicit undefined rate rather than a favorable zero.
+
+Full-System coverage distinguishes the frozen scheduled B-candidate population
+from successful investigations. Scheduled missing/failed results remain in that
+denominator as unavailable/ABSTAIN; do not redefine the scheduled cohort around
+completed favorable cases. Report unscheduled events separately. Distinguish
+NO TRADE vetoes from REVIEW deferrals, ABSTAIN/unavailable investigations and
+unscheduled rows. False-veto and failed-opportunity rejection describe NO TRADE
+on labeled scheduled B candidates; a separate all-withheld measure may describe
+REVIEW and ABSTAIN too, without calling them confirmed agent vetoes.
+
+The synthetic ladder freezes its fixture threshold, model/decision identities,
+event inventory, execution scenario and code identities in an immutable
+manifest. Reverification reconstructs selection and reports from bound inputs
+and reruns the same simulator; it cannot repair or overwrite mismatched bytes.
+Reject implementation/runtime drift during computation or verification before
+publishing or attesting the result.
+Report assembly also rechecks the deterministic selector against its input
+policy without executing the price path again.
+Fixture economics and mock controller outputs establish engineering behavior
+only. Production policy remains DRAFT. Accepted historical generation adapters,
+genuine controller/source and human-quality integration, portfolio accounting,
+economic bootstrap and production assumption freeze remain completion gates.
+The final 2024-2025 outcome/performance lock remains intact.
+
 ## 30. Historical bridges and economic analysis before v2 completion
 
 On 2026-10-11 the user authorized the remaining independent Phase 5/6 work:
