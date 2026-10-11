@@ -12,6 +12,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--workspace-root", type=Path)
     parser.add_argument(
+        "--agents", action="store_true", help="Install locked LangGraph dependencies"
+    )
+    parser.add_argument(
+        "--agent-fixture", action="store_true", help="Verify the offline bounded Phase 5 debate"
+    )
+    parser.add_argument(
         "--nlp",
         action="store_true",
         help="Install and retain the optional local CPU FinBERT dependencies",
@@ -48,6 +54,8 @@ def main() -> None:
         raise SystemExit("Install uv in the Colab host first: %pip install uv==0.12.20")
     subprocess.run([uv, "python", "install", "3.11"], cwd=root, check=True)
     extras = ["--extra", "nlp"] if args.nlp else []
+    if args.agents or args.agent_fixture:
+        extras += ["--extra", "agents"]
     subprocess.run([uv, "sync", "--frozen", "--python", "3.11", *extras], cwd=root, check=True)
     run = [uv, "run", "--frozen", *extras]
     options = ["--project-root", str(root)]
@@ -60,6 +68,22 @@ def main() -> None:
             check=True,
         )
     print(f"Foundation verified. Host Python: {sys.version.split()[0]}; project: Python 3.11")
+    if args.agent_fixture:
+        agent_root = args.workspace_root or root / ".acceptance/phase5-colab"
+        subprocess.run(
+            [
+                *run,
+                "structural-break-agents",
+                "--fixture",
+                "--mode",
+                "mock",
+                "--output-dir",
+                str(agent_root / "agents"),
+            ],
+            cwd=root,
+            check=True,
+        )
+        print("Phase 5 synthetic debate and deterministic controller verified; no live API calls")
     if args.data_fixture:
         snapshot = f"colab-fixture-{uuid4().hex[:12]}"
         replay = f"{snapshot}-replay"

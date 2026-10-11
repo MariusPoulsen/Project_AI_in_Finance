@@ -79,3 +79,32 @@ models and Git history remain reference material. Their seven assessment events
 and zero positives cannot establish predictive usefulness. The expanded study's
 Model B improvement is still an objective, not a result. Later agents, the shared
 simulator and final-test evaluation remain separate work under the plan.
+
+## Phase 5 implementation started
+
+2026-10-11: the user authorized the bounded Week 4-inspired multi-agent redesign
+and implementation on isolated branch `phase5/agents-controller-foundation`.
+[Decision 26](DECISIONS.md#26-phase-5-bounded-adversarial-investigation) and the
+[multi-agent specification](specs/04_MULTI_AGENT_PIPELINE.md) now define independent
+mean-reversion/break openings, one rebuttal exchange, separate synthesis and
+semantic validation, and a deterministic categorical-risk controller. Gemma is
+assigned to advocates and Flash-Lite to synthesis and validation.
+
+The first engineering slice is implemented: strict immutable SEC/FinBERT/model
+contracts, parallel bounded LangGraph debate, mechanical grounding checks,
+role-specific Google adapters, immutable caches and deterministic controller.
+All 121 Phase 5 tests pass with sockets blocked; Ruff, formatting, lockfile and
+strict mypy (85 source files) pass. The synthetic CLI runs all six roles and
+replays with zero new calls. The production DRAFT policy produces ABSTAIN with
+zero calls. The Colab bootstrap entry point with `--agents --agent-fixture`
+passes locally on Windows; hosted Linux/Colab verification is separate.
+Full regression testing is in progress. Commands are in
+[the agent runbook](PHASE5_RUNBOOK.md). The accepted-generation adapter, genuine
+provider pilot and at least 50 human annotations remain pending; fixtures do not
+establish semantic correctness or predictive usefulness.
+
+The v2 feature snapshot above remains a dated operational record, not a new live
+checkpoint count. Phase 5 work does not mutate its running source or checkpoints,
+change its scientific protocol, replace its full A/B population, merge unfinished
+v2 to `main` or open final outcomes. Synchronization waits for all v2 acceptance
+gates, rather than only worker exit.

@@ -116,15 +116,20 @@ reports missing/incomplete outputs. Publication does not itself merge GitHub
 ## Development and documentation
 
 ```shell
-uv run --frozen ruff check .
-uv run --frozen ruff format --check .
-uv run --frozen mypy
-uv run --frozen pytest
+uv sync --frozen --extra agents
+uv run --frozen --extra agents ruff check .
+uv run --frozen --extra agents ruff format --check .
+uv run --frozen --extra agents mypy
+uv run --frozen --extra agents pytest
 ```
 
 Tests use deterministic offline fixtures, with network sockets blocked. Genuine
 source/model acceptance is a separate gate. Release checks include Windows/Linux
 CI, the Colab Python 3.11 bootstrap and independent replay of all actual evaluations.
+
+The [agent runbook](docs/PHASE5_RUNBOOK.md) runs the bounded debate and deterministic
+controller with synthetic inputs. This work stays on an isolated branch until v2
+acceptance; genuine agent integration and quality evaluation remain pending.
 
 - Current research: [protocol](docs/RESEARCH_V2_PROTOCOL.md),
   [runbook](docs/RESEARCH_V2_RUNBOOK.md), [Colab](docs/COLAB.md),

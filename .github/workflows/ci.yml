@@ -41,12 +41,16 @@ jobs:
           version: "0.12.20"
           enable-cache: true
       - run: uv python install 3.11
-      - run: uv sync --frozen
+      - run: uv sync --frozen --extra agents
       - run: uv lock --check
-      - run: uv run --frozen ruff check .
-      - run: uv run --frozen ruff format --check .
-      - run: uv run --frozen mypy
-      - run: uv run --frozen pytest
+      - run: uv run --frozen --extra agents ruff check .
+      - run: uv run --frozen --extra agents ruff format --check .
+      - run: uv run --frozen --extra agents mypy
+      - run: uv run --frozen --extra agents pytest
+      - name: Verify the bounded offline agent graph
+        run: >-
+          uv run --frozen --extra agents structural-break-agents --fixture
+          --mode mock --output-dir .acceptance/phase5-ci
       - run: uv run --frozen structural-break init-db
       - run: uv run --frozen structural-break storage-smoke
       - run: uv run --frozen structural-break storage-smoke
@@ -136,6 +140,8 @@ jobs:
       - run: >-
           python scripts/colab_bootstrap.py
           --nlp
+          --agents
+          --agent-fixture
           --workspace-root /tmp/colab-foundation
           --data-fixture
           --relationship-fixture
@@ -147,4 +153,4 @@ jobs:
           uv run --frozen --extra nlp python -c
           "import torch, transformers; assert torch.version.cuda is None;
           print(torch.__version__, transformers.__version__)"
-      - run: uv run --frozen --extra nlp pytest
+      - run: uv run --frozen --extra nlp --extra agents pytest

@@ -395,3 +395,81 @@ The registry, 37,421-event population, SEC source-v3 bytes, evidence budgets,
 quality-v2 FinBERT, pinned assets, 500-event schedule, matched A/B definitions and
 2024–2025 outcome lock remain fixed. Main promotion and independent raw/native
 verification remain pending.
+
+## 26. Phase 5 bounded adversarial investigation
+
+On 2026-10-11 the user explicitly authorized updating the multi-agent pipeline
+and Phase 5 plan to the Week 4-inspired design and beginning implementation.
+This amendment follows v2 quantitative cohort construction and precedes the
+genuine Phase 5 agent evaluation. It does not retrospectively change the v2
+scientific freeze or assume expanded Model B improvement.
+
+Reuse accepted quantitative state, calibrated Model B, admissible SEC evidence,
+structured catalysts and FinBERT tone as the analyst inputs. The advocates address
+mean reversion versus persistent pair-relative repricing, rather than a stock's
+bullish versus bearish direction. Produce independent opening cases in parallel,
+then exactly one rebuttal per advocate after both openings. Each rebuttal can see
+both openings and the original inputs, but not the other rebuttal. A distinct
+synthesis/facilitator produces a cited research interpretation and proposed
+LOW/MEDIUM/HIGH/UNKNOWN break risk. A separate semantic Risk/Validation stage
+checks that interpretation before deterministic Python applies the controller.
+There is no LLM-authorized trade, open-ended debate, contemporary historical
+browsing or new external information set.
+
+Use explicitly configured free Gemma for both opening/rebuttal roles and
+Flash-Lite for separate synthesis and semantic-validation roles. This is four
+Gemma and two Flash-Lite calls per complete uncached event before retries, not
+one Flash-Lite call. Pin actual model, prompt, graph, schema and inference-setting
+identities in each run/cache. Changing the model or number of rounds requires a
+new version; do not silently fall back. Respect pacing, timeouts and shared
+attempt budgets including retries; paid API use and hidden SDK retries remain
+disabled. The Phase 5 adapter is distinct from v2's catalyst-only Gemma contract.
+The first provider's counters are invocation-local; they do not reconstruct
+unsaved failed requests across process restarts or reset actual project quotas.
+Preserve failed receipts and disclose that limitation when scheduling a pilot.
+
+Python mechanically checks schemas, cited chunk/issuer identity, exact quotes,
+timestamps and quantitative references. Semantic validation separately checks
+claim support, fact versus inference, contradictions, coverage and break risk.
+Valid quotation is insufficient evidence that its interpretation is true. LLM
+validation cannot override failed mechanical checks or modify stored numerical
+state. Failed or insufficient required evidence yields UNKNOWN/ABSTAIN; explicit
+high-risk or deterministic ineligibility may yield NO TRADE. Controller statuses
+remain exactly CANDIDATE, REVIEW, NO TRADE and ABSTAIN with fixed reason codes.
+Unvalidated fixture thresholds are not frozen research policy.
+
+A source-grounded stored HIGH-materiality catalyst affecting A or B with DIRECT
+relationship relevance cannot be silently downgraded to CANDIDATE by an
+otherwise LOW-risk validator output. Unless semantic validation confirms HIGH
+break risk or the high-materiality one-sided veto, retain REVIEW with fixed
+reason `UNRESOLVED_CATALYST_RISK`. The unconfirmed extraction is not itself an
+automatic NO TRADE rule; confirmed risk and deterministic hard gates govern
+vetoes. This preserves an unresolved warning without equating exact quotation
+with semantic confirmation.
+
+Full-System automatic candidates require ACTIVE at the historical event timestamp,
+the frozen Model B candidate threshold and hard data/risk/liquidity gates.
+Preflight may skip expensive reasoning when deterministic gates already make
+CANDIDATE impossible, but persist the status, eligibility and skip reason for
+every event. Count eligible events after accepted B fitting. Declare any optional
+REVIEW/audit population separately. If quotas require a subset, freeze a
+target-blind investigation schedule and retain matched B/Full-System denominators
+before evaluating those agent outputs. Do not impose the v2 extraction schedule's
+500-event cap on agents or claim a subset result for the whole cohort.
+
+Keep the broad 37,421-event matched A/B forecasting population, UNKNOWN rows,
+SEC source-v3 bytes, quality-v2 FinBERT, frozen 500-event catalyst schedule, model
+definitions and final-test lock unchanged. Prepare implementation on the isolated
+`phase5/agents-controller-foundation` branch. Do not synchronize it into the live
+v2 checkout until full feature/model/replay/CI/publication acceptance; worker exit
+alone is insufficient. This amendment does not start P6/P7 or authorize
+2024–2025 outcome/performance access.
+
+Mocks establish contracts, orchestration, reproducibility and fail-safe controller
+behavior only. Phase 5 completion additionally requires accepted-generation
+integration, a genuine provider pilot and fixed human source-support/category/
+materiality/relevance evaluation on at least 50 historical events, aiming for 100.
+Any development outcome stratification belongs only to evaluation selection;
+agent prompts and production scheduling never receive realized outcomes. Record
+unsupported interpretations, failures, UNKNOWNs and abstentions honestly. No
+agent usefulness or Full-System benefit is established by the fixture slice.

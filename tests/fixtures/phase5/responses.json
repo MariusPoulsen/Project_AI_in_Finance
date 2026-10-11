@@ -1,0 +1,198 @@
+{
+  "mean_reversion_opening": {
+    "role": "MEAN_REVERSION",
+    "stage": "OPENING",
+    "thesis": "Synthetic bounded case: preserve the model score and investigate source support.",
+    "claims": [
+      {
+        "claim_id": "mean_reversion_opening-quant",
+        "text": "The supplied Model B reversion score is 0.78; it does not establish economic profitability.",
+        "kind": "FACT",
+        "citations": [],
+        "quant_refs": [
+          {
+            "field": "model_b_probability",
+            "value": 0.78
+          }
+        ]
+      },
+      {
+        "claim_id": "mean_reversion_opening-source",
+        "text": "The bounded synthetic source says operating guidance is unchanged; wider business risk remains uncertain.",
+        "kind": "INFERENCE",
+        "citations": [
+          {
+            "chunk_id": "fixture-A-chunk",
+            "leg": "A",
+            "quote": "reports unchanged operating guidance"
+          }
+        ],
+        "quant_refs": []
+      }
+    ],
+    "counterevidence": [],
+    "uncertainties": [
+      "These are synthetic inputs and scripted responses."
+    ],
+    "evidence_strength": "LOW"
+  },
+  "structural_break_opening": {
+    "role": "STRUCTURAL_BREAK",
+    "stage": "OPENING",
+    "thesis": "Synthetic bounded case: preserve the model score and investigate source support.",
+    "claims": [
+      {
+        "claim_id": "structural_break_opening-quant",
+        "text": "The supplied Model B reversion score is 0.78; it does not establish economic profitability.",
+        "kind": "FACT",
+        "citations": [],
+        "quant_refs": [
+          {
+            "field": "model_b_probability",
+            "value": 0.78
+          }
+        ]
+      },
+      {
+        "claim_id": "structural_break_opening-source",
+        "text": "The bounded synthetic source says operating guidance is unchanged; wider business risk remains uncertain.",
+        "kind": "INFERENCE",
+        "citations": [
+          {
+            "chunk_id": "fixture-A-chunk",
+            "leg": "A",
+            "quote": "reports unchanged operating guidance"
+          }
+        ],
+        "quant_refs": []
+      }
+    ],
+    "counterevidence": [],
+    "uncertainties": [
+      "These are synthetic inputs and scripted responses."
+    ],
+    "evidence_strength": "LOW"
+  },
+  "mean_reversion_rebuttal": {
+    "role": "MEAN_REVERSION",
+    "stage": "REBUTTAL",
+    "thesis": "Synthetic bounded case: preserve the model score and investigate source support.",
+    "claims": [
+      {
+        "claim_id": "mean_reversion_rebuttal-quant",
+        "text": "The supplied Model B reversion score is 0.78; it does not establish economic profitability.",
+        "kind": "FACT",
+        "citations": [],
+        "quant_refs": [
+          {
+            "field": "model_b_probability",
+            "value": 0.78
+          }
+        ]
+      },
+      {
+        "claim_id": "mean_reversion_rebuttal-source",
+        "text": "The bounded synthetic source says operating guidance is unchanged; wider business risk remains uncertain.",
+        "kind": "INFERENCE",
+        "citations": [
+          {
+            "chunk_id": "fixture-A-chunk",
+            "leg": "A",
+            "quote": "reports unchanged operating guidance"
+          }
+        ],
+        "quant_refs": []
+      }
+    ],
+    "counterevidence": [],
+    "uncertainties": [
+      "These are synthetic inputs and scripted responses."
+    ],
+    "evidence_strength": "LOW"
+  },
+  "structural_break_rebuttal": {
+    "role": "STRUCTURAL_BREAK",
+    "stage": "REBUTTAL",
+    "thesis": "Synthetic bounded case: preserve the model score and investigate source support.",
+    "claims": [
+      {
+        "claim_id": "structural_break_rebuttal-quant",
+        "text": "The supplied Model B reversion score is 0.78; it does not establish economic profitability.",
+        "kind": "FACT",
+        "citations": [],
+        "quant_refs": [
+          {
+            "field": "model_b_probability",
+            "value": 0.78
+          }
+        ]
+      },
+      {
+        "claim_id": "structural_break_rebuttal-source",
+        "text": "The bounded synthetic source says operating guidance is unchanged; wider business risk remains uncertain.",
+        "kind": "INFERENCE",
+        "citations": [
+          {
+            "chunk_id": "fixture-A-chunk",
+            "leg": "A",
+            "quote": "reports unchanged operating guidance"
+          }
+        ],
+        "quant_refs": []
+      }
+    ],
+    "counterevidence": [],
+    "uncertainties": [
+      "These are synthetic inputs and scripted responses."
+    ],
+    "evidence_strength": "LOW"
+  },
+  "synthesis": {
+    "summary": "Both synthetic cases are consistent with the bounded inputs; this exercise demonstrates orchestration only.",
+    "proposed_break_risk": "LOW",
+    "claims": [
+      {
+        "claim_id": "synthesis-source",
+        "text": "The bounded synthetic source says operating guidance is unchanged; wider business risk remains uncertain.",
+        "kind": "INFERENCE",
+        "citations": [
+          {
+            "chunk_id": "fixture-A-chunk",
+            "leg": "A",
+            "quote": "reports unchanged operating guidance"
+          }
+        ],
+        "quant_refs": []
+      }
+    ],
+    "unresolved_conflicts": [],
+    "uncertainties": [
+      "No measured predictive or semantic accuracy is established."
+    ]
+  },
+  "validation": {
+    "validation_status": "PASS",
+    "source_completeness": "COMPLETE",
+    "contradiction_flag": false,
+    "invalid_claim_count": 0,
+    "break_risk": "LOW",
+    "abstain_recommended": false,
+    "high_materiality_one_sided_catalyst": false,
+    "reason_codes": [],
+    "claims": [
+      {
+        "claim_id": "validation-source",
+        "text": "The bounded synthetic source says operating guidance is unchanged; wider business risk remains uncertain.",
+        "kind": "INFERENCE",
+        "citations": [
+          {
+            "chunk_id": "fixture-A-chunk",
+            "leg": "A",
+            "quote": "reports unchanged operating guidance"
+          }
+        ],
+        "quant_refs": []
+      }
+    ]
+  }
+}

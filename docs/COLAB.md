@@ -294,11 +294,15 @@ with network access blocked:
 
 ```python
 subprocess.run(
-    ["uv", "run", "--frozen", "pytest"],
+    ["uv", "run", "--frozen", "--extra", "agents", "pytest"],
     cwd=repository,
     check=True,
 )
 ```
+
+The separate [agent fixture](PHASE5_RUNBOOK.md#google-colab-fixture) uses
+`scripts/colab_bootstrap.py --agents --agent-fixture`. It installs the locked
+LangGraph runtime and runs an offline synthetic debate without API credentials.
 
 References: [uv Python installation](https://docs.astral.sh/uv/guides/install-python/),
 [frozen synchronization](https://docs.astral.sh/uv/concepts/projects/sync/),

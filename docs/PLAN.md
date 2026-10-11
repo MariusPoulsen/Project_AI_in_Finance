@@ -168,7 +168,7 @@ Stopped at P3. Sparse one-class validation limits predictive conclusions.
 Status: complete; all P4 acceptance gates passed on 2026-10-05. See
 `docs/archive/IMPLEMENTATION_HISTORY.md` for the genuine partial extraction pilot, stored-model replay,
 paired validation limits and Windows/Linux/Colab evidence. Stopped at P4.
-Final-test outcomes remain locked; P5 has not begun.
+Final-test outcomes remain locked; current P5 work is tracked below.
 
 ### Build
 
@@ -229,34 +229,57 @@ cleanup and recovery are integrated before the next frozen launch. Commands are 
 
 ## P5 — Multi-agent structural-break investigation and decision controller
 
-Research v2 is an authorized parallel experiment before P5. Its protocol and
-implementation status are recorded in `docs/RESEARCH_V2_PROTOCOL.md` and above.
-It does not mark any P5 gate complete or open final outcomes.
+Status: **IN PROGRESS**, begun on 2026-10-11 following the user's authorization of
+the bounded Week 4-inspired redesign. The first slice implements typed fixture
+inputs, independent openings, one rebuttal exchange, separate synthesis and
+validation, fail-safe caching and the Python controller. The current architecture
+is in `docs/specs/04_MULTI_AGENT_PIPELINE.md` and DECISIONS section 26.
+
+Work is isolated on `phase5/agents-controller-foundation`. Keep the live v2
+checkout and its 37,421-event population, source-v3 inputs, quality-v2 FinBERT,
+500-event catalyst schedule and A/B definitions frozen. Integrate only after all
+v2 acceptance gates, including model/replay/CI/publication, have passed. Fixture
+success does not complete P5, establish semantic quality or unlock 2024–2025.
 
 ### Build
 
-- [ ] Implement typed LangGraph/shared state.
-- [ ] Load Model B quantitative state before advocate reasoning.
-- [ ] Feed both advocates the same admissible evidence and structured extraction.
-- [ ] Implement Mean-Reversion Advocate.
-- [ ] Implement Structural-Break Advocate.
-- [ ] Run advocate nodes independently/in parallel before synthesis where supported.
-- [ ] Implement Risk/Validation Agent for citations, timestamps, contradictions, source support, coverage and mandate compliance.
-- [ ] Implement validated break-risk synthesis.
-- [ ] Implement deterministic decision controller and reason codes.
-- [ ] Implement explicit `CANDIDATE`, `REVIEW`, `NO TRADE`, `ABSTAIN` semantics.
-- [ ] Implement timeouts/retries/schema validation/fail-safe abstention.
-- [ ] Cache agent outputs by event/source/prompt/graph/model version.
-- [ ] Build human-labelled NLP/agent evaluation subset workflow.
+Checked implementation items describe the verified fixture slice. They do not
+complete accepted-generation integration or genuine semantic evaluation.
+
+- [x] Implement immutable typed event contracts and LangGraph shared state.
+- [x] Implement the deterministic controller with versioned categorical-risk policy and reason codes.
+- [ ] Load accepted Model B quantitative state and reused SEC/FinBERT/catalyst inputs through a generation-bound historical adapter.
+- [x] Feed both advocates the same immutable fixture evidence and structured reports; genuine adapter remains pending.
+- [x] Implement Mean-Reversion Advocate role prompts and provider contract; genuine pilot remains pending.
+- [x] Implement Structural-Break Advocate role prompts and provider contract; genuine pilot remains pending.
+- [x] Run opening advocate nodes independently/in parallel, without seeing each other's drafts.
+- [x] Implement exactly one independent rebuttal per advocate after both openings finish.
+- [x] Implement a distinct synthesis/facilitator stage with cited interpretation and proposed categorical break risk.
+- [x] Implement Python mechanical checks for exact quotes, identity, timestamps and quantitative references.
+- [x] Implement separate semantic Risk/Validation for claim support, contradictions, coverage, mandate compliance and accepted break risk.
+- [ ] Configure Gemma opening/rebuttal roles and Flash-Lite synthesis/validation with explicit model/prompt/graph versions; run a real pilot.
+- [x] Implement explicit `CANDIDATE`, `REVIEW`, `NO TRADE`, `ABSTAIN` semantics.
+- [x] Implement timeouts/retries/schema validation/fail-safe abstention and attempt budgets including retries.
+- [x] Cache agent outputs by exact event/source/upstream-output/prompt/graph/model identity.
+- [ ] Count historically ACTIVE + frozen Model B threshold + hard-gate eligible events after genuine fitting.
+- [ ] Persist statuses/reasons for deterministically skipped calls and declare optional REVIEW/audit schedules separately.
+- [ ] If required by quota, freeze a target-blind agent schedule and matched B/Full-System denominator before evaluating that schedule.
+- [ ] Build the fixed human-labelled evaluation workflow: at least 50 historical events, aim 100, source support/category/materiality/relevance and agent interpretation.
 
 ### Acceptance gate P5
 
 - [ ] No agent can alter stored econometric or ML values.
 - [ ] Material claims resolve to valid evidence IDs and historical timestamps.
+- [x] Opening independence, one-round topology and separate synthesis/semantic-validation roles pass deterministic integration checks.
+- [x] Exact-quote checks are distinguished from semantic support, and failed mechanical checks cannot be overridden in the tested workflow.
 - [ ] Invalid/failing LLM outputs end in safe retry/`ABSTAIN` behaviour.
-- [ ] Same frozen event/source/prompt/model configuration is cache-reproducible.
-- [ ] Controller output is deterministic for a fixed validated state.
-- [ ] Agent integration tests pass with mocked provider responses and no network.
+- [x] Same frozen fixture input/provider/prompt/model configuration is cache-reproducible.
+- [x] Controller output is deterministic for a fixed validated state.
+- [x] Agent integration tests pass with mocked provider responses and blocked sockets (121 Phase 5 tests).
+- [ ] Accepted-generation inputs and genuine provider outputs pass an auditable historical pilot without exposing outcomes to agents.
+- [ ] Human source-support and classification evaluation is completed with at least 50 annotations and honest error/coverage reporting.
+- [ ] Scheduled and skipped denominators are retained; no subset result is represented as a whole-cohort Full-System result.
+- [ ] Freeze the actual provider/prompt/graph/controller identities before later final-test authorization.
 
 ---
 
