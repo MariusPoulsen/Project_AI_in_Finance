@@ -512,6 +512,75 @@ legs. Format/provenance checks do not measure semantic accuracy. Genuine source
 review, advocate/synthesis interpretation evaluation and at least 50 historical
 annotations (aiming for 100) remain completion gates.
 
+## 28. Phase 6 fixed-share development simulator
+
+On 2026-10-11 the user authorized parallel Phase 5 batch infrastructure and the
+Phase 6 shared event-level simulator while the frozen v2 feature job continues.
+Prepare this simulator on isolated `phase6/shared-simulator`; do not synchronize
+new computational source into the running v2 checkout or claim that fixture
+success completes v2 or Phase 6. This amendment precedes any genuine Phase 6
+economic assessment. The primary forecast comparison remains calibrated
+logistic B-both versus matched A, with fit 2006-2019, calibration 2020-2021 and
+assessment 2022-2023, the complete-window embargo, all predeclared ablations and
+10/30-session sensitivities. Final 2024-2025 outcomes/performance stay locked.
+
+The event engine uses the frozen signal-close alpha, beta, spread mean and
+standard deviation, entering at the exact next XNYS open. Snapshot availability
+means first usability and cannot precede the next XNYS open after its formation
+endpoint; a same-close newly formed fit cannot drive that signal. The primary timeout
+is the close of the twentieth session after the signal; preserve separately
+versioned 10/30-session sensitivities. Monitor each close from the entry session.
+An observed |z| <= 0.5 triggers convergence; signal-sign times z >= 3 triggers
+the same-side adverse stop. An opposite-side jump outside the success band is
+neither convergence nor that adverse stop. Every close trigger, including
+timeout, exits at the exact following XNYS open. Never substitute a later
+convenient open, interpolate a required price or reuse new relationship fits.
+
+Positive beta is an economic execution gate only; it does not alter the broad
+v2 A/B cohort. Size entry gross notional with signed beta weights, then freeze
+share units using entry prices. No daily constant-weight rebalancing is allowed.
+Gross return is fixed-share exit-minus-entry P&L divided by entry gross notional.
+Entry cost applies to actual gross entry turnover; exit cost applies to actual
+gross exit turnover, which can differ as prices move. The synthetic scenario
+uses 5 bps on each turnover and 3% annual borrow on entry short notional times
+actual open-to-open XNYS session intervals / 252. These are disclosed fixture
+parameters, not measured execution prices or frozen production assumptions.
+
+The production `configs/phase6_execution.json` remains DEVELOPMENT/DRAFT with
+costs, annual borrow and positive-beta ceiling unresolved. Execution refuses
+real captured inputs until a production policy is explicitly frozen. The
+fixture's beta ceiling is a test scenario, not a forecast population restriction.
+A later immutable economic experiment must freeze the real cost/sensitivity,
+borrow, price-adjustment, liquidity/eligibility and execution assumptions before
+economic assessment. Keep `configs/backtest.yaml` and original reference
+artifacts unchanged.
+
+Synthetic prices declare one compatible open/close basis. A future Yahoo
+adapter must use adjusted open = raw open * (adjusted close / raw close) and
+the matching adjusted close from the same capture; retrospective adjustments
+are a disclosed historical limitation rather than a vintage feed. This slice
+does not ingest market data or settle actual corporate actions. A declared
+lifecycle termination produces explicit unknown execution until its economic
+settlement policy is implemented; statistical WATCH/RETIRED alone does not
+terminate a frozen path.
+
+Retain a row and reason for NOT_ENTERED and UNPRICED results. Missing entry/exit
+opens, missing monitored prices, truncation and unresolved lifecycle settlement
+cannot produce fabricated zero return. Completed MAE/MFE sample entry zero,
+observed monitored closes and executed exit open; they do not claim intraday
+extrema. A partially observed path is not a completed event outcome. Existing
+supervised labels and economic returns remain distinct. For UNPRICED paths,
+final MAE/MFE remain null; separately named partial excursion fields describe
+the observed prefix and are excluded from completed-event statistics.
+
+The first acceptance boundary is synthetic event-level execution only. Raw
+signal generation, all five capability filters, actual stored v2/controller
+integration, common-subset economic evaluation, portfolio allocation and human
+agent metrics remain pending. Preserve the v2 paired calendar-quarter forecast
+bootstrap; the older calendar-month economic-bootstrap proposal is separate
+and must be specified/frozen before economic assessment. Do not silently
+redefine forecast uncertainty through the new simulator.
+
 ## 30. Historical bridges and economic analysis before v2 completion
 
 On 2026-10-11 the user authorized the remaining independent Phase 5/6 work:

@@ -140,3 +140,21 @@ The real source review requires human annotations and separate interpretation
 evaluation; no genuine provider pilot, semantic quality or model improvement is
 claimed. [Decision 30](DECISIONS.md#30-historical-bridges-and-economic-analysis-before-v2-completion)
 records this engineering slice and its timing.
+
+## Phase 6 development simulator started
+
+2026-10-11: the user authorized a shared event-level simulator on isolated
+branch `phase6/shared-simulator`, alongside Phase 5 batch infrastructure.
+[Decision 28](DECISIONS.md#28-phase-6-fixed-share-development-simulator) and
+the [backtesting specification](specs/05_BACKTESTING_EVALUATION.md) align its
+20-session primary horizon, observed close-band convergence, same-side adverse
+stop, exact next-XNYS-open fills and frozen entry share units with the canonical
+research rules. Synthetic cost scenarios apply to actual entry/exit turnover
+and entry short notional; production assumptions remain explicitly DRAFT.
+
+The fixture implementation and its checks are in progress. Genuine captured
+market inputs, accepted v2/controller bindings, all five selection filters,
+historical economic metrics, portfolio accounting and economic bootstrap are
+pending. The [runbook](BACKTEST_RUNBOOK.md) gives the synthetic command and
+the production refusal boundary. This work leaves v2 source/checkpoints and
+its forecast protocol unchanged and does not authorize final-test outcomes.

@@ -290,10 +290,17 @@ complete accepted-generation integration or genuine semantic evaluation.
 
 ## P6 — Backtesting framework, experiment freeze and final evaluation
 
+Status: **IN PROGRESS**, authorized on 2026-10-11 for an isolated, synthetic
+event-level slice on `phase6/shared-simulator`, in parallel with Phase 5 batch
+infrastructure. See DECISIONS section 28 and `docs/BACKTEST_RUNBOOK.md`.
+Implementation does not run genuine historical economics, integrate unfinished
+v2 outputs or open 2024-2025 outcomes. Production execution policy remains
+DRAFT; fixture scenarios are not an execution-cost freeze.
+
 ### Build before final-test unlock
 
 - [ ] Implement one execution engine shared by all five variants.
-- [ ] Implement beta-weighted long/short pair construction.
+- [ ] Implement beta-weighted entry construction with frozen share units until exit.
 - [ ] Implement close-signal / next-open execution convention.
 - [ ] Implement convergence, adverse-stop and timeout exits.
 - [ ] Implement transaction-cost and short-borrow assumptions and sensitivity grids.
@@ -306,6 +313,11 @@ complete accepted-generation integration or genuine semantic evaluation.
 - [ ] Implement block-bootstrap / pair-concentration uncertainty analyses specified in `docs/specs/05_BACKTESTING_EVALUATION.md`.
 - [ ] Implement experiment manifest and immutable result persistence.
 - [ ] Freeze methodology/config/model/prompt/policy/execution assumptions.
+
+The first slice covers the event engine and fixture artifacts only. Actual
+five-rung selection, historical generation binding, portfolio accounting and
+economic uncertainty remain separate gates. Canonical v2 forecast chronology,
+logistic B-both primary and paired quarter-block reports remain unchanged.
 
 ### Final-test lock gate
 
