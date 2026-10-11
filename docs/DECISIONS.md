@@ -511,3 +511,79 @@ and source bytes, preserve incomplete acquisition and cite the claimed affected
 legs. Format/provenance checks do not measure semantic accuracy. Genuine source
 review, advocate/synthesis interpretation evaluation and at least 50 historical
 annotations (aiming for 100) remain completion gates.
+
+## 30. Historical bridges and economic analysis before v2 completion
+
+On 2026-10-11 the user authorized the remaining independent Phase 5/6 work:
+historical artifact adapters, genuine blind source-review preparation, robustness
+and cost analysis, economic uncertainty engineering and secondary portfolio
+accounting. Implement on the isolated Phase 5 and stacked Phase 6 branches. Keep
+the running v2 source, registry, population, feature policies, catalyst schedule,
+model comparison and final-test lock unchanged. These choices follow previously
+observed original development results and precede genuine v2 economic assessment;
+they must not be described as decisions made before all development observations.
+
+Source-only human review may use an explicit registered H20 registry and verified
+SEC source-v3 without a fitted Model B. Freeze a seeded event-identity sample of
+50–100 events before reading its captures. Snapshot only the selected stored raw
+receipts/documents, preserve unavailable captures and replay each packet from
+that frozen copy. Omit targets, model probabilities and suggested catalyst labels.
+Bind source manifests, registry/universe identities and the source recipe. Citation
+offsets address the stored cleaned chunk, not original HTML characters. Human
+annotations and their semantic evaluation remain human work; format/provenance
+validation cannot certify accuracy.
+
+Scored historical agent inputs additionally require the explicit registered
+primary publication and its accepted native/source/hosted-CI evidence. Replay
+the exact primary logistic B-both/H20 model and selected calibrated/raw prediction,
+SEC pack, pinned quality-v2 tone and stored extraction. A declared manifest or
+acceptance flag cannot substitute for publication. Admit only 2022–2023 assessment
+scores; fit/calibration scores from the final fitted bundle are not vintage
+out-of-sample agent inputs. Preserve unavailable lifecycle, liquidity or
+implementation eligibility instead of inventing approval. Nullable eligibility
+produces ABSTAIN with explicit UNKNOWN reason codes; known hard failures still
+produce NO TRADE. Genuine
+provider pilots, the historically eligible schedule and Full-System claims remain
+pending; exporting a source review does not complete them.
+
+The independent Phase 6 analysis bundle is synthetic engineering. Report all
+predeclared turnover scenarios (2.5/5/10/20 bps per entry/exit turnover) crossed
+with annual borrow scenarios (0/3/10 percent), using the same event inventory,
+selection and shared execution engine. Never select a winning scenario or change
+model acceptance using its return. Actual production costs and borrow remain DRAFT.
+Robustness slices cover year, pair, sector, divergence sign, source coverage,
+previous-session VIX/trailing-volatility stress and event type/materiality. Missing
+context is UNKNOWN; bind its event/cutoff and report small populations, pair
+concentration and leave-one-pair/sector-out diagnostics without selecting a
+favorable subset.
+
+The separate fixture economic bootstrap uses 2,000 seeded paired calendar-month
+draws (seed 5557), drawing identical complete-range month indices for every
+strategy and retaining all pairs in a block. Distinguish natural selected
+COMPLETE-only event mean differences, common known allocation-per-raw-candidate
+differences and the both-selected COMPLETE intersection. Explicit WITHHELD means
+zero allocation under that estimand; UNAVAILABLE or selected unknown execution
+does not become a zero return. Retain status/denominator and undefined-draw counts.
+Suppress intervals below 12 contributing populated months for each estimand,
+including support on both sides of natural mean comparisons. These fixture
+intervals establish no inference. The canonical v2 paired-quarter predictive
+bootstrap remains unchanged; the production economic freeze is still pending.
+
+The fixture secondary portfolio starts at NAV 1 and targets 25 percent of current
+NAV gross per accepted entry, clips simultaneous entries equally to available
+gross capacity, reserves entry fees and processes previously triggered exits before
+new allocations. Freeze entry shares, allow one position per pair and report shared
+ticker/sector concentration. The gross limit of one is an entry admission cap;
+passive price drift can breach it and must be disclosed. There is no automatic
+deleveraging, financing/margin or idle-cash-yield model. Chronological open/close
+marks supply NAV, exposure, turnover, costs, borrow, drawdown and close-to-close
+returns. Future COMPLETE status cannot select surviving entries. Missing held
+quotes or unresolved settlement invalidate subsequent NAV and block new allocation;
+do not average event returns into portfolio Sharpe. Actual portfolio policy and
+historical price acceptance remain pending.
+
+Persist the complete analysis inputs, contexts, policies, rows, scenarios and reports
+immutably with code/runtime identities; independently rebuild outputs on verification
+and reject source/runtime drift. These artifacts and mock controller results cannot
+self-attest scientific acceptance, model improvement or agent quality. No change
+authorizes 2024–2025 outcomes or merging unfinished v2 into main.

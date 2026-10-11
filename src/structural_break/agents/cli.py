@@ -119,6 +119,98 @@ def _recover(arguments: list[str]) -> None:
     print(json.dumps({"recovery_receipt": str(receipt)}, indent=2))
 
 
+def _historical(arguments: list[str], *, review: bool, verify: bool) -> None:
+    from structural_break.agents.historical import (
+        AcceptedHistoricalInputs,
+        RegisteredSources,
+        export_historical_inputs,
+        verify_historical_inputs,
+    )
+    from structural_break.agents.historical_review import (
+        export_historical_review,
+        verify_historical_review,
+    )
+    from structural_break.config.paths import ProjectPaths, find_project_root
+
+    parser = argparse.ArgumentParser(description="Explicit registered historical inputs, offline")
+    parser.add_argument(
+        "--research-workspace",
+        type=Path,
+        required=True,
+        help="Existing research workspace, typically PROJECT/data/research_v2",
+    )
+    parser.add_argument("--sec-directory", type=Path, required=True)
+    parser.add_argument("--sec-manifest-sha256", required=True)
+    parser.add_argument("--cache-workspace", type=Path, required=True)
+    if review:
+        parser.add_argument("--registry-version", required=True)
+        if verify:
+            parser.add_argument("--review-dir", type=Path, required=True)
+            parser.add_argument("--annotations", type=Path)
+        else:
+            parser.add_argument("--count", type=int, default=50)
+            parser.add_argument("--seed", default="phase5-genuine-source-review-v1")
+            parser.add_argument("--output-dir", type=Path, required=True)
+    else:
+        parser.add_argument("--primary-version", required=True)
+        if verify:
+            parser.add_argument("--manifest", type=Path, required=True)
+        else:
+            parser.add_argument("--event-id", action="append", required=True)
+            parser.add_argument("--output-dir", type=Path, required=True)
+    args = parser.parse_args(arguments)
+    paths = ProjectPaths.resolve(
+        find_project_root(Path(__file__).resolve().parents[3]), args.research_workspace
+    )
+    if review:
+        sources = RegisteredSources(
+            paths,
+            registry_version=args.registry_version,
+            sec_directory=args.sec_directory,
+            sec_manifest_sha256=args.sec_manifest_sha256,
+            cache_workspace=args.cache_workspace,
+        )
+        if verify:
+            result = verify_historical_review(
+                sources, args.review_dir, annotations_path=args.annotations
+            )
+        else:
+            manifest = export_historical_review(
+                sources, args.output_dir, count=args.count, seed=args.seed
+            )
+            result = {
+                "mode": "genuine_sources",
+                "review_manifest": str(manifest),
+                "human_quality_evaluated": False,
+                "final_test_unlocked": False,
+            }
+    else:
+        adapter = AcceptedHistoricalInputs(
+            paths,
+            primary_version=args.primary_version,
+            sec_directory=args.sec_directory,
+            sec_manifest_sha256=args.sec_manifest_sha256,
+            cache_workspace=args.cache_workspace,
+        )
+        if verify:
+            count = verify_historical_inputs(adapter, args.manifest)
+            result = {
+                "mode": "accepted_historical",
+                "verified_events_n": count,
+                "genuine_agent_quality_evaluated": False,
+                "final_test_unlocked": False,
+            }
+        else:
+            manifest = export_historical_inputs(adapter, tuple(args.event_id), args.output_dir)
+            result = {
+                "mode": "accepted_historical",
+                "manifest": str(manifest),
+                "genuine_agent_quality_evaluated": False,
+                "final_test_unlocked": False,
+            }
+    print(json.dumps(result, indent=2))
+
+
 def main() -> None:
     if len(sys.argv) > 1:
         command = sys.argv[1]
@@ -130,6 +222,18 @@ def main() -> None:
             return
         if command == "recover-lock":
             _recover(sys.argv[2:])
+            return
+        if command in {
+            "historical-review-export",
+            "historical-review-verify",
+            "historical-input-export",
+            "historical-input-verify",
+        }:
+            _historical(
+                sys.argv[2:],
+                review=command.startswith("historical-review"),
+                verify=command.endswith("verify"),
+            )
             return
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--fixture", action="store_true", help="Run the bundled synthetic debate")

@@ -219,6 +219,8 @@ def test_draft_policy_and_missing_thresholds_fail_before_calls(event: AgentInput
         ("source_coverage", "UNKNOWN", "ABSTAIN", "UNKNOWN_SOURCE_COVERAGE"),
         ("liquidity_ok", False, "NO TRADE", "HARD_LIQUIDITY_FAILURE"),
         ("implementation_ok", False, "NO TRADE", "HARD_IMPLEMENTATION_FAILURE"),
+        ("liquidity_ok", None, "ABSTAIN", "UNKNOWN_LIQUIDITY_ELIGIBILITY"),
+        ("implementation_ok", None, "ABSTAIN", "UNKNOWN_IMPLEMENTATION_ELIGIBILITY"),
         ("market_stressed", True, "REVIEW", "MARKET_STRESS"),
         ("source_coverage", "PARTIAL", "REVIEW", "PARTIAL_SOURCE_COVERAGE"),
         ("soft_warning", True, "REVIEW", "SOFT_WARNING"),

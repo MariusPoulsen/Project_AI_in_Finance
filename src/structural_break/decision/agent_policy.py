@@ -66,10 +66,14 @@ def preflight(event: AgentInput, policy: AgentPolicy) -> ControllerDecision | No
         return failure_decision(event, policy, "PAIR_NOT_ACTIVE")
     if event.pair_status == "RETIRED":
         return _result(event, policy, "NO TRADE", ("PAIR_RETIRED",))
-    if not event.gates.liquidity_ok:
+    if event.gates.liquidity_ok is False:
         return _result(event, policy, "NO TRADE", ("HARD_LIQUIDITY_FAILURE",))
-    if not event.gates.implementation_ok:
+    if event.gates.implementation_ok is False:
         return _result(event, policy, "NO TRADE", ("HARD_IMPLEMENTATION_FAILURE",))
+    if event.gates.liquidity_ok is None:
+        return failure_decision(event, policy, "UNKNOWN_LIQUIDITY_ELIGIBILITY")
+    if event.gates.implementation_ok is None:
+        return failure_decision(event, policy, "UNKNOWN_IMPLEMENTATION_ELIGIBILITY")
     probability = event.quant.model_b_probability
     if probability < policy.no_trade_probability:
         return _result(event, policy, "NO TRADE", ("LOW_MODEL_PROBABILITY",))

@@ -101,7 +101,9 @@ zero calls. The Colab bootstrap entry point with `--agents --agent-fixture`
 passes locally on Windows; hosted Linux/Colab verification is separate.
 The first-slice commit `7f59f73` passed the full hosted Linux regression suite
 and fixture workflow in [CI run 38107828059](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/38107828059).
-The expanded batch slice requires fresh hosted checks on its exact commit. Commands are in
+The expanded batch slice passed full hosted Linux checks on `e93df1c` in
+[CI run 38109150954](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/38109150954).
+Commands are in
 [the agent runbook](PHASE5_RUNBOOK.md). The accepted-generation adapter, genuine
 provider pilot and at least 50 human annotations remain pending; fixtures do not
 establish semantic correctness or predictive usefulness.
@@ -121,3 +123,20 @@ outcomes. Annotation validation checks frozen selection and source provenance,
 while explicitly leaving semantic accuracy and genuine quality acceptance false.
 Prepared inventories are mock-only; accepted Model B/source integration remains
 pending. See [decision 27](DECISIONS.md#27-phase-5-durable-batches-and-blind-source-review).
+
+The historical bridge slice adds offline registered source-v3 adapters and a
+source-only 50–100-case review sample with frozen raw captures and fresh parser
+replay. The scored adapter requires an accepted primary publication and exact
+native logistic B-both/H20 inference; only 2022–2023 assessment scores are admitted.
+Missing execution/liquidity eligibility remains UNKNOWN and produces ABSTAIN,
+while known hard failures retain explicit NO TRADE reasons. The generic mock
+loader cannot accept the distinct genuine-input schema. These adapters are
+implemented; actual accepted v2 input loading still awaits v2 acceptance.
+
+All 218 Phase 5 checks pass with sockets blocked, including 34 historical-module
+checks and two historical CLI refusal checks. Ruff, formatting, strict mypy and
+the lockfile check pass. Fresh hosted checks are required for this expanded commit.
+The real source review requires human annotations and separate interpretation
+evaluation; no genuine provider pilot, semantic quality or model improvement is
+claimed. [Decision 30](DECISIONS.md#30-historical-bridges-and-economic-analysis-before-v2-completion)
+records this engineering slice and its timing.

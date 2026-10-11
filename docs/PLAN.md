@@ -249,6 +249,7 @@ complete accepted-generation integration or genuine semantic evaluation.
 - [x] Implement immutable typed event contracts and LangGraph shared state.
 - [x] Implement the deterministic controller with versioned categorical-risk policy and reason codes.
 - [ ] Load accepted Model B quantitative state and reused SEC/FinBERT/catalyst inputs through a generation-bound historical adapter.
+- [x] Implement the publication-gated historical adapter and source/native replay refusal checks; actual accepted v2 integration remains pending.
 - [x] Feed both advocates the same immutable fixture evidence and structured reports; genuine adapter remains pending.
 - [x] Implement Mean-Reversion Advocate role prompts and provider contract; genuine pilot remains pending.
 - [x] Implement Structural-Break Advocate role prompts and provider contract; genuine pilot remains pending.
@@ -268,6 +269,7 @@ complete accepted-generation integration or genuine semantic evaluation.
 - [ ] Persist statuses/reasons for deterministically skipped calls and declare optional REVIEW/audit schedules separately.
 - [ ] If required by quota, freeze a target-blind agent schedule and matched B/Full-System denominator before evaluating that schedule.
 - [ ] Build the fixed human-labelled evaluation workflow: at least 50 historical events, aim 100, source support/category/materiality/relevance and agent interpretation.
+- [x] Implement genuine source-only review export/replay independently of fitted B, with a frozen raw capture and target-blind 50–100-event inventory.
 
 ### Acceptance gate P5
 

@@ -218,3 +218,59 @@ The default export size is 50 (maximum 100); insufficient populations are reject
 without silent downsampling. This workflow prepares source annotation only.
 Real historical annotations and a separate evaluation of agent interpretations
 are still needed for Phase 5 completion.
+
+## Registered historical sources and model bridge
+
+[Decision 30](DECISIONS.md#30-historical-bridges-and-economic-analysis-before-v2-completion)
+adds two explicit offline adapters. They do not download, fit, call a provider or
+change the running v2 checkout. `--research-workspace` names the existing research
+workspace itself (normally `PROJECT/data/research_v2`), while `--cache-workspace`
+names the workspace whose `data/raw/sec/filings` contains the stored captures.
+Always provide the exact registered version and SEC source-v3 manifest checksum;
+never choose a directory by modification time.
+
+Source-only review needs a verified registry/universe/SEC capture, independently
+of Model B. Export 50–100 identity-selected historical events:
+
+```powershell
+uv run --frozen --extra agents structural-break-agents historical-review-export --research-workspace RESEARCH_WORKSPACE --registry-version REGISTRY_VERSION --sec-directory SOURCE_V3_DIRECTORY --sec-manifest-sha256 SEC_SHA256 --cache-workspace CACHE_WORKSPACE --count 50 --seed phase5-genuine-source-review-v1 --output-dir .acceptance/genuine-source-review
+```
+
+The returned manifest identifies a frozen sample directory with selection, source
+packets, a local copy of the selected raw receipts/documents, an annotation template
+and README. Missing/failing captures remain UNKNOWN/PARTIAL. The packets omit model
+probabilities, targets and suggested catalyst labels. Offsets address stored cleaned
+chunks; raw document hashes/parser chunk order remain in the source pack.
+
+Reconstruct the sample from its frozen raw copy, preserving later live-cache growth:
+
+```powershell
+uv run --frozen --extra agents structural-break-agents historical-review-verify --research-workspace RESEARCH_WORKSPACE --registry-version REGISTRY_VERSION --sec-directory SOURCE_V3_DIRECTORY --sec-manifest-sha256 SEC_SHA256 --cache-workspace CACHE_WORKSPACE --review-dir REVIEW_DIRECTORY
+```
+
+After human completion, supply `--annotations ANNOTATIONS_COMPLETED.json` to the
+same verification command. Do not edit the frozen template or manifest. Validation
+checks provenance and response format; it does not establish semantic accuracy or
+agent usefulness. At least 50 genuine annotations and separate agent-interpretation
+evaluation remain completion gates.
+
+The scored bridge additionally requires the explicit registered primary publication.
+It checks its accepted generation/CI evidence and replays each requested H20 primary
+logistic B-both native score, calibration, quantitative clock and stored SEC/tone/
+catalyst inputs. Only 2022–2023 assessment inputs are admitted; final-bundle fit
+and calibration predictions are not vintage out-of-sample scores. Missing publication
+or a disagreement fails closed. Current liquidity and implementation eligibility
+remain UNKNOWN until a separate point-in-time execution policy is frozen, producing
+ABSTAIN rather than a known hard-failure veto. Export selected inputs without
+spending provider quota:
+
+```powershell
+uv run --frozen --extra agents structural-break-agents historical-input-export --research-workspace RESEARCH_WORKSPACE --primary-version PRIMARY_VERSION --sec-directory SOURCE_V3_DIRECTORY --sec-manifest-sha256 SEC_SHA256 --cache-workspace CACHE_WORKSPACE --event-id REGISTERED_EVENT_ID --output-dir .acceptance/accepted-agent-inputs
+uv run --frozen --extra agents structural-break-agents historical-input-verify --research-workspace RESEARCH_WORKSPACE --primary-version PRIMARY_VERSION --sec-directory SOURCE_V3_DIRECTORY --sec-manifest-sha256 SEC_SHA256 --cache-workspace CACHE_WORKSPACE --manifest .acceptance/accepted-agent-inputs/manifest.json
+```
+
+The accepted historical schema is distinct from the mock batch manifest and cannot
+be passed to the mock loader to bypass its gate. Exporting a genuine projection is
+not a provider pilot or a Full-System assessment. Historically eligible investigation
+scheduling and genuine agent interpretation still require accepted B inputs, frozen
+controller/eligibility policy and the later explicit pilot.

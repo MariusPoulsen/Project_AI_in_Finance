@@ -48,6 +48,8 @@ ReasonCode: TypeAlias = Literal[
     "PAIR_NOT_ACTIVE",
     "HARD_LIQUIDITY_FAILURE",
     "HARD_IMPLEMENTATION_FAILURE",
+    "UNKNOWN_LIQUIDITY_ELIGIBILITY",
+    "UNKNOWN_IMPLEMENTATION_ELIGIBILITY",
     "LOW_MODEL_PROBABILITY",
     "INTERMEDIATE_MODEL_PROBABILITY",
     "VALIDATION_FAILED",
@@ -87,8 +89,8 @@ class DataGates(FrozenModel):
     model_inputs_ok: bool
     source_timestamps_ok: bool
     source_coverage: Coverage
-    liquidity_ok: bool
-    implementation_ok: bool
+    liquidity_ok: bool | None
+    implementation_ok: bool | None
     market_stressed: bool = False
     soft_warning: bool = False
 
