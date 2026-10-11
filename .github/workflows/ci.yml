@@ -10,11 +10,6 @@ on:
       - "LICENSE"
   pull_request:
     branches: [main, research-v2]
-    paths-ignore:
-      - "docs/**"
-      - "README.md"
-      - "AGENTS.md"
-      - "LICENSE"
   workflow_dispatch:
     inputs:
       full_validation:

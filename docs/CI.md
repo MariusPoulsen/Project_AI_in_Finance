@@ -6,11 +6,15 @@ dependencies, Ruff, mypy and all existing synthetic data, econometric and Models
 A/B build, replay and reload checks. Branch pushes no longer repeat the checks
 already triggered by an open pull request. Superseded routine runs are cancelled.
 
-Changes confined to `docs/**`, `README.md`, `AGENTS.md` or `LICENSE` skip routine
-CI. Workflow, lockfile, scripts, source, tests and other changes still trigger it.
-GitHub can leave a required check pending when path filters skip its workflow.
-Before requiring these checks in branch protection or a ruleset, account for this
-documentation-only case; do not treat an absent check as successful validation.
+Every pull request runs Linux CI, including documentation-only changes, so the
+required check is always reported. Pushes to `main` confined to `docs/**`,
+`README.md`, `AGENTS.md` or `LICENSE` skip the duplicate run after merging.
+Workflow, lockfile, scripts, source, tests and other changes still trigger it.
+
+The `main` branch ruleset requires a pull request, resolved review conversations
+and `foundation (ubuntu-latest)` from GitHub Actions. It blocks deletion and force
+pushes and applies to administrators. No reviewer approvals are mandatory for
+this sole-maintainer repository. Windows and Colab remain separate release gates.
 
 The manual workflow input `full_validation` defaults to `true`. This runs exactly
 the three complete release jobs: `foundation (ubuntu-latest)`,
