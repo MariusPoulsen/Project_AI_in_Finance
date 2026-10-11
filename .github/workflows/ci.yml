@@ -67,6 +67,10 @@ jobs:
         run: |
           uv run --frozen structural-break-backtest ladder --fixture --output-dir .acceptance/phase6-ladder-ci
           uv run --frozen structural-break-backtest ladder --fixture --output-dir .acceptance/phase6-ladder-ci
+      - name: Build synthetic sensitivity, uncertainty and portfolio analysis with immutable replay
+        run: |
+          uv run --frozen structural-break-backtest analysis --fixture --output-dir .acceptance/phase6-analysis-ci
+          uv run --frozen structural-break-backtest analysis --fixture --output-dir .acceptance/phase6-analysis-ci
       - run: uv run --frozen structural-break init-db
       - run: uv run --frozen structural-break storage-smoke
       - run: uv run --frozen structural-break storage-smoke

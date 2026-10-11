@@ -7,8 +7,9 @@ checkpoints remain frozen. [Decision 28](DECISIONS.md#28-phase-6-fixed-share-dev
 and [the specification](specs/05_BACKTESTING_EVALUATION.md) govern execution.
 [Decision 29](DECISIONS.md#29-phase-6-fixture-ladder-and-coverage-reporting)
 governs fixture selection and coverage reporting.
-It does not download prices, fit models, call an LLM, run a portfolio backtest
-or unlock 2024-2025 outcomes. Historical economic assessment remains pending.
+It does not download prices, fit models, call an LLM or unlock 2024-2025 outcomes.
+Its separate portfolio accounting example is synthetic. Historical economic
+assessment remains pending.
 
 ## Run the deterministic example
 
@@ -141,9 +142,52 @@ missing, failed and stored ABSTAIN results. Unscheduled rows are separate. Only
 an explicit NO TRADE counts as a veto; REVIEW, ABSTAIN and unavailable decisions
 have distinct withholding counts. Empty denominators yield null rates.
 
-These artifacts are synthetic engineering examples. They cannot demonstrate
-model improvement, agent evidence quality or investable performance, and they
-do not supply portfolio NAV/Sharpe/drawdown or economic uncertainty estimates.
+These ladder artifacts are synthetic engineering examples. They cannot demonstrate
+model improvement, agent evidence quality or investable performance. The separate
+analysis command below adds fixture portfolio accounting and uncertainty mechanics.
+
+## Run and independently verify the analysis bundle
+
+```powershell
+uv run --frozen structural-break-backtest analysis --fixture --output-dir .acceptance/phase6-analysis
+uv run --frozen structural-break-backtest verify-analysis --manifest RETURNED_MANIFEST_PATH
+```
+
+Repeat the first command to confirm immutable reuse. The `analyses/<analysis_id>/`
+directory contains eleven bound input/policy/context files, seven output reports
+and a manifest binding their bytes, computational source and Python/package runtime.
+Verification freshly rebuilds every output; replacing a report and rehashing it
+cannot bypass replay. Source/runtime changes receive a different identity.
+
+The analysis keeps all fourteen ladder events and all five strategy records. It
+reports all twelve predeclared turnover/borrow scenarios, without selecting a
+winner or changing event selection. Robustness includes year, pair, sector, sign,
+coverage, previous-session VIX/trailing volatility, event category/materiality,
+small-population flags and leave-one-pair/sector-out diagnostics. Missing context
+remains UNKNOWN. Context values bind event identity and admissible evidence clocks.
+
+The economic month bootstrap uses 2,000 seeded paired draws (5557) from the complete
+calendar-month range. It names natural COMPLETE-only event means, common known
+allocation per raw candidate and both-selected COMPLETE intersections separately.
+WITHHELD is explicit zero allocation; selected unknown execution is not zero.
+Intervals require at least twelve contributing months for each estimand, including
+both sides for natural means. The one-month fixture therefore has no intervals.
+This does not change v2's existing paired-quarter forecast bootstrap.
+
+A separate two-proposal portfolio fixture starts at NAV 1, targets 25% NAV gross
+at entry, clips simultaneous allocations equally and reserves entry costs.
+Fixed entry shares, previous-close-triggered exits before new entries and one
+position per pair determine chronological open/close cash, NAV, exposure, turnover,
+borrow and drawdown. The gross limit is an entry admission cap: passive price drift
+may breach it and is reported. There is no automatic rebalancing, financing/margin
+or idle-cash return model. Missing held quotes make later NAV unknown and block new
+allocations; future COMPLETE status cannot determine entry eligibility. These two
+proposals are an accounting check, not a five-strategy portfolio assessment.
+
+[Decision 30](DECISIONS.md#30-historical-bridges-and-economic-analysis-before-v2-completion)
+records these fixture choices and their timing. Actual execution, portfolio and
+historical-data assumptions remain unfrozen. All scientific acceptance flags are
+false and final-test outcomes remain locked.
 
 ## Production policy and future data adapter
 
@@ -174,7 +218,8 @@ predictions/controller decisions. All five variants must share this engine
 and cost policy; only their declared capability filters differ. Model A/B
 forecast evaluation still uses the broad matched v2 cohort and its canonical
 paired calendar-quarter bootstrap. Economic month-block uncertainty remains
-a separate proposal to specify before assessment.
+a separately implemented fixture policy; its production freeze remains pending
+before assessment.
 
 ## Verification and remaining gates
 
@@ -182,9 +227,10 @@ The synthetic acceptance boundary checks direction/units, exact entry/exit
 timing, convergence versus an equilibrium overshoot, same-side stops,
 timeouts, gaps, turnover costs, borrow duration, missing/truncated/lifecycle
 paths, final-test refusal and immutable artifacts with network sockets blocked.
-The current Phase 6 suite passes 201 tests with sockets blocked: 75 simulator,
-57 ladder, 32 reporting and 37 experiment tests. The current combined Phase 5/6
-suite passes 381 tests; 255 was the earlier simulator slice. Local repository
+The current Phase 6 suite contains 296 blocked-socket checks: 75 simulator,
+57 ladder, 32 reporting, 37 experiment and 95 analysis/cost/portfolio/robustness
+checks. The integrated Phase 5/6 suite is checked after branch integration.
+Earlier slices passed 381 and 255 combined tests. Local repository
 Ruff, formatting, full strict mypy and lockfile checks pass. The single-event
 console fixture repeats with an identical immutable result identity. The
 14-row ladder publishes its manifest, independently verifies as
@@ -192,10 +238,13 @@ console fixture repeats with an identical immutable result identity. The
 identity. The initial simulator commit
 `7a954f0` passed the full hosted Linux regression in
 [CI run 38109378392](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/38109378392).
-The subsequent fixture ladder/reporting commit requires fresh hosted checks.
+The fixture ladder/reporting commit `292a12f` passed
+[CI run 38120892852](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/38120892852).
+The expanded analysis commit requires fresh hosted checks.
 That new slice has its own engineering checks; it does not complete genuine historical
-execution or accepted v2/controller integration. Portfolio allocation,
-economic uncertainty and the production assumption freeze remain pending.
+execution or accepted v2/controller integration. Portfolio allocation and economic
+uncertainty are implemented on fixtures; their genuine historical assessment and
+the production assumption freeze remain pending.
 
 The final-test lock is separate: no 2024-2025 outcome/performance run is
 authorized by this implementation, a DRAFT-policy check, v2 promotion or

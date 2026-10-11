@@ -244,25 +244,31 @@ zero returns. Undefined rates and empty mean/median summaries remain null.
 
 # 9. Portfolio-level simulation
 
-Event-level analysis is primary because it measures selection quality directly. A secondary portfolio simulation converts accepted events into one daily strategy return series for Sharpe/drawdown reporting.
+Event-level analysis is primary because it measures selection quality directly.
+Decision 30 records the implemented secondary synthetic portfolio policy; the
+production policy and accepted historical price adapter remain pending.
 
-| **Rule**          | **Working specification**                                                                                                                                                                                                                |
-|-------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Capital           | Normalised initial NAV = 1.0.                                                                                                                                                                                                            |
-| Allocation        | Equal gross allocation across all open accepted pair trades on each day.                                                                                                                                                                 |
-| Gross exposure    | Total gross exposure capped at 1.0 in the prototype; no leverage.                                                                                                                                                                        |
-| Concurrent trades | All accepted trades may coexist subject to one open trade per pair; report number of simultaneous positions.                                                                                                                             |
-| Reweighting       | Daily equalisation across open pairs is avoided to reduce artificial turnover; allocate equal notional at entry from available capital and release on exit. A simpler equal-open-position alternative may be used if frozen before test. |
-| Cash              | Unused capital earns zero in the prototype; disclose.                                                                                                                                                                                    |
-| Overlapping pairs | Allowed, but report concentration by ticker and sector; no hidden manual exclusions.                                                                                                                                                     |
+| **Rule** | **Implemented fixture policy** |
+|---|---|
+| Capital | Normalised initial NAV = 1.0. |
+| Allocation | Target 25% of current NAV gross per new proposal; equally clip simultaneous entries to remaining gross capacity and reserve entry fees. |
+| Gross exposure | Entry admission cap 1.0; passive price drift may breach it and is reported. No automatic deleveraging or financing/margin model. |
+| Concurrent trades | One open position per pair; release previous-close-triggered exits before admitting new entries. |
+| Reweighting | Freeze entry shares until exit; no daily equalisation. |
+| Cash | Unused cash earns zero. |
+| Overlapping pairs | Report gross ticker/sector concentration, exposure and position counts. |
+| Missing valuation | Missing held quotes or unresolved settlement permanently invalidate subsequent NAV and block new allocation. No entry selection using future COMPLETE status. |
 
 ## 9.1 Daily portfolio return
 
 $$
-r_t^{port}=\sum_{i\in O_t}a_{i,t}r_{i,t}^{pair}.
+r_t^{port}=\frac{NAV_t}{NAV_{t-1}}-1.
 $$
 
-Weights a_i,t are determined by the frozen portfolio rule, not optimised using final-test performance.
+Compute NAV from the chronological cash/marked fixed-share ledger including
+actual fees and accrued borrow. Close-to-close returns and sampled drawdown come
+from that NAV series; averaged event returns cannot supply portfolio Sharpe.
+The current two-proposal example checks accounting, not five-strategy performance.
 
 # 10. Predictive ML evaluation
 
@@ -426,7 +432,7 @@ Divergence events are not perfectly independent: multiple pairs can trigger in t
 |-----------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Descriptive counts/distributions  | Always report N; avoid interpreting tiny slices as stable.                                                                                                          |
 | Paired calendar-quarter forecast bootstrap | Canonical v2 predictive B-minus-A losses use 2,000 seeded paired quarter-block resamples; 2022-2023 has only eight blocks. Preserve these existing predictive reports. |
-| Calendar-month economic bootstrap proposal | The original economic specification proposes month-block resampling for event success, returns and performance differences. This separate economic policy is not implemented or frozen by the fixture slice; freeze its estimands, pairing, block rule and sample limitations before historical economic assessment. |
+| Calendar-month economic bootstrap fixture | Decision 30 implements 2,000 seeded paired complete-range calendar-month draws (5557), retaining within-month pairs. Report natural COMPLETE-only event means, common known allocation per raw candidate and both-selected COMPLETE intersections separately. Intervals require twelve contributing months per estimand; unknown execution is never an invented zero. The production economic policy remains unfrozen. |
 | Pair-cluster sensitivity          | Recompute headline event metrics after leaving one pair out or one sector out.                                                                                      |
 | No p-value fishing                | Do not run dozens of significance tests and select only favourable ones.                                                                                            |
 

@@ -1,4 +1,4 @@
-"""Explicit development-only event simulation; no downloads, fitting or portfolio run."""
+"""Explicit development event simulation and synthetic analysis; no downloads or fitting."""
 
 import argparse
 import hashlib
@@ -90,7 +90,38 @@ def _verify(arguments: list[str]) -> None:
     print(json.dumps(verify_ladder_experiment(args.manifest), indent=2))
 
 
+def _analysis(arguments: list[str], *, verify: bool) -> None:
+    from structural_break.backtest.analysis import (
+        fixture_analysis_inputs,
+        run_analysis,
+        verify_analysis,
+    )
+
+    parser = argparse.ArgumentParser(description="Synthetic robustness and portfolio engineering")
+    if verify:
+        parser.add_argument("--manifest", type=Path, required=True)
+    else:
+        parser.add_argument("--fixture", action="store_true", required=True)
+        parser.add_argument("--output-dir", type=Path, required=True)
+    args = parser.parse_args(arguments)
+    if verify:
+        result = verify_analysis(args.manifest)
+    else:
+        manifest = run_analysis(fixture_analysis_inputs(), args.output_dir)
+        result = {
+            "mode": "SYNTHETIC_FIXTURE",
+            "manifest": str(manifest),
+            "summary": str(manifest.parent / "summary.md"),
+            "scientific_acceptance": False,
+            "final_test_unlocked": False,
+        }
+    print(json.dumps(result, indent=2))
+
+
 def main() -> None:
+    if len(sys.argv) > 1 and sys.argv[1] in {"analysis", "verify-analysis"}:
+        _analysis(sys.argv[2:], verify=sys.argv[1] == "verify-analysis")
+        return
     if len(sys.argv) > 1 and sys.argv[1] == "ladder":
         _ladder(sys.argv[2:])
         return
