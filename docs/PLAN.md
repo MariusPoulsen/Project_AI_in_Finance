@@ -261,6 +261,9 @@ complete accepted-generation integration or genuine semantic evaluation.
 - [x] Implement explicit `CANDIDATE`, `REVIEW`, `NO TRADE`, `ABSTAIN` semantics.
 - [x] Implement timeouts/retries/schema validation/fail-safe abstention and attempt budgets including retries.
 - [x] Cache agent outputs by exact event/source/upstream-output/prompt/graph/model identity.
+- [x] Implement durable total/model/day attempt reservations, exclusive leases and explicit audited recovery.
+- [x] Implement frozen target-blind batch scheduling, complete denominator records and resumable immutable event checkpoints on mock inputs.
+- [x] Implement checksum-checked lazy mock input inventories and blind source annotation export/validation; genuine adapter and quality evaluation remain pending.
 - [ ] Count historically ACTIVE + frozen Model B threshold + hard-gate eligible events after genuine fitting.
 - [ ] Persist statuses/reasons for deterministically skipped calls and declare optional REVIEW/audit schedules separately.
 - [ ] If required by quota, freeze a target-blind agent schedule and matched B/Full-System denominator before evaluating that schedule.
@@ -275,7 +278,7 @@ complete accepted-generation integration or genuine semantic evaluation.
 - [ ] Invalid/failing LLM outputs end in safe retry/`ABSTAIN` behaviour.
 - [x] Same frozen fixture input/provider/prompt/model configuration is cache-reproducible.
 - [x] Controller output is deterministic for a fixed validated state.
-- [x] Agent integration tests pass with mocked provider responses and blocked sockets (121 Phase 5 tests).
+- [x] Agent integration tests pass with mocked provider responses and blocked sockets (180 Phase 5 tests, including batch/budget/input/review checks).
 - [ ] Accepted-generation inputs and genuine provider outputs pass an auditable historical pilot without exposing outcomes to agents.
 - [ ] Human source-support and classification evaluation is completed with at least 50 annotations and honest error/coverage reporting.
 - [ ] Scheduled and skipped denominators are retained; no subset result is represented as a whole-cohort Full-System result.

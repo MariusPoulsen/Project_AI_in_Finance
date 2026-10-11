@@ -719,3 +719,22 @@ Known non-failed semantic risk requires grounded validation claims. PASS cannot
 hide invalid claims, abstention, incomplete coverage or a contradiction flag.
 The controller independently checks mechanical support and retains unresolved
 stored catalyst warnings; it does not treat validator prose as final authority.
+
+# Appendix C. Batch and review engineering boundary
+
+Decision 27 adds durable attempt reservation, frozen target-blind schedules and
+immutable denominator-preserving checkpoints. Total/model/day allocations cover
+transport retries and interrupted outcomes; resuming does not reset them. Valid
+completed events require only checksum/identity/controller verification, without
+graph or provider replay. Every ineligible, unscheduled or budget-failed row stays
+in the batch inventory. An intentional partial run has no complete manifest.
+
+The first prepared-input adapter and CLI are mock only. Exact source/model
+projections are bounded and content addressed, but accepted native Model B and
+registered SEC generation verification remain a separate genuine adapter gate.
+The source-only human review export omits scores, suggested extraction labels and
+outcomes. Selection depends only on event/pair/time identity and a frozen seed.
+Human categories/citations are checked for provenance, including exact affected
+leg coverage; these checks cannot establish semantic correctness. Source review
+and later advocate/synthesis interpretation evaluation require actual historical
+annotations before any Phase 5 quality claim.

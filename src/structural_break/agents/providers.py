@@ -16,6 +16,7 @@ import urllib.request
 from collections.abc import Callable, Mapping
 from typing import Any, Literal, Protocol
 
+from structural_break.agents.budgets import DurableAttemptJournal, fingerprint
 from structural_break.agents.prompts import ROLES
 from structural_break.intelligence.extraction import ProviderFailure
 
@@ -164,6 +165,7 @@ class GeminiAgentProvider:
         max_response_chars: int = 24_000,
         transport: Transport | None = None,
         credential: Callable[[], str | None] | None = None,
+        attempt_journal: DurableAttemptJournal | None = None,
     ) -> None:
         if not re.fullmatch(r"gemma-[a-z0-9.-]+", advocate_model):
             raise ValueError("A pinned Gemma advocate model is required")
@@ -197,6 +199,7 @@ class GeminiAgentProvider:
         }
         self._transport = transport or _http_transport
         self._credential = credential or _environment_key
+        self._attempt_journal = attempt_journal
         self._lock = threading.Lock()
         self._calls = 0
         self._model_calls = {advocate_model: 0, reviewer_model: 0}
@@ -227,6 +230,9 @@ class GeminiAgentProvider:
             "reviewer_calls_per_complete_event": 2,
             "tools": False,
             "fallback": False,
+            "durable_budget": (
+                self._attempt_journal.identity if self._attempt_journal is not None else None
+            ),
         }
 
     def identity_for(self, role: str) -> dict[str, object]:
@@ -363,6 +369,14 @@ class GeminiAgentProvider:
                 )
                 if delay:
                     time.sleep(delay)
+                if self._attempt_journal is not None:
+                    self._attempt_journal.reserve(
+                        model=model,
+                        role=role,
+                        request_sha256=fingerprint(
+                            {"role": role, "model": model, "payload": payload}
+                        ),
+                    )
                 self._last_call[model] = time.monotonic()
                 self._calls += 1
                 self._model_calls[model] += 1
@@ -391,7 +405,13 @@ class ScriptedProvider:
 
     mode: Literal["mock"] = "mock"
 
-    def __init__(self, responses: Mapping[str, dict[str, object]], *, max_calls: int = 100) -> None:
+    def __init__(
+        self,
+        responses: Mapping[str, dict[str, object]],
+        *,
+        max_calls: int = 100,
+        attempt_journal: DurableAttemptJournal | None = None,
+    ) -> None:
         if not _valid_int(max_calls, 1, 100_000) or set(responses) - set(ROLES):
             raise ValueError("Invalid scripted provider roles or budget")
         try:
@@ -404,6 +424,7 @@ class ScriptedProvider:
         self._responses = parsed
         self._script_sha256 = hashlib.sha256(raw.encode()).hexdigest()
         self.max_calls = max_calls
+        self._attempt_journal = attempt_journal
         self._calls = 0
         self._roles: list[str] = []
         self._lock = threading.Lock()
@@ -417,6 +438,9 @@ class ScriptedProvider:
             "script_sha256": self._script_sha256,
             "max_calls": self.max_calls,
             "quality_evidence": False,
+            "durable_budget": (
+                self._attempt_journal.identity if self._attempt_journal is not None else None
+            ),
         }
 
     def identity_for(self, role: str) -> dict[str, object]:
@@ -442,6 +466,14 @@ class ScriptedProvider:
         with self._lock:
             if self._calls >= self.max_calls:
                 raise ProviderFailure("REQUEST_BUDGET_EXHAUSTED", retriable=False)
+            if self._attempt_journal is not None:
+                self._attempt_journal.reserve(
+                    model="scripted-fixture",
+                    role=role,
+                    request_sha256=fingerprint(
+                        {"role": role, "prompt": prompt, "schema": output_schema}
+                    ),
+                )
             self._calls += 1
             self._roles.append(role)
             if role not in self._responses:

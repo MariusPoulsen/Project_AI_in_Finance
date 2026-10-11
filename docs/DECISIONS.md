@@ -473,3 +473,41 @@ Any development outcome stratification belongs only to evaluation selection;
 agent prompts and production scheduling never receive realized outcomes. Record
 unsupported interpretations, failures, UNKNOWNs and abstentions honestly. No
 agent usefulness or Full-System benefit is established by the fixture slice.
+
+## 27. Phase 5 durable batches and blind source review
+
+On 2026-10-11 the user authorized continuing the independent Phase 5 batch
+infrastructure while the detached v2 feature build runs. This engineering slice
+adds a target-blind frozen schedule, immutable per-event checkpoints, complete
+scheduled/skipped/budget-failed denominators, a prepared mock-input inventory and
+a source-only human annotation workflow. It does not change the v2 population,
+500-event catalyst schedule, model definitions or final-test lock.
+
+Durable attempt accounting supersedes the invocation-only limitation described
+for the first adapter in section 26 when the provider is attached to the journal.
+Reserve each transport attempt before sending it, including retries. Reservations
+are never refunded after a timeout or interrupted process because its actual
+provider outcome may be unknown. Bind immutable total/per-model/per-provider-day
+limits to the same allocation across restarts. Ledger integrity and exclusive
+leases fail closed; an abandoned lease requires explicit stopped-owner attestation,
+the exact token and a preserved recovery receipt. This journal does not measure
+other applications' use of the same provider project or reset provider quotas.
+
+Persist the schedule before inference. If capped, rank historically eligible
+events only by a declared seed and event/pair/time identity, never by outcomes or
+favourable agent results. All input rows retain a deterministic disposition.
+Intentional pauses do not publish a complete manifest. Resume verifies completed
+input/checkpoint/provider/code/policy identities and replays the deterministic
+controller without rerunning the graph or transport. Changed scientific inputs,
+implementation or explicit retry identity create a distinct batch, preserving
+previous failed records and shared allocation accounting.
+
+The prepared-input CLI currently accepts mock manifests only. Files are bounded,
+content addressed and checksum checked lazily; this is not an independently
+verified adapter to accepted native Model B and registered historical SEC assets.
+Source review selects a frozen event-identity sample and omits probabilities,
+suggested catalyst labels and outcomes. Human annotations bind the exact inventory
+and source bytes, preserve incomplete acquisition and cite the claimed affected
+legs. Format/provenance checks do not measure semantic accuracy. Genuine source
+review, advocate/synthesis interpretation evaluation and at least 50 historical
+annotations (aiming for 100) remain completion gates.

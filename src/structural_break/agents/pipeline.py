@@ -58,6 +58,8 @@ PROVIDER_FAILURE_CODES = frozenset(
         "PROVIDER_TIMEOUT",
         "PROVIDER_UNAVAILABLE",
         "REQUEST_BUDGET_EXHAUSTED",
+        "DURABLE_DAY_BUDGET_EXHAUSTED",
+        "UNREGISTERED_BUDGET_MODEL",
         "MOCK_RESPONSE_UNAVAILABLE",
         "PROVIDER_AUTHENTICATION_FAILED",
         "PROVIDER_QUOTA_OR_RATE_LIMIT",
@@ -144,7 +146,7 @@ def implementation_identity() -> dict[str, object]:
     package = Path(__file__).resolve().parents[1]
     paths = [
         package / "agents" / name
-        for name in ("pipeline.py", "contracts.py", "providers.py", "prompts.py")
+        for name in ("pipeline.py", "contracts.py", "providers.py", "prompts.py", "budgets.py")
     ] + [package / "decision/agent_policy.py"]
     return {
         "source_sha256": {
@@ -221,23 +223,13 @@ def run_investigation(
         raise ValueError("Fixture thresholds cannot authorize live investigation")
     if not attempt_id or len(attempt_id) > 80:
         raise ValueError("A bounded explicit attempt identity is required")
-    identity: dict[str, object] = {
-        "input": event.model_dump(mode="json"),
-        "policy": policy.model_dump(mode="json"),
-        "graph_version": GRAPH_VERSION,
-        "prompt_version": PROMPT_VERSION,
-        "implementation": implementation_identity(),
-        "provider": {role: provider.identity_for(role) for role in ROLES},
-        "mode": provider.mode,
-    }
+    identity = investigation_identity(event, policy, provider)
     run_id = digest({"identity": identity, "attempt_id": attempt_id})
     result_path = output_dir / "runs" / run_id / "result.json"
     if result_path.exists():
         stored = _read_envelope(result_path)
-        if stored.get("identity_json") != canonical_json(identity):
-            raise ValueError("Stored investigation identity mismatch")
         result = InvestigationResult.model_validate_json(canonical_json(stored))
-        _verify_result(result, event, policy, run_id, provider.mode)
+        verify_investigation(result, event, policy, provider, attempt_id=attempt_id)
         return result
 
     initial_calls = provider.calls
@@ -265,6 +257,37 @@ def run_investigation(
     return result
 
 
+def investigation_identity(
+    event: AgentInput, policy: AgentPolicy, provider: RoleProvider
+) -> dict[str, object]:
+    """Stable exact binding shared by fresh runs and cheap checkpoint verification."""
+    return {
+        "input": event.model_dump(mode="json"),
+        "policy": policy.model_dump(mode="json"),
+        "graph_version": GRAPH_VERSION,
+        "prompt_version": PROMPT_VERSION,
+        "implementation": implementation_identity(),
+        "provider": {role: provider.identity_for(role) for role in ROLES},
+        "mode": provider.mode,
+    }
+
+
+def verify_investigation(
+    result: InvestigationResult,
+    event: AgentInput,
+    policy: AgentPolicy,
+    provider: RoleProvider,
+    *,
+    attempt_id: str = "initial",
+) -> None:
+    """Replay source grounding and Python policy without graph/provider/file replay."""
+    identity = investigation_identity(event, policy, provider)
+    if result.identity_json != canonical_json(identity):
+        raise ValueError("Stored investigation identity mismatch")
+    run_id = digest({"identity": identity, "attempt_id": attempt_id})
+    _verify_result(result, event, policy, run_id, provider.mode)
+
+
 def _decision(
     event: AgentInput, policy: AgentPolicy, stages: tuple[StageRecord, ...]
 ) -> ControllerDecision:
@@ -272,6 +295,11 @@ def _decision(
         code: ReasonCode = (
             "MECHANICAL_VALIDATION_FAILED"
             if any(stage.error_code == "MECHANICAL_VALIDATION_FAILED" for stage in stages)
+            else "INVESTIGATION_BUDGET_EXHAUSTED"
+            if any(
+                stage.error_code in {"REQUEST_BUDGET_EXHAUSTED", "DURABLE_DAY_BUDGET_EXHAUSTED"}
+                for stage in stages
+            )
             else "AGENT_FAILURE"
         )
         return failure_decision(event, policy, code)

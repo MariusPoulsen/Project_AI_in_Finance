@@ -9,7 +9,7 @@ on:
       - "AGENTS.md"
       - "LICENSE"
   pull_request:
-    branches: [main, research-v2]
+    branches: [main, research-v2, phase5/agents-controller-foundation]
   workflow_dispatch:
     inputs:
       full_validation:
@@ -51,6 +51,14 @@ jobs:
         run: >-
           uv run --frozen --extra agents structural-break-agents --fixture
           --mode mock --output-dir .acceptance/phase5-ci
+      - name: Pause a denominator-preserving mock batch
+        run: >-
+          uv run --frozen --extra agents structural-break-agents batch --fixture
+          --max-events 2 --output-dir .acceptance/phase5-batch-ci
+      - name: Resume the same batch and export blind source review
+        run: |
+          uv run --frozen --extra agents structural-break-agents batch --fixture --output-dir .acceptance/phase5-batch-ci
+          uv run --frozen --extra agents structural-break-agents review-export --bundle .acceptance/phase5-batch-ci/prepared/manifest.json --count 4 --output-dir .acceptance/phase5-review-ci
       - run: uv run --frozen structural-break init-db
       - run: uv run --frozen structural-break storage-smoke
       - run: uv run --frozen structural-break storage-smoke

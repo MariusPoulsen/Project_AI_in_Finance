@@ -93,12 +93,15 @@ assigned to advocates and Flash-Lite to synthesis and validation.
 The first engineering slice is implemented: strict immutable SEC/FinBERT/model
 contracts, parallel bounded LangGraph debate, mechanical grounding checks,
 role-specific Google adapters, immutable caches and deterministic controller.
-All 121 Phase 5 tests pass with sockets blocked; Ruff, formatting, lockfile and
-strict mypy (85 source files) pass. The synthetic CLI runs all six roles and
+All 180 Phase 5 tests pass with sockets blocked, including durable budgets,
+checkpoint resume, lazy prepared inputs and blind review exports. Ruff, formatting,
+lockfile and strict mypy pass. The synthetic CLI runs all six roles and
 replays with zero new calls. The production DRAFT policy produces ABSTAIN with
 zero calls. The Colab bootstrap entry point with `--agents --agent-fixture`
 passes locally on Windows; hosted Linux/Colab verification is separate.
-Full regression testing is in progress. Commands are in
+The first-slice commit `7f59f73` passed the full hosted Linux regression suite
+and fixture workflow in [CI run 38107828059](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/38107828059).
+The expanded batch slice requires fresh hosted checks on its exact commit. Commands are in
 [the agent runbook](PHASE5_RUNBOOK.md). The accepted-generation adapter, genuine
 provider pilot and at least 50 human annotations remain pending; fixtures do not
 establish semantic correctness or predictive usefulness.
@@ -108,3 +111,13 @@ checkpoint count. Phase 5 work does not mutate its running source or checkpoints
 change its scientific protocol, replace its full A/B population, merge unfinished
 v2 to `main` or open final outcomes. Synchronization waits for all v2 acceptance
 gates, rather than only worker exit.
+
+The second fixture slice adds frozen target-blind schedules, complete skipped and
+budget-failed records, immutable checkpoint resume without graph/provider replay,
+durable total/model/day attempt reservations and explicit audited lease recovery.
+The four-event CLI pauses and completes with six total mock calls; identical
+replay spends zero. Blind source exports omit scores, extraction suggestions and
+outcomes. Annotation validation checks frozen selection and source provenance,
+while explicitly leaving semantic accuracy and genuine quality acceptance false.
+Prepared inventories are mock-only; accepted Model B/source integration remains
+pending. See [decision 27](DECISIONS.md#27-phase-5-durable-batches-and-blind-source-review).

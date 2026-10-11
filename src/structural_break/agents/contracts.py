@@ -6,7 +6,7 @@ claim meaning still needs the separate semantic validator and human quality audi
 """
 
 from collections.abc import Iterable
-from datetime import datetime
+from datetime import UTC, datetime
 from math import isclose
 from typing import Annotated, Literal, Self, TypeAlias
 
@@ -52,6 +52,8 @@ ReasonCode: TypeAlias = Literal[
     "INTERMEDIATE_MODEL_PROBABILITY",
     "VALIDATION_FAILED",
     "AGENT_FAILURE",
+    "INVESTIGATION_NOT_SCHEDULED",
+    "INVESTIGATION_BUDGET_EXHAUSTED",
     "MECHANICAL_VALIDATION_FAILED",
     "UNKNOWN_BREAK_RISK",
     "HIGH_BREAK_RISK",
@@ -169,6 +171,10 @@ class CatalystState(FrozenModel):
                 raise ValueError("NONE requires a supported absence extraction")
         elif self.affected_leg in {"NONE", "UNKNOWN"} or not self.citations:
             raise ValueError("A catalyst requires an affected leg and source citations")
+        else:
+            expected_legs = {"A", "B"} if self.affected_leg == "BOTH" else {self.affected_leg}
+            if {citation.leg for citation in self.citations} != expected_legs:
+                raise ValueError("Catalyst citations must cover exactly the claimed affected legs")
         return self
 
 
@@ -242,7 +248,7 @@ class AgentInput(FrozenModel):
     def admissible_development_sources(self) -> Self:
         if self.event_timestamp.utcoffset() is None:
             raise ValueError("Event timestamp must have an explicit timezone")
-        if self.event_timestamp.year >= 2024:
+        if self.event_timestamp.astimezone(UTC).year >= 2024:
             raise ValueError("Phase 5 development inputs cannot open the locked final-test period")
         if self.leg_a_security_id == self.leg_b_security_id:
             raise ValueError("Pair securities must be distinct")

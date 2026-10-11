@@ -123,12 +123,14 @@ change; budget omissions and quota/provider failures are explicit, with no paid
 fallback. Store keys only in ignored environment files or Colab Secrets and
 never pass them in command arguments, fixtures or logs.
 
-Provider attempt counters cover one invocation and all its transport retries;
-they are not durable accounting for unsaved failures before a restart. Preserve
-receipts and respect the provider project's remaining quota when deliberately
-retrying. Starting a fresh process or creating another key does not reset that
-quota. Invalid schemas are rejected and required-stage failures abstain, without
-repeated generation to obtain a preferred answer.
+Attach `DurableAttemptJournal` to the live provider for restart-safe accounting.
+It reserves attempts before transport, including retries, and never refunds a
+reservation with an unknown outcome. Its fixed total/model/day allocation and
+checksum chain survive restarts. The provider's own counters remain invocation
+local; the journal is the shared allocation boundary. It cannot measure quota
+spent by other applications. Starting a fresh process or creating another key
+does not reset the provider project's quota. Invalid schemas are rejected and
+required-stage failures abstain, without repeated generation to obtain a preferred answer.
 
 After genuine Model B fitting, count historically eligible candidates. Freeze
 any quota-driven target-blind investigation schedule before evaluating its agent
@@ -144,3 +146,75 @@ whether the interpretation is supported. Record failures, unsupported claims,
 UNKNOWNs and abstentions. Mocks, cache replay and safe controller behavior are
 engineering evidence only. The final 2024–2025 outcomes remain locked until a
 later explicit user authorization after methodology freeze.
+
+## Resumable mock batches
+
+The batch CLI prepares an immutable, file-backed four-event fixture inventory:
+one eligible investigation plus WATCH, low-probability and missing-data cases.
+It freezes hash order and eligibility before any calls and keeps all four rows.
+These commands intentionally pause, resume and replay the same batch:
+
+```powershell
+uv run --frozen --extra agents structural-break-agents batch --fixture --output-dir .acceptance/phase5-batch --max-events 2
+uv run --frozen --extra agents structural-break-agents batch --fixture --output-dir .acceptance/phase5-batch
+uv run --frozen --extra agents structural-break-agents batch --fixture --output-dir .acceptance/phase5-batch
+```
+
+The first command processes two new rows without a complete manifest. The next
+finishes the remaining rows; together they spend six mock role attempts. An
+identical completed replay makes zero new calls. Output includes counts,
+dispositions and the complete manifest path. `batches/<batch_id>/progress.json`
+is replaceable operational state; immutable envelopes and checkpoint identities
+govern resumability. Evidence packs load one at a time from `prepared/manifest.json`.
+
+Use `--max-investigations N` to freeze an optional target-blind investigation cap.
+This is distinct from `--max-events N`, which pauses after N new checkpoints.
+The default mock `--call-budget 60` is persisted in `attempt-journal`; changing
+that allocation in the same directory is rejected. A zero budget preserves an
+explicit budget-exhausted ABSTAIN, never a missing denominator. Failed events
+remain terminal; `--attempt-id retry-01` deliberately creates a new batch while
+retaining shared attempt accounting. Completed valid role caches may be reused.
+
+For other prepared mock inventories, use `batch --bundle MANIFEST --policy POLICY
+--responses RESPONSES --output-dir DIRECTORY`. The inventory declares mock mode
+and binds every exact event/source/model projection. Genuine accepted-generation
+loading and live CLI execution remain pending; supplied names or fixture outputs
+do not certify historical provenance.
+
+If an interrupted process leaves a lease, first establish that its owner has
+stopped and inspect its JSON. Then use its exact token, explicit attestation and
+a reason; never delete a lease based only on an unknown or missing PID:
+
+```powershell
+uv run --frozen --extra agents structural-break-agents recover-lock --lock LOCK_PATH --token EXACT_TOKEN --reason "Verified owner stopped after interruption" --owner-confirmed-stopped
+```
+
+The recovery receipt is written before removing the lease. Recovery never erases
+attempts or rewrites registered results. Both the batch and attempt journal have
+their own lease; recover only the particular abandoned lease after verification.
+
+## Blind human source review preparation
+
+Export all four synthetic source cases without model probabilities, suggested
+catalyst labels or outcomes:
+
+```powershell
+uv run --frozen --extra agents structural-break-agents review-export --bundle .acceptance/phase5-batch/prepared/manifest.json --count 4 --output-dir .acceptance/phase5-review
+```
+
+Read the export README and each exact source JSON. Copy `annotations.blank.json`
+to a separate completed JSON and fill the reviewer ID, timezone-aware timestamp,
+human attestation and every source completeness/catalyst/support annotation.
+The untouched blank file deliberately fails validation. Once completed:
+
+```powershell
+uv run --frozen --extra agents structural-break-agents review-validate --bundle .acceptance/phase5-batch/prepared/manifest.json --review-dir .acceptance/phase5-review --annotations .acceptance/phase5-review/annotations.completed.json
+```
+
+Validation checks exact selection, denominators, hashes, categories, citation legs,
+quotes and incomplete-source constraints. It reports format/provenance validity
+and explicitly leaves measured semantic accuracy and genuine acceptance false.
+The default export size is 50 (maximum 100); insufficient populations are rejected
+without silent downsampling. This workflow prepares source annotation only.
+Real historical annotations and a separate evaluation of agent interpretations
+are still needed for Phase 5 completion.
