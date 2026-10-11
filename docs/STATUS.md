@@ -152,7 +152,14 @@ stop, exact next-XNYS-open fills and frozen entry share units with the canonical
 research rules. Synthetic cost scenarios apply to actual entry/exit turnover
 and entry short notional; production assumptions remain explicitly DRAFT.
 
-The fixture implementation and its checks are in progress. Genuine captured
+The event simulator is implemented and 75 blocked-socket tests pass, including
+hand-calculated frozen-unit P&L, actual exit turnover, next-open timing,
+10/20/30-session timeouts, incomplete price paths, exact formation usability and
+final-test refusal. The combined Phase 5/6 suite passes 255 tests after branch
+integration. Repository Ruff, formatting, mypy and lockfile checks pass locally.
+The console fixture writes immutable input/config/result artifacts and produces
+the same content identity on replay. Full hosted regression for this exact branch
+is a separate pending check. Genuine captured
 market inputs, accepted v2/controller bindings, all five selection filters,
 historical economic metrics, portfolio accounting and economic bootstrap are
 pending. The [runbook](BACKTEST_RUNBOOK.md) gives the synthetic command and

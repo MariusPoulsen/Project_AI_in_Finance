@@ -299,12 +299,13 @@ DRAFT; fixture scenarios are not an execution-cost freeze.
 
 ### Build before final-test unlock
 
-- [ ] Implement one execution engine shared by all five variants.
-- [ ] Implement beta-weighted entry construction with frozen share units until exit.
-- [ ] Implement close-signal / next-open execution convention.
-- [ ] Implement convergence, adverse-stop and timeout exits.
+- [x] Implement the common event execution engine on synthetic inputs; all five variant adapters remain pending.
+- [x] Implement beta-weighted entry construction with frozen share units until exit.
+- [x] Implement close-signal / next-open execution convention.
+- [x] Implement convergence, adverse-stop and timeout exits.
 - [ ] Implement transaction-cost and short-borrow assumptions and sensitivity grids.
-- [ ] Implement event-level MAE/MFE/holding/return metrics.
+- [x] Implement explicit fixture turnover/borrow accounting and 10/20/30-session horizon support; production policy remains DRAFT.
+- [x] Implement event-level MAE/MFE/holding/return metrics, with separate partial excursions for unpriced paths.
 - [ ] Implement secondary portfolio simulation and exposure/turnover accounting.
 - [ ] Implement predictive/calibration metrics.
 - [ ] Implement agent/controller metrics.
@@ -318,6 +319,9 @@ The first slice covers the event engine and fixture artifacts only. Actual
 five-rung selection, historical generation binding, portfolio accounting and
 economic uncertainty remain separate gates. Canonical v2 forecast chronology,
 logistic B-both primary and paired quarter-block reports remain unchanged.
+All 75 simulator tests pass with blocked sockets; the combined Phase 5/6 suite
+passes 255 tests after integration. Repository lint/type and immutable CLI
+replay are separate engineering checks, not genuine economic acceptance.
 
 ### Final-test lock gate
 

@@ -13,13 +13,13 @@ From the repository root with Python 3.11 and the committed environment:
 
 ```powershell
 uv sync --frozen
-uv run structural-break-backtest --fixture --output-dir .acceptance/phase6-demo
+uv run --frozen structural-break-backtest --fixture --output-dir .acceptance/phase6-demo
 ```
 
 The equivalent module entry point is:
 
 ```powershell
-uv run python -m structural_break.backtest.cli --fixture --output-dir .acceptance/phase6-demo
+uv run --frozen python -m structural_break.backtest.cli --fixture --output-dir .acceptance/phase6-demo
 ```
 
 The fixture explicitly identifies its synthetic price basis and scenario.
@@ -87,7 +87,7 @@ The fixture mode cannot admit a captured market request. Legacy
 Typed input/config files can be submitted explicitly:
 
 ```powershell
-uv run structural-break-backtest --input REQUEST.json --config configs/phase6_execution.json --output-dir .acceptance/phase6-draft-check
+uv run --frozen structural-break-backtest --input REQUEST.json --config configs/phase6_execution.json --output-dir .acceptance/phase6-draft-check
 ```
 
 This is a contract/refusal check, not permission to construct arbitrary
@@ -113,8 +113,11 @@ The synthetic acceptance boundary checks direction/units, exact entry/exit
 timing, convergence versus an equilibrium overshoot, same-side stops,
 timeouts, gaps, turnover costs, borrow duration, missing/truncated/lifecycle
 paths, final-test refusal and immutable artifacts with network sockets blocked.
-Run the focused tests and repository lint/type checks before recording this
-slice as accepted. Genuine historical execution, the five-rung filters,
+All 75 focused simulator tests pass with sockets blocked, and the combined
+Phase 5/6 suite passes 255 tests after integration. Local repository Ruff,
+formatting, strict mypy and lockfile checks pass; the console fixture repeats
+with an identical immutable result identity. Hosted full regression remains a
+separate check on the branch commit. Genuine historical execution, the five-rung filters,
 common-subset/coverage reporting, portfolio allocation and economic metrics
 remain pending after fixture acceptance.
 
