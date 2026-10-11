@@ -2,17 +2,42 @@ name: Foundation, data, econometrics and Models A/B research
 
 on:
   push:
+    branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "README.md"
+      - "AGENTS.md"
+      - "LICENSE"
   pull_request:
+    branches: [main, research-v2]
+    paths-ignore:
+      - "docs/**"
+      - "README.md"
+      - "AGENTS.md"
+      - "LICENSE"
+  workflow_dispatch:
+    inputs:
+      full_validation:
+        description: "Run complete Linux, Windows and Colab release validation"
+        type: boolean
+        required: true
+        default: true
 
 permissions:
   contents: read
 
+concurrency:
+  group: >-
+    ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || 'routine' }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
+
 jobs:
   foundation:
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.full_validation && '["ubuntu-latest", "windows-latest"]' || '["ubuntu-latest"]') }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -101,7 +126,9 @@ jobs:
           --workspace-root .acceptance/phase3-ci
 
   colab-bootstrap:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.full_validation }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -110,6 +137,7 @@ jobs:
       - uses: astral-sh/setup-uv@v7
         with:
           version: "0.12.20"
+          enable-cache: true
       - run: >-
           python scripts/colab_bootstrap.py
           --nlp
