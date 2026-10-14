@@ -270,8 +270,14 @@ changing source/chunk identities, selection budgets or raw captures; conflicting
 claims still fail.
 
 An audited feature build defers its duplicate final raw replay and explicitly
-records independent verification as pending. Fitting, native model verification
-and publication still freshly reconstruct every event. Preserve all previous
+records independent verification as pending. The authorized DECISIONS section
+26 amendment requires two complete independent reconstructions of all shared
+source events, before fitting and after all models finish. Intermediate fitting
+and native stages recheck every bound source/checkpoint file against their exact
+complete-source receipt; all thirty native/report/calibration checks remain.
+Publication binds the second fresh reconstruction and rechecks native inference.
+Neither source receipt may be minted from sampling or builder parsing caches.
+Preserve all previous
 source/policy/cache generations and receipt identities. Narrow profiles and
 engineering fixtures do not establish a whole-job speedup or predictive gain.
 

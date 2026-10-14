@@ -161,8 +161,21 @@ has not yet been written. This overlap does not promise a whole-job speed gain.
 
 ## Fit and independently verify the completed batch
 
-Wait for successful feature exit and the complete 37,421-event manifest. Run
-training and a separate verification for each horizon in the order 20, 10, 30:
+Wait for successful feature exit and the complete 37,421-event manifest. Under
+the approved DECISIONS section 26 amendment, reconstruct the complete shared
+source batch once before fitting:
+
+```shell
+uv run --frozen --extra nlp structural-break-research verify-source-inputs --registry-version research_registry_0bd415d2a5af1f4891dc1f0d --batch-name development_clockgap_v2 --source-proof-purpose fitting_input --progress-file .acceptance/source_1_progress.json
+```
+
+Use its printed `source_proof_path` and `source_proof_sha256` as `FIT_PROOF` and
+`FIT_PROOF_SHA`. Both are mandatory; a partial build cannot mint a proof. Run
+training and a separate verification for each horizon in the order 20, 10, 30.
+Add `--source-proof FIT_PROOF --source-proof-sha256 FIT_PROOF_SHA` to every command
+below. Each stage rehashes the complete bound raw/checkpoint/metadata inventory;
+it does not repeat the same text reconstruction. Omitting the explicit proof
+retains the legacy complete-replay path.
 
 ```shell
 uv run --frozen --extra nlp structural-break-research train-models --registry-version research_registry_0bd415d2a5af1f4891dc1f0d --batch-name development_clockgap_v2 --horizon 20
@@ -175,12 +188,28 @@ uv run --frozen --extra nlp structural-break-research verify-models --model-vers
 
 Each fit prints its exact evaluation version. Capture the genuine exit status,
 stdout/stderr and checksums for all six stages; verification reloads every native
-estimator/calibrator and reconstructs evidence and the paired comparison without
+estimator/calibrator, checks every bound source file and reconstructs the paired comparison without
 API calls. Each horizon contains ten predeclared bundles. Report every variant,
 coverage, denominators, positives and quarter-block uncertainty. The primary is
 calibrated logistic B-both versus matched A at 20 sessions; preserve negative or
 inconclusive results and keep UNKNOWN rows. Reports and native artifacts live
 under `data/research_v2/artifacts/research/EVALUATION_VERSION`.
+
+After all six model stages succeed, perform the second independent complete
+reconstruction. It always starts with an empty private parser cache:
+
+```shell
+uv run --frozen --extra nlp structural-break-research verify-source-inputs --registry-version research_registry_0bd415d2a5af1f4891dc1f0d --batch-name development_clockgap_v2 --source-proof-purpose independent_publication --progress-file .acceptance/source_2_progress.json
+```
+
+Bind both actual source-stage commands/exits/logs in the completed pipeline
+receipt with `verification_strategy: shared-source-two-full-replays-v1`. Its
+`source_stages` list must contain fitting-input and independent-publication
+observations in that order, bracketing the six model stages. Publication requires
+the second proof's printed path and checksum via `--source-proof` and
+`--source-proof-sha256`, and still independently replays all thirty native models.
+Use source-event counts, checksum-file counts, tuning folds and native-model
+counts in the progress files; source-pass estimates exclude later gates.
 
 ## Promote v2 as primary
 

@@ -395,3 +395,37 @@ The registry, 37,421-event population, SEC source-v3 bytes, evidence budgets,
 quality-v2 FinBERT, pinned assets, 500-event schedule, matched A/B definitions and
 2024–2025 outcome lock remain fixed. Main promotion and independent raw/native
 verification remain pending.
+
+## 26. Two complete independent source reconstructions for matched horizons
+
+On 2026-10-14, before expanded assessment results were available, the user
+explicitly approved [the shared-source verification amendment](VERIFICATION_EFFICIENCY_PROPOSAL.md).
+This supersedes section 23's requirement to repeat the identical complete text
+reconstruction at every model fitting, native verification and publication step.
+
+Run one genuinely complete, fresh 37,421-event raw-source reconstruction before
+fitting, and a second independent complete reconstruction after all models finish
+and before publication. Both must start with an empty private parser cache and
+reproduce every evidence pack, stored text feature, source-clock/cutoff claim,
+source inventory, coverage denominator and target-blind schedule. Neither can
+trust builder parsing outputs or mint a receipt from sampling/checksums alone.
+
+Bind the actual source commands, exits/logs, immutable proof bytes, registry,
+features, complete checkpoint/raw inventories, verifier code/runtime and proof
+purpose. Recheck every bound file checksum before each fitting/native stage.
+Reject changed inputs, stale runtime/code, partial populations, substituted
+receipts or use of a fitting proof as the final independent reconstruction.
+Preserve all thirty fits and native/report/calibration/paired checks at the same
+1e-12 prediction tolerance. Publication requires both genuine source passes,
+all six actual model stages, current hosted CI and the real read-only app gate.
+
+The dataset, source-v3 bytes, quality-v2 policy, provider schedule/budget, A/B
+definitions, cohort matching, chronology, tuning, calibration, uncertainty and
+final-test lock remain unchanged. Preserve the old run and all prior artifacts.
+Prepare and test changes in isolation; replace the old frozen run only after
+the new source passes its engineering and Linux/Windows/Colab CI gates.
+
+Twelve complete reconstructions become two: ten expensive reconstructions are
+removed, not ten scientific checks. This is an 83% reduction in reconstruction
+count, not a claimed 83% whole-job runtime improvement. Hashing/fitting and
+independent publication still require actual acceptance before main promotion.

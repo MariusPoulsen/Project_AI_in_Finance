@@ -13,7 +13,8 @@ import re
 from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict, dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
+from html import parser as html_parser
 from html.parser import HTMLParser
 from pathlib import Path, PurePosixPath
 from typing import Any, cast
@@ -113,6 +114,53 @@ def _missing(value: object) -> bool:
     return value is None or (not isinstance(value, list | dict) and bool(pd.isna(cast(Any, value))))
 
 
+def _bounded_utc_candidates(
+    source: pd.DataFrame, accepted: pd.Series[Any], cutoff: datetime, rules: EvidencePolicy
+) -> pd.DataFrame | None:
+    """Prune only when otherwise-skipped validation is provably safe.
+
+    A selected amendment cannot precede the original it supplements, so every
+    selected periodic row falls within the extension window. Validate entire
+    identity-date columns before pruning old rows. Unsupported or malformed
+    values retain the original ordered validator and its original errors.
+    """
+    eligible = pd.Series(True, index=source.index)
+    if "point_in_time_eligible" in source:
+        flag = source["point_in_time_eligible"]
+        if flag.dtype != bool and not isinstance(flag.dtype, pd.BooleanDtype):
+            return None
+        eligible &= flag.eq(True).fillna(False)
+    for field, lower in (("identity_valid_from", True), ("identity_valid_to", False)):
+        if field not in source:
+            continue
+        original = source[field]
+        if (
+            not original.dropna()
+            .map(lambda value: isinstance(value, str) or type(value) is date)
+            .all()
+        ):
+            return None
+        values = original.astype("string")
+        if not values.dropna().str.fullmatch(r"\d{4}-\d{2}-\d{2}").all():
+            return None
+        try:
+            bounds = pd.to_datetime(values, format="%Y-%m-%d", errors="raise")
+        except (TypeError, ValueError, OverflowError):
+            return None
+        day = pd.Timestamp(cutoff.date())
+        eligible &= bounds.isna() | (bounds.le(day) if lower else bounds.gt(day))
+    forms = source["form"]
+    if not forms.dropna().map(lambda value: isinstance(value, str)).all():
+        return None
+    recent = forms.isin(("8-K", "8-K/A")) & accepted.ge(
+        cutoff - timedelta(days=rules.recent_8k_days)
+    )
+    periodic = forms.isin(("10-Q", "10-Q/A", "10-K", "10-K/A")) & accepted.ge(
+        cutoff - timedelta(days=rules.periodic_extension_days)
+    )
+    return source.loc[eligible & accepted.le(cutoff) & (recent | periodic)]
+
+
 def select_event_filings(
     event: Mapping[str, object],
     filing_index: pd.DataFrame,
@@ -142,7 +190,21 @@ def select_event_filings(
         source = filing_index.loc[filing_index["security_id"].eq(security_id)]
         admissible: list[dict[str, Any]] = []
         unknown_times = 0
-        for raw in cast(list[dict[str, Any]], source.to_dict("records")):
+        candidates = source
+        accepted_column = source["acceptance_datetime_utc"]
+        if (
+            isinstance(accepted_column.dtype, pd.DatetimeTZDtype)
+            and str(accepted_column.dtype.tz) == "UTC"
+        ):
+            # Verified UTC columns cannot contain malformed or naive timestamps.
+            # Count missing clocks over the full issuer inventory, then avoid
+            # materializing future rows. Match _utc's microsecond precision.
+            # Bound older rows only after validating their identity-date syntax.
+            unknown_times = int(accepted_column.isna().sum())
+            truncated = accepted_column.dt.floor("us")
+            bounded = _bounded_utc_candidates(source, truncated, cutoff, rules)
+            candidates = source.loc[truncated.le(cutoff)] if bounded is None else bounded
+        for raw in cast(list[dict[str, Any]], candidates.to_dict("records")):
             if _missing(raw["acceptance_datetime_utc"]):
                 unknown_times += 1
                 continue
@@ -545,11 +607,51 @@ def cache_filing(
     return enriched
 
 
+_TEXT_TAGS = frozenset(
+    "html body head div span p tr td th table tbody thead tfoot b i strong em font a br "
+    "li ul ol h1 h2 h3 h4 h5 h6 ix:nonfraction ix:nonnumeric ix:hidden hr meta link img "
+    "section u s sup sub center".split()
+)
+# Repeating the runtime's own lexer preserves its tolerant attribute grammar.
+# There is no trailing condition that could backtrack into an earlier attribute.
+_TEXT_ATTRIBUTES = re.compile(
+    "(?:" + cast(Any, html_parser).attrfind_tolerant.pattern + ")*",
+    cast(Any, html_parser).attrfind_tolerant.flags,
+)
+
+
 class _TextParser(HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self.lines: list[str] = []
         self.skip = 0
+
+    def parse_starttag(self, i: int) -> int:
+        """Skip unused attribute objects for ordinary tags, using the same lexer.
+
+        Special content-mode tags keep the runtime's complete implementation.
+        Only this private text extractor uses the shortcut: none of its handlers
+        consume attributes, source positions or start-tag text.
+        """
+        match = cast(Any, html_parser).tagfind_tolerant.match(self.rawdata, i + 1)
+        if match is None or match.group(1).lower() not in _TEXT_TAGS:
+            return super().parse_starttag(i)
+        self._HTMLParser__starttag_text = None
+        endpos = self.check_for_whole_start_tag(i)
+        if endpos < 0:
+            return endpos
+        self._HTMLParser__starttag_text = self.rawdata[i:endpos]
+        self.lasttag = tag = match.group(1).lower()
+        attrs = _TEXT_ATTRIBUTES.match(self.rawdata, match.end())
+        assert attrs is not None
+        end = self.rawdata[attrs.end() : endpos].strip()
+        if end not in (">", "/>"):
+            self.handle_data(self.rawdata[i:endpos])
+        elif end == "/>":
+            self.handle_startendtag(tag, [])
+        else:
+            self.handle_starttag(tag, [])
+        return endpos
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         if tag in {"script", "style", "ix:hidden", "head"}:

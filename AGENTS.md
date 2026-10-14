@@ -112,6 +112,13 @@ ACTIVE screening.
   stored outputs. Independent scientific verification remains a fresh raw replay.
   Let detached jobs run without continued chat polling; report the manual status
   command and keep source frozen until the worker exits.
+- The explicitly approved DECISIONS section 26 amendment replaces twelve
+  repeated text reconstructions with two complete independent source passes,
+  before fitting and after all models finish. Every intermediate fit/native
+  stage rehashes all bound files using its exact complete-source receipt.
+  Publication requires the separate final proof and unchanged native/report
+  checks for all thirty models. Never mint either proof from sampling or a
+  builder parser cache. Keep legacy full-replay commands reproducible.
 - Promotion requires explicit accepted publication identities and independent
   verification. App readiness must fail clearly for missing/incomplete artifacts,
   with no automatic fallback to a sensitivity or a newer unverified directory.

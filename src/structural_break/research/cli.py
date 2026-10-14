@@ -44,6 +44,7 @@ _COMMANDS = (
     "audit-checkpoints",
     "train-models",
     "verify-models",
+    "verify-source-inputs",
     "promote-primary",
 )
 
@@ -129,6 +130,21 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--checkpoint-baseline-sha256", help="Exact baseline receipt checksum")
     parser.add_argument("--audit-output", type=Path, help="New immutable checkpoint audit receipt")
     parser.add_argument("--progress-file", type=Path, help="Atomic operational progress JSON file")
+    parser.add_argument("--source-proof", type=Path, help="Exact immutable complete-source receipt")
+    parser.add_argument("--source-proof-sha256", help="Externally bound source receipt checksum")
+    parser.add_argument(
+        "--source-proof-purpose",
+        choices=("fitting_input", "independent_publication"),
+        default="fitting_input",
+        help="Purpose of a new complete verify-source-inputs replay",
+    )
+    parser.add_argument(
+        "--parsing-workers",
+        type=int,
+        default=0,
+        choices=(0, 2),
+        help="Optional bounded parallel HTML parsing for independent model verification only",
+    )
     parser.add_argument(
         "--pipeline-receipt", type=Path, help="Completed, verified three-horizon pipeline receipt"
     )
@@ -203,6 +219,16 @@ class _FileProgress:
 
     def __call__(self, record: dict[str, Any]) -> None:
         _progress(record)
+        if record.get("stage") == "SOURCE_INPUT_BINDINGS":
+            self.state["source_replay_pass_in_command"] = (
+                self.state.get("source_replay_pass_in_command", 0) + 1
+            )
+            self.state["source_replay_passes_in_command"] = {
+                "train-models": 2,
+                "verify-models": 1,
+                "promote-primary": 3,
+                "verify-source-inputs": 1,
+            }.get(self.state["command"])
         self.state.update(record)
         self.state["observed_at_utc"] = datetime.now(UTC).isoformat()
         if record.get("stage") == "EVENT_INTELLIGENCE":
@@ -234,6 +260,25 @@ def run_command(
     progress: Any = None,
 ) -> dict[str, Any]:
     """Dispatch one authorized job; no implicit next-stage execution or final run."""
+    if (args.source_proof is None) != (args.source_proof_sha256 is None):
+        raise ValueError("Source proof path and exact checksum must be supplied together")
+    if args.source_proof is not None and args.command not in {
+        "train-models",
+        "verify-models",
+        "promote-primary",
+    }:
+        raise ValueError("A source proof is restricted to explicit model and publication jobs")
+    proof_arguments = (
+        {"source_proof": args.source_proof, "source_proof_sha256": args.source_proof_sha256}
+        if args.source_proof is not None
+        else {}
+    )
+    if args.parsing_workers and args.command not in {
+        "train-models",
+        "verify-models",
+        "promote-primary",
+    }:
+        raise ValueError("Parallel parsing is restricted to independent model verification")
     protocol_path = args.protocol or paths.project_root / "configs/research_v2.yaml"
     protocol = load_protocol(protocol_path)
     universe_directory = confined_path(paths.workspace_root, "universe/source_v1")
@@ -248,7 +293,14 @@ def run_command(
             raise ValueError("promote-primary requires explicit --ci-gate evidence")
         from structural_break.research.primary import promote_primary_research
 
-        return promote_primary_research(paths, args.pipeline_receipt, ci_gate=args.ci_gate)
+        return promote_primary_research(
+            paths,
+            args.pipeline_receipt,
+            ci_gate=args.ci_gate,
+            parsing_workers=args.parsing_workers,
+            progress=progress_callback,
+            **proof_arguments,
+        )
     if args.command == "freeze-universe":
         source = (
             args.sec_directory.read_bytes()
@@ -287,16 +339,38 @@ def run_command(
     if args.command == "verify-models":
         if not args.model_version:
             raise ValueError("verify-models requires an explicit --model-version")
-        return verify_research_models(paths, segment(args.model_version))
+        return verify_research_models(
+            paths,
+            segment(args.model_version),
+            parsing_workers=args.parsing_workers,
+            progress=progress_callback,
+            **proof_arguments,
+        )
     if not args.registry_version:
         raise ValueError("This research job requires an explicit --registry-version")
     registry_version = segment(args.registry_version)
     batch = segment(args.batch_name or registry_version)
     intelligence_directory = confined_path(paths.workspace_root, f"intelligence/{batch}")
+    if args.command == "verify-source-inputs":
+        from structural_break.research.source_proof import mint_source_proof
+
+        return mint_source_proof(
+            paths,
+            registry_version,
+            intelligence_directory,
+            purpose=args.source_proof_purpose,
+            progress=progress_callback,
+        )
     if args.command == "train-models":
         horizon = args.horizon if args.horizon is not None else protocol.primary_horizon
         return train_research_models(
-            paths, registry_version, intelligence_directory, horizon=horizon
+            paths,
+            registry_version,
+            intelligence_directory,
+            horizon=horizon,
+            parsing_workers=args.parsing_workers,
+            progress=progress_callback,
+            **proof_arguments,
         )
     events, parent, frozen_protocol = evidence_events(paths, registry_version)
     if frozen_protocol.model_dump(mode="json") != protocol.model_dump(mode="json"):
@@ -401,6 +475,11 @@ def main(argv: list[str] | None = None) -> int:
                 "research_version",
                 "primary_version",
                 "intelligence_version",
+                "source_verification_version",
+                "source_proof_path",
+                "source_proof_sha256",
+                "source_proof_purpose",
+                "complete_raw_reconstruction",
                 "included_security_count",
                 "included_pair_count",
                 "filing_count",

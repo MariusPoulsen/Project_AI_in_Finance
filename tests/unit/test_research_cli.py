@@ -319,20 +319,30 @@ def test_train_and_verify_dispatch_to_explicit_bound_native_model_job(
         calls.append((*values, options))
         return {"research_version": "trained"}
 
-    def verify(*values: Any) -> dict[str, Any]:
-        calls.append(values)
+    def verify(*values: Any, **options: Any) -> dict[str, Any]:
+        calls.append((*values, options))
         return {"research_version": "verified"}
 
     monkeypatch.setattr(cli, "train_research_models", train)
     monkeypatch.setattr(cli, "verify_research_models", verify)
     train_args = cli._parser().parse_args(
-        ["train-models", "--registry-version", "registry", "--horizon", "30"]
+        [
+            "train-models",
+            "--registry-version",
+            "registry",
+            "--horizon",
+            "30",
+            "--parsing-workers",
+            "2",
+        ]
     )
-    verify_args = cli._parser().parse_args(["verify-models", "--model-version", "model"])
+    verify_args = cli._parser().parse_args(
+        ["verify-models", "--model-version", "model", "--parsing-workers", "2"]
+    )
     assert cli.run_command(train_args, paths, runtime())["research_version"] == "trained"
     assert cli.run_command(verify_args, paths, runtime())["research_version"] == "verified"
-    assert calls[0][3] == {"horizon": 30}
-    assert calls[1] == (paths, "model")
+    assert calls[0][3] == {"horizon": 30, "parsing_workers": 2, "progress": cli._progress}
+    assert calls[1] == (paths, "model", {"parsing_workers": 2, "progress": cli._progress})
 
 
 def test_main_defaults_to_isolated_workspace_and_redacts_error_text(
