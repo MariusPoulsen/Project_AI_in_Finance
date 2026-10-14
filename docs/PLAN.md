@@ -336,6 +336,9 @@ It does not mark any P5 gate complete or open final outcomes.
 - [ ] Complete unit/integration/leakage/regression/app-smoke test suites.
 - [ ] Ensure CI passes on a clean clone without external APIs.
 - [ ] Finalise demo snapshot packaging.
+- [-] Prepare the offline group snapshot and setup/app/prediction/backtest-input commands;
+  tooling and fixture checks are on `collaboration/portable-research-snapshot`.
+  Export and fresh-workspace checks with the real bundle await accepted v2 outputs.
 - [ ] Finalise model card, data dictionary, README and technical runbook.
 - [ ] Document all commands for bootstrap, migrations, data build, model training, agent batch, backtest, demo packaging and Streamlit launch.
 - [ ] Add deployment config for Streamlit Community Cloud or approved equivalent.

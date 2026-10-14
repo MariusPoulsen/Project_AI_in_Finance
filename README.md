@@ -1,5 +1,9 @@
 # Project_AI_in_Finance
 
+Group members: see [GROUP_QUICKSTART.md](docs/GROUP_QUICKSTART.md) for the prepared
+offline setup, app, existing-model inference and backtest-input handoff. The real
+working snapshot will be exported after v2 acceptance.
+
 AI Structural-Break Detector for Statistical Arbitrage: a reproducible research
 system comparing quantitative Model A with SEC-augmented Model B. Research v2
 uses 250 frozen issuers and 736 fixed business-peer pairs, with separate fitting,
