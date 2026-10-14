@@ -172,6 +172,17 @@ uv run --frozen --extra nlp structural-break-research verify-source-inputs --reg
 Use its printed `source_proof_path` and `source_proof_sha256` as `FIT_PROOF` and
 `FIT_PROOF_SHA`. Both are mandatory; a partial build cannot mint a proof. Run
 training and a separate verification for each horizon in the order 20, 10, 30.
+
+For the separately frozen four-core execution profile, add `--event-workers 4`
+to **both** `verify-source-inputs` commands. Four owned processes use independent
+empty private parser caches and one numerical-library thread each. Complete
+business groups stay together for parsing reuse; the coordinator restores the
+original event order and performs the complete final inventory/feature checks.
+Progress reports the aggregate verified count and each worker's PID/count.
+Do not combine event workers with the separate parsing-worker pool. Model
+stages stay sequential to bound memory. Both complete passes, all thirty models
+and native/report checks, and the final-test lock remain unchanged.
+
 Add `--source-proof FIT_PROOF --source-proof-sha256 FIT_PROOF_SHA` to every command
 below. Each stage rehashes the complete bound raw/checkpoint/metadata inventory;
 it does not repeat the same text reconstruction. Omitting the explicit proof

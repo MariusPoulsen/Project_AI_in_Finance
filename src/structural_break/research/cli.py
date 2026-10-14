@@ -106,6 +106,13 @@ def evidence_events(
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("command", choices=_COMMANDS)
+    parser.add_argument(
+        "--event-workers",
+        type=int,
+        choices=(0, 4),
+        default=0,
+        help="Four bounded processes for complete independent source verification",
+    )
     parser.add_argument("--project-root", type=Path)
     parser.add_argument("--workspace-root", type=Path)
     parser.add_argument("--protocol", type=Path)
@@ -273,6 +280,8 @@ def run_command(
         if args.source_proof is not None
         else {}
     )
+    if args.event_workers and args.command != "verify-source-inputs":
+        raise ValueError("Parallel event workers are restricted to complete source verification")
     if args.parsing_workers and args.command not in {
         "train-models",
         "verify-models",
@@ -359,6 +368,7 @@ def run_command(
             registry_version,
             intelligence_directory,
             purpose=args.source_proof_purpose,
+            event_workers=args.event_workers,
             progress=progress_callback,
         )
     if args.command == "train-models":
@@ -480,6 +490,7 @@ def main(argv: list[str] | None = None) -> int:
                 "source_proof_sha256",
                 "source_proof_purpose",
                 "complete_raw_reconstruction",
+                "event_workers",
                 "included_security_count",
                 "included_pair_count",
                 "filing_count",

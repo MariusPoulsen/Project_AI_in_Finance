@@ -107,6 +107,7 @@ def mint_source_proof(
     intelligence_directory: Path,
     *,
     purpose: SourcePurpose,
+    event_workers: int = 0,
     progress: Progress | None = None,
 ) -> dict[str, Any]:
     """Always perform a complete fresh reconstruction, even if proof bytes exist."""
@@ -114,12 +115,15 @@ def mint_source_proof(
 
     if purpose not in {"fitting_input", "independent_publication"}:
         raise ValueError("Source proof purpose must be explicit")
+    if type(event_workers) is not int or event_workers not in (0, 4):
+        raise ValueError("Independent event verification permits zero or four workers")
     scope, manifest, universe, sec = _scope(paths, registry_version, intelligence_directory)
     verified = verify_event_intelligence(
         intelligence_directory,
         universe,
         sec,
         cache_workspace=paths.workspace_root / "cache",
+        event_workers=event_workers,
         progress=progress,
     )
     after, current, _, _ = _scope(paths, registry_version, intelligence_directory)
@@ -133,6 +137,7 @@ def mint_source_proof(
         "complete_raw_reconstruction": True,
         "initial_parser_cache_empty": True,
         "builder_parser_cache_used": False,
+        "event_workers": event_workers,
         "verified_event_count": scope["event_count"],
         "final_test_read": False,
     }
@@ -148,6 +153,7 @@ def mint_source_proof(
         "event_count": scope["event_count"],
         "intelligence_version": scope["intelligence_version"],
         "complete_raw_reconstruction": True,
+        "event_workers": event_workers,
         "final_test_read": False,
     }
 
@@ -182,6 +188,8 @@ def validate_source_proof(
         or proof.get("complete_raw_reconstruction") is not True
         or proof.get("initial_parser_cache_empty") is not True
         or proof.get("builder_parser_cache_used") is not False
+        or type(proof.get("event_workers")) is not int
+        or proof.get("event_workers") not in (0, 4)
         or proof.get("final_test_read") is not False
         or proof.get("source_verification_version")
         != "research_source_verification_" + identity(unsigned)[:24]

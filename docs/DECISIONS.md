@@ -429,3 +429,19 @@ Twelve complete reconstructions become two: ten expensive reconstructions are
 removed, not ten scientific checks. This is an 83% reduction in reconstruction
 count, not a claimed 83% whole-job runtime improvement. Hashing/fitting and
 independent publication still require actual acceptance before main promotion.
+
+### Four-core source verification execution
+
+On 2026-10-15 the user explicitly authorized restarting the verification run and
+using all four physical CPU cores to meet a 2026-10-16 midday deadline. This is an
+execution change, with both complete source passes and all scientific gates intact.
+An optional four-process verifier partitions events by the frozen business group,
+balances target-free event counts, and restores the original canonical event order
+before the unchanged complete source-inventory and feature-frame comparisons.
+Each process starts its own empty private parser cache, retains at most sixteen
+hot frames and uses one native-library thread. No builder cache is shared or used
+as independent evidence. Only the coordinator can complete the full-population
+comparison and source proof; a worker result or a benchmark sample cannot mint it.
+Worker count is bound in proof bytes, runtime/command/launch receipts and progress.
+The serial path remains reproducible. Changed verifier code needs its own source
+freeze and genuine complete Linux/Windows/Colab CI before production cutover.
