@@ -1,5 +1,9 @@
 # Project_AI_in_Finance
 
+Group members: see [GROUP_QUICKSTART.md](docs/GROUP_QUICKSTART.md) for the prepared
+offline setup, app, existing-model inference and backtest-input handoff. The real
+working snapshot will be exported after v2 acceptance.
+
 AI Structural-Break Detector for Statistical Arbitrage: a reproducible research
 system comparing quantitative Model A with SEC-augmented Model B. Research v2
 uses 250 frozen issuers and 736 fixed business-peer pairs, with separate fitting,
@@ -42,8 +46,7 @@ process environment:
 - `SB_LLM_API_KEY`: the free Google API key for guarded Gemma extraction.
 
 No Yahoo, SEC or local database login is required. Never put credentials in Git,
-YAML, command arguments or output. [Google Colab](docs/COLAB.md) uses the same
-locked environment and supplies credentials through Colab Secrets.
+YAML, command arguments or output.
 
 The default workspace is `data/research_v2`. To relocate it, pass
 `--workspace-root` or set `SB_WORKSPACE_ROOT` for both CLI and app; an explicit CLI
@@ -125,14 +128,14 @@ uv run --frozen --extra agents pytest
 
 Tests use deterministic offline fixtures, with network sockets blocked. Genuine
 source/model acceptance is a separate gate. Release checks include Windows/Linux
-CI, the Colab Python 3.11 bootstrap and independent replay of all actual evaluations.
+CI and independent replay of all actual evaluations.
 
 The [agent runbook](docs/PHASE5_RUNBOOK.md) runs the bounded debate and deterministic
 controller with synthetic inputs. This work stays on an isolated branch until v2
 acceptance; genuine agent integration and quality evaluation remain pending.
 
 - Current research: [protocol](docs/RESEARCH_V2_PROTOCOL.md),
-  [runbook](docs/RESEARCH_V2_RUNBOOK.md), [Colab](docs/COLAB.md),
+  [runbook](docs/RESEARCH_V2_RUNBOOK.md),
   [status](docs/STATUS.md).
 - Governance: [decisions](docs/DECISIONS.md), [plan](docs/PLAN.md),
   [specifications](docs/specs/README.md).

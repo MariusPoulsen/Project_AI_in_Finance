@@ -11,7 +11,10 @@ from structural_break.research.primary import PrimaryNotReadyError
 from structural_break.services.research_app import PrimaryResearchView
 
 # Streamlit AppTest needs a Windows asyncio loopback wake-up socket only.
-pytestmark = pytest.mark.allow_hosts(["127.0.0.1", "::1"])
+pytestmark = [
+    pytest.mark.allow_hosts(["127.0.0.1", "::1"]),
+    pytest.mark.usefixtures("preserve_main_module"),
+]
 
 
 class FrozenV2Service:

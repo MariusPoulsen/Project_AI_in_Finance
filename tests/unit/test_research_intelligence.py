@@ -41,6 +41,7 @@ from structural_break.research.intelligence import (
     verify_sec_metadata,
 )
 from structural_break.research.parsing_cache import OperationParsingCache
+from structural_break.research.parsing_workers import VerificationParsingPool
 from structural_break.research.universe import freeze_universe
 from structural_break.storage.files import sha256_file
 
@@ -345,7 +346,15 @@ def test_bounded_event_pipeline_has_all48_features_and_keeps_every_event(
     assert frame.loc["later", "sentiment_a_unknown"] == 1
     assert frame.loc["earlier", "sentiment_net_contrast"] == 0
     assert set(EVENT_FEATURE_NAMES + SENTIMENT_FEATURE_COLUMNS).issubset(frame.columns)
-    assert verify_event_intelligence(output, freeze, metadata_dir) == manifest
+    observed: list[dict[str, Any]] = []
+    assert (
+        verify_event_intelligence(output, freeze, metadata_dir, progress=observed.append)
+        == manifest
+    )
+    assert observed[0]["stage"] == "SOURCE_INPUT_BINDINGS"
+    assert observed[-1]["stage"] == "SOURCE_VERIFICATION_COMPLETE"
+    assert observed[-1]["verified_source_events"] == observed[-1]["total_source_events"] == 2
+    assert all("y_revert_success" not in record for record in observed)
     repeat = build_event_intelligence(
         event_rows(),
         freeze,
@@ -1218,3 +1227,201 @@ def test_source_inventory_union_preserves_legacy_bytes_and_does_not_retain_packs
     (output / "manifest.json").write_bytes(intelligence.json_bytes(manifest))
     with pytest.raises(ValueError, match="source cache inventory/checksum"):
         verify_event_intelligence(output, freeze, metadata)
+
+
+@pytest.fixture
+def parsing_batch(freeze: Path, tmp_path: Path, project_root: Path) -> dict[str, Any]:
+    metadata = tmp_path / "metadata"
+    collect_sec_metadata(freeze, metadata, get=source([]))
+    output = tmp_path / "intelligence"
+    manifest = build_event_intelligence(
+        event_rows(), freeze, metadata, output, provider=None, get=source([])
+    )
+    first = manifest["source_identity"]["records"][0]
+    event = json.loads((output / first["file"]).read_bytes())["event"]
+    return {
+        "freeze": freeze,
+        "metadata": metadata,
+        "output": output,
+        "manifest": manifest,
+        "event": event,
+        "filings": pd.read_parquet(metadata / "filings.parquet"),
+        "coverage": json.loads((output / "metadata_observed_bounds.json").read_bytes()),
+        "paths": ProjectPaths(project_root, output),
+    }
+
+
+def test_parallel_verifier_replays_fresh_sources_owns_cache_and_preserves_manifest(
+    parsing_batch: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    caches: list[OperationParsingCache] = []
+    pools: list[VerificationParsingPool] = []
+    parse_keys: list[list[str]] = []
+    checked: set[str] = set()
+    coordinator = threading.get_ident()
+    cache_filing = intelligence.cache_filing
+
+    class OneHotCache(OperationParsingCache):
+        def __init__(self) -> None:
+            super().__init__(max_hot_frames=1)
+            assert self.entry_count == 0
+            caches.append(self)
+
+        def __setitem__(self, key: str, frame: pd.DataFrame) -> None:
+            assert threading.get_ident() == coordinator
+            super().__setitem__(key, frame)
+
+    class TrackedPool(VerificationParsingPool):
+        def __init__(self) -> None:
+            super().__init__()
+            pools.append(self)
+            parse_keys.append([])
+
+        def submit(self, documents, policy):
+            assert threading.get_ident() == coordinator
+            assert intelligence._sha(documents) in checked
+            parse_keys[-1].append(intelligence._sha(documents))
+            return super().submit(documents, policy)
+
+    def checked_inventory(*args, **kwargs):
+        assert threading.get_ident() == coordinator
+        documents = cache_filing(*args, **kwargs)
+        checked.add(intelligence._sha(documents))
+        return documents
+
+    def forbidden(*args, **kwargs):
+        pytest.fail("Independent raw verification cannot perform provider or neural inference")
+
+    monkeypatch.setattr(intelligence, "OperationParsingCache", OneHotCache)
+    monkeypatch.setattr(intelligence, "VerificationParsingPool", TrackedPool)
+    monkeypatch.setattr(intelligence, "cache_filing", checked_inventory)
+    monkeypatch.setattr(intelligence, "extract_pack", forbidden)
+    monkeypatch.setattr(intelligence, "score_sentiment_pack", forbidden)
+    for _ in range(2):
+        assert (
+            verify_event_intelligence(
+                parsing_batch["output"],
+                parsing_batch["freeze"],
+                parsing_batch["metadata"],
+                parsing_workers=2,
+            )
+            == parsing_batch["manifest"]
+        )
+    assert len(caches) == len(pools) == 2
+    assert parse_keys[0] == parse_keys[1] and len(parse_keys[0]) > 1
+    assert len(parse_keys[0]) == len(set(parse_keys[0]))
+    assert all(cache._closed and not cache._directory.exists() for cache in caches)
+    assert all(pool._closed and not pool._pending for pool in pools)
+
+
+def test_parallel_cache_reuses_pair_roles_with_exact_pack_equality_and_fresh_copies(
+    parsing_batch: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    batch = parsing_batch
+    event = batch["event"]
+    swapped = dict(
+        event,
+        event_id="swapped",
+        pair_id="swapped",
+        leg_a=event["leg_b"],
+        leg_b=event["leg_a"],
+        leg_a_security_id=event["leg_b_security_id"],
+        leg_b_security_id=event["leg_a_security_id"],
+    )
+
+    def pack(row, *, cache=None, pool=None, filings=None):
+        return intelligence._event_pack(
+            row,
+            batch["filings"] if filings is None else filings,
+            batch["coverage"],
+            batch["paths"],
+            intelligence._offline_only,
+            offline=True,
+            parsed_cache=cache,
+            parser_pool=pool,
+        )
+
+    expected = [pack(row) for row in (event, swapped)]
+    submitted: list[str] = []
+    with OperationParsingCache(max_hot_frames=1) as cache, VerificationParsingPool() as pool:
+        original_submit = pool.submit
+
+        def tracked_submit(documents, policy):
+            submitted.append(intelligence._sha(documents))
+            return original_submit(documents, policy)
+
+        monkeypatch.setattr(pool, "submit", tracked_submit)
+        first = pack(event, cache=cache, pool=pool)
+        count = len(submitted)
+        second = pack(swapped, cache=cache, pool=pool)
+        assert count > 1 and len(submitted) == count == cache.entry_count
+        assert intelligence.json_bytes(first) == intelligence.json_bytes(expected[0])
+        assert intelligence.json_bytes(second) == intelligence.json_bytes(expected[1])
+        # Restoring B on a returned copy cannot corrupt the cached A frame.
+        assert intelligence.json_bytes(pack(event, cache=cache, pool=pool)) == (
+            intelligence.json_bytes(expected[0])
+        )
+        assert len(submitted) == count
+        # Changed acceptance must fail metadata validation before cache reuse.
+        changed = batch["filings"].copy(deep=True)
+        first_id = first[0]["selected_filing_ids"][0]
+        selected = changed["filing_id"].eq(first_id)
+        changed.loc[selected, "acceptance_datetime_utc"] += pd.Timedelta(seconds=1)
+        for active_cache, active_pool in ((None, None), (cache, pool)):
+            with pytest.raises(ValueError, match="Cached SEC acceptance timestamp mismatch"):
+                pack(event, cache=active_cache, pool=active_pool, filings=changed)
+        assert len(submitted) == count
+
+
+@pytest.mark.parametrize("tampering", ["raw", "leg", "clock"])
+def test_parallel_cache_cannot_hide_raw_leg_or_clock_failure_before_reuse(
+    parsing_batch: dict[str, Any], monkeypatch: pytest.MonkeyPatch, tampering: str
+) -> None:
+    batch = parsing_batch
+    submitted: list[str] = []
+    original_inventory = intelligence.cache_filing
+    with OperationParsingCache() as cache, VerificationParsingPool() as pool:
+        original_submit = pool.submit
+
+        def tracked_submit(documents, policy):
+            submitted.append(intelligence._sha(documents))
+            return original_submit(documents, policy)
+
+        monkeypatch.setattr(pool, "submit", tracked_submit)
+
+        def pack():
+            return intelligence._event_pack(
+                batch["event"],
+                batch["filings"],
+                batch["coverage"],
+                batch["paths"],
+                intelligence._offline_only,
+                offline=True,
+                parsed_cache=cache,
+                parser_pool=pool,
+            )
+
+        pack()
+        count = len(submitted)
+        if tampering == "raw":
+            target = next(
+                (batch["output"] / "data/raw/sec/filings").glob("**/primary_document.html")
+            )
+            target.write_bytes(target.read_bytes() + b"changed source")
+        elif tampering == "leg":
+
+            def conflicting_legs(*args, **kwargs):
+                documents = original_inventory(*args, **kwargs)
+                documents[0]["leg"] = "B" if documents[0]["leg"] == "A" else "A"
+                return documents
+
+            monkeypatch.setattr(intelligence, "cache_filing", conflicting_legs)
+        else:
+            # This check runs even when all relevant inventories are cached.
+            def contradictory_clock(*args):
+                raise ValueError("contradictory clock")
+
+            monkeypatch.setattr(intelligence, "_submission_clock_state", contradictory_clock)
+        with pytest.raises(ValueError, match="hash mismatch|checksum|inventory legs|clock"):
+            pack()
+        assert len(submitted) == count

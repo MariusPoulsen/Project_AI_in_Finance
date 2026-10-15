@@ -249,6 +249,144 @@ def promote(paths, file):
     )
 
 
+def test_two_source_publication_binds_proofs_and_remains_readonly(release, monkeypatch):
+    """Synthetic registrations/native stubs validate publication wiring only."""
+    from structural_break.research import source_proof
+
+    paths, _, receipt, _ = release
+    scope = {
+        "registry_version": receipt["registry_version"],
+        "verifier_computation": {"source_sha256": receipt["computational_source_sha256"]},
+        "intelligence_directory": "intelligence/fixture",
+    }
+    source_stages, proof_files = [], []
+    for index, purpose in enumerate(("fitting_input", "independent_publication"), 1):
+        version = "research_source_verification_" + str(index) * 24
+        value = {
+            "purpose": purpose,
+            "identity_inputs": scope,
+            "complete_raw_reconstruction": True,
+            "final_test_read": False,
+            "source_verification_version": version,
+        }
+        path = write_bytes(
+            paths.artifacts / "source_verification" / version / "manifest.json",
+            canonical_bytes(value),
+        )
+        proof_files.append(path)
+        source_stages.append(
+            {
+                "command": "verify-source-inputs",
+                "exit_code": 0,
+                "stdout_sha256": "a" * 64,
+                "stderr_sha256": "b" * 64,
+                "started_at_utc": "2026-10-14T00:00:00Z" if index == 1 else "2026-10-14T03:00:00Z",
+                "completed_at_utc": "2026-10-14T00:30:00Z"
+                if index == 1
+                else "2026-10-14T03:30:00Z",
+                "summary": {
+                    "status": "SUCCESS",
+                    "command": "verify-source-inputs",
+                    "source_proof_purpose": purpose,
+                    "source_verification_version": version,
+                    "source_proof_sha256": sha256_file(path),
+                    "complete_raw_reconstruction": True,
+                    "event_count": 2,
+                    "final_test_read": False,
+                },
+            }
+        )
+    for row in receipt["stages"]:
+        row.update(started_at_utc="2026-10-14T01:00:00Z", completed_at_utc="2026-10-14T02:00:00Z")
+    receipt.update(verification_strategy=source_proof.STRATEGY, source_stages=source_stages)
+    factory = DuckDBConnectionFactory(paths.database)
+    for generation in receipt["completed_generations"]:
+        path, value = primary.registered_manifest(
+            paths, generation["research_version"], "evaluation"
+        )
+        value["identity_inputs"].update(
+            verification_strategy=source_proof.STRATEGY,
+            fitting_source_proof_sha256=sha256_file(proof_files[0]),
+            source_verification_inputs_sha256=identity(scope),
+        )
+        # Rewrite synthetic fixture registrations before the first publication.
+        path.write_bytes(canonical_bytes(value))
+        generation["manifest_sha256"] = sha256_file(path)
+        with factory.connect(read_only=False) as connection:
+            connection.execute(
+                "UPDATE analytics.research_versions SET checksum=? WHERE research_version=?",
+                [sha256_file(path), generation["research_version"]],
+            )
+    checks = {
+        row["research_version"]: row["native_verification"]
+        for row in receipt["completed_generations"]
+    }
+    calls = []
+    monkeypatch.setattr(primary, "_native_verify", lambda p, v, **k: calls.append(k) or checks[v])
+    monkeypatch.setattr(
+        source_proof, "validate_source_proof", lambda *a, **k: {"stub": "unit-only"}
+    )
+    pipeline = write_bytes(
+        paths.workspace_root / "two_source_pipeline.json", canonical_bytes(receipt)
+    )
+    accepted = primary.promote_primary_research(
+        paths,
+        pipeline,
+        ci_gate=paths.workspace_root / "fixture_ci_gate.json",
+        source_proof=proof_files[1],
+        source_proof_sha256=sha256_file(proof_files[1]),
+    )
+    assert len(calls) == 3 and all(row["source_proof"] == proof_files[1] for row in calls)
+    assert accepted["identity_inputs"]["verification_strategy"] == source_proof.STRATEGY
+    assert len(accepted["identity_inputs"]["source_verification_receipts"]) == 2
+    monkeypatch.setattr(primary, "_native_verify", forbidden)
+    monkeypatch.setattr(source_proof, "validate_source_proof", forbidden)
+    monkeypatch.setattr("structural_break.storage.database.migrate", forbidden)
+    assert primary.load_primary(paths) == accepted
+
+
+@pytest.mark.parametrize("fault", ["missing", "wrong_purpose", "early_final", "failed", "partial"])
+def test_two_source_pipeline_rejects_missing_or_invalid_source_stages(release, fault):
+    _, _, receipt, _ = release
+    receipt["verification_strategy"] = "shared-source-two-full-replays-v1"
+    receipt["source_stages"] = []
+    receipt["checkpoint_count"] = 2
+    for row in receipt["stages"]:
+        row.update(started_at_utc="2026-10-14T01:00:00Z", completed_at_utc="2026-10-14T02:00:00Z")
+    # Missing/invalid source stages must reject before any native or raw work.
+    if fault != "missing":
+        template = {
+            "command": "verify-source-inputs",
+            "exit_code": 0,
+            "stdout_sha256": "a" * 64,
+            "stderr_sha256": "b" * 64,
+            "summary": {
+                "status": "SUCCESS",
+                "command": "verify-source-inputs",
+                "source_proof_purpose": "fitting_input",
+                "complete_raw_reconstruction": True,
+                "event_count": 2,
+                "source_proof_sha256": "c" * 64,
+                "final_test_read": False,
+            },
+        }
+        receipt["source_stages"] = [deepcopy(template), deepcopy(template)]
+        first, final = receipt["source_stages"]
+        first.update(started_at_utc="2026-10-14T00:00:00Z", completed_at_utc="2026-10-14T00:30:00Z")
+        final.update(started_at_utc="2026-10-14T03:00:00Z", completed_at_utc="2026-10-14T03:30:00Z")
+        final["summary"]["source_proof_purpose"] = "independent_publication"
+        if fault == "wrong_purpose":
+            final["summary"]["source_proof_purpose"] = "fitting_input"
+        elif fault == "early_final":
+            final["started_at_utc"] = "2026-10-14T00:00:00Z"
+        if fault == "failed":
+            receipt["source_stages"][0]["exit_code"] = 1
+        elif fault == "partial":
+            receipt["source_stages"][0]["summary"]["event_count"] = 1
+    with pytest.raises(ValueError, match="source|Source"):
+        primary._pipeline_check(receipt)
+
+
 def test_publish_three_native_replays_idempotent_and_readonly(release, monkeypatch):
     paths, file, _, calls = release
     accepted = promote(paths, file)

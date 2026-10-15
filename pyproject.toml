@@ -31,9 +31,10 @@ structural-break = "structural_break.cli:main"
 structural-break-research = "structural_break.research.cli:main"
 structural-break-reference = "structural_break.services.foundation:main"
 structural-break-agents = "structural_break.agents.cli:main"
+structural-break-team = "structural_break.collaboration.cli:main"
 
 [dependency-groups]
-dev = ["pytest>=8,<10", "pytest-socket>=0.7,<1", "ruff>=0.11,<1", "mypy>=1.15,<2", "types-PyYAML>=6", "pandas-stubs>=2.2,<3"]
+dev = ["pytest>=8,<10", "pytest-socket>=0.7,<1", "pytest-xdist>=3.6,<4", "ruff>=0.11,<1", "mypy>=1.15,<2", "types-PyYAML>=6", "pandas-stubs>=2.2,<3"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/structural_break"]

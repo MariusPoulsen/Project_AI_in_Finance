@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
 from typing import Any
@@ -234,6 +235,7 @@ def evaluate_matched_models(
     protocol: ResearchProtocol,
     *,
     business_groups: tuple[str, ...] = (),
+    progress: Callable[[dict[str, Any]], None] | None = None,
 ) -> ResearchEvaluation:
     """B imputes missing text on A's cohort; it cannot drop unfavorable UNKNOWNs."""
     if rows["event_id"].duplicated().any():
@@ -396,6 +398,18 @@ def evaluate_matched_models(
                 else list(protocol.xgb_candidates)
             )
             scores: list[dict[str, Any]] = []
+            if progress is not None:
+                progress(
+                    {
+                        "status": "RUNNING",
+                        "stage": "MODEL_TUNING",
+                        "model_name": f"{family}_{name}",
+                        "fitted_models": len(artifacts),
+                        "total_models": 2 * len(columns_by_variant),
+                        "completed_tuning_folds": 0,
+                        "total_tuning_folds": len(grid) * len(protocol.tuning_years),
+                    }
+                )
             for params in grid:
                 fold_scores: list[dict[str, Any]] = []
                 for year in protocol.tuning_years:
@@ -438,6 +452,15 @@ def evaluate_matched_models(
                         "mean_brier": float(np.mean(defined)) if defined else None,
                     }
                 )
+                if progress is not None:
+                    progress(
+                        {
+                            "stage": "MODEL_TUNING",
+                            "model_name": f"{family}_{name}",
+                            "completed_tuning_folds": len(scores) * len(protocol.tuning_years),
+                            "total_tuning_folds": len(grid) * len(protocol.tuning_years),
+                        }
+                    )
             candidates = [s for s in scores if s["mean_brier"] is not None]
             if not candidates:
                 raise ValueError("No usable predeclared forward tuning fold")
@@ -479,6 +502,15 @@ def evaluate_matched_models(
                     assessment, calibrated, protocol, business_groups=business_groups
                 ),
             }
+            if progress is not None:
+                progress(
+                    {
+                        "stage": "MODEL_FITTING",
+                        "model_name": key,
+                        "fitted_models": len(artifacts),
+                        "total_models": 2 * len(columns_by_variant),
+                    }
+                )
         assessment_mask = predictions["research_partition"].eq("assessment")
         aligned = predictions.loc[assessment_mask]
         for name in columns_by_variant:

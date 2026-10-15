@@ -10,9 +10,11 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import time
 from collections import OrderedDict
 from collections.abc import Callable, Collection, Mapping, Sequence
 from concurrent.futures import Future, ThreadPoolExecutor
+from contextlib import ExitStack
 from dataclasses import asdict
 from datetime import UTC, date, datetime
 from enum import Enum
@@ -66,11 +68,13 @@ from structural_break.research.availability import (
     apply_availability_bounds,
 )
 from structural_break.research.parsing_cache import OperationParsingCache
+from structural_break.research.parsing_workers import VerificationParsingPool
 from structural_break.research.scheduling import (
     DEFAULT_CATALYST_EVENTS,
     MAX_CATALYST_CALLS,
     build_catalyst_schedule,
 )
+from structural_break.research.submission_header import read_submission_preamble
 from structural_break.research.universe import json_bytes, parquet_bytes, verify_universe_freeze
 from structural_break.storage.files import sha256_file, write_bytes
 
@@ -745,9 +749,7 @@ def _submission_clock_state(
     for document in documents:
         if document["document_type"] != "SUBMISSION" or document["status"] != "DOWNLOADED":
             continue
-        preamble = re.split(
-            rb"<DOCUMENT>", Path(document["local_path"]).read_bytes(), maxsplit=1, flags=re.I
-        )[0]
+        preamble = read_submission_preamble(document["local_path"])
         markers = re.findall(rb"<ACCEPTANCE-DATETIME>", preamble, flags=re.I)
         if not markers:
             continue
@@ -852,33 +854,77 @@ def _event_pack(
     *,
     offline: bool,
     parsed_cache: OperationParsingCache | OrderedDict[str, pd.DataFrame] | None = None,
+    parser_pool: VerificationParsingPool | None = None,
 ) -> tuple[dict[str, Any], int]:
     policy = RESEARCH_EVIDENCE_POLICY
     selected, coverage = select_event_filings(
         event, filings, [event["leg_a_security_id"], event["leg_b_security_id"]], policy
     )
-    parsed = []
+    parsed: list[pd.DataFrame] = []
     empty_ids: set[str] = set()
-    for filing in selected:
-        # cache_filing checks the current raw bytes and response metadata even
-        # when this operation has already parsed the exact document inventory.
-        documents = cache_filing(paths, filing, source_get, offline=offline)
-        clock = _submission_clock_state(documents, filing, pd.Timestamp(event["evidence_cutoff"]))
-        if clock is SubmissionClockState.EMPTY_ACCEPTANCE:
-            empty_ids.add(str(filing["filing_id"]))
-            continue
-        key = _sha(documents)
-        if parsed_cache is not None and key in parsed_cache:
-            chunks = parsed_cache[key]
-            if isinstance(parsed_cache, OrderedDict):
-                parsed_cache.move_to_end(key)
-        else:
-            chunks = parse_documents(documents, policy)
-            if parsed_cache is not None:
-                parsed_cache[key] = chunks
-                if isinstance(parsed_cache, OrderedDict) and len(parsed_cache) > 128:
-                    parsed_cache.popitem(last=False)
+    pending: list[tuple[Future[pd.DataFrame], str, str]] = []
+
+    def retain(key: str, chunks: pd.DataFrame) -> None:
+        if parsed_cache is not None:
+            parsed_cache[key] = chunks
+            if isinstance(parsed_cache, OrderedDict) and len(parsed_cache) > 128:
+                parsed_cache.popitem(last=False)
+
+    def append_chunks(chunks: pd.DataFrame, leg: str) -> None:
+        chunks = chunks.copy(deep=True)
+        chunks["leg"] = leg
         parsed.append(chunks)
+
+    def collect_oldest() -> None:
+        assert parser_pool is not None
+        future, key, leg = pending.pop(0)
+        chunks = parser_pool.result(future)
+        retain(key, chunks)
+        append_chunks(chunks, leg)
+
+    try:
+        for filing in selected:
+            # Recheck raw bytes and metadata before every lookup or submission.
+            documents = cache_filing(paths, filing, source_get, offline=offline)
+            clock = _submission_clock_state(
+                documents, filing, pd.Timestamp(event["evidence_cutoff"])
+            )
+            if clock is SubmissionClockState.EMPTY_ACCEPTANCE:
+                empty_ids.add(str(filing["filing_id"]))
+                continue
+            leg = str(filing["leg"])
+            if leg not in {"A", "B"} or any(row.get("leg") != leg for row in documents):
+                raise ValueError("SEC parser inventory legs differ from the selected filing")
+            # Pair role does not affect text parsing or chunk identities. Reuse
+            # within this operation in serial mode too; every verifier starts
+            # empty and all other inventory fields stay bound to the cache key.
+            key = _sha(
+                [{name: value for name, value in row.items() if name != "leg"} for row in documents]
+            )
+            if parsed_cache is not None:
+                while pending and any(item[1] == key for item in pending):
+                    collect_oldest()
+            if parsed_cache is not None and key in parsed_cache:
+                while pending:
+                    collect_oldest()
+                chunks = parsed_cache[key]
+                if isinstance(parsed_cache, OrderedDict):
+                    parsed_cache.move_to_end(key)
+                append_chunks(chunks, leg)
+            elif parser_pool is not None:
+                if len(pending) == 2:
+                    collect_oldest()
+                pending.append((parser_pool.submit(documents, policy), key, leg))
+            else:
+                chunks = parse_documents(documents, policy)
+                retain(key, chunks)
+                append_chunks(chunks, leg)
+        while pending:
+            collect_oldest()
+    except BaseException:
+        if parser_pool is not None:
+            parser_pool.cancel_pending()
+        raise
     chunks = pd.concat(parsed, ignore_index=True) if parsed else parse_documents([], policy)
     pack = cast(dict[str, Any], build_evidence_pack(event, selected, chunks, coverage, policy))
     for leg in ("A", "B"):
@@ -1499,14 +1545,193 @@ def build_event_intelligence(
     return manifest
 
 
+def _replay_source_partition(
+    directory: Path,
+    records: list[dict[str, Any]],
+    canonical_rows: list[dict[str, Any]],
+    indices: tuple[int, ...],
+    file_hashes: dict[str, str],
+    paths: ProjectPaths,
+    filings: pd.DataFrame,
+    source_coverage: dict[str, Any],
+    inputs: dict[str, Any],
+    catalyst_ids: set[str],
+    *,
+    hot_frames: int | None = None,
+    parsing_workers: int = 0,
+    progress: Progress | None = None,
+) -> dict[str, Any]:
+    """The identical serial per-event checks, on explicit canonical indices."""
+    if len(records) != len(canonical_rows) or len(records) != len(indices):
+        raise ValueError("Research checkpoints do not cover the exact event registry")
+    pair_filings = (
+        _pair_filing_indices(pd.DataFrame(canonical_rows), filings) if canonical_rows else {}
+    )
+    tone_policy = FinBERTPolicy(**inputs["sentiment_policy"])
+    extractions, tones, metadata_rows, audits = [], [], [], []
+    selected_filing_ids: set[str] = set()
+    with ExitStack() as operation:
+        cache = OperationParsingCache() if hot_frames is None else OperationParsingCache(hot_frames)
+        parsed_cache = operation.enter_context(cache)
+        parser_pool = (
+            operation.enter_context(VerificationParsingPool()) if parsing_workers else None
+        )
+        last_progress_at = time.monotonic()
+        for local_index, (index, row) in enumerate(zip(indices, records, strict=True)):
+            if file_hashes.get(row["file"]) != row["sha256"]:
+                raise ValueError("Research checkpoint source identity checksum differs")
+            record = _load_json(confined_path(directory, row["file"]))
+            event = record["event"]
+            scheduled = inputs["max_events"] is None or index < inputs["max_events"]
+            catalyst_scheduled = scheduled and event["event_id"] in catalyst_ids
+            if (
+                event != canonical_rows[local_index]
+                or record["scheduled"] is not scheduled
+                or record["catalyst_scheduled"] is not catalyst_scheduled
+            ):
+                raise ValueError("Research checkpoint event or label-blind scheduling differs")
+            event_filings = pair_filings[event["pair_id"]]
+            validate_pack(record["pack"])
+            validate_stored_extraction(record["catalyst_pack"], record["extraction"])
+            expected_pack = (
+                _event_pack(
+                    record["event"],
+                    event_filings,
+                    source_coverage,
+                    paths,
+                    _offline_only,
+                    offline=True,
+                    parsed_cache=parsed_cache,
+                    parser_pool=parser_pool,
+                )[0]
+                if record["scheduled"]
+                else _empty_pack(record["event"], RESEARCH_EVIDENCE_POLICY)
+            )
+            if record["pack"] != expected_pack:
+                raise ValueError(
+                    "Research evidence differs from raw-source scientific reconstruction"
+                )
+            selected_filing_ids.update(record["pack"].get("selected_filing_ids", []))
+            if record["catalyst_pack"] != (
+                expected_pack
+                if catalyst_scheduled
+                else _empty_pack(event, RESEARCH_EVIDENCE_POLICY)
+            ) or (not catalyst_scheduled and record["extraction"]["status"] != "UNKNOWN"):
+                raise ValueError(
+                    "Research catalyst evidence or response violates the frozen schedule"
+                )
+            for chunk in record["pack"]["chunks"]:
+                if (
+                    sha256_file(confined_path(paths.workspace_root, chunk["raw_file_path"]))
+                    != chunk["sha256"]
+                ):
+                    raise ValueError("Research intelligence evidence raw provenance differs")
+            extractions.append(record["extraction"])
+            tone_features = validate_sentiment_result(
+                record["pack"],
+                record["tone"],
+                leg_security_ids=[event["leg_a_security_id"], event["leg_b_security_id"]],
+                policy=tone_policy,
+            )
+            tones.append(dict(event_id=event["event_id"], **tone_features))
+            metadata_rows.append(
+                dict(
+                    event_id=event["event_id"],
+                    **metadata_event_features(event, event_filings, source_coverage),
+                )
+            )
+            audits.append(
+                {
+                    "event_id": event["event_id"],
+                    "pair_id": event["pair_id"],
+                    "event_timestamp": event["event_timestamp"],
+                    "scheduled": scheduled,
+                    "catalyst_scheduled": catalyst_scheduled,
+                    "catalyst_status": record["extraction"]["status"],
+                    "reason_codes": record["extraction"]["reason_codes"],
+                    "coverage_a": record["pack"]["coverage"]["A"]["status"],
+                    "coverage_b": record["pack"]["coverage"]["B"]["status"],
+                    "tone_a": record["tone"]["legs"]["A"]["status"],
+                    "tone_b": record["tone"]["legs"]["B"]["status"],
+                }
+            )
+            if progress is not None and (
+                local_index == 0
+                or (local_index + 1) % 100 == 0
+                or local_index + 1 == len(records)
+                or time.monotonic() - last_progress_at >= 30
+            ):
+                progress(
+                    {
+                        "verified_source_events": local_index + 1,
+                        "parsed_inventories": parsed_cache.entry_count,
+                    }
+                )
+                last_progress_at = time.monotonic()
+        parsed_inventories = parsed_cache.entry_count
+    return {
+        "indices": indices,
+        "extractions": extractions,
+        "tones": tones,
+        "metadata_rows": metadata_rows,
+        "audits": audits,
+        "selected_filing_ids": selected_filing_ids,
+        "parsed_inventories": parsed_inventories,
+    }
+
+
 def verify_event_intelligence(
     directory: Path,
     frozen_universe_dir: Path,
     sec_metadata_dir: Path,
     *,
     cache_workspace: Path | None = None,
+    parsing_workers: int = 0,
+    event_workers: int = 0,
+    progress: Progress | None = None,
 ) -> dict[str, Any]:
     """Reject changed raw bytes, evidence timestamps, grounded responses or features."""
+    if parsing_workers not in (0, 2):
+        raise ValueError("Independent parsing uses zero or two workers")
+    if type(event_workers) is not int or event_workers not in (0, 4):
+        raise ValueError("Independent event verification permits zero or four workers")
+    if event_workers and parsing_workers:
+        raise ValueError("Event workers cannot nest additional parsing workers")
+    started = time.monotonic()
+    parallel_details: dict[str, Any] = {}
+
+    def notify(
+        stage: str, completed: int = 0, total: int = 0, *, parsed_inventories: int = 0
+    ) -> None:
+        if progress is not None:
+            elapsed = time.monotonic() - started
+            progress(
+                {
+                    "status": "RUNNING",
+                    "stage": stage,
+                    "verified_source_events": completed,
+                    "total_source_events": total,
+                    "verification_elapsed_seconds": round(elapsed, 3),
+                    "verification_events_per_second": round(completed / elapsed, 4)
+                    if elapsed
+                    else 0,
+                    "parsing_workers": parsing_workers,
+                    "event_workers": event_workers,
+                    **parallel_details,
+                    "parsed_inventories": parsed_inventories,
+                    "source_event_progress_percent": round(100 * completed / total, 2)
+                    if total
+                    else None,
+                    "source_replay_estimated_remaining_seconds": round(
+                        (total - completed) * elapsed / completed
+                    )
+                    if stage == "SOURCE_EVENT_REPLAY" and completed >= 500
+                    else None,
+                    "estimate_scope": "Current source-event replay only; later gates excluded",
+                }
+            )
+
+    notify("SOURCE_INPUT_BINDINGS")
     freeze = verify_universe_freeze(frozen_universe_dir)
     verify_sec_metadata(sec_metadata_dir, frozen_universe_dir)
     manifest = _load_json(directory / "manifest.json")
@@ -1552,100 +1777,91 @@ def verify_event_intelligence(
         raise ValueError("Research catalyst schedule differs from target-blind reconstruction")
     catalyst_ids = set(catalyst_schedule["selected_event_ids"])
     filings = pd.read_parquet(sec_metadata_dir / "filings.parquet")
-    pair_filings = _pair_filing_indices(clean, filings)
     source_coverage = _coverage_bounds(
         json.loads((sec_metadata_dir / "coverage.json").read_bytes()), filings
     )
     if _load_json(directory / "metadata_observed_bounds.json") != source_coverage:
         raise ValueError("Research metadata observed coverage bounds differ")
     paths = ProjectPaths(Path(__file__).resolve().parents[3], cache_root)
-    tone_policy = FinBERTPolicy(**inputs["sentiment_policy"])
-    extractions, tones, metadata_rows, audits = [], [], [], []
-    selected_filing_ids: set[str] = set()
-    canonical_rows = canonical.to_dict("records")
+    canonical_rows = cast(list[dict[str, Any]], canonical.to_dict("records"))
     records = manifest["source_identity"]["records"]
-    with OperationParsingCache() as parsed_cache:
-        if len(records) != len(canonical_rows):
-            raise ValueError("Research checkpoints do not cover the exact event registry")
-        for index, row in enumerate(records):
-            if manifest["files"].get(row["file"]) != row["sha256"]:
-                raise ValueError("Research checkpoint source identity checksum differs")
-            record = _load_json(confined_path(directory, row["file"]))
-            event = record["event"]
-            scheduled = inputs["max_events"] is None or index < inputs["max_events"]
-            catalyst_scheduled = scheduled and event["event_id"] in catalyst_ids
-            if (
-                event != canonical_rows[index]
-                or record["scheduled"] is not scheduled
-                or record["catalyst_scheduled"] is not catalyst_scheduled
-            ):
-                raise ValueError("Research checkpoint event or label-blind scheduling differs")
-            event_filings = pair_filings[event["pair_id"]]
-            validate_pack(record["pack"])
-            validate_stored_extraction(record["catalyst_pack"], record["extraction"])
-            expected_pack = (
-                _event_pack(
-                    record["event"],
-                    event_filings,
-                    source_coverage,
-                    paths,
-                    _offline_only,
-                    offline=True,
-                    parsed_cache=parsed_cache,
-                )[0]
-                if record["scheduled"]
-                else _empty_pack(record["event"], RESEARCH_EVIDENCE_POLICY)
-            )
-            if record["pack"] != expected_pack:
-                raise ValueError(
-                    "Research evidence differs from raw-source scientific reconstruction"
-                )
-            selected_filing_ids.update(record["pack"].get("selected_filing_ids", []))
-            if record["catalyst_pack"] != (
-                expected_pack
-                if catalyst_scheduled
-                else _empty_pack(event, RESEARCH_EVIDENCE_POLICY)
-            ) or (not catalyst_scheduled and record["extraction"]["status"] != "UNKNOWN"):
-                raise ValueError(
-                    "Research catalyst evidence or response violates the frozen schedule"
-                )
-            for chunk in record["pack"]["chunks"]:
-                if (
-                    sha256_file(confined_path(cache_root, chunk["raw_file_path"]))
-                    != chunk["sha256"]
-                ):
-                    raise ValueError("Research intelligence evidence raw provenance differs")
-            extractions.append(record["extraction"])
-            tone_features = validate_sentiment_result(
-                record["pack"],
-                record["tone"],
-                leg_security_ids=[event["leg_a_security_id"], event["leg_b_security_id"]],
-                policy=tone_policy,
-            )
-            tones.append(dict(event_id=event["event_id"], **tone_features))
-            metadata_rows.append(
-                dict(
-                    event_id=event["event_id"],
-                    **metadata_event_features(event, event_filings, source_coverage),
+    if len(records) != len(canonical_rows):
+        raise ValueError("Research checkpoints do not cover the exact event registry")
+    notify("SOURCE_EVENT_REPLAY", total=len(records))
+    if event_workers:
+        from structural_break.research.event_replay import (
+            EventReplayTask,
+            parallel_source_replay,
+            source_partitions,
+        )
+
+        tasks = []
+        for slot, indices in enumerate(source_partitions(canonical_rows, pairs)):
+            selected_rows = [canonical_rows[index] for index in indices]
+            security_ids = {
+                row[name]
+                for row in selected_rows
+                for name in ("leg_a_security_id", "leg_b_security_id")
+            }
+            selected_records = [records[index] for index in indices]
+            tasks.append(
+                EventReplayTask(
+                    slot=slot,
+                    indices=indices,
+                    canonical_rows=selected_rows,
+                    records=selected_records,
+                    file_hashes={
+                        row["file"]: manifest["files"][row["file"]] for row in selected_records
+                    },
+                    directory=directory,
+                    cache_root=cache_root,
+                    filings=filings.loc[filings["security_id"].isin(security_ids)].copy(),
+                    coverage=source_coverage,
+                    inputs=inputs,
+                    catalyst_ids=catalyst_ids,
                 )
             )
-            audits.append(
-                {
-                    "event_id": event["event_id"],
-                    "pair_id": event["pair_id"],
-                    "event_timestamp": event["event_timestamp"],
-                    "scheduled": scheduled,
-                    "catalyst_scheduled": catalyst_scheduled,
-                    "catalyst_status": record["extraction"]["status"],
-                    "reason_codes": record["extraction"]["reason_codes"],
-                    "coverage_a": record["pack"]["coverage"]["A"]["status"],
-                    "coverage_b": record["pack"]["coverage"]["B"]["status"],
-                    "tone_a": record["tone"]["legs"]["A"]["status"],
-                    "tone_b": record["tone"]["legs"]["B"]["status"],
-                }
+
+        def parallel_progress(row: dict[str, Any]) -> None:
+            parallel_details.update(
+                {name: row[name] for name in ("worker_pids", "worker_progress")}
             )
+            notify(
+                "SOURCE_EVENT_REPLAY",
+                row["verified_source_events"],
+                len(records),
+                parsed_inventories=row["parsed_inventories"],
+            )
+
+        replay = parallel_source_replay(tasks, parallel_progress)
+    else:
+        replay = _replay_source_partition(
+            directory,
+            records,
+            canonical_rows,
+            tuple(range(len(records))),
+            manifest["files"],
+            paths,
+            filings,
+            source_coverage,
+            inputs,
+            catalyst_ids,
+            parsing_workers=parsing_workers,
+            progress=lambda row: notify(
+                "SOURCE_EVENT_REPLAY",
+                row["verified_source_events"],
+                len(records),
+                parsed_inventories=row["parsed_inventories"],
+            ),
+        )
+    extractions, tones, metadata_rows, audits = (
+        replay[name] for name in ("extractions", "tones", "metadata_rows", "audits")
+    )
+    selected_filing_ids = replay["selected_filing_ids"]
+    notify("SOURCE_CACHE_AUDIT", len(records), len(records))
     if _cache_inventory(selected_filing_ids, paths, filings) != manifest["cache_files"]:
         raise ValueError("Research intelligence source cache inventory/checksum differs")
+    notify("SOURCE_FEATURE_RECONSTRUCTION", len(records), len(records))
     expected = (
         build_event_feature_frame(canonical, extractions, manifest["intelligence_version"])
         .merge(
@@ -1678,4 +1894,5 @@ def verify_event_intelligence(
         != pd.Series([row["catalyst_status"] for row in audits]).value_counts().to_dict()
     ):
         raise ValueError("Research intelligence does not retain the exact event/feature population")
+    notify("SOURCE_VERIFICATION_COMPLETE", len(records), len(records))
     return manifest

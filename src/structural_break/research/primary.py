@@ -11,6 +11,8 @@ import hashlib
 import json
 import math
 import re
+from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -53,12 +55,12 @@ def checked_json(path: Path, digest: str) -> dict[str, Any]:
 
 
 def registered_manifest(
-    paths: ProjectPaths, version: str, stage: str
+    paths: ProjectPaths, version: str, stage: str, *, coordinated: bool = False
 ) -> tuple[Path, dict[str, Any]]:
     """Read a successful SQL registration without any writer/migration call."""
     if _VERSION.fullmatch(version) is None:
         raise ValueError("Invalid explicit research generation")
-    factory = DuckDBConnectionFactory(paths.database)
+    factory = DuckDBConnectionFactory(paths.database, coordinated=coordinated)
     try:
         with factory.connect(read_only=True) as connection:
             row = connection.execute(
@@ -142,11 +144,27 @@ def _native_check(result: dict[str, Any], version: str) -> None:
         )
 
 
-def _native_verify(paths: ProjectPaths, version: str) -> dict[str, Any]:
+def _native_verify(
+    paths: ProjectPaths,
+    version: str,
+    *,
+    parsing_workers: int = 0,
+    progress: Callable[[dict[str, Any]], None] | None = None,
+    source_proof: Path | None = None,
+    source_proof_sha256: str | None = None,
+) -> dict[str, Any]:
     # Intentionally imported only by the explicit batch promotion function.
     from structural_break.research.model_job import verify_research_models
 
-    return verify_research_models(paths, version)
+    return verify_research_models(
+        paths,
+        version,
+        parsing_workers=parsing_workers,
+        progress=progress,
+        source_proof=source_proof,
+        source_proof_sha256=source_proof_sha256,
+        publication=source_proof is not None,
+    )
 
 
 def _binding(paths: ProjectPaths, bindings: dict[str, str], path: Path, digest: str) -> None:
@@ -205,10 +223,56 @@ def _pipeline_check(receipt: dict[str, Any]) -> None:
             )
         ):
             raise ValueError("The pipeline contains an incomplete production stage")
+    if receipt.get("verification_strategy") == "shared-source-two-full-replays-v1":
+        sources = receipt.get("source_stages")
+        if not isinstance(sources, list) or len(sources) != 2:
+            raise ValueError("Two actual complete source reconstruction stages are required")
+        for row, purpose in zip(sources, ("fitting_input", "independent_publication"), strict=True):
+            summary = row.get("summary", {})
+            if (
+                row.get("command") != "verify-source-inputs"
+                or row.get("exit_code") != 0
+                or summary.get("status") != "SUCCESS"
+                or summary.get("command") != "verify-source-inputs"
+                or summary.get("source_proof_purpose") != purpose
+                or summary.get("complete_raw_reconstruction") is not True
+                or summary.get("final_test_read") is not False
+                or type(summary.get("event_count")) is not int
+                or summary["event_count"] < 1
+                or summary["event_count"] != sources[0].get("summary", {}).get("event_count")
+                or receipt.get("checkpoint_count", summary["event_count"]) != summary["event_count"]
+                or any(
+                    re.fullmatch(r"[0-9a-f]{64}", str(row.get(key, ""))) is None
+                    for key in ("stdout_sha256", "stderr_sha256")
+                )
+                or re.fullmatch(r"[0-9a-f]{64}", str(summary.get("source_proof_sha256", "")))
+                is None
+            ):
+                raise ValueError("Complete source reconstruction exit, purpose or lineage differs")
+
+        def stamp(row: dict[str, Any], field: str) -> datetime:
+            value = datetime.fromisoformat(row[field])
+            if value.tzinfo is None:
+                raise ValueError("Source-stage chronology must be timezone aware")
+            return value.astimezone(UTC)
+
+        if stamp(sources[0], "completed_at_utc") > min(
+            stamp(row, "started_at_utc") for row in stages
+        ) or stamp(sources[1], "started_at_utc") < max(
+            stamp(row, "completed_at_utc") for row in stages
+        ):
+            raise ValueError("Independent source reconstruction must bracket all model stages")
 
 
 def _inputs(
-    paths: ProjectPaths, receipt: dict[str, Any], *, replay_native: bool
+    paths: ProjectPaths,
+    receipt: dict[str, Any],
+    *,
+    replay_native: bool,
+    parsing_workers: int = 0,
+    progress: Callable[[dict[str, Any]], None] | None = None,
+    source_proof: Path | None = None,
+    source_proof_sha256: str | None = None,
 ) -> tuple[dict[str, Any], dict[str, str], dict[str, Any]]:
     if (
         receipt.get("status") != "ALL_THREE_HORIZONS_FITTED_AND_INDEPENDENTLY_VERIFIED"
@@ -235,9 +299,62 @@ def _inputs(
     freeze = read_json(freeze_path)
     if freeze.get("final_test_locked") is not True or freeze.get("source") != registry["source"]:
         raise ValueError("Research source freeze differs or final test is unlocked")
+    source_receipts: list[dict[str, Any]] = []
+    if receipt.get("verification_strategy") == "shared-source-two-full-replays-v1":
+        for stage in receipt["source_stages"]:
+            summary = stage["summary"]
+            version = summary["source_verification_version"]
+            if re.fullmatch(r"research_source_verification_[0-9a-f]{24}", version) is None:
+                raise ValueError("Invalid explicit complete source proof version")
+            proof_path = confined_path(
+                paths.artifacts, f"source_verification/{version}/manifest.json"
+            )
+            digest = summary["source_proof_sha256"]
+            _binding(paths, bindings, proof_path, digest)
+            source_receipts.append(checked_json(proof_path, digest))
+        initial, final = source_receipts
+        if (
+            initial.get("purpose") != "fitting_input"
+            or final.get("purpose") != "independent_publication"
+            or initial.get("identity_inputs") != final.get("identity_inputs")
+            or final.get("complete_raw_reconstruction") is not True
+            or final.get("final_test_read") is not False
+            or final["identity_inputs"]["registry_version"] != registry_version
+            or final["identity_inputs"]["verifier_computation"]["source_sha256"]
+            != receipt["computational_source_sha256"]
+        ):
+            raise ValueError(
+                "The two independent source receipts must verify identical fitting inputs"
+            )
+        if replay_native:
+            from structural_break.research.source_proof import validate_source_proof
+
+            if (
+                source_proof is None
+                or source_proof_sha256
+                != receipt["source_stages"][1]["summary"]["source_proof_sha256"]
+                or source_proof.resolve() != proof_path
+            ):
+                raise ValueError(
+                    "Publication requires its explicit second independent source proof"
+                )
+            validate_source_proof(
+                paths,
+                registry_version,
+                confined_path(
+                    paths.workspace_root, final["identity_inputs"]["intelligence_directory"]
+                ),
+                proof_path,
+                digest,
+                purpose="independent_publication",
+                progress=progress,
+            )
+    elif source_proof is not None or source_proof_sha256 is not None:
+        raise ValueError("Shared source proof requires the explicit two-reconstruction pipeline")
     for item in registry["inputs"]:
         _binding(paths, bindings, confined_path(paths.workspace_root, item["path"]), item["sha256"])
-    evaluations, checks = {}, {}
+    evaluations: dict[str, Any] = {}
+    checks: dict[str, Any] = {}
     intelligence_path: Path | None = None
     for horizon in horizons:
         row = by_horizon[horizon]
@@ -257,6 +374,14 @@ def _inputs(
             or manifest["protocol"] != registry["protocol"]
         ):
             raise ValueError("Primary evaluations must share the same frozen registry and protocol")
+        if source_receipts and (
+            inputs.get("verification_strategy") != "shared-source-two-full-replays-v1"
+            or inputs.get("fitting_source_proof_sha256")
+            != receipt["source_stages"][0]["summary"]["source_proof_sha256"]
+            or inputs.get("source_verification_inputs_sha256")
+            != identity(source_receipts[0]["identity_inputs"])
+        ):
+            raise ValueError("Every primary model must bind the same complete fitting source proof")
         parents = {item["role"]: item for item in manifest["parents"]}
         parent = parents["intelligence"]
         current_intelligence = confined_path(paths.workspace_root, parent["path"])
@@ -275,7 +400,34 @@ def _inputs(
         report = checked_json(report_path, manifest["report_sha256"])
         if report.get("final_test_read") is not False or report["protocol"] != registry["protocol"]:
             raise ValueError("Evaluation report differs from the locked research protocol")
-        result = _native_verify(paths, version) if replay_native else row["native_verification"]
+        if replay_native:
+            if progress is not None:
+                progress(
+                    {
+                        "status": "RUNNING",
+                        "stage": "PUBLICATION_NATIVE_REPLAY",
+                        "horizon": horizon,
+                        "publication_horizons_verified": len(checks),
+                        "publication_horizons_total": len(horizons),
+                    }
+                )
+            if source_receipts:
+                result = _native_verify(
+                    paths,
+                    version,
+                    parsing_workers=parsing_workers,
+                    progress=progress,
+                    source_proof=source_proof,
+                    source_proof_sha256=source_proof_sha256,
+                )
+            elif parsing_workers or progress is not None:
+                result = _native_verify(
+                    paths, version, parsing_workers=parsing_workers, progress=progress
+                )
+            else:
+                result = _native_verify(paths, version)
+        else:
+            result = row["native_verification"]
         _native_check(result, version)
         checks[str(horizon)] = result
         evaluations[str(horizon)] = {
@@ -320,6 +472,17 @@ def _inputs(
         "primary_b_variant": protocol.primary_b_variant,
         "native_checks": checks,
     }
+    if source_receipts:
+        result_inputs["verification_strategy"] = "shared-source-two-full-replays-v1"
+        result_inputs["source_verification_receipts"] = [
+            {
+                "purpose": row["purpose"],
+                "source_verification_version": row["source_verification_version"],
+                "identity_inputs_sha256": identity(row["identity_inputs"]),
+                "manifest_sha256": stage["summary"]["source_proof_sha256"],
+            }
+            for row, stage in zip(source_receipts, receipt["source_stages"], strict=True)
+        ]
     return result_inputs, bindings, registry
 
 
@@ -381,7 +544,14 @@ def _recover_failed_publication(
 
 
 def promote_primary_research(
-    paths: ProjectPaths, pipeline_receipt: Path, *, ci_gate: Path
+    paths: ProjectPaths,
+    pipeline_receipt: Path,
+    *,
+    ci_gate: Path,
+    parsing_workers: int = 0,
+    progress: Callable[[dict[str, Any]], None] | None = None,
+    source_proof: Path | None = None,
+    source_proof_sha256: str | None = None,
 ) -> dict[str, Any]:
     """Independently verify all three generations, then publish readiness atomically."""
     from structural_break.common.logging import new_run_id
@@ -399,7 +569,15 @@ def promote_primary_research(
         gate_body
     ) != receipt.get("hosted_ci_gate"):
         raise ValueError("Hosted CI evidence bytes differ from the pipeline receipt")
-    inputs, bindings, _ = _inputs(paths, receipt, replay_native=True)
+    inputs, bindings, _ = _inputs(
+        paths,
+        receipt,
+        replay_native=True,
+        parsing_workers=parsing_workers,
+        progress=progress,
+        source_proof=source_proof,
+        source_proof_sha256=source_proof_sha256,
+    )
     inputs["pipeline_receipt_sha256"] = hashlib.sha256(receipt_body).hexdigest()
     # Replace assertions from the operational receipt with this fresh scientific replay.
     proof = dict(receipt)
@@ -445,7 +623,12 @@ def promote_primary_research(
                 "verification_receipt_sha256": sha256_file(proof_path),
                 "final_test_read": False,
                 "verification_scope": (
-                    "Fresh native and raw-source verification at promotion; read-only presentation "
+                    "Two complete source reconstructions bracket fitting; publication rechecks "
+                    "all bound source hashes and native models; presentation checks "
+                    "published artifacts."
+                    if inputs.get("verification_strategy") == "shared-source-two-full-replays-v1"
+                    else "Fresh native and raw-source verification at promotion; "
+                    "read-only presentation "
                     "checks registered source manifests and every published artifact it consumes."
                 ),
             }

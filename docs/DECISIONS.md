@@ -396,7 +396,75 @@ quality-v2 FinBERT, pinned assets, 500-event schedule, matched A/B definitions a
 2024–2025 outcome lock remain fixed. Main promotion and independent raw/native
 verification remain pending.
 
-## 26. Phase 5 bounded adversarial investigation
+## 26. Two complete independent source reconstructions for matched horizons
+
+On 2026-10-14, before expanded assessment results were available, the user
+explicitly approved [the shared-source verification amendment](VERIFICATION_EFFICIENCY_PROPOSAL.md).
+This supersedes section 23's requirement to repeat the identical complete text
+reconstruction at every model fitting, native verification and publication step.
+
+Run one genuinely complete, fresh 37,421-event raw-source reconstruction before
+fitting, and a second independent complete reconstruction after all models finish
+and before publication. Both must start with an empty private parser cache and
+reproduce every evidence pack, stored text feature, source-clock/cutoff claim,
+source inventory, coverage denominator and target-blind schedule. Neither can
+trust builder parsing outputs or mint a receipt from sampling/checksums alone.
+
+Bind the actual source commands, exits/logs, immutable proof bytes, registry,
+features, complete checkpoint/raw inventories, verifier code/runtime and proof
+purpose. Recheck every bound file checksum before each fitting/native stage.
+Reject changed inputs, stale runtime/code, partial populations, substituted
+receipts or use of a fitting proof as the final independent reconstruction.
+Preserve all thirty fits and native/report/calibration/paired checks at the same
+1e-12 prediction tolerance. Publication requires both genuine source passes,
+all six actual model stages, current hosted CI and the real read-only app gate.
+
+The dataset, source-v3 bytes, quality-v2 policy, provider schedule/budget, A/B
+definitions, cohort matching, chronology, tuning, calibration, uncertainty and
+final-test lock remain unchanged. Preserve the old run and all prior artifacts.
+Prepare and test changes in isolation; replace the old frozen run only after
+the new source passes its engineering and Linux/Windows/Colab CI gates.
+
+Twelve complete reconstructions become two: ten expensive reconstructions are
+removed, not ten scientific checks. This is an 83% reduction in reconstruction
+count, not a claimed 83% whole-job runtime improvement. Hashing/fitting and
+independent publication still require actual acceptance before main promotion.
+
+### Four-core source verification execution
+
+On 2026-10-15 the user explicitly authorized restarting the verification run and
+using all four physical CPU cores to meet a 2026-10-16 midday deadline. This is an
+execution change, with both complete source passes and all scientific gates intact.
+An optional four-process verifier partitions events by the frozen business group,
+balances target-free event counts, and restores the original canonical event order
+before the unchanged complete source-inventory and feature-frame comparisons.
+Each process starts its own empty private parser cache, retains at most sixteen
+hot frames and uses one native-library thread. No builder cache is shared or used
+as independent evidence. Only the coordinator can complete the full-population
+comparison and source proof; a worker result or a benchmark sample cannot mint it.
+Worker count is bound in proof bytes, runtime/command/launch receipts and progress.
+The serial path remains reproducible. Changed verifier code needs its own source
+freeze and genuine complete Linux/Windows/Colab CI before production cutover.
+
+## 27. Colab support retired; parallel CI
+
+On 2026-10-15, before the v2 assessment was published, the user retired Google
+Colab as a supported platform: no group member uses it. `scripts/colab_bootstrap.py`,
+`docs/COLAB.md` and the `colab-bootstrap` CI job are removed. Supported platforms
+are local Windows and Linux with Python 3.11 and `uv`. Full release validation is
+now `foundation` and `acceptance` on Linux and Windows plus the `nlp-runtime`
+CPU PyTorch/Transformers install check; earlier references to Linux/Windows/Colab
+CI gates are read as this set. Release evidence recorded with the earlier
+`colab-bootstrap` job stays valid for its revisions. Archived documents keep
+their historical Colab references.
+
+CI runs pytest with one process per runner CPU and moves the synthetic CLI
+acceptance checks into a parallel job. Test content, fixtures and blocked network
+sockets are unchanged; this is an execution change with no scientific effect.
+Package source under `src/` is untouched, so the computational identity of the
+running v2 generation is unaffected.
+
+## 28. Phase 5 bounded adversarial investigation
 
 On 2026-10-11 the user explicitly authorized updating the multi-agent pipeline
 and Phase 5 plan to the Week 4-inspired design and beginning implementation.
@@ -474,7 +542,7 @@ agent prompts and production scheduling never receive realized outcomes. Record
 unsupported interpretations, failures, UNKNOWNs and abstentions honestly. No
 agent usefulness or Full-System benefit is established by the fixture slice.
 
-## 27. Phase 5 durable batches and blind source review
+## 29. Phase 5 durable batches and blind source review
 
 On 2026-10-11 the user authorized continuing the independent Phase 5 batch
 infrastructure while the detached v2 feature build runs. This engineering slice
@@ -484,7 +552,7 @@ a source-only human annotation workflow. It does not change the v2 population,
 500-event catalyst schedule, model definitions or final-test lock.
 
 Durable attempt accounting supersedes the invocation-only limitation described
-for the first adapter in section 26 when the provider is attached to the journal.
+for the first adapter in section 28 when the provider is attached to the journal.
 Reserve each transport attempt before sending it, including retries. Reservations
 are never refunded after a timeout or interrupted process because its actual
 provider outcome may be unknown. Bind immutable total/per-model/per-provider-day
@@ -512,7 +580,7 @@ legs. Format/provenance checks do not measure semantic accuracy. Genuine source
 review, advocate/synthesis interpretation evaluation and at least 50 historical
 annotations (aiming for 100) remain completion gates.
 
-## 30. Historical bridges and economic analysis before v2 completion
+## 32. Historical bridges and economic analysis before v2 completion
 
 On 2026-10-11 the user authorized the remaining independent Phase 5/6 work:
 historical artifact adapters, genuine blind source-review preparation, robustness

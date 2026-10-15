@@ -74,6 +74,17 @@ def fitted() -> Any:
     return evaluate_matched_models(registry(), QUANT, BLOCKS, protocol())
 
 
+def test_operational_fitting_progress_cannot_change_predictions_or_reports(fitted: Any) -> None:
+    records: list[dict[str, Any]] = []
+    result = evaluate_matched_models(registry(), QUANT, BLOCKS, protocol(), progress=records.append)
+    pd.testing.assert_frame_equal(result.predictions, fitted.predictions, check_exact=True)
+    assert result.report == fitted.report
+    completed = [row for row in records if row["stage"] == "MODEL_FITTING"]
+    assert [row["fitted_models"] for row in completed] == list(range(1, 9))
+    assert all(row["total_models"] == 8 for row in completed)
+    assert all("y_revert_success" not in row for row in records)
+
+
 def test_matched_all_unknowns_retained_on_original_cohort(fitted: Any) -> None:
     rows = registry()
     predictions = fitted.predictions

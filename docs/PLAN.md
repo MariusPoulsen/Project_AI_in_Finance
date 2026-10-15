@@ -233,7 +233,7 @@ Status: **IN PROGRESS**, begun on 2026-10-11 following the user's authorization 
 the bounded Week 4-inspired redesign. The first slice implements typed fixture
 inputs, independent openings, one rebuttal exchange, separate synthesis and
 validation, fail-safe caching and the Python controller. The current architecture
-is in `docs/specs/04_MULTI_AGENT_PIPELINE.md` and DECISIONS section 26.
+is in `docs/specs/04_MULTI_AGENT_PIPELINE.md` and DECISIONS section 28.
 
 Work is isolated on `phase5/agents-controller-foundation`. Keep the live v2
 checkout and its 37,421-event population, source-v3 inputs, quality-v2 FinBERT,
@@ -364,6 +364,9 @@ complete accepted-generation integration or genuine semantic evaluation.
 - [ ] Complete unit/integration/leakage/regression/app-smoke test suites.
 - [ ] Ensure CI passes on a clean clone without external APIs.
 - [ ] Finalise demo snapshot packaging.
+- [-] Prepare the offline group snapshot and setup/app/prediction/backtest-input commands;
+  tooling and fixture checks are on `collaboration/portable-research-snapshot`.
+  Export and fresh-workspace checks with the real bundle await accepted v2 outputs.
 - [ ] Finalise model card, data dictionary, README and technical runbook.
 - [ ] Document all commands for bootstrap, migrations, data build, model training, agent batch, backtest, demo packaging and Streamlit launch.
 - [ ] Add deployment config for Streamlit Community Cloud or approved equivalent.
