@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       full_validation:
-        description: "Run complete Linux, Windows and Colab release validation"
+        description: "Run complete Linux and Windows release validation"
         type: boolean
         required: true
         default: true
@@ -27,8 +27,9 @@ concurrency:
   cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
 jobs:
+  # The job id and matrix suffix form the required check `foundation (ubuntu-latest)`.
   foundation:
-    timeout-minutes: 60
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -46,7 +47,25 @@ jobs:
       - run: uv run --frozen ruff check .
       - run: uv run --frozen ruff format --check .
       - run: uv run --frozen mypy
-      - run: uv run --frozen pytest
+      # Tests run in one process per runner CPU; --durations keeps slow tests visible.
+      - run: uv run --frozen pytest -n auto --dist worksteal --durations=25
+
+  # Synthetic end-to-end CLI acceptance runs beside the unit/integration suite.
+  acceptance:
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.full_validation && '["ubuntu-latest", "windows-latest"]' || '["ubuntu-latest"]') }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.12.20"
+          enable-cache: true
+      - run: uv python install 3.11
+      - run: uv sync --frozen
       - run: uv run --frozen structural-break init-db
       - run: uv run --frozen structural-break storage-smoke
       - run: uv run --frozen structural-break storage-smoke
@@ -120,31 +139,21 @@ jobs:
           uv run --frozen structural-break-reference train-model-b
           --workspace-root .acceptance/phase3-ci
 
-  colab-bootstrap:
+  # The optional local FinBERT runtime must still install and import on CPU.
+  nlp-runtime:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.full_validation }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
       - uses: astral-sh/setup-uv@v7
         with:
           version: "0.12.20"
           enable-cache: true
-      - run: >-
-          python scripts/colab_bootstrap.py
-          --nlp
-          --workspace-root /tmp/colab-foundation
-          --data-fixture
-          --relationship-fixture
-          --ml-fixture
-          --intelligence-fixture
-          --research-fixture
+      - run: uv python install 3.11
+      - run: uv sync --frozen --extra nlp
       - name: Verify optional CPU NLP runtime
         run: >-
           uv run --frozen --extra nlp python -c
           "import torch, transformers; assert torch.version.cuda is None;
           print(torch.__version__, transformers.__version__)"
-      - run: uv run --frozen --extra nlp pytest

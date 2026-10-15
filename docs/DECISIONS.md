@@ -445,3 +445,21 @@ comparison and source proof; a worker result or a benchmark sample cannot mint i
 Worker count is bound in proof bytes, runtime/command/launch receipts and progress.
 The serial path remains reproducible. Changed verifier code needs its own source
 freeze and genuine complete Linux/Windows/Colab CI before production cutover.
+
+## 27. Colab support retired; parallel CI
+
+On 2026-10-15, before the v2 assessment was published, the user retired Google
+Colab as a supported platform: no group member uses it. `scripts/colab_bootstrap.py`,
+`docs/COLAB.md` and the `colab-bootstrap` CI job are removed. Supported platforms
+are local Windows and Linux with Python 3.11 and `uv`. Full release validation is
+now `foundation` and `acceptance` on Linux and Windows plus the `nlp-runtime`
+CPU PyTorch/Transformers install check; earlier references to Linux/Windows/Colab
+CI gates are read as this set. Release evidence recorded with the earlier
+`colab-bootstrap` job stays valid for its revisions. Archived documents keep
+their historical Colab references.
+
+CI runs pytest with one process per runner CPU and moves the synthetic CLI
+acceptance checks into a parallel job. Test content, fixtures and blocked network
+sockets are unchanged; this is an execution change with no scientific effect.
+Package source under `src/` is untouched, so the computational identity of the
+running v2 generation is unaffected.

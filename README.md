@@ -42,8 +42,7 @@ process environment:
 - `SB_LLM_API_KEY`: the free Google API key for guarded Gemma extraction.
 
 No Yahoo, SEC or local database login is required. Never put credentials in Git,
-YAML, command arguments or output. [Google Colab](docs/COLAB.md) uses the same
-locked environment and supplies credentials through Colab Secrets.
+YAML, command arguments or output.
 
 The default workspace is `data/research_v2`. To relocate it, pass
 `--workspace-root` or set `SB_WORKSPACE_ROOT` for both CLI and app; an explicit CLI
@@ -124,10 +123,10 @@ uv run --frozen pytest
 
 Tests use deterministic offline fixtures, with network sockets blocked. Genuine
 source/model acceptance is a separate gate. Release checks include Windows/Linux
-CI, the Colab Python 3.11 bootstrap and independent replay of all actual evaluations.
+CI and independent replay of all actual evaluations.
 
 - Current research: [protocol](docs/RESEARCH_V2_PROTOCOL.md),
-  [runbook](docs/RESEARCH_V2_RUNBOOK.md), [Colab](docs/COLAB.md),
+  [runbook](docs/RESEARCH_V2_RUNBOOK.md),
   [status](docs/STATUS.md).
 - Governance: [decisions](docs/DECISIONS.md), [plan](docs/PLAN.md),
   [specifications](docs/specs/README.md).
