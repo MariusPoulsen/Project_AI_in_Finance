@@ -8,10 +8,16 @@ It excludes the large SEC filing archive, redundant raw market downloads and
 per-event text checkpoints. Curated development prices and the original source
 manifests are retained.
 
-**Delivery status:** tooling is prepared separately while v2 completes. The real
-shared snapshot can be exported only after an accepted primary publication.
-No production snapshot is available yet. The backtesting engine is separate
-work; this handoff supplies its inputs and does not claim a completed simulator.
+**Delivery status:** the official `group-v2.zip` is exported only after the v2
+rerun is accepted and published (DECISIONS section 33). Until then the shared
+folder may hold `group-v2-provisional.zip`: an unaccepted export of the same
+trained models for exploratory work, loaded with pandas/joblib as described in
+its `README_PROVISIONAL.md`. It does not work with `scripts/team.py` or the app.
+The Phase 6 simulator in `src/structural_break/backtest/` is a fixture-tested
+foundation with DRAFT policies; these inputs alone are not a returns backtest.
+
+Coding agents: give your agent [GROUP_AGENT_BRIEF.md](GROUP_AGENT_BRIEF.md) first.
+Keep per-stream notes in [docs/team/](team/README.md).
 
 ## First setup
 
@@ -22,9 +28,8 @@ git clone https://github.com/MariusPoulsen/Project_AI_in_Finance.git
 cd Project_AI_in_Finance
 ```
 
-Use the released code containing `scripts/team.py`. Until this handoff is merged,
-its review branch is `collaboration/portable-research-snapshot`; `main` does not
-have these commands yet.
+Use `main`. If `main` does not contain `scripts/team.py` yet, the accepted v2
+release has not been merged; use the `research-v2` branch until it is.
 
 Download `group-v2.zip` and its `.sha256` file from the shared group folder. Use
 the checksum provided with Marius's handoff:
@@ -58,9 +63,9 @@ events, or use `--horizon 10`/`30` for the predeclared sensitivities.
 
 `backtest-inputs` writes pair prices, frozen monthly relationship snapshots,
 daily pair state, raw crossings, events, quantitative features, development
-targets/partitions and published predictions to a new directory. Use the shared
-simulator's execution/cost rules when that branch is released; these files alone
-are not a returns backtest. Keep actual ACTIVE flags and the broad registry's
+targets/partitions and published predictions to a new directory. Feed them to the
+shared simulator in `src/structural_break/backtest/` (see `docs/BACKTEST_RUNBOOK.md`);
+these files alone are not a returns backtest. Keep actual ACTIVE flags and the broad registry's
 episode construction intact.
 
 For custom analysis, import `existing_predictions` or `backtest_inputs` from
@@ -78,15 +83,6 @@ locally; their file paths never depend on Marius's computer.
 - Development data ends in 2023; the 2024–2025 outcome lock remains in force.
   Import retains the original acceptance proofs and does not mint verification.
 - Canonical retraining and full source verification require the owner's archive.
-
-## Google Colab
-
-Clone the released repository and upload the ZIP or mount the shared Drive
-folder. Run the same setup command with the host's `python`, optionally adding
-`--workspace-root /content/group-v2`. Then run `predict`, `check` or
-`backtest-inputs` with `python scripts/team.py ...`. The launcher uses a separate
-Python 3.11 environment and does not replace Colab's kernel. Read its CSV/Parquet
-outputs from notebook cells. The Streamlit app is easiest to run locally.
 
 ## Owner: export after acceptance
 

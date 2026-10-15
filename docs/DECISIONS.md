@@ -787,3 +787,43 @@ immutably with code/runtime identities; independently rebuild outputs on verific
 and reject source/runtime drift. These artifacts and mock controller results cannot
 self-attest scientific acceptance, model improvement or agent quality. No change
 authorizes 2024–2025 outcomes or merging unfinished v2 into main.
+
+## 33. Native report replay tolerance and the v2 completion rerun
+
+Recorded 2026-10-16, before any accepted v2 publication. No assessment result
+was used to choose any change below.
+
+The shared-source completion attempt (`v2_completion_four_core_20261014T2355Z_76d9db8`,
+revision `76d9db8`) completed source pass 1 and the h20 fit and verification.
+It then stopped on 2026-10-15 in the h10 in-fit native self-check. Every h10
+model reproduced its stored probabilities within 1e-12, but a few recomputed
+subgroup report metrics differed from the stored report in the last binary
+digits (for example log loss `…193` vs `…196`). The check used exact float
+equality, so the result depended on BLAS threading and reduction order.
+
+On 2026-10-16 the user authorized a resumed attempt
+(`v2_resume_b_20261016T0100_76d9db8`) that reused the verified pass-1 proof and
+h20 stages and ran native replays without the one-thread cap. h10 then passed,
+but h30's standalone verification failed the same way in the opposite thread
+mode. Read-only replays showed h20 passing in both modes, h10 only without the
+cap and h30 only with it. A publication replay of all thirty models in one
+process could therefore not pass under any setting. The resumed attempt's
+records and amendment note remain in its directory; no generation from either
+attempt is accepted.
+
+The user then authorized a code fix and a complete rerun. `verify_research_models`
+now compares recomputed report floats within a 1e-12 relative tolerance; keys,
+lengths, counts, labels and nulls stay exact. The 1e-12 probability tolerance and
+the exact calibrator check are unchanged. With the fixed comparator, all thirty
+models registered by the earlier attempts pass the full replay in both thread
+modes. Because package source changed, the rerun
+(`v2_rerun_a_20261016_4764c65`, revision `4764c65`) starts again from source
+pass 1 and creates new generations, both complete source passes and full hosted
+CI. Fitting code, data, event population, protocol, model definitions, tuning,
+calibration and the 2024–2025 final-test lock are unchanged.
+
+The full-validation CI gate for the rerun is the section 27 job set
+(`foundation` and `acceptance` on Linux and Windows, plus `nlp-runtime`). A
+provisional, clearly unaccepted export of the earlier registered generations
+was prepared for group members to start exploratory work; it is replaced by the
+official snapshot once the rerun is accepted.
