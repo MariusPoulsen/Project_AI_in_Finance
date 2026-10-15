@@ -48,6 +48,50 @@ def test_progress_cannot_overwrite_previous_attempt(tmp_path: Path) -> None:
     assert path.read_text() == "preserved"
 
 
+def test_source_progress_is_separate_from_completed_feature_checkpoints(tmp_path: Path) -> None:
+    path = tmp_path / "progress.json"
+    progress = cli._FileProgress(path, "train-models", "fixture")
+    progress(
+        {
+            "status": "RUNNING",
+            "stage": "SOURCE_EVENT_REPLAY",
+            "verified_source_events": 100,
+            "total_source_events": 37421,
+            "parsing_workers": 2,
+        }
+    )
+    state = json.loads(path.read_bytes())
+    assert state["verified_source_events"] == 100
+    assert state["total_source_events"] == 37421
+    assert state["completed_checkpoint_count"] == 0
+    assert state["status"] == "RUNNING" and state["final_test_unlocked"] is False
+
+
+def test_separate_replay_passes_are_counted_without_claiming_job_completion(tmp_path: Path) -> None:
+    path = tmp_path / "progress.json"
+    progress = cli._FileProgress(path, "train-models", "fixture")
+    progress({"stage": "SOURCE_INPUT_BINDINGS", "verified_source_events": 0})
+    progress({"stage": "SOURCE_EVENT_REPLAY", "verified_source_events": 37421})
+    progress({"stage": "MODEL_FITTING"})
+    progress({"stage": "SOURCE_INPUT_BINDINGS", "verified_source_events": 0})
+    state = json.loads(path.read_bytes())
+    assert state["source_replay_pass_in_command"] == state["source_replay_passes_in_command"] == 2
+    assert state["verified_source_events"] == 0
+    assert state["completed_checkpoint_count"] == 0
+    assert state["final_test_unlocked"] is False
+
+
+def test_parallel_parsing_cannot_dispatch_feature_capture(tmp_path: Path) -> None:
+    from structural_break.config.models import RuntimeSettings
+    from structural_break.config.paths import ProjectPaths
+
+    args = cli._parser().parse_args(["build-intelligence", "--parsing-workers", "2"])
+    with pytest.raises(ValueError, match="restricted"):
+        cli.run_command(
+            args, ProjectPaths(Path(__file__).parents[2], tmp_path), RuntimeSettings(_env_file=None)
+        )
+
+
 @pytest.mark.parametrize(
     "arguments",
     [

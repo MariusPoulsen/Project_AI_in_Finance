@@ -142,6 +142,104 @@ def test_duplicate_accession_rejected_before_selection() -> None:
         select([filing(1), filing(1)])
 
 
+def _legacy_selection(index: pd.DataFrame) -> Any:
+    # Object timestamps intentionally exercise the unchanged per-row path.
+    legacy = index.copy(deep=True)
+    legacy["acceptance_datetime_utc"] = legacy["acceptance_datetime_utc"].astype(object)
+    return select_event_filings(event(), legacy, ["sec_KO", "sec_PEP"])
+
+
+def test_utc_selection_materializes_only_past_rows_with_full_coverage(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    rows = [
+        filing(1),
+        filing(2, acceptance_datetime_utc=None),
+        filing(3, form="10-Q", days=70),
+        filing(4, form="10-Q/A", days=20),
+        filing(5, days=500),
+        filing(6, security="sec_PEP", form="10-K", days=250),
+        filing(7, security="sec_PEP", acceptance_datetime_utc=None),
+    ]
+    rows.extend(
+        filing(sequence, security=security, days=-1, identity_valid_from="invalid")
+        for security in ("sec_KO", "sec_PEP")
+        for sequence in range(100, 4100)
+    )
+    index = pd.DataFrame(rows)
+    original = index.copy(deep=True)
+    expected = _legacy_selection(index)
+    materialized_rows: list[int] = []
+    original_to_dict = pd.DataFrame.to_dict
+
+    def counted(frame: pd.DataFrame, *args: Any, **kwargs: Any) -> Any:
+        materialized_rows.append(len(frame))
+        return original_to_dict(frame, *args, **kwargs)
+
+    monkeypatch.setattr(pd.DataFrame, "to_dict", counted)
+    actual = select_event_filings(event(), index, ["sec_KO", "sec_PEP"])
+    assert actual == expected
+    assert sum(materialized_rows) == 5
+    assert actual[1]["A"]["index_row_count"] == 4005
+    assert actual[1]["B"]["index_row_count"] == 4002
+    assert actual[1]["A"]["missing_acceptance_count"] == 1
+    assert actual[1]["B"]["missing_acceptance_count"] == 1
+    pd.testing.assert_frame_equal(index, original)
+
+
+@pytest.mark.filterwarnings("ignore:Discarding nonzero nanoseconds")
+def test_utc_selection_matches_legacy_microsecond_cutoff_precision() -> None:
+    cutoff = pd.Timestamp(CUTOFF)
+    index = pd.DataFrame(
+        [
+            filing(sequence, acceptance_datetime_utc=cutoff + pd.Timedelta(nanoseconds=offset))
+            for sequence, offset in enumerate((-1, 1, 999, 1000, 1001), start=1)
+        ]
+    )
+    actual = select_event_filings(event(), index, ["sec_KO", "sec_PEP"])
+    assert actual == _legacy_selection(index)
+    assert [row["filing_id"] for row in actual[0]] == [filing(i)["filing_id"] for i in (1, 2, 3)]
+
+
+@pytest.mark.parametrize(
+    "invalid",
+    ["not-a-timestamp", datetime(2027, 1, 1), pd.Timestamp("2027-01-01")],
+)
+def test_selection_keeps_timestamp_errors_in_non_utc_columns(invalid: object) -> None:
+    index = pd.DataFrame([filing(1), filing(2, acceptance_datetime_utc=invalid)])
+    with pytest.raises(ValueError):
+        select_event_filings(event(), index, ["sec_KO", "sec_PEP"])
+
+
+def test_selection_keeps_naive_datetime_column_errors() -> None:
+    index = pd.DataFrame([filing(1), filing(2)])
+    index["acceptance_datetime_utc"] = index["acceptance_datetime_utc"].dt.tz_localize(None)
+    with pytest.raises(ValueError, match="timezone-aware"):
+        select_event_filings(event(), index, ["sec_KO", "sec_PEP"])
+
+
+def test_selection_keeps_non_utc_aware_column_behavior() -> None:
+    index = pd.DataFrame([filing(1), filing(2, days=-1), filing(3, form="10-Q", days=70)])
+    index["acceptance_datetime_utc"] = index["acceptance_datetime_utc"].dt.tz_convert(
+        "America/New_York"
+    )
+    assert select_event_filings(event(), index, ["sec_KO", "sec_PEP"]) == _legacy_selection(index)
+
+
+@pytest.mark.parametrize("field", ["identity_valid_from", "identity_valid_to"])
+def test_utc_selection_keeps_identity_errors_in_old_rows(field: str) -> None:
+    index = pd.DataFrame([filing(1, days=500, **{field: "invalid"}), filing(2)])
+    with pytest.raises(ValueError):
+        select_event_filings(event(), index, ["sec_KO", "sec_PEP"])
+    with pytest.raises(ValueError):
+        _legacy_selection(index)
+
+
+def test_utc_selection_rejects_duplicate_future_accessions() -> None:
+    with pytest.raises(ValueError, match="unique"):
+        select([filing(1, days=-1), filing(1, days=-1)])
+
+
 def test_cache_primary_submission_exhibits_and_repeat_without_requests(paths: ProjectPaths) -> None:
     chosen, _ = select([filing(1)])
     calls: list[str] = []

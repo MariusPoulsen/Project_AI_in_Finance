@@ -79,7 +79,7 @@ function Get-NativeIdentity {
 }
 
 if ([System.Environment]::OSVersion.Platform -ne [System.PlatformID]::Win32NT) {
-    throw 'This detached launcher requires Windows. On Colab, use the research CLI directly.'
+    throw 'This detached launcher requires Windows. On other platforms, use the research CLI directly.'
 }
 $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot).ProviderPath
 if (-not $WorkspaceRoot) { $WorkspaceRoot = Join-Path $ProjectRoot 'data\research_v2' }

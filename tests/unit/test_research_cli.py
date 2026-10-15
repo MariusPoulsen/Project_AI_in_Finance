@@ -1,10 +1,9 @@
-"""No-network batch plumbing, source identity, outcome-free metadata and Colab extras."""
+"""No-network batch plumbing, source identity and outcome-free metadata."""
 
 from __future__ import annotations
 
 import hashlib
 import json
-import sys
 from pathlib import Path
 from typing import Any
 
@@ -12,7 +11,6 @@ import pandas as pd
 import pytest
 from pydantic import SecretStr
 
-from scripts import colab_bootstrap
 from structural_break.config.models import RuntimeSettings
 from structural_break.config.paths import ProjectPaths
 from structural_break.research import cli
@@ -319,20 +317,30 @@ def test_train_and_verify_dispatch_to_explicit_bound_native_model_job(
         calls.append((*values, options))
         return {"research_version": "trained"}
 
-    def verify(*values: Any) -> dict[str, Any]:
-        calls.append(values)
+    def verify(*values: Any, **options: Any) -> dict[str, Any]:
+        calls.append((*values, options))
         return {"research_version": "verified"}
 
     monkeypatch.setattr(cli, "train_research_models", train)
     monkeypatch.setattr(cli, "verify_research_models", verify)
     train_args = cli._parser().parse_args(
-        ["train-models", "--registry-version", "registry", "--horizon", "30"]
+        [
+            "train-models",
+            "--registry-version",
+            "registry",
+            "--horizon",
+            "30",
+            "--parsing-workers",
+            "2",
+        ]
     )
-    verify_args = cli._parser().parse_args(["verify-models", "--model-version", "model"])
+    verify_args = cli._parser().parse_args(
+        ["verify-models", "--model-version", "model", "--parsing-workers", "2"]
+    )
     assert cli.run_command(train_args, paths, runtime())["research_version"] == "trained"
     assert cli.run_command(verify_args, paths, runtime())["research_version"] == "verified"
-    assert calls[0][3] == {"horizon": 30}
-    assert calls[1] == (paths, "model")
+    assert calls[0][3] == {"horizon": 30, "parsing_workers": 2, "progress": cli._progress}
+    assert calls[1] == (paths, "model", {"parsing_workers": 2, "progress": cli._progress})
 
 
 def test_main_defaults_to_isolated_workspace_and_redacts_error_text(
@@ -395,46 +403,3 @@ def test_catalyst_pilot_limit_is_distinct_from_partial_source_inventory(
     cli.run_command(args, paths, runtime())
     assert options["max_events"] is None
     assert options["catalyst_max_events"] == 120
-
-
-@pytest.mark.parametrize("nlp", [False, True])
-@pytest.mark.parametrize("research_fixture", [False, True])
-def test_colab_keeps_optional_nlp_extra_in_every_uv_run(
-    monkeypatch: pytest.MonkeyPatch, nlp: bool, research_fixture: bool
-) -> None:
-    commands: list[list[str]] = []
-    monkeypatch.setattr(colab_bootstrap.shutil, "which", lambda name: "uv")
-    monkeypatch.setattr(
-        colab_bootstrap.subprocess, "run", lambda command, **kwargs: commands.append(command)
-    )
-    arguments = [
-        "colab_bootstrap.py",
-        "--data-fixture",
-        "--relationship-fixture",
-        "--intelligence-fixture",
-    ]
-    if nlp:
-        arguments.append("--nlp")
-    if research_fixture:
-        arguments.append("--research-fixture")
-    monkeypatch.setattr(sys, "argv", arguments)
-    colab_bootstrap.main()
-    sync = next(command for command in commands if command[1] == "sync")
-    runs = [command for command in commands if command[1] == "run"]
-    assert len(runs) == 15 + int(research_fixture)
-    assert ("--extra" in sync) is nlp
-    assert all(("--extra" in command) is nlp for command in runs)
-    if nlp:
-        assert sync[sync.index("--extra") + 1] == "nlp"
-        assert all(command[command.index("--extra") + 1] == "nlp" for command in runs)
-    primary = [command for command in runs if "structural-break" in command]
-    assert len(primary) == 3
-    assert all(
-        any(name in command for name in ("check-config", "init-db", "storage-smoke"))
-        for command in primary
-    )
-    assert len([command for command in runs if "structural-break-reference" in command]) == 12
-    assert (
-        any("tests/integration/test_research_runner.py" in command for command in runs)
-        is research_fixture
-    )

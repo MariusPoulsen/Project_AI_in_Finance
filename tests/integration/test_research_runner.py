@@ -429,6 +429,57 @@ def model_publication(published):
     return paths, models, directory
 
 
+def test_shared_source_proofs_preserve_all_predictions_reports_and_two_full_replays(
+    model_publication, monkeypatch: pytest.MonkeyPatch
+):
+    from structural_break.research import intelligence
+    from structural_break.research.source_proof import mint_source_proof
+
+    paths, original, directory = model_publication
+    original_verifier = intelligence.verify_event_intelligence
+    replay_calls = []
+
+    def tracked(*args, **kwargs):
+        replay_calls.append("fresh full reconstruction")
+        return original_verifier(*args, **kwargs)
+
+    monkeypatch.setattr(intelligence, "verify_event_intelligence", tracked)
+    registry = original["identity_inputs"]["registry_version"]
+    first = mint_source_proof(paths, registry, directory, purpose="fitting_input")
+    initial_path, initial_sha = Path(first["source_proof_path"]), first["source_proof_sha256"]
+    model = train_research_models(
+        paths,
+        registry,
+        directory,
+        horizon=20,
+        source_proof=initial_path,
+        source_proof_sha256=initial_sha,
+    )
+    verify_research_models(
+        paths, model["research_version"], source_proof=initial_path, source_proof_sha256=initial_sha
+    )
+    final = mint_source_proof(paths, registry, directory, purpose="independent_publication")
+    verified = verify_research_models(
+        paths,
+        model["research_version"],
+        source_proof=Path(final["source_proof_path"]),
+        source_proof_sha256=final["source_proof_sha256"],
+        publication=True,
+    )
+    assert len(replay_calls) == 2
+    assert len(verified["native_max_errors"]) == 10
+    assert max(verified["native_max_errors"].values()) <= 1e-12
+    before, after = artifact_directory(paths, original), artifact_directory(paths, model)
+    pd.testing.assert_frame_equal(
+        pd.read_parquet(before / "predictions.parquet"),
+        pd.read_parquet(after / "predictions.parquet"),
+        check_exact=True,
+    )
+    assert json.loads((before / "report.json").read_bytes()) == json.loads(
+        (after / "report.json").read_bytes()
+    )
+
+
 def test_complete_registry_evidence_model_flow_replays_all_ten_native_bundles(model_publication):
     paths, model, _ = model_publication
     replay = verify_research_models(paths, model["research_version"])

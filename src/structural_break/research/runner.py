@@ -178,7 +178,7 @@ def _pair_dataset_inner(arguments: dict[str, Any]) -> dict[str, Any]:
 
 
 def _registered_manifest(paths: ProjectPaths, research_version: str) -> dict[str, Any] | None:
-    factory = DuckDBConnectionFactory(paths.database)
+    factory = DuckDBConnectionFactory(paths.database, coordinated=True)
     migrate(factory, paths.migrations)
     with factory.connect() as connection:
         row = connection.execute(
@@ -247,7 +247,7 @@ def publish_research(
         "intelligence",
     } or not directory.resolve().is_relative_to(paths.artifacts.resolve()):
         raise ValueError("Research publication must use its own artifacts directory and stage")
-    factory = DuckDBConnectionFactory(paths.database)
+    factory = DuckDBConnectionFactory(paths.database, coordinated=True)
     migrate(factory, paths.migrations)
     existing = _registered_manifest(paths, research_version)
     if existing is not None:

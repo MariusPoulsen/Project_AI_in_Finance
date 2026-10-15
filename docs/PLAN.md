@@ -233,7 +233,7 @@ Status: **IN PROGRESS**, begun on 2026-10-11 following the user's authorization 
 the bounded Week 4-inspired redesign. The first slice implements typed fixture
 inputs, independent openings, one rebuttal exchange, separate synthesis and
 validation, fail-safe caching and the Python controller. The current architecture
-is in `docs/specs/04_MULTI_AGENT_PIPELINE.md` and DECISIONS section 26.
+is in `docs/specs/04_MULTI_AGENT_PIPELINE.md` and DECISIONS section 28.
 
 Work is isolated on `phase5/agents-controller-foundation`. Keep the live v2
 checkout and its 37,421-event population, source-v3 inputs, quality-v2 FinBERT,
@@ -294,7 +294,7 @@ Status: **IN PROGRESS**, authorized on 2026-10-11 for an isolated, synthetic
 event-level slice on `phase6/shared-simulator`, in parallel with Phase 5 batch
 infrastructure. The next authorized fixture slice adds the capability ladder,
 coverage-aware event reports and immutable manifest verification. See DECISIONS
-sections 28-30 and `docs/BACKTEST_RUNBOOK.md`.
+sections 30-32 and `docs/BACKTEST_RUNBOOK.md`.
 Implementation does not run genuine historical economics, integrate unfinished
 v2 outputs or open 2024-2025 outcomes. Production execution policy remains
 DRAFT; fixture scenarios are not an execution-cost freeze.
@@ -400,6 +400,9 @@ all eighteen bound artifacts and repeats with the same immutable identity.
 - [ ] Complete unit/integration/leakage/regression/app-smoke test suites.
 - [ ] Ensure CI passes on a clean clone without external APIs.
 - [ ] Finalise demo snapshot packaging.
+- [-] Prepare the offline group snapshot and setup/app/prediction/backtest-input commands;
+  tooling and fixture checks are on `collaboration/portable-research-snapshot`.
+  Export and fresh-workspace checks with the real bundle await accepted v2 outputs.
 - [ ] Finalise model card, data dictionary, README and technical runbook.
 - [ ] Document all commands for bootstrap, migrations, data build, model training, agent batch, backtest, demo packaging and Streamlit launch.
 - [ ] Add deployment config for Streamlit Community Cloud or approved equivalent.

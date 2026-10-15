@@ -60,8 +60,8 @@ uv sync --frozen --extra nlp
 uv run --frozen --extra nlp structural-break-research --help
 ```
 
-Configure `SB_SEC_USER_AGENT` and `SB_LLM_API_KEY` in the ignored `.env`, process
-environment or Colab Secrets. Keep credentials out of commands and output.
+Configure `SB_SEC_USER_AGENT` and `SB_LLM_API_KEY` in the ignored `.env` or process
+environment. Keep credentials out of commands and output.
 SEC, Yahoo and the local database require no login. The NLP extra supplies CPU
 PyTorch and Transformers; retain `--extra nlp` for inference. Pinned FinBERT
 assets are already cached on the current Windows host. Use `--download-model`
@@ -72,11 +72,6 @@ retries; paid calls remain disabled. Invalid or unscheduled catalysts are
 UNKNOWN. Flash is reserved for the later full-system agents. Do not change the
 500-event schedule, FinBERT policy, event population or model definitions to
 finish a run sooner.
-
-For Colab, follow [COLAB.md](COLAB.md), run
-`scripts/colab_bootstrap.py --nlp` and use the same research CLI. Keep the active
-virtual environment and database on `/content`; archive the closed workspace
-between sessions. The Windows detached launcher is not a Colab process manager.
 
 ## Reproduce sources in a separate workspace
 
@@ -161,8 +156,32 @@ has not yet been written. This overlap does not promise a whole-job speed gain.
 
 ## Fit and independently verify the completed batch
 
-Wait for successful feature exit and the complete 37,421-event manifest. Run
-training and a separate verification for each horizon in the order 20, 10, 30:
+Wait for successful feature exit and the complete 37,421-event manifest. Under
+the approved DECISIONS section 26 amendment, reconstruct the complete shared
+source batch once before fitting:
+
+```shell
+uv run --frozen --extra nlp structural-break-research verify-source-inputs --registry-version research_registry_0bd415d2a5af1f4891dc1f0d --batch-name development_clockgap_v2 --source-proof-purpose fitting_input --progress-file .acceptance/source_1_progress.json
+```
+
+Use its printed `source_proof_path` and `source_proof_sha256` as `FIT_PROOF` and
+`FIT_PROOF_SHA`. Both are mandatory; a partial build cannot mint a proof. Run
+training and a separate verification for each horizon in the order 20, 10, 30.
+
+For the separately frozen four-core execution profile, add `--event-workers 4`
+to **both** `verify-source-inputs` commands. Four owned processes use independent
+empty private parser caches and one numerical-library thread each. Complete
+business groups stay together for parsing reuse; the coordinator restores the
+original event order and performs the complete final inventory/feature checks.
+Progress reports the aggregate verified count and each worker's PID/count.
+Do not combine event workers with the separate parsing-worker pool. Model
+stages stay sequential to bound memory. Both complete passes, all thirty models
+and native/report checks, and the final-test lock remain unchanged.
+
+Add `--source-proof FIT_PROOF --source-proof-sha256 FIT_PROOF_SHA` to every command
+below. Each stage rehashes the complete bound raw/checkpoint/metadata inventory;
+it does not repeat the same text reconstruction. Omitting the explicit proof
+retains the legacy complete-replay path.
 
 ```shell
 uv run --frozen --extra nlp structural-break-research train-models --registry-version research_registry_0bd415d2a5af1f4891dc1f0d --batch-name development_clockgap_v2 --horizon 20
@@ -175,12 +194,28 @@ uv run --frozen --extra nlp structural-break-research verify-models --model-vers
 
 Each fit prints its exact evaluation version. Capture the genuine exit status,
 stdout/stderr and checksums for all six stages; verification reloads every native
-estimator/calibrator and reconstructs evidence and the paired comparison without
+estimator/calibrator, checks every bound source file and reconstructs the paired comparison without
 API calls. Each horizon contains ten predeclared bundles. Report every variant,
 coverage, denominators, positives and quarter-block uncertainty. The primary is
 calibrated logistic B-both versus matched A at 20 sessions; preserve negative or
 inconclusive results and keep UNKNOWN rows. Reports and native artifacts live
 under `data/research_v2/artifacts/research/EVALUATION_VERSION`.
+
+After all six model stages succeed, perform the second independent complete
+reconstruction. It always starts with an empty private parser cache:
+
+```shell
+uv run --frozen --extra nlp structural-break-research verify-source-inputs --registry-version research_registry_0bd415d2a5af1f4891dc1f0d --batch-name development_clockgap_v2 --source-proof-purpose independent_publication --progress-file .acceptance/source_2_progress.json
+```
+
+Bind both actual source-stage commands/exits/logs in the completed pipeline
+receipt with `verification_strategy: shared-source-two-full-replays-v1`. Its
+`source_stages` list must contain fitting-input and independent-publication
+observations in that order, bracketing the six model stages. Publication requires
+the second proof's printed path and checksum via `--source-proof` and
+`--source-proof-sha256`, and still independently replays all thirty native models.
+Use source-event counts, checksum-file counts, tuning folds and native-model
+counts in the progress files; source-pass estimates exclude later gates.
 
 ## Promote v2 as primary
 

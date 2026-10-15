@@ -9,11 +9,11 @@ on:
       - "AGENTS.md"
       - "LICENSE"
   pull_request:
-    branches: [main, research-v2, phase5/agents-controller-foundation]
+    branches: [main, research-v2]
   workflow_dispatch:
     inputs:
       full_validation:
-        description: "Run complete Linux, Windows and Colab release validation"
+        description: "Run complete Linux and Windows release validation"
         type: boolean
         required: true
         default: true
@@ -27,8 +27,9 @@ concurrency:
   cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
 jobs:
+  # The job id and matrix suffix form the required check `foundation (ubuntu-latest)`.
   foundation:
-    timeout-minutes: 60
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -46,7 +47,32 @@ jobs:
       - run: uv run --frozen --extra agents ruff check .
       - run: uv run --frozen --extra agents ruff format --check .
       - run: uv run --frozen --extra agents mypy
-      - run: uv run --frozen --extra agents pytest
+      # One process per runner CPU. loadfile keeps each file on one worker so its
+      # module-scoped pipeline fixtures are built once; --durations shows slow tests.
+      # One numerical-library thread per worker, as in the production runs; without
+      # this, 4 workers x 4 BLAS/XGBoost threads oversubscribe the 4 runner CPUs.
+      - run: uv run --frozen --extra agents pytest -n auto --dist loadfile --durations=25
+        env:
+          OMP_NUM_THREADS: "1"
+          OPENBLAS_NUM_THREADS: "1"
+          MKL_NUM_THREADS: "1"
+
+  # Synthetic end-to-end CLI acceptance runs beside the unit/integration suite.
+  acceptance:
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.full_validation && '["ubuntu-latest", "windows-latest"]' || '["ubuntu-latest"]') }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.12.20"
+          enable-cache: true
+      - run: uv python install 3.11
+      - run: uv sync --frozen --extra agents
       - name: Verify the bounded offline agent graph
         run: >-
           uv run --frozen --extra agents structural-break-agents --fixture
@@ -59,6 +85,18 @@ jobs:
         run: |
           uv run --frozen --extra agents structural-break-agents batch --fixture --output-dir .acceptance/phase5-batch-ci
           uv run --frozen --extra agents structural-break-agents review-export --bundle .acceptance/phase5-batch-ci/prepared/manifest.json --count 4 --output-dir .acceptance/phase5-review-ci
+      - name: Verify shared event simulator fixture and immutable replay
+        run: |
+          uv run --frozen structural-break-backtest --fixture --output-dir .acceptance/phase6-ci
+          uv run --frozen structural-break-backtest --fixture --output-dir .acceptance/phase6-ci
+      - name: Build the synthetic five-rung comparison and immutable rerun
+        run: |
+          uv run --frozen structural-break-backtest ladder --fixture --output-dir .acceptance/phase6-ladder-ci
+          uv run --frozen structural-break-backtest ladder --fixture --output-dir .acceptance/phase6-ladder-ci
+      - name: Build synthetic sensitivity, uncertainty and portfolio analysis with immutable replay
+        run: |
+          uv run --frozen structural-break-backtest analysis --fixture --output-dir .acceptance/phase6-analysis-ci
+          uv run --frozen structural-break-backtest analysis --fixture --output-dir .acceptance/phase6-analysis-ci
       - name: Verify shared event simulator fixture and immutable replay
         run: |
           uv run --frozen structural-break-backtest --fixture --output-dir .acceptance/phase6-ci
@@ -144,33 +182,21 @@ jobs:
           uv run --frozen structural-break-reference train-model-b
           --workspace-root .acceptance/phase3-ci
 
-  colab-bootstrap:
+  # The optional local FinBERT runtime must still install and import on CPU.
+  nlp-runtime:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.full_validation }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
       - uses: astral-sh/setup-uv@v7
         with:
           version: "0.12.20"
           enable-cache: true
-      - run: >-
-          python scripts/colab_bootstrap.py
-          --nlp
-          --agents
-          --agent-fixture
-          --workspace-root /tmp/colab-foundation
-          --data-fixture
-          --relationship-fixture
-          --ml-fixture
-          --intelligence-fixture
-          --research-fixture
+      - run: uv python install 3.11
+      - run: uv sync --frozen --extra nlp
       - name: Verify optional CPU NLP runtime
         run: >-
           uv run --frozen --extra nlp python -c
           "import torch, transformers; assert torch.version.cuda is None;
           print(torch.__version__, transformers.__version__)"
-      - run: uv run --frozen --extra nlp --extra agents pytest
