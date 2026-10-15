@@ -5,7 +5,9 @@ run two Linux jobs in parallel:
 
 - `foundation (ubuntu-latest)`: locked dependencies, Ruff, formatting, strict
   mypy and the full pytest suite. pytest runs one process per runner CPU
-  (`pytest-xdist`, `-n auto --dist worksteal`) and prints the 25 slowest tests.
+  (`pytest-xdist`, `-n auto --dist loadfile`) and prints the 25 slowest tests.
+  `loadfile` keeps each test file on one worker, so module-scoped synthetic
+  pipeline fixtures are built once instead of once per worker.
 - `acceptance (ubuntu-latest)`: the synthetic data, econometric and Models A/B
   build, replay, verify and reload checks through the CLI.
 

@@ -47,8 +47,9 @@ jobs:
       - run: uv run --frozen ruff check .
       - run: uv run --frozen ruff format --check .
       - run: uv run --frozen mypy
-      # Tests run in one process per runner CPU; --durations keeps slow tests visible.
-      - run: uv run --frozen pytest -n auto --dist worksteal --durations=25
+      # One process per runner CPU. loadfile keeps each file on one worker so its
+      # module-scoped pipeline fixtures are built once; --durations shows slow tests.
+      - run: uv run --frozen pytest -n auto --dist loadfile --durations=25
 
   # Synthetic end-to-end CLI acceptance runs beside the unit/integration suite.
   acceptance:
