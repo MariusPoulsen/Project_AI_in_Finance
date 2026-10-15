@@ -7,7 +7,6 @@ Start with [the project README](../README.md). The active documentation is:
 | [Decisions](DECISIONS.md) | Current authority, scientific invariants and release rules |
 | [Research protocol](RESEARCH_V2_PROTOCOL.md) | Frozen population, targets, models, dates and text processing |
 | [Runbook](RESEARCH_V2_RUNBOOK.md) | Local jobs, detached recovery, evaluation and publication |
-| [Colab](COLAB.md) | Secure notebook setup and the same package workflow |
 | [Delivery status](STATUS.md) | Accepted inputs and remaining release gates |
 | [Plan](PLAN.md) | Implementation stages and future subsystem acceptance |
 | [SEC replay policy](SEC_METADATA_RECAPTURE.md) | Corrected source-v3 clock/provenance contract |

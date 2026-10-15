@@ -60,8 +60,8 @@ uv sync --frozen --extra nlp
 uv run --frozen --extra nlp structural-break-research --help
 ```
 
-Configure `SB_SEC_USER_AGENT` and `SB_LLM_API_KEY` in the ignored `.env`, process
-environment or Colab Secrets. Keep credentials out of commands and output.
+Configure `SB_SEC_USER_AGENT` and `SB_LLM_API_KEY` in the ignored `.env` or process
+environment. Keep credentials out of commands and output.
 SEC, Yahoo and the local database require no login. The NLP extra supplies CPU
 PyTorch and Transformers; retain `--extra nlp` for inference. Pinned FinBERT
 assets are already cached on the current Windows host. Use `--download-model`
@@ -72,11 +72,6 @@ retries; paid calls remain disabled. Invalid or unscheduled catalysts are
 UNKNOWN. Flash is reserved for the later full-system agents. Do not change the
 500-event schedule, FinBERT policy, event population or model definitions to
 finish a run sooner.
-
-For Colab, follow [COLAB.md](COLAB.md), run
-`scripts/colab_bootstrap.py --nlp` and use the same research CLI. Keep the active
-virtual environment and database on `/content`; archive the closed workspace
-between sessions. The Windows detached launcher is not a Colab process manager.
 
 ## Reproduce sources in a separate workspace
 

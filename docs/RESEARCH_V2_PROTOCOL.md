@@ -297,7 +297,7 @@ CI uses deterministic fixtures and no real API or model-weight download.
 Retain the actual decision timing of post-cohort amendments, their FIT-only
 diagnostics and limitations; do not relabel them as pre-label decisions.
 
-Run the same package commands in local Python 3.11 and the Colab bootstrap.
+Run the same package commands in local Python 3.11.
 Report negative or inconclusive comparisons without selecting favorable
 companies, throwing away UNKNOWN observations, or inspecting the final test.
 Current acceptance gates are in [STATUS.md](STATUS.md), operational commands in
