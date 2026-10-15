@@ -42,16 +42,16 @@ jobs:
           version: "0.12.20"
           enable-cache: true
       - run: uv python install 3.11
-      - run: uv sync --frozen
+      - run: uv sync --frozen --extra agents
       - run: uv lock --check
-      - run: uv run --frozen ruff check .
-      - run: uv run --frozen ruff format --check .
-      - run: uv run --frozen mypy
+      - run: uv run --frozen --extra agents ruff check .
+      - run: uv run --frozen --extra agents ruff format --check .
+      - run: uv run --frozen --extra agents mypy
       # One process per runner CPU. loadfile keeps each file on one worker so its
       # module-scoped pipeline fixtures are built once; --durations shows slow tests.
       # One numerical-library thread per worker, as in the production runs; without
       # this, 4 workers x 4 BLAS/XGBoost threads oversubscribe the 4 runner CPUs.
-      - run: uv run --frozen pytest -n auto --dist loadfile --durations=25
+      - run: uv run --frozen --extra agents pytest -n auto --dist loadfile --durations=25
         env:
           OMP_NUM_THREADS: "1"
           OPENBLAS_NUM_THREADS: "1"
@@ -72,7 +72,19 @@ jobs:
           version: "0.12.20"
           enable-cache: true
       - run: uv python install 3.11
-      - run: uv sync --frozen
+      - run: uv sync --frozen --extra agents
+      - name: Verify the bounded offline agent graph
+        run: >-
+          uv run --frozen --extra agents structural-break-agents --fixture
+          --mode mock --output-dir .acceptance/phase5-ci
+      - name: Pause a denominator-preserving mock batch
+        run: >-
+          uv run --frozen --extra agents structural-break-agents batch --fixture
+          --max-events 2 --output-dir .acceptance/phase5-batch-ci
+      - name: Resume the same batch and export blind source review
+        run: |
+          uv run --frozen --extra agents structural-break-agents batch --fixture --output-dir .acceptance/phase5-batch-ci
+          uv run --frozen --extra agents structural-break-agents review-export --bundle .acceptance/phase5-batch-ci/prepared/manifest.json --count 4 --output-dir .acceptance/phase5-review-ci
       - run: uv run --frozen structural-break init-db
       - run: uv run --frozen structural-break storage-smoke
       - run: uv run --frozen structural-break storage-smoke

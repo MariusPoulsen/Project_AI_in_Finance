@@ -463,3 +463,195 @@ acceptance checks into a parallel job. Test content, fixtures and blocked networ
 sockets are unchanged; this is an execution change with no scientific effect.
 Package source under `src/` is untouched, so the computational identity of the
 running v2 generation is unaffected.
+
+## 28. Phase 5 bounded adversarial investigation
+
+On 2026-10-11 the user explicitly authorized updating the multi-agent pipeline
+and Phase 5 plan to the Week 4-inspired design and beginning implementation.
+This amendment follows v2 quantitative cohort construction and precedes the
+genuine Phase 5 agent evaluation. It does not retrospectively change the v2
+scientific freeze or assume expanded Model B improvement.
+
+Reuse accepted quantitative state, calibrated Model B, admissible SEC evidence,
+structured catalysts and FinBERT tone as the analyst inputs. The advocates address
+mean reversion versus persistent pair-relative repricing, rather than a stock's
+bullish versus bearish direction. Produce independent opening cases in parallel,
+then exactly one rebuttal per advocate after both openings. Each rebuttal can see
+both openings and the original inputs, but not the other rebuttal. A distinct
+synthesis/facilitator produces a cited research interpretation and proposed
+LOW/MEDIUM/HIGH/UNKNOWN break risk. A separate semantic Risk/Validation stage
+checks that interpretation before deterministic Python applies the controller.
+There is no LLM-authorized trade, open-ended debate, contemporary historical
+browsing or new external information set.
+
+Use explicitly configured free Gemma for both opening/rebuttal roles and
+Flash-Lite for separate synthesis and semantic-validation roles. This is four
+Gemma and two Flash-Lite calls per complete uncached event before retries, not
+one Flash-Lite call. Pin actual model, prompt, graph, schema and inference-setting
+identities in each run/cache. Changing the model or number of rounds requires a
+new version; do not silently fall back. Respect pacing, timeouts and shared
+attempt budgets including retries; paid API use and hidden SDK retries remain
+disabled. The Phase 5 adapter is distinct from v2's catalyst-only Gemma contract.
+The first provider's counters are invocation-local; they do not reconstruct
+unsaved failed requests across process restarts or reset actual project quotas.
+Preserve failed receipts and disclose that limitation when scheduling a pilot.
+
+Python mechanically checks schemas, cited chunk/issuer identity, exact quotes,
+timestamps and quantitative references. Semantic validation separately checks
+claim support, fact versus inference, contradictions, coverage and break risk.
+Valid quotation is insufficient evidence that its interpretation is true. LLM
+validation cannot override failed mechanical checks or modify stored numerical
+state. Failed or insufficient required evidence yields UNKNOWN/ABSTAIN; explicit
+high-risk or deterministic ineligibility may yield NO TRADE. Controller statuses
+remain exactly CANDIDATE, REVIEW, NO TRADE and ABSTAIN with fixed reason codes.
+Unvalidated fixture thresholds are not frozen research policy.
+
+A source-grounded stored HIGH-materiality catalyst affecting A or B with DIRECT
+relationship relevance cannot be silently downgraded to CANDIDATE by an
+otherwise LOW-risk validator output. Unless semantic validation confirms HIGH
+break risk or the high-materiality one-sided veto, retain REVIEW with fixed
+reason `UNRESOLVED_CATALYST_RISK`. The unconfirmed extraction is not itself an
+automatic NO TRADE rule; confirmed risk and deterministic hard gates govern
+vetoes. This preserves an unresolved warning without equating exact quotation
+with semantic confirmation.
+
+Full-System automatic candidates require ACTIVE at the historical event timestamp,
+the frozen Model B candidate threshold and hard data/risk/liquidity gates.
+Preflight may skip expensive reasoning when deterministic gates already make
+CANDIDATE impossible, but persist the status, eligibility and skip reason for
+every event. Count eligible events after accepted B fitting. Declare any optional
+REVIEW/audit population separately. If quotas require a subset, freeze a
+target-blind investigation schedule and retain matched B/Full-System denominators
+before evaluating those agent outputs. Do not impose the v2 extraction schedule's
+500-event cap on agents or claim a subset result for the whole cohort.
+
+Keep the broad 37,421-event matched A/B forecasting population, UNKNOWN rows,
+SEC source-v3 bytes, quality-v2 FinBERT, frozen 500-event catalyst schedule, model
+definitions and final-test lock unchanged. Prepare implementation on the isolated
+`phase5/agents-controller-foundation` branch. Do not synchronize it into the live
+v2 checkout until full feature/model/replay/CI/publication acceptance; worker exit
+alone is insufficient. This amendment does not start P6/P7 or authorize
+2024–2025 outcome/performance access.
+
+Mocks establish contracts, orchestration, reproducibility and fail-safe controller
+behavior only. Phase 5 completion additionally requires accepted-generation
+integration, a genuine provider pilot and fixed human source-support/category/
+materiality/relevance evaluation on at least 50 historical events, aiming for 100.
+Any development outcome stratification belongs only to evaluation selection;
+agent prompts and production scheduling never receive realized outcomes. Record
+unsupported interpretations, failures, UNKNOWNs and abstentions honestly. No
+agent usefulness or Full-System benefit is established by the fixture slice.
+
+## 29. Phase 5 durable batches and blind source review
+
+On 2026-10-11 the user authorized continuing the independent Phase 5 batch
+infrastructure while the detached v2 feature build runs. This engineering slice
+adds a target-blind frozen schedule, immutable per-event checkpoints, complete
+scheduled/skipped/budget-failed denominators, a prepared mock-input inventory and
+a source-only human annotation workflow. It does not change the v2 population,
+500-event catalyst schedule, model definitions or final-test lock.
+
+Durable attempt accounting supersedes the invocation-only limitation described
+for the first adapter in section 28 when the provider is attached to the journal.
+Reserve each transport attempt before sending it, including retries. Reservations
+are never refunded after a timeout or interrupted process because its actual
+provider outcome may be unknown. Bind immutable total/per-model/per-provider-day
+limits to the same allocation across restarts. Ledger integrity and exclusive
+leases fail closed; an abandoned lease requires explicit stopped-owner attestation,
+the exact token and a preserved recovery receipt. This journal does not measure
+other applications' use of the same provider project or reset provider quotas.
+
+Persist the schedule before inference. If capped, rank historically eligible
+events only by a declared seed and event/pair/time identity, never by outcomes or
+favourable agent results. All input rows retain a deterministic disposition.
+Intentional pauses do not publish a complete manifest. Resume verifies completed
+input/checkpoint/provider/code/policy identities and replays the deterministic
+controller without rerunning the graph or transport. Changed scientific inputs,
+implementation or explicit retry identity create a distinct batch, preserving
+previous failed records and shared allocation accounting.
+
+The prepared-input CLI currently accepts mock manifests only. Files are bounded,
+content addressed and checksum checked lazily; this is not an independently
+verified adapter to accepted native Model B and registered historical SEC assets.
+Source review selects a frozen event-identity sample and omits probabilities,
+suggested catalyst labels and outcomes. Human annotations bind the exact inventory
+and source bytes, preserve incomplete acquisition and cite the claimed affected
+legs. Format/provenance checks do not measure semantic accuracy. Genuine source
+review, advocate/synthesis interpretation evaluation and at least 50 historical
+annotations (aiming for 100) remain completion gates.
+
+## 32. Historical bridges and economic analysis before v2 completion
+
+On 2026-10-11 the user authorized the remaining independent Phase 5/6 work:
+historical artifact adapters, genuine blind source-review preparation, robustness
+and cost analysis, economic uncertainty engineering and secondary portfolio
+accounting. Implement on the isolated Phase 5 and stacked Phase 6 branches. Keep
+the running v2 source, registry, population, feature policies, catalyst schedule,
+model comparison and final-test lock unchanged. These choices follow previously
+observed original development results and precede genuine v2 economic assessment;
+they must not be described as decisions made before all development observations.
+
+Source-only human review may use an explicit registered H20 registry and verified
+SEC source-v3 without a fitted Model B. Freeze a seeded event-identity sample of
+50–100 events before reading its captures. Snapshot only the selected stored raw
+receipts/documents, preserve unavailable captures and replay each packet from
+that frozen copy. Omit targets, model probabilities and suggested catalyst labels.
+Bind source manifests, registry/universe identities and the source recipe. Citation
+offsets address the stored cleaned chunk, not original HTML characters. Human
+annotations and their semantic evaluation remain human work; format/provenance
+validation cannot certify accuracy.
+
+Scored historical agent inputs additionally require the explicit registered
+primary publication and its accepted native/source/hosted-CI evidence. Replay
+the exact primary logistic B-both/H20 model and selected calibrated/raw prediction,
+SEC pack, pinned quality-v2 tone and stored extraction. A declared manifest or
+acceptance flag cannot substitute for publication. Admit only 2022–2023 assessment
+scores; fit/calibration scores from the final fitted bundle are not vintage
+out-of-sample agent inputs. Preserve unavailable lifecycle, liquidity or
+implementation eligibility instead of inventing approval. Nullable eligibility
+produces ABSTAIN with explicit UNKNOWN reason codes; known hard failures still
+produce NO TRADE. Genuine
+provider pilots, the historically eligible schedule and Full-System claims remain
+pending; exporting a source review does not complete them.
+
+The independent Phase 6 analysis bundle is synthetic engineering. Report all
+predeclared turnover scenarios (2.5/5/10/20 bps per entry/exit turnover) crossed
+with annual borrow scenarios (0/3/10 percent), using the same event inventory,
+selection and shared execution engine. Never select a winning scenario or change
+model acceptance using its return. Actual production costs and borrow remain DRAFT.
+Robustness slices cover year, pair, sector, divergence sign, source coverage,
+previous-session VIX/trailing-volatility stress and event type/materiality. Missing
+context is UNKNOWN; bind its event/cutoff and report small populations, pair
+concentration and leave-one-pair/sector-out diagnostics without selecting a
+favorable subset.
+
+The separate fixture economic bootstrap uses 2,000 seeded paired calendar-month
+draws (seed 5557), drawing identical complete-range month indices for every
+strategy and retaining all pairs in a block. Distinguish natural selected
+COMPLETE-only event mean differences, common known allocation-per-raw-candidate
+differences and the both-selected COMPLETE intersection. Explicit WITHHELD means
+zero allocation under that estimand; UNAVAILABLE or selected unknown execution
+does not become a zero return. Retain status/denominator and undefined-draw counts.
+Suppress intervals below 12 contributing populated months for each estimand,
+including support on both sides of natural mean comparisons. These fixture
+intervals establish no inference. The canonical v2 paired-quarter predictive
+bootstrap remains unchanged; the production economic freeze is still pending.
+
+The fixture secondary portfolio starts at NAV 1 and targets 25 percent of current
+NAV gross per accepted entry, clips simultaneous entries equally to available
+gross capacity, reserves entry fees and processes previously triggered exits before
+new allocations. Freeze entry shares, allow one position per pair and report shared
+ticker/sector concentration. The gross limit of one is an entry admission cap;
+passive price drift can breach it and must be disclosed. There is no automatic
+deleveraging, financing/margin or idle-cash-yield model. Chronological open/close
+marks supply NAV, exposure, turnover, costs, borrow, drawdown and close-to-close
+returns. Future COMPLETE status cannot select surviving entries. Missing held
+quotes or unresolved settlement invalidate subsequent NAV and block new allocation;
+do not average event returns into portfolio Sharpe. Actual portfolio policy and
+historical price acceptance remain pending.
+
+Persist the complete analysis inputs, contexts, policies, rows, scenarios and reports
+immutably with code/runtime identities; independently rebuild outputs on verification
+and reject source/runtime drift. These artifacts and mock controller results cannot
+self-attest scientific acceptance, model improvement or agent quality. No change
+authorizes 2024–2025 outcomes or merging unfinished v2 into main.

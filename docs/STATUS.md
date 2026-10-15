@@ -79,3 +79,64 @@ models and Git history remain reference material. Their seven assessment events
 and zero positives cannot establish predictive usefulness. The expanded study's
 Model B improvement is still an objective, not a result. Later agents, the shared
 simulator and final-test evaluation remain separate work under the plan.
+
+## Phase 5 implementation started
+
+2026-10-11: the user authorized the bounded Week 4-inspired multi-agent redesign
+and implementation on isolated branch `phase5/agents-controller-foundation`.
+[Decision 26](DECISIONS.md#26-phase-5-bounded-adversarial-investigation) and the
+[multi-agent specification](specs/04_MULTI_AGENT_PIPELINE.md) now define independent
+mean-reversion/break openings, one rebuttal exchange, separate synthesis and
+semantic validation, and a deterministic categorical-risk controller. Gemma is
+assigned to advocates and Flash-Lite to synthesis and validation.
+
+The first engineering slice is implemented: strict immutable SEC/FinBERT/model
+contracts, parallel bounded LangGraph debate, mechanical grounding checks,
+role-specific Google adapters, immutable caches and deterministic controller.
+All 180 Phase 5 tests pass with sockets blocked, including durable budgets,
+checkpoint resume, lazy prepared inputs and blind review exports. Ruff, formatting,
+lockfile and strict mypy pass. The synthetic CLI runs all six roles and
+replays with zero new calls. The production DRAFT policy produces ABSTAIN with
+zero calls. The Colab bootstrap entry point with `--agents --agent-fixture`
+passes locally on Windows; hosted Linux/Colab verification is separate.
+The first-slice commit `7f59f73` passed the full hosted Linux regression suite
+and fixture workflow in [CI run 38107828059](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/38107828059).
+The expanded batch slice passed full hosted Linux checks on `e93df1c` in
+[CI run 38109150954](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/38109150954).
+Commands are in
+[the agent runbook](PHASE5_RUNBOOK.md). The accepted-generation adapter, genuine
+provider pilot and at least 50 human annotations remain pending; fixtures do not
+establish semantic correctness or predictive usefulness.
+
+The v2 feature snapshot above remains a dated operational record, not a new live
+checkpoint count. Phase 5 work does not mutate its running source or checkpoints,
+change its scientific protocol, replace its full A/B population, merge unfinished
+v2 to `main` or open final outcomes. Synchronization waits for all v2 acceptance
+gates, rather than only worker exit.
+
+The second fixture slice adds frozen target-blind schedules, complete skipped and
+budget-failed records, immutable checkpoint resume without graph/provider replay,
+durable total/model/day attempt reservations and explicit audited lease recovery.
+The four-event CLI pauses and completes with six total mock calls; identical
+replay spends zero. Blind source exports omit scores, extraction suggestions and
+outcomes. Annotation validation checks frozen selection and source provenance,
+while explicitly leaving semantic accuracy and genuine quality acceptance false.
+Prepared inventories are mock-only; accepted Model B/source integration remains
+pending. See [decision 27](DECISIONS.md#27-phase-5-durable-batches-and-blind-source-review).
+
+The historical bridge slice adds offline registered source-v3 adapters and a
+source-only 50–100-case review sample with frozen raw captures and fresh parser
+replay. The scored adapter requires an accepted primary publication and exact
+native logistic B-both/H20 inference; only 2022–2023 assessment scores are admitted.
+Missing execution/liquidity eligibility remains UNKNOWN and produces ABSTAIN,
+while known hard failures retain explicit NO TRADE reasons. The generic mock
+loader cannot accept the distinct genuine-input schema. These adapters are
+implemented; actual accepted v2 input loading still awaits v2 acceptance.
+
+All 218 Phase 5 checks pass with sockets blocked, including 34 historical-module
+checks and two historical CLI refusal checks. Ruff, formatting, strict mypy and
+the lockfile check pass. Fresh hosted checks are required for this expanded commit.
+The real source review requires human annotations and separate interpretation
+evaluation; no genuine provider pilot, semantic quality or model improvement is
+claimed. [Decision 30](DECISIONS.md#30-historical-bridges-and-economic-analysis-before-v2-completion)
+records this engineering slice and its timing.
