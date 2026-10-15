@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import json
+import math
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -73,6 +74,32 @@ def _verify_sources(
         progress=progress,
     )
     return None
+
+
+REPORT_REPLAY_RELATIVE_TOLERANCE = 1e-12
+
+
+def report_values_reproduce(replayed: Any, stored: Any) -> bool:
+    """Match recomputed report values; floats only within last-digit summation noise.
+
+    Native replay recomputes derived metrics on independently loaded frames. BLAS
+    threading and reduction order can move the final binary digits (~1e-17), so
+    exact float equality is environment-dependent. Keys, lengths, counts, labels
+    and nulls must still match exactly.
+    """
+    if isinstance(replayed, dict) and isinstance(stored, dict):
+        return replayed.keys() == stored.keys() and all(
+            report_values_reproduce(replayed[key], stored[key]) for key in replayed
+        )
+    if isinstance(replayed, list) and isinstance(stored, list):
+        return len(replayed) == len(stored) and all(
+            report_values_reproduce(a, b) for a, b in zip(replayed, stored, strict=True)
+        )
+    if isinstance(replayed, float) and isinstance(stored, float):
+        if math.isnan(replayed) or math.isnan(stored):
+            return math.isnan(replayed) and math.isnan(stored)
+        return math.isclose(replayed, stored, rel_tol=REPORT_REPLAY_RELATIVE_TOLERANCE, abs_tol=0.0)
+    return bool(replayed == stored)
 
 
 def _read_named(directory: Path, manifest: dict[str, Any], name: str) -> pd.DataFrame:
@@ -397,14 +424,15 @@ def verify_research_models(
             probabilities[assessment.to_numpy()],
             protocol.candidate_threshold,
         )
-        if expected_metrics != report["models"][family][name]["calibrated_assessment"]:
+        stored_model = report["models"][family][name]
+        if not report_values_reproduce(expected_metrics, stored_model["calibrated_assessment"]):
             raise ValueError("Stored research assessment metrics do not reproduce")
         raw_metrics = research_metrics(
             stored.loc[assessment],
             raw_probabilities[assessment.to_numpy()],
             protocol.candidate_threshold,
         )
-        if raw_metrics != report["models"][family][name]["raw_assessment"]:
+        if not report_values_reproduce(raw_metrics, stored_model["raw_assessment"]):
             raise ValueError("Stored raw research assessment metrics do not reproduce")
         for scale, values in (
             ("raw", raw_probabilities[assessment.to_numpy()]),
@@ -413,7 +441,7 @@ def verify_research_models(
             slices = assessment_slices(
                 stored.loc[assessment], values, protocol, business_groups=business_groups
             )
-            if slices != report["models"][family][name][f"{scale}_assessment_slices"]:
+            if not report_values_reproduce(slices, stored_model[f"{scale}_assessment_slices"]):
                 raise ValueError("Stored research assessment subgroup metrics do not reproduce")
         if name != "A":
             paired = paired_assessment(
@@ -422,7 +450,7 @@ def verify_research_models(
                 probabilities[assessment.to_numpy()],
                 protocol,
             )
-            if paired != report["models"][family][name]["paired_assessment"]:
+            if not report_values_reproduce(paired, stored_model["paired_assessment"]):
                 raise ValueError("Stored paired research comparison does not reproduce")
         if progress is not None:
             progress(
