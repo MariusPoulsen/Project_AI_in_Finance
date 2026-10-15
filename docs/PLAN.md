@@ -290,22 +290,58 @@ complete accepted-generation integration or genuine semantic evaluation.
 
 ## P6 — Backtesting framework, experiment freeze and final evaluation
 
+Status: **IN PROGRESS**, authorized on 2026-10-11 for an isolated, synthetic
+event-level slice on `phase6/shared-simulator`, in parallel with Phase 5 batch
+infrastructure. The next authorized fixture slice adds the capability ladder,
+coverage-aware event reports and immutable manifest verification. See DECISIONS
+sections 30-32 and `docs/BACKTEST_RUNBOOK.md`.
+Implementation does not run genuine historical economics, integrate unfinished
+v2 outputs or open 2024-2025 outcomes. Production execution policy remains
+DRAFT; fixture scenarios are not an execution-cost freeze.
+
 ### Build before final-test unlock
 
-- [ ] Implement one execution engine shared by all five variants.
-- [ ] Implement beta-weighted long/short pair construction.
-- [ ] Implement close-signal / next-open execution convention.
-- [ ] Implement convergence, adverse-stop and timeout exits.
-- [ ] Implement transaction-cost and short-borrow assumptions and sensitivity grids.
-- [ ] Implement event-level MAE/MFE/holding/return metrics.
-- [ ] Implement secondary portfolio simulation and exposure/turnover accounting.
-- [ ] Implement predictive/calibration metrics.
-- [ ] Implement agent/controller metrics.
-- [ ] Implement common-subset and coverage-aware adjacent-rung comparisons.
-- [ ] Implement robustness slices by year, pair, sector, divergence sign, market-stress context, event type/materiality and cost assumptions.
-- [ ] Implement block-bootstrap / pair-concentration uncertainty analyses specified in `docs/specs/05_BACKTESTING_EVALUATION.md`.
-- [ ] Implement experiment manifest and immutable result persistence.
+- [x] Implement the common event execution engine on synthetic inputs.
+- [x] Verify synthetic five-rung selection, with independent A/B filters and Full as a subset of B.
+- [ ] Implement accepted historical input/prediction/controller adapters for all five variants.
+- [x] Implement beta-weighted entry construction with frozen share units until exit.
+- [x] Implement close-signal / next-open execution convention.
+- [x] Implement convergence, adverse-stop and timeout exits.
+- [x] Implement twelve predeclared fixture transaction-cost/borrow scenarios; freeze production assumptions separately.
+- [x] Implement explicit fixture turnover/borrow accounting and 10/20/30-session horizon support; production policy remains DRAFT.
+- [x] Implement event-level MAE/MFE/holding/return metrics, with separate partial excursions for unpriced paths.
+- [x] Implement secondary fixture fixed-share portfolio simulation, cash/NAV/exposure/turnover accounting and missing-valuation refusal.
+- [x] Implement fixture predictive/calibration metrics on the fresh forecasting population.
+- [x] Implement fixture agent/controller metrics with scheduled coverage and explicit veto/deferral distinctions.
+- [x] Implement fixture common-data and coverage-aware adjacent-rung comparisons, separate from selected intersections.
+- [ ] Verify accepted historical predictive, controller and common-data comparison outputs.
+- [x] Implement fixture robustness slices by year, pair, sector, divergence sign, admissible stress context, event type/materiality and cost assumptions, retaining UNKNOWN.
+- [x] Implement fixture paired-month economic bootstrap and leave-one-pair/sector-out diagnostics; intervals require twelve contributing months per estimand.
+- [ ] Verify accepted historical portfolio, robustness/cost and economic uncertainty outputs under frozen production policies.
+- [ ] Implement accepted historical experiment manifest and immutable result persistence.
+- [x] Verify the fixture-only ladder manifest, complete row inventory and fresh deterministic replay.
+- [x] Implement the immutable fixture analysis bundle and independent replay of all eighteen bound artifacts.
 - [ ] Freeze methodology/config/model/prompt/policy/execution assumptions.
+
+The first slice covers the event engine and fixture artifacts. The second
+slice adds synthetic five-rung selection, labeled event reporting, common-data
+versus selected-intersection comparisons and explicit agent coverage. Actual
+historical generation binding remains a separate gate. The third slice adds fixture
+portfolio accounting, sensitivity grids, robustness and economic uncertainty.
+Canonical v2 forecast chronology, logistic B-both primary
+and paired quarter-block reports remain unchanged.
+The previous combined Phase 5/6 slice passed 381 tests with sockets blocked:
+180 Phase 5 and 201 Phase 6 (75 simulator, 57 ladder, 32 reporting and 37
+experiment checks). The earlier simulator slice had 255 combined tests.
+Repository lint/formatting, strict typing and lockfile checks pass. The console
+ladder preserves all 14 synthetic rows, independently verifies its manifest and
+replays with the same immutable identity. These are engineering checks;
+genuine economic acceptance and hosted checks on the expanded branch commit
+remain separate. The analysis adds 95 checks (36 portfolio, 37 robustness/uncertainty,
+11 cost and 11 immutable analysis checks), bringing Phase 6 to 296.
+After integration the current Phase 5/6 slice passes 514 checks with sockets
+blocked (218 Phase 5 and 296 Phase 6). The console analysis independently verifies
+all eighteen bound artifacts and repeats with the same immutable identity.
 
 ### Final-test lock gate
 

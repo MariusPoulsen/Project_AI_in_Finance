@@ -140,3 +140,75 @@ The real source review requires human annotations and separate interpretation
 evaluation; no genuine provider pilot, semantic quality or model improvement is
 claimed. [Decision 30](DECISIONS.md#30-historical-bridges-and-economic-analysis-before-v2-completion)
 records this engineering slice and its timing.
+
+## Phase 6 development simulator started
+
+2026-10-11: the user authorized a shared event-level simulator on isolated
+branch `phase6/shared-simulator`, alongside Phase 5 batch infrastructure.
+[Decision 28](DECISIONS.md#28-phase-6-fixed-share-development-simulator) and
+the [backtesting specification](specs/05_BACKTESTING_EVALUATION.md) align its
+20-session primary horizon, observed close-band convergence, same-side adverse
+stop, exact next-XNYS-open fills and frozen entry share units with the canonical
+research rules. Synthetic cost scenarios apply to actual entry/exit turnover
+and entry short notional; production assumptions remain explicitly DRAFT.
+
+The event simulator is implemented and 75 blocked-socket tests pass, including
+hand-calculated frozen-unit P&L, actual exit turnover, next-open timing,
+10/20/30-session timeouts, incomplete price paths, exact formation usability and
+final-test refusal. This initial Phase 5/6 slice passed 255 tests after branch
+integration. Repository Ruff, formatting, mypy and lockfile checks passed locally.
+The console fixture writes immutable input/config/result artifacts and produces
+the same content identity on replay. The initial simulator commit `7a954f0`
+passed the full hosted Linux regression in
+[CI run 38109378392](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/38109378392).
+Genuine captured market inputs, accepted v2/controller bindings, historical
+five-rung integration/economic metrics, portfolio accounting and economic bootstrap are
+pending. The [runbook](BACKTEST_RUNBOOK.md) gives the synthetic command and
+the production refusal boundary. This work leaves v2 source/checkpoints and
+its forecast protocol unchanged and does not authorize final-test outcomes.
+
+The next authorized Phase 6 slice implements a fixture-only capability ladder and
+coverage-first event reports on the same isolated branch. A/B filters apply
+independently at the shared frozen fixture threshold; Full is B plus a stored
+CANDIDATE. Rejected-event counterfactuals use the common simulator. Common-data
+availability, actual selection intersections and scheduled B investigation
+coverage have separate denominators; missing/failed/ABSTAIN results remain
+visible and only NO TRADE is called a veto. Labels are a separate reporting
+input, not a selection variable or a sign of net return. All 201 Phase 6 tests
+pass with sockets blocked (75 simulator, 57 ladder, 32 reporting and 37
+experiment); the current combined Phase 5/6 suite passes 381 tests. Repository
+Ruff/formatting, full strict mypy and lockfile checks pass. The console ladder
+publishes all 14 synthetic rows; fresh verification returns
+`VERIFIED_SYNTHETIC_REPLAY` and an identical rerun retains the same immutable
+experiment identity. The fixture ladder/reporting commit `292a12f` passed
+[CI run 38120892852](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/38120892852).
+Genuine source/model/controller bindings, human quality, portfolio accounting,
+economic uncertainty and production assumptions
+remain open under [decision 29](DECISIONS.md#29-phase-6-fixture-ladder-and-coverage-reporting).
+
+The third slice implements all twelve predeclared fixture cost/borrow scenarios,
+coverage-preserving robustness and pair/sector concentration diagnostics, seeded
+paired-month economic uncertainty and chronological fixed-share portfolio
+accounting. The immutable analysis bundle binds eleven input/policy/context files
+and seven output reports. Independent verification rebuilds every output and
+rejects changed code/runtime or fabricated reports even if rehashed. The separate
+two-proposal portfolio fixture checks cash, NAV, exposure, fees and borrow; missing
+held quotes leave subsequent NAV unknown. It is not a five-strategy historical
+portfolio assessment. Month intervals require twelve contributing months per
+estimand, so the one-month example publishes no intervals.
+
+All 514 integrated Phase 5/6 checks pass with network sockets blocked: 218 Phase 5
+and 296 Phase 6, including 95 new analysis/cost/portfolio/robustness checks. Ruff,
+formatting, strict typing and lockfile checks pass. The console analysis retains
+fourteen ladder cases, independently verifies all eighteen artifacts and repeats
+with the identical immutable identity. Fresh hosted CI for the expanded commit
+remains required. Genuine historical five-rung execution/portfolio evaluation,
+accepted v2/controller loading and production policy freezes remain pending.
+
+A genuine source-only SEC review sample is available locally on the Phase 5 branch:
+50 frozen target-blind events, 14 COMPLETE / 15 PARTIAL / 21 UNKNOWN source coverage,
+independently reconstructed from its frozen raw copy. Generation identity:
+`bc46ee2902f27c8ae9df06a782ee565493bf78a91a5eb87409462b6ee88d151f`.
+No human annotations are complete; replay proves source provenance, not semantic
+accuracy or predictive success. This does not spend Google API quota or modify
+the live v2 worker. Final 2024–2025 outcomes remain locked under decision 30.

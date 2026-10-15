@@ -85,6 +85,30 @@ jobs:
         run: |
           uv run --frozen --extra agents structural-break-agents batch --fixture --output-dir .acceptance/phase5-batch-ci
           uv run --frozen --extra agents structural-break-agents review-export --bundle .acceptance/phase5-batch-ci/prepared/manifest.json --count 4 --output-dir .acceptance/phase5-review-ci
+      - name: Verify shared event simulator fixture and immutable replay
+        run: |
+          uv run --frozen structural-break-backtest --fixture --output-dir .acceptance/phase6-ci
+          uv run --frozen structural-break-backtest --fixture --output-dir .acceptance/phase6-ci
+      - name: Build the synthetic five-rung comparison and immutable rerun
+        run: |
+          uv run --frozen structural-break-backtest ladder --fixture --output-dir .acceptance/phase6-ladder-ci
+          uv run --frozen structural-break-backtest ladder --fixture --output-dir .acceptance/phase6-ladder-ci
+      - name: Build synthetic sensitivity, uncertainty and portfolio analysis with immutable replay
+        run: |
+          uv run --frozen structural-break-backtest analysis --fixture --output-dir .acceptance/phase6-analysis-ci
+          uv run --frozen structural-break-backtest analysis --fixture --output-dir .acceptance/phase6-analysis-ci
+      - name: Verify shared event simulator fixture and immutable replay
+        run: |
+          uv run --frozen structural-break-backtest --fixture --output-dir .acceptance/phase6-ci
+          uv run --frozen structural-break-backtest --fixture --output-dir .acceptance/phase6-ci
+      - name: Build the synthetic five-rung comparison and immutable rerun
+        run: |
+          uv run --frozen structural-break-backtest ladder --fixture --output-dir .acceptance/phase6-ladder-ci
+          uv run --frozen structural-break-backtest ladder --fixture --output-dir .acceptance/phase6-ladder-ci
+      - name: Build synthetic sensitivity, uncertainty and portfolio analysis with immutable replay
+        run: |
+          uv run --frozen structural-break-backtest analysis --fixture --output-dir .acceptance/phase6-analysis-ci
+          uv run --frozen structural-break-backtest analysis --fixture --output-dir .acceptance/phase6-analysis-ci
       - run: uv run --frozen structural-break init-db
       - run: uv run --frozen structural-break storage-smoke
       - run: uv run --frozen structural-break storage-smoke
