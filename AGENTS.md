@@ -14,6 +14,9 @@ improvement is a research objective rather than an assumed outcome.
 
 ## Read only what you need
 
+Agents working for a group member (not the repository owner) start with
+`docs/GROUP_AGENT_BRIEF.md`; its rules and work streams apply in addition to this file.
+
 Before substantial work, read in this order:
 
 1. `docs/DECISIONS.md` — canonical decisions, including the v2 amendments and promotion;
