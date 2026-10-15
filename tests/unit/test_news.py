@@ -163,7 +163,14 @@ def test_news_requires_valid_source_lineage(gal_records, lineage, field, value):
 
 @pytest.mark.parametrize(
     "body",
-    [b"plain JSON", gzip.compress(b"[]\n"), gzip.compress(b"{oops}\n"), gzip.compress(b"\xff\n")],
+    [
+        b"plain JSON",
+        # mtime=0 keeps gzip bytes, and so test ids, identical across xdist workers.
+        gzip.compress(b"[]\n", mtime=0),
+        gzip.compress(b"{oops}\n", mtime=0),
+        gzip.compress(b"\xff\n", mtime=0),
+    ],
+    ids=["plain-json", "gzip-list", "gzip-invalid-json", "gzip-invalid-utf8"],
 )
 def test_malformed_raw_gal_is_rejected(body):
     with pytest.raises(ValueError):
