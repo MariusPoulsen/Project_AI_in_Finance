@@ -6,8 +6,11 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pytest
+from scipy.optimize import OptimizeResult
+from scipy.special import expit
 
 from structural_break.config.loader import load_config
+from structural_break.ml import model as model_module
 from structural_break.ml.model import (
     ModelTrainingError,
     fit_sigmoid,
@@ -213,6 +216,77 @@ def test_monotone_validation_calibrator_never_reverses_ranking():
     inverted = fit_sigmoid([-3, -2, -1, 1, 2, 3], [1, 1, 1, 0, 0, 0])
     assert inverted.slope == 0
     assert inverted.status == "CONSTANT_NONNEGATIVE_BOUNDARY"
+
+
+def test_calibration_recovers_numerical_line_search_failure():
+    # A valid small cohort that triggered L-BFGS-B ABNORMAL near its optimum.
+    margins = np.array(
+        [
+            1.3662928563822934,
+            0.00041519948561555275,
+            1.5656156301225528,
+            -2.1898849058212932,
+            0.4961426561036594,
+            -1.7054053766579802,
+            1.2898847435582634,
+            0.9378574881652909,
+            -1.1253648136874657,
+            -1.1048313236700025,
+            -0.43104564557377284,
+            1.2392216608511453,
+            1.0540235497939967,
+            -1.8505549635574328,
+            -0.8404047295550777,
+            -0.20129265643840322,
+            0.7289147636294162,
+            1.4550894045993974,
+            1.7808076287073786,
+            -0.03734168201248557,
+            -1.2435908629035637,
+        ]
+    )
+    labels = np.array([1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0])
+    calibrator = fit_sigmoid(margins, labels)
+    assert calibrator.status == "FITTED"
+    assert calibrator.slope >= 0
+    targets = np.where(labels, 13 / 14, 1 / 11)
+    logits = calibrator.slope * margins + calibrator.intercept
+    assert float(np.sum(np.logaddexp(0, logits) - targets * logits)) == pytest.approx(
+        14.274974675330675, abs=1e-9
+    )
+    residual = expit(logits) - targets
+    assert abs(residual.mean()) < 1e-6
+    assert abs(residual @ ((margins - margins.mean()) / margins.std()) / len(labels)) < 1e-6
+
+
+def test_calibration_retries_failed_optimizer_without_changing_objective(monkeypatch):
+    original = model_module.minimize
+    methods = []
+
+    def fail_first(objective, initial, **options):
+        methods.append(options["method"])
+        if len(methods) == 1:
+            return OptimizeResult(success=False, x=initial, message="ABNORMAL")
+        return original(objective, initial, **options)
+
+    monkeypatch.setattr(model_module, "minimize", fail_first)
+    margins, labels = [-3, -2, -1, 1, 2, 3], [0, 0, 1, 0, 1, 1]
+    recovered = fit_sigmoid(margins, labels)
+    monkeypatch.setattr(model_module, "minimize", original)
+    reference = fit_sigmoid(margins, labels)
+    np.testing.assert_allclose(recovered.predict(margins), reference.predict(margins), atol=1e-7)
+    assert methods == ["L-BFGS-B", "SLSQP"]
+
+
+@pytest.mark.parametrize("reported_success", [False, True])
+def test_calibration_rejects_failed_or_nonstationary_optimizer(monkeypatch, reported_success):
+    def failed(objective, initial, **options):
+        # This feasible fit improves the constant loss but is not stationary.
+        return OptimizeResult(success=reported_success, x=np.array([0.2, 0.0]), message="bad fit")
+
+    monkeypatch.setattr(model_module, "minimize", failed)
+    with pytest.raises(ModelTrainingError, match="Sigmoid calibration failed"):
+        fit_sigmoid([-3, -2, -1, 1, 2, 3], [0, 0, 1, 0, 1, 1])
 
 
 @pytest.mark.parametrize(

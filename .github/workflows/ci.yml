@@ -1,18 +1,39 @@
-name: Foundation, data, econometrics and Model A
+name: Foundation, data, econometrics and Models A/B research
 
 on:
   push:
+    branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "README.md"
+      - "AGENTS.md"
+      - "LICENSE"
   pull_request:
+    branches: [main, research-v2]
+  workflow_dispatch:
+    inputs:
+      full_validation:
+        description: "Run complete Linux and Windows release validation"
+        type: boolean
+        required: true
+        default: true
 
 permissions:
   contents: read
 
+concurrency:
+  group: >-
+    ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || 'routine' }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
+
 jobs:
+  # The job id and matrix suffix form the required check `foundation (ubuntu-latest)`.
   foundation:
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.full_validation && '["ubuntu-latest", "windows-latest"]' || '["ubuntu-latest"]') }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -21,79 +42,161 @@ jobs:
           version: "0.12.20"
           enable-cache: true
       - run: uv python install 3.11
-      - run: uv sync --frozen
+      - run: uv sync --frozen --extra agents
       - run: uv lock --check
-      - run: uv run --frozen ruff check .
-      - run: uv run --frozen ruff format --check .
-      - run: uv run --frozen mypy
-      - run: uv run --frozen pytest
+      - run: uv run --frozen --extra agents ruff check .
+      - run: uv run --frozen --extra agents ruff format --check .
+      - run: uv run --frozen --extra agents mypy
+      # One process per runner CPU. loadfile keeps each file on one worker so its
+      # module-scoped pipeline fixtures are built once; --durations shows slow tests.
+      # One numerical-library thread per worker, as in the production runs; without
+      # this, 4 workers x 4 BLAS/XGBoost threads oversubscribe the 4 runner CPUs.
+      - run: uv run --frozen --extra agents pytest -n auto --dist loadfile --durations=25
+        env:
+          OMP_NUM_THREADS: "1"
+          OPENBLAS_NUM_THREADS: "1"
+          MKL_NUM_THREADS: "1"
+
+  # Synthetic end-to-end CLI acceptance runs beside the unit/integration suite.
+  acceptance:
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.full_validation && '["ubuntu-latest", "windows-latest"]' || '["ubuntu-latest"]') }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.12.20"
+          enable-cache: true
+      - run: uv python install 3.11
+      - run: uv sync --frozen --extra agents
+      - name: Verify the bounded offline agent graph
+        run: >-
+          uv run --frozen --extra agents structural-break-agents --fixture
+          --mode mock --output-dir .acceptance/phase5-ci
+      - name: Pause a denominator-preserving mock batch
+        run: >-
+          uv run --frozen --extra agents structural-break-agents batch --fixture
+          --max-events 2 --output-dir .acceptance/phase5-batch-ci
+      - name: Resume the same batch and export blind source review
+        run: |
+          uv run --frozen --extra agents structural-break-agents batch --fixture --output-dir .acceptance/phase5-batch-ci
+          uv run --frozen --extra agents structural-break-agents review-export --bundle .acceptance/phase5-batch-ci/prepared/manifest.json --count 4 --output-dir .acceptance/phase5-review-ci
+      - name: Verify shared event simulator fixture and immutable replay
+        run: |
+          uv run --frozen structural-break-backtest --fixture --output-dir .acceptance/phase6-ci
+          uv run --frozen structural-break-backtest --fixture --output-dir .acceptance/phase6-ci
+      - name: Build the synthetic five-rung comparison and immutable rerun
+        run: |
+          uv run --frozen structural-break-backtest ladder --fixture --output-dir .acceptance/phase6-ladder-ci
+          uv run --frozen structural-break-backtest ladder --fixture --output-dir .acceptance/phase6-ladder-ci
+      - name: Build synthetic sensitivity, uncertainty and portfolio analysis with immutable replay
+        run: |
+          uv run --frozen structural-break-backtest analysis --fixture --output-dir .acceptance/phase6-analysis-ci
+          uv run --frozen structural-break-backtest analysis --fixture --output-dir .acceptance/phase6-analysis-ci
+      - name: Verify shared event simulator fixture and immutable replay
+        run: |
+          uv run --frozen structural-break-backtest --fixture --output-dir .acceptance/phase6-ci
+          uv run --frozen structural-break-backtest --fixture --output-dir .acceptance/phase6-ci
+      - name: Build the synthetic five-rung comparison and immutable rerun
+        run: |
+          uv run --frozen structural-break-backtest ladder --fixture --output-dir .acceptance/phase6-ladder-ci
+          uv run --frozen structural-break-backtest ladder --fixture --output-dir .acceptance/phase6-ladder-ci
+      - name: Build synthetic sensitivity, uncertainty and portfolio analysis with immutable replay
+        run: |
+          uv run --frozen structural-break-backtest analysis --fixture --output-dir .acceptance/phase6-analysis-ci
+          uv run --frozen structural-break-backtest analysis --fixture --output-dir .acceptance/phase6-analysis-ci
       - run: uv run --frozen structural-break init-db
       - run: uv run --frozen structural-break storage-smoke
       - run: uv run --frozen structural-break storage-smoke
       - name: Ingest complete synthetic data snapshot
         run: >-
-          uv run --frozen structural-break ingest-data
+          uv run --frozen structural-break-reference ingest-data
           --fixture tests/fixtures/phase1
           --workspace-root .acceptance/phase1-ci
           --snapshot-id phase1-ci-fixture
       - name: Rebuild curated data from immutable raw sources offline
         run: >-
-          uv run --frozen structural-break replay-data
+          uv run --frozen structural-break-reference replay-data
           --replay-from phase1-ci-fixture
           --snapshot-id phase1-ci-replay
           --workspace-root .acceptance/phase1-ci
       - name: Verify active data snapshot
         run: >-
-          uv run --frozen structural-break verify-data
+          uv run --frozen structural-break-reference verify-data
           --workspace-root .acceptance/phase1-ci
       - name: Build complete synthetic econometric history
         run: >-
-          uv run --frozen structural-break build-relationships
+          uv run --frozen structural-break-reference build-relationships
           --relationship-fixture
           --workspace-root .acceptance/phase2-ci
           --relationship-version fixture-p2-ci
       - name: Verify immutable econometric history
         run: >-
-          uv run --frozen structural-break verify-relationships
+          uv run --frozen structural-break-reference verify-relationships
           --workspace-root .acceptance/phase2-ci
       - name: Repeat the same build identity without replacing outputs
         run: >-
-          uv run --frozen structural-break build-relationships
+          uv run --frozen structural-break-reference build-relationships
           --relationship-fixture
           --workspace-root .acceptance/phase2-ci
           --relationship-version fixture-p2-ci
 
       - name: Build complete point-in-time synthetic events
         run: >-
-          uv run --frozen structural-break build-events --ml-fixture
+          uv run --frozen structural-break-reference build-events --ml-fixture
           --workspace-root .acceptance/phase3-ci
       - name: Train, calibrate and explain Model A offline
         run: >-
-          uv run --frozen structural-break train-model-a
+          uv run --frozen structural-break-reference train-model-a
           --workspace-root .acceptance/phase3-ci
       - name: Verify native model artifacts and reload inference
         run: >-
-          uv run --frozen structural-break verify-model-a
+          uv run --frozen structural-break-reference verify-model-a
           --workspace-root .acceptance/phase3-ci
       - name: Repeat model identity without replacing outputs
         run: >-
-          uv run --frozen structural-break train-model-a
+          uv run --frozen structural-break-reference train-model-a
+          --workspace-root .acceptance/phase3-ci
+      - name: Build point-in-time SEC evidence and mocked extractions
+        run: >-
+          uv run --frozen structural-break-reference build-intelligence --intelligence-fixture
+          --workspace-root .acceptance/phase3-ci
+      - name: Verify SEC evidence and parent lineage
+        run: >-
+          uv run --frozen structural-break-reference verify-intelligence
+          --workspace-root .acceptance/phase3-ci
+      - name: Train Model B from stored event features
+        run: >-
+          uv run --frozen structural-break-reference train-model-b
+          --workspace-root .acceptance/phase3-ci
+      - name: Reload and verify Model B
+        run: >-
+          uv run --frozen structural-break-reference verify-model-b
+          --workspace-root .acceptance/phase3-ci
+      - name: Repeat Model B without extraction calls
+        run: >-
+          uv run --frozen structural-break-reference train-model-b
           --workspace-root .acceptance/phase3-ci
 
-  colab-bootstrap:
+  # The optional local FinBERT runtime must still install and import on CPU.
+  nlp-runtime:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.full_validation }}
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
       - uses: astral-sh/setup-uv@v7
         with:
           version: "0.12.20"
-      - run: >-
-          python scripts/colab_bootstrap.py
-          --workspace-root /tmp/colab-foundation
-          --data-fixture
-          --relationship-fixture
-          --ml-fixture
-      - run: uv run --frozen pytest
+          enable-cache: true
+      - run: uv python install 3.11
+      - run: uv sync --frozen --extra nlp
+      - name: Verify optional CPU NLP runtime
+        run: >-
+          uv run --frozen --extra nlp python -c
+          "import torch, transformers; assert torch.version.cuda is None;
+          print(torch.__version__, transformers.__version__)"

@@ -75,13 +75,24 @@ def _freeze_frames(
 
 
 def _archive_unregistered(paths: ProjectPaths, destination: Path, run_id: str) -> None:
+    archive = destination.with_name(destination.name + ".unregistered-" + run_id)
+    root = paths.artifacts.resolve()
+    if destination.is_symlink() or not all(
+        path.resolve().is_relative_to(root) for path in (destination, archive)
+    ):
+        raise ValueError("Unregistered output archive escapes the artifact workspace")
+    relative = destination.resolve().relative_to(paths.workspace_root.resolve()).as_posix()
+    # Model A and B share one physical model namespace. The generic registry
+    # protects every published kind, even if its directory has gone missing.
+    with DuckDBConnectionFactory(paths.database).connect() as connection:
+        registered = connection.execute(
+            "SELECT path FROM ops.artifact_registry "
+            "WHERE lower(path)=lower(?) OR starts_with(lower(path),lower(?)) LIMIT 1",
+            [relative, relative + "/"],
+        ).fetchone()
+    if registered is not None:
+        raise ValueError("Cannot archive a destination containing a registered artifact")
     if destination.exists():
-        archive = destination.with_name(destination.name + ".unregistered-" + run_id)
-        root = paths.artifacts.resolve()
-        if destination.is_symlink() or not all(
-            path.resolve().is_relative_to(root) for path in (destination, archive)
-        ):
-            raise ValueError("Unregistered output archive escapes the artifact workspace")
         destination.rename(archive)
 
 

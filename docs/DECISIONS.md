@@ -1,107 +1,66 @@
-# AI Structural-Break Detector — Canonical Project Decisions
+# Canonical project decisions
 
-**Status:** implementation baseline  
-**Date:** 2026-09-29  
-**Purpose:** resolve cross-document ambiguity before coding begins. These decisions are intentionally concise; detailed methods remain in the agent-facing Markdown specifications under `docs/specs/`.
+Research v2 is the authorized primary development workflow. The base scientific
+freeze is dated 2026-10-06; later amendments retain their original timing and
+provenance. This document states current rules. Past implementation records are
+in [the decision history](archive/DECISIONS_HISTORY.md); archived rollout status
+is not current status. See [STATUS.md](STATUS.md) for delivery gates.
 
 ## 1. Authority and precedence
 
-When implementation sources disagree, use this order:
-
-1. Explicit user instruction in the current task.
-2. `docs/DECISIONS.md`.
-3. The most specific component specification in `docs/specs/` for the subsystem being implemented.
-4. `docs/specs/06_SOFTWARE_ENGINEERING_ARCHITECTURE.md` for repository/runtime/integration questions.
-5. `docs/specs/00_PROJECT_OVERVIEW.md` for broad product context.
-
-Do not silently merge contradictory specifications. If a material conflict remains after applying the precedence above, stop at the affected gate and surface it.
-
-The PDFs in `docs/PDFs/` are archival/human-readable copies and are not part of the normal coding-agent read path.
+Apply explicit user instructions, then this document, then the most specific
+[component specification](specs/README.md). Use the software architecture
+specification for integration and the project overview for broad product scope.
+Resolve material conflicts before crossing the affected gate. The
+[frozen v2 protocol](RESEARCH_V2_PROTOCOL.md) supplies the complete research rules.
+Archived decisions govern reproduction of their original generations; they do
+not replace the active v2 protocol. PDFs in `docs/archive/pdfs/` are source archives.
 
 ## 2. Product boundary
 
-The deliverable is an **AI-assisted statistical-arbitrage research and decision-support application** for US-listed large-cap equity pairs.
-
-The application:
-
-- detects statistically unusual pair divergences;
-- estimates a calibrated probability of successful mean reversion;
-- extracts point-in-time company-event evidence;
-- uses adversarial LLM agents to investigate structural-break risk;
-- applies a deterministic controller returning `CANDIDATE`, `REVIEW`, `NO TRADE`, or `ABSTAIN`;
-- simulates trades only for historical research and backtesting.
-
-It does **not** place live orders or claim deployable alpha.
+Build an AI-assisted statistical-arbitrage research and decision-support system
+for US-listed equity pairs: divergence detection, calibrated reversion forecasts,
+point-in-time SEC evidence, and eventually source-grounded adversarial agents,
+a deterministic controller and a shared historical simulator. Controller statuses
+are `CANDIDATE`, `REVIEW`, `NO TRADE` and `ABSTAIN`. No live order execution or
+claim of deployable alpha is authorized.
 
 ## 3. Canonical repository/runtime architecture
 
-- Python 3.11.
-- `uv` + `pyproject.toml` + committed `uv.lock`.
-- Modular Python monolith.
-- Streamlit frontend calling a thin Python service layer directly.
-- No HTTP API boundary is required for the course build.
-- Domain logic lives under `src/structural_break/`; Streamlit pages contain presentation logic only.
-- Canonical analytics are written by explicit batch jobs. The app is read-oriented.
-- DuckDB + Parquet are the local analytical storage stack.
+Use Python 3.11, `uv`, the committed lockfile, a modular Python monolith and
+DuckDB/Parquet. Streamlit calls typed services directly; domain logic belongs in
+`src/structural_break/`. Canonical analytical writes are explicit batch jobs.
+Ordinary app browsing is read-only. No HTTP service boundary is needed.
 
 ## 4. Canonical physical storage layout
 
-This is the single physical layout to implement across the repository.
+V2 uses the separate `data/research_v2` workspace. Relative to that workspace:
 
 ```text
-data/
-  reference/
-    security_master.parquet
-    pair_universe.parquet
-    sector_etf_map.parquet
-  raw/
-    yahoo/prices/{ticker}/{snapshot_id}.parquet
-    yahoo/actions/{ticker}/{snapshot_id}.parquet
-    cboe/vix/{snapshot_id}_VIX_History.csv
-    sec/company_tickers/{snapshot_id}.json
-    sec/submissions/{cik}/{snapshot_id}.json
-    sec/filings/{cik}/{accession}/...
-    gdelt/{YYYY}/{MM}/{DD}/...                 # optional current/demo enrichment
-  curated/
-    market/prices_daily.parquet
-    market/corporate_actions.parquet
-    market/market_context_daily.parquet
-    evidence/sec_filing_index.parquet
-    evidence/document_chunks.parquet
-    evidence/news_index.parquet               # optional
-  analytics/
-    structural_break.duckdb
-  snapshots/
-    {data_snapshot_id}/manifest.json
-  cache/
-    dashboard/
-    agent_runs/
-  demo/
-    structural_break_demo.duckdb
-    prices_demo.parquet
-    document_chunks_demo.parquet
-    demo_manifest.json
-
-artifacts/
-  models/
-  calibrators/
-  shap/
-  manifests/
-  reports/
-  mlflow/
-```
-
-Canonical DuckDB path:
-
-```text
+universe/source_v1/                 frozen issuers, pairs and classifications
+market/source_v1/                   frozen development market capture
+sec_metadata/source_v3/              corrected SEC clock envelope and provenance
+intelligence/{batch}/               inputs, schedule, event checkpoints, features
+cache/data/raw/sec/filings/          exact SEC response bodies and sidecars
+artifacts/research/{version}/        registered quantitative/model generations
 data/analytics/structural_break.duckdb
 ```
 
-Cleaned external-source datasets live in `data/curated/`. Derived research entities such as relationship snapshots, divergence events, feature rows, predictions, extractions, decisions, backtest trades, and experiment metrics are canonical DuckDB analytics objects unless a component specification explicitly requires an auxiliary immutable artifact.
+Pinned FinBERT assets live at project `data/cache/huggingface`. The original
+workspace and its [storage contracts](archive/DECISIONS_HISTORY.md#4-canonical-physical-storage-layout)
+remain available for explicit reference reproduction. Use exact generation
+identities, never directory modification time. Immutable source/curated files,
+DuckDB registrations and auxiliary artifacts retain checksums and lineage.
+Generated workspaces, model weights, acceptance logs and credentials are ignored
+by Git. `SB_WORKSPACE_ROOT` selects another workspace; an explicit CLI path wins.
 
 ## 5. Fixed working pair universe
 
-The first implementation uses **28 manually curated pairs**. Pair orientation is fixed **exactly as listed**: the first ticker is `leg_a` / the dependent `y` series in the Engle-Granger first-stage regression; the second ticker is `leg_b` / `x`. Do not run both orientations and choose the better result.
+The expanded v2 roster is frozen at 250 surviving domestic issuers, 40 business
+groups and 736 candidate pairs. Retain the original 28 orientations below:
+first leg is dependent `y`, second is `x`. Added pairs use frozen security identity
+order. Do not test both orientations or select membership using outcomes.
+Current business classifications and survivor conditioning are disclosed limits.
 
 | # | leg_a | leg_b | Economic peer group |
 |---:|---|---|---|
@@ -134,318 +93,763 @@ The first implementation uses **28 manually curated pairs**. Pair orientation is
 | 27 | GM | F | US auto manufacturers |
 | 28 | DUK | SO | Regulated electric utilities |
 
-`pair_id` should preserve this listed orientation, e.g. `KO__PEP`. Pair inclusion does not assert cointegration; rolling econometric validity determines whether a pair is `ACTIVE` at a particular date.
+`pair_id` preserves orientation, for example `KO__PEP`. Pair membership does not
+assert cointegration. Preserve the security approval provenance in
+`configs/securities.yaml` and the original universe for reference reproduction.
 
 ## 6. Core time/data scope
 
-- Daily end-of-day system; no intraday modelling.
-- Raw market-data bootstrap begins 2014-01-01 to provide formation-window warm-up.
-- Frozen research history runs through 2025-12-31.
-- Training events: 2016-2021 (extended at P3 under the user's delegated decision).
-- Validation events: 2022-2023.
-- Final test events: 2024-2025.
-- Minimum embargo at partition boundaries: 10 trading days, matching the maximum label horizon.
-- 2014-2015 supply formation warm-up; the first usable frozen relationship is
-  effective 2016-01-04. These warm-up years cannot independently provide events
-  under the unchanged 504-session model. The former 2018 training start was a
-  baseline design choice, not a source-data limitation.
+Use daily end-of-day development prices from 2004 through 2023. A 504-common-session
+formation warm-up permits eligible fitting events from 2006. Fit through 2019,
+tune on forward 2018/2019 folds, calibrate on 2020–2021 and assess on 2022–2023.
+Purge complete target windows at every partition/fold boundary. Keep the original
+2014-source/2016–2021-fitting contracts when reproducing the reference study.
+2024–2025 outcomes remain locked.
+
+The user's equity-close information set uses the exact previous XNYS session's
+VIX observation. Never include same-day VIX or carry an older observation across
+a missing prior session. Preserve its source date and conservative 16:16
+America/New_York observation proxy; historical CSV publication times remain unknown.
+Static sector proxies and retrospective Yahoo adjustments are disclosed source
+limits, not vintage classifications or adjustment feeds. Optional GDELT remains
+current/demo enrichment with unknown publication time and no headline historical use.
 
 ## 7. Econometric relationship engine
 
-- Two-variable Engle-Granger workflow on log adjusted closing prices.
-- Formation window: 504 common trading days.
-- Relationship re-estimation: monthly.
-- Daily spread/z-score/event-state updates use the latest frozen monthly relationship snapshot.
-- Initial cointegration eligibility threshold: 5%, frozen through training/validation governance.
-- Pair lifecycle: `ACTIVE`, `WATCH`, `RETIRED` as specified in `docs/specs/02_ECONOMETRIC_RELATIONSHIP_ENGINE.md`.
-- Event trigger working default: fresh `|z| >= 2.0` crossing.
-- Success zone: `|z| <= 0.5`.
-- Adverse boundary: same-side `|z| >= 3.0`.
-- Maximum label horizon: 10 trading days.
+Use monthly two-variable Engle–Granger estimation on log adjusted closes and
+504 common sessions, with entry coefficients frozen for each episode. Daily
+state uses the latest admissible snapshot. Retain the pointwise 5% diagnostic and
+`ACTIVE`, `WATCH`, `RETIRED` lifecycle. Fresh divergence is |z|≥2; success is
+|z|≤0.5 before the same-side adverse boundary of 3. The primary horizon is 20
+sessions, with predeclared 10/30 sensitivities and full-window embargo.
+
+The prediction population is deduplicated estimable fresh crossings, including
+UNKNOWN evidence. Report ACTIVE separately as exploratory; do not silently
+rebuild an ACTIVE-only cohort or interpret ineligible relationships as trades.
+No familywise-controlled screening across 736 pairs is claimed.
+
+Monthly estimation uses the latest 504 valid common observations on/before actual
+XNYS month-end, recording the true formation endpoint without filling. ADF uses
+a constant/AIC; KPSS a constant/automatic lags. I(1) compatibility requires level
+ADF non-rejection, level KPSS rejection and first-difference ADF rejection at 5%;
+first-difference KPSS remains a cross-check. Differences omit missing-session
+transitions, and half-life AR(1) uses exact one-session pairs. Level tests retain
+common-observation order; available-observation difference lags remain a disclosed
+limitation. Do not add unspecified liquidity/stability or positive-beta gates.
+
+The first invalid monthly attempt is WATCH and two consecutive invalid attempts
+are RETIRED; statistical retirement can recover. Manual/lifecycle retirement needs
+a declared date. Record every attempt. An unusable newest fit yields no daily
+state in its next interval; never silently carry an older fit forward. Parameters
+become effective at the next XNYS open. At refits, compare previous/current closes
+under the same newly effective parameters; divergence, sign and velocity checks
+never bridge missing sessions. A zero touch alone is not two sign crossings.
+
+Events freeze entry alpha, beta, spread mean and standard deviation for their
+entire target path. Later statistical WATCH/RETIRED does not censor a path;
+declared lifecycle termination or unusable required prices does. Convergence needs
+an observed close in the success band; jumping across equilibrium is insufficient.
+Maintain one open episode per pair, then require an inside-entry-band reset before
+a fresh outward crossing. Predictors use the current frozen fit and exact trailing
+sessions without filling. Required undefined predictors make an event ineligible;
+declared optional undefined predictors remain explicit NaNs.
 
 ## 8. Supervised ML definitions
 
-### Model A — quantitative ML
+A uses point-in-time quantitative features only. B adds the predeclared SEC
+metadata, local FinBERT tone and guarded Gemma catalyst blocks. Compare identical
+observations, targets, quantitative columns, chronology, tuning budgets, fitted
+transformations and calibration policies. Raw text is not a classifier feature.
 
-XGBoost using only point-in-time structured quantitative features:
+Calibrated logistic B-both versus A at 20 sessions is primary. Preserve logistic
+C=0.01,0.1,1 selection by mean forward Brier loss, the identical-budget XGBoost
+comparisons, all metadata/tone/catalyst/both ablations and 10/30 sensitivities:
+ten bundles per horizon, thirty overall. Fit preprocessing within each fitting
+period and calibrate independently. Retain the 0.65 reporting threshold and fitted
+prevalence baseline. Report all comparisons; assessment never selects a winner.
 
-- spread state;
-- relationship quality;
-- observable market context (SPY/sector returns, VIX, realised volatility);
-- security state;
-- liquidity / implementation features.
-
-Model A is calibrated on validation data and explained with SHAP.
-
-### Model B — quantitative ML + structured event features
-
-Model B uses the same architecture and training protocol as Model A, plus structured event features extracted from admissible historical SEC evidence, including fields such as:
-
-- event type;
-- affected leg;
-- direction;
-- materiality;
-- relationship relevance;
-- one-sided-event indicator;
-- source/evidence count;
-- document recency;
-- extraction confidence.
-
-The underlying raw text is **not** fed directly into XGBoost.
-
-### Full System
-
-The Full System uses:
-
-1. Model B calibrated `P(revert)`;
-2. the same admissible underlying SEC evidence and structured extraction;
-3. the multi-agent structural-break investigation;
-4. deterministic decision/risk gates.
-
-This preserves the five-stage headline evaluation ladder:
-
-```text
-Baseline 0 -> Baseline 1 -> Model A -> Model B -> Full System
-```
+Calibration retains the smoothed monotone Platt objective with nonnegative slope;
+one-class/constant-score fits explicitly store a constant mapping. A numerical
+SLSQP retry may solve the same objective after L-BFGS-B failure, but must be finite,
+feasible, at least as good as the constant baseline and independently stationary
+under per-observation unit-variance KKT checks. Solver failure never substitutes
+an empirical prior for an identifiable two-class fit. Tree SHAP explains raw
+XGBoost margins, not calibrated probability contributions or causal effects.
 
 ## 9. Historical event-evidence policy
 
-For **headline historical Model B and Full-System evaluation**, SEC EDGAR is the canonical text source.
+SEC EDGAR is the canonical historical text source. Use exact issuer continuity,
+raw source provenance, official SGML clocks and the conservative
+`sec-json-clock-envelope-v3` admission bound. Missing/ambiguous coverage stays
+UNKNOWN; filing dates cannot replace acceptance timestamps. Recent 8-K and latest
+admissible 10-Q/10-K selection remain deterministic under the frozen evidence
+policy. Optional contemporary news is not headline historical evidence. Historical
+agents never browse the contemporary web. See [the source replay policy](SEC_METADATA_RECAPTURE.md).
 
-- Use SEC acceptance timestamps as the point-in-time availability rule.
-- Recent 8-K filings and the latest admissible 10-Q/10-K provide the core evidence set according to the Data Architecture and Multi-Agent specifications.
-- Historical/current news may be stored as optional enrichment, but it must not affect headline historical Model B or Full-System results unless a later explicit decision changes this policy after timestamp/coverage validation.
-- Historical agent runs never browse the contemporary web.
+The full evidence policy selects recent 8-K/8-K/A over 30 calendar days and the
+latest admissible periodic 10-Q/10-K within 180 days, with a 400-day extension and
+admissible amendments. Filter issuer/type/availability before lexical ranking.
+Keep the frozen eight-chunk-per-leg and 32,000-character source-pack bounds;
+the smaller catalyst pack is separately bounded. PDF-only exhibits remain
+unsupported and a bounded pack is not exhaustive issuer knowledge.
 
-## 10. Event extraction is shared by Model B and the agents
+## 10. Shared extraction and agent evidence
 
-The point-in-time evidence pipeline branches after structured catalyst extraction:
+Admissible SEC text supplies structured catalyst extraction. B receives its compact
+tabular representation; later agents receive the same underlying source chunks
+and extraction plus B's quantitative state. LLMs do not overwrite stored
+quantitative values or directly set controller status.
 
-```text
-admissible SEC evidence
-        -> structured catalyst extraction
-             -> Model B event-feature block -> Model B P(revert)
-             -> source chunks + structured extraction -> AI agents
-```
+`NONE` needs complete bounded selected-source coverage and a valid absence
+extraction; it means no supported catalyst in that evidence set, not proof that
+the issuer had no event. Missing, rejected, unavailable or budget-unprocessed
+processing is `UNKNOWN`. Self-reported extraction confidence is uncalibrated
+certainty, not measured semantic correctness or reversion probability. Direction,
+materiality and relevance still require independent human semantic evaluation.
 
-The agents therefore reason over richer source text while Model B receives a compact tabular representation of the same admissible event information.
+## 11. Provider and text-model decisions
 
-## 11. LLM provider decision
+Keep provider/model configuration explicit and credentials in ignored environment
+files or deployment secrets. V2 uses free Gemma `gemma-4-26b-a4b-it` with schema,
+issuer, timestamp, category-cue and exact-quote grounding, bounded pacing/retries,
+quota-stop and no paid API. Flash is reserved for later reasoning agents. Tests
+use deterministic mocks and blocked sockets, with no credentials or weights.
 
-The code must remain provider-agnostic through the configured LLM abstraction layer.
+Pin ProsusAI/finbert revision `4556d13015211d73dccd3fdd39d39232506f3e43`
+and asset hashes. Tone is not a catalyst or reversion probability. Use the
+separately versioned `sec-sentence-quality-wordpiece-v2` exact-line guard, first
+64 eligible windows per chunk, full raw-token denominators and explicit excluded,
+truncated and unscored coverage. Preserve the legacy domain default and caches.
+Modern text models on earlier filings are a disclosed retrospective assumption.
 
-- Do not hardcode a vendor or model in domain logic.
-- Provider/model aliases belong in `configs/agents.yaml`.
-- Credentials belong in `.env` / deployment secrets only.
-- The likely initial credential is a Google/Gemma-family-compatible API key, but the exact provider/model is **not frozen yet**.
-- The system must support deterministic mocked agent outputs for tests and demo fallback so development is not blocked by API availability.
+## 12. Evaluation and future simulation
 
-## 12. Backtesting/evaluation ladder
+Report raw/calibrated Brier and log loss, discrimination, calibration, threshold
+coverage, event/positive/pair/issuer denominators, balanced losses and descriptive
+subgroups. Pair B−A losses using 2,000 seeded calendar-quarter block resamples;
+only eight assessment blocks exist. Keep undefined one-class metrics null and
+report negative or inconclusive results. Forecast gains do not prove profitability.
 
-Headline variants:
+The future simulation ladder remains Baseline 0 → Baseline 1 → A → B → Full System,
+with one execution/cost engine and capability-specific filtering. The broader v2
+forecasting population does not rewrite this trading ladder. Economic, predictive
+and agent-control claims remain separate.
 
-1. **Baseline 0:** fresh divergence threshold crossings in the curated pair universe, regardless of current relationship validity where an estimable spread exists.
-2. **Baseline 1:** Baseline 0 plus current econometric eligibility / `ACTIVE` status.
-3. **Model A:** Baseline 1 plus frozen calibrated Model A probability threshold.
-4. **Model B:** Baseline 1 plus frozen calibrated Model B probability threshold.
-5. **Full System:** Model B plus event intelligence, multi-agent investigation, and deterministic controller; only `CANDIDATE` is simulated as accepted.
-
-All variants use the same execution/cost simulator. Predictive metrics, event-selection metrics, agent-specific metrics, and economic metrics are reported separately.
+Baseline 1 admits ACTIVE relationships; A/B add their frozen calibrated probability
+thresholds. The Full System accepts only `CANDIDATE` for simulation. All rungs
+share execution/cost assumptions apart from the capability-specific filter.
 
 ## 13. Final-test governance
 
-The 2024-2025 final test is a one-time headline evaluation.
-
-Before opening it, freeze at minimum:
-
-- pair universe and orientation;
-- label policy;
-- feature schemas for Model A and Model B;
-- model hyperparameters;
-- calibration method;
-- probability thresholds;
-- evidence policy;
-- agent prompts/schemas;
-- decision-controller policy;
-- backtest execution and cost assumptions;
-- code/data/config versions.
-
-The coding agent may build the final-test pipeline and generate final-test feature rows, but it must not inspect or optimise against headline 2024-2025 outcome/performance metrics until the project is explicitly unlocked for the final run.
+Only explicit user authorization unlocks headline 2024–2025 outcome/performance
+metrics after freezing universe/orientation, labels, features, estimators,
+calibration, thresholds, evidence, prompts, controller, execution/cost assumptions
+and code/data/config identities. Development acceptance, cleanup and main promotion
+are not final-test authorization. Never retune after observing final results.
 
 ## 14. Deliverable ownership
 
-The coding agents are responsible for the complete implemented system: data ingestion, storage, econometrics, event construction, ML, NLP/event intelligence, multi-agent logic, decision control, backtesting/evaluation, tests, Streamlit application, deployment/demo packaging, technical README/runbook, and generated model/data documentation.
+Coding agents implement and verify the system and technical run documentation.
+The user owns the academic report and presentation/video. Do not draft those
+without an explicit request.
 
-The user will prepare the final academic written report and presentation/video separately.
+## 15–19. Original reference implementation
 
-## 15. Phase 0 environment and storage implementation
+Original environment, ingestion, econometric, event/Model A and SEC/Model B
+implementation decisions remain in the [decision history](archive/DECISIONS_HISTORY.md).
+Use [reference runbooks](archive/README.md#original-experiment) and their recorded
+source/config versions. Do not overwrite or reinterpret their immutable artifacts.
 
-- Google Colab is supported as a host for the same Python 3.11 package commands.
-  `scripts/colab_bootstrap.py` uses uv to create the project environment independently
-  of Colab's notebook kernel. No Jupyter packages are required by this project.
-- The existing `Ai_in_Finance` Python 3.12 environment is independent and unchanged.
-- Foundation dependencies install by default. The specified later-phase research,
-  agent and app stacks are declared as locked optional extras. No later-phase
-  implementation or model results are implied by installing these dependencies.
-- Hatch's exact editable mode plus the explicit `editables` dependency avoids
-  Python 3.11's locale-dependent `.pth` decoding in non-ASCII Windows paths.
-- Storage paths are relative to an explicit workspace root (repository by default).
-  `--workspace-root` takes precedence over `SB_WORKSPACE_ROOT`; changing deployment
-  paths does not alter the normalized research configuration hash.
-- Active files use a local filesystem supporting atomic replace/hard links. Colab
-  uses `/content`; completed workspaces can be archived to Drive. Concurrent batch
-  writers are outside the supported execution model.
-- Phase 0 migrations create the four logical schemas, migration ledger and ops
-  tables. Domain tables/views arrive with their owning phase and validated contracts;
-  no empty downstream models or fake research outputs are introduced in Phase 0.
-- SQL checksums normalize CRLF/LF only. An applied migration cannot otherwise change,
-  disappear, or be reordered. New migration batches apply in one transaction.
-- Source documents and versioned artifacts are immutable. Identical writes are
-  idempotent; changed content under an existing identity is rejected. Replacing a
-  curated Parquet file requires an explicit `replace=True` batch operation.
-- Run records contain normalized settings and code/config/data identities; successful
-  artifact/dataset registration and run completion share a transaction. Failed runs
-  publish no registry entries. Unregistered files from interrupted jobs can be retried.
-- Policy probability/break-risk thresholds and transaction/borrow assumptions remain
-  explicitly unset draft values until their owning phases select and freeze them.
-  P0 does not invent scientific defaults or unlock the final test.
-- The archival PDF directory is currently named `docs/PDF's/`; prose references to
-  `docs/PDFs/` refer to those same human-readable archives. The Markdown index lists
-  `04_MULTI_AGENT_PIPELINE.md`, which was absent at P0 start. Recover/approve that
-  specification before its owning implementation phase; P0 does not reconstruct it.
+## 20. Delegated research v2 redesign
 
-## 16. Phase 1 source and information-set decisions
+The user delegated redesign on 2026-10-06 to improve B over matched A. The
+base protocol froze before constructing added labels. The exact-line FinBERT
+amendment was decided after quantitative cohorts/counts existed but before
+model assessment, using only nineteen earliest FIT source inputs and no outcomes,
+scores or calibration/assessment/final-test text. Keep that timing disclosure and
+its narrow-sample limitations. Full scientific terms and amendment diagnostics
+remain in [the protocol](RESEARCH_V2_PROTOCOL.md); past receipts and rollout
+chronology are archived. No predictive gain is established by engineering checks.
 
-- The user explicitly selected previous-session VIX for an equity-close signal
-  cutoff on 2026-10-03. Join the exact prior XNYS session; do not include same-day
-  VIX or carry forward an older missing observation. Preserve its source date and
-  conservative 16:16 America/New_York observation proxy. Historical CSV publication
-  times remain unknown.
-- `configs/securities.yaml` implements the already approved fixed universe using
-  static project sector/sub-industry proxies. This is not a vintage GICS database.
-  WMT/TGT use XLP and V/MA use XLF throughout. Current exchange metadata and changes
-  are audit fields; unspecified listing lifecycle dates remain null/UNKNOWN.
-- Yahoo unadjusted OHLCV, adjusted close, dividends and splits are captured with
-  explicit `auto_adjust=False`, `actions=True`, `repair=False`, daily interval and
-  regular-session data. Retrospective vendor adjustments are a disclosed prototype
-  limitation rather than a claim of historical adjustment-vintage availability.
-- Frozen dataset/source identities and hashes govern reproduction. Replay preserves
-  source retrieval metadata and requires matching research configuration plus a
-  successfully registered, verified raw inventory. New captures use new identities.
-- P1 adds source-backed `ref`/`market` views and ops ingestion/QA/active-snapshot
-  tables through migration 003. The four canonical database schemas remain unchanged.
-  Reader views point to immutable files; publication and registry completion share
-  one transaction, with rollback of canonical latest copies on failure.
-- Optional GDELT Article List timestamps have mixed/ambiguous provenance. Its
-  adapter is constrained to current/demo use; publication time remains unknown,
-  point-in-time eligibility is false and headline historical usage stays disabled.
+The 500-event `year-business-group-balanced-gemma-pilot-v1` schedule is target blind
+and separate from full metadata/FinBERT processing. Unscheduled catalysts stay
+UNKNOWN. Preserve selected IDs, year/group coverage and the 1,000-call upper bound
+per invocation, including retry allowance. Restarts do not reconstruct a durable
+counter of unsaved failed calls. A partial `--max-events` run is not the full study.
 
-## 17. Phase 2 estimation and publication details
+## 21. Promote completed research v2 as the primary version
 
-- Monthly estimation uses the latest 504 valid common observations on/before the
-  actual XNYS month-end. A missing estimation-day close does not create an extra
-  eligibility rule; the actual formation endpoint is recorded. No filling occurs.
-- ADF uses a constant and AIC; KPSS uses a constant and automatic lag selection.
-  At the fixed 5% diagnostic level, I(1) compatibility requires non-rejection of
-  level ADF, rejection of level KPSS and rejection of first-difference ADF.
-  First-difference KPSS is stored as a cross-check, without an additional gate.
-- Formation first differences omit missing-session transitions; half-life AR(1)
-  uses only exact one-session lag/current pairs. Level/cointegration tests retain
-  common-observation order, and difference-test lag dynamics use the retained
-  available-observation order. Missing-transition diagnostics make this limitation
-  explicit; it does not introduce a consecutive-history eligibility requirement.
-- Engle–Granger uses the fixed A-on-B orientation and its MacKinnon outputs.
-  Stability, beta drift, half-life and source zero-volume warnings remain exposed
-  diagnostics. No unspecified liquidity/stability thresholds are introduced.
-- The first invalid monthly attempt is WATCH, two consecutive invalid attempts
-  are RETIRED. Statistical retirement can recover on a valid month. Permanent
-  manual/lifecycle retirement requires a declared date; undated terminal flags
-  are rejected to prevent retroactive historical eligibility changes.
-- Every monthly attempt is an audit row. If the newest attempt has no usable fit,
-  the next interval has no daily state; an older fit is not silently carried forward.
-  Unexpected statistical errors fail the batch with pair/date context.
-- Parameters become effective at the next XNYS open and remain frozen. At a refit
-  boundary the previous and current close are compared under the same newly
-  effective parameters. Fresh divergence/sign/velocity checks do not bridge missing
-  sessions, and an exact zero touch alone is not counted as two sign crossings.
-- P2 persists raw threshold crossings for any estimable spread (Baseline 0) and
-  ACTIVE eligibility (Baseline 1). Episode deduplication, forward labels and trade
-  outcomes belong to P3/P6. The final-test outcome lock remains closed.
-- Canonical analytics are physical DuckDB tables with core SQL fields and complete
-  JSON payloads, plus immutable full Parquet artifacts. Version/active-pointer/run
-  publication is transactional. DuckDB does not support cross-schema foreign keys;
-  same-schema relationship keys are enforced in SQL and publication owns the
-  ops/analytics linkage within the transaction.
-- Generation identity includes input/config/range, normalized installed Python
-  source hashes and numerical library versions. Explicit version names cannot
-  conceal changed computation. Scientific row IDs exclude run IDs/creation times;
-  the version scopes generations. Failed unregistered files are archived for audit
-  before retry; registered artifacts are verified and never overwritten.
-- P2's added config defaults change the global normalized config hash. Frozen P1
-  curated files remain usable directly; older raw captures require their recorded
-  P1 code/config checkout for replay. This preserves the original source freeze.
+The user authorized making completed v2 the default on GitHub `main`. Complete
+the full feature generation, all three predeclared model evaluations, fresh native
+replay of thirty bundles and required source/CI/app gates first. Publish readiness
+with `structural-break promote-primary --pipeline-receipt PATH --ci-gate CI_PATH`
+bound to genuine completed six-stage evidence and exact hosted-CI bytes. Publish
+immutable `manifest.json`, `verification_receipt.json` and `hosted_ci_gate.json`;
+the read-only app admits only checked publications. Publication does not merge
+GitHub automatically, prove B superiority or unlock final outcomes.
 
-## 18. Phase 3 earlier history and Model A protocol
+Retain original Git history, source/config contracts and artifacts for reference
+reproduction; its app remains `app/reference_streamlit_app.py`.
 
-- The user delegated the earlier-history choice on 2026-10-03. Prices cover
-  2014–2025, but a 504-session formation window uses 2014–2015. Extend supervised
-  training from the original 2018–2021 to **2016–2021**, when valid signals first
-  exist. Keep validation 2022–2023 and the locked final test 2024–2025 unchanged.
-  This choice preceded inspection of the additional labels or model scores.
-- Preserve the three forward evaluation years 2019, 2020 and 2021; their fitting
-  histories begin in 2016. Purge any full 10-XNYS-session label window that reaches
-  the evaluation year or another partition. Early convergence does not waive the
-  full-window requirement. Embargo counts are sessions, not event rows.
-- An event freezes alpha, beta, spread mean and standard deviation at entry for
-  its full target path. A later statistical WATCH/RETIRED state does not censor
-  that path; declared lifecycle termination or unusable required prices does.
-  Success is an observed close within |z| <= 0.5, adverse failure when entry-sign
-  times z >= 3,
-  otherwise failure at ten sessions. A sign-changing jump across equilibrium
-  without an observed close in the success band is not convergence.
-- Maintain one open episode per pair, then require an inside-entry-band reset
-  before a fresh outward crossing. The same causal, session-by-session registry
-  applies to development and final features. Final episode gating may use prices
-  already observed at that session; final labels, resolution metadata, excursions,
-  censor reasons and outcome metrics remain absent/NULL. No final outcomes are
-  supplied to fitting or threshold decisions.
-- Compute rolling spread predictors under the event's current frozen fit, so
-  monthly coefficient changes do not introduce artificial velocity. Use exact
-  trailing sessions and no gap filling. Undefined half-life, beta drift and time
-  since an observed equilibrium are explicit optional NaNs; other undefined
-  required predictors make the event ineligible. Each feature family records
-  source availability and its cutoff; previous-session VIX remains mandatory.
-- Model A and the logistic benchmark use the identical 36 quantitative columns.
-  Identity and outcome fields remain metadata. Fit logistic imputation/scaling
-  only within each fitting period; XGBoost retains permitted missing values.
-  Search 30 seeded XGBoost configurations in the specified parameter ranges.
-  Report undefined one-class/empty folds. Select by mean defined ROC AUC, then
-  mean defined PR AUC, then lower Brier; all-undefined ranking falls back to Brier.
-  Do not conceal unusable folds.
-- Fit a monotone Platt sigmoid on all 2022–2023 eligible validation events,
-  as specified. Smoothed targets and a nonnegative slope prevent inverted or
-  separation-driven mappings. One-class/constant-score fits save an explicitly
-  constant mapping. Calibrated validation metrics are **calibration-fit descriptive**;
-  they are not an untouched assessment of probability generalisation.
-- Freeze the specified **0.65** candidate probability threshold. The small
-  validation sample does not justify optimising precision or adding an arbitrary
-  minimum-coverage gate. Report the specified threshold grid descriptively, with
-  counts/undefined metrics and uncertainty. This policy is predeclared, not
-  empirically optimal. No positive-beta trading gate is added in P3.
-- Tree SHAP explains raw XGBoost margins and verifies additive reconstruction.
-  Calibrated probabilities have a separate mapping; SHAP is not presented as a
-  calibrated-probability contribution or a causal explanation.
-- Batch jobs publish immutable event/model artifacts and physical DuckDB core
-  tables plus full JSON payloads. Registration, active pointers and run completion
-  share a transaction. Verify manifests, every file and upstream version/checksum
-  before reading. Frozen P2 outputs are reused when only downstream ML settings
-  change; new ML source/config identities create new event/model versions.
-- MLflow uses a local SQLite tracking database and local artifact directory,
-  without an HTTP service. DuckDB remains the canonical analytical database.
-  Research/app dependencies now install by default; the matching extra names are
-  retained as compatible aliases. The lock constrains compatible Numba releases
-  for the declared Python 3.11/NumPy stack.
-- The P3 Streamlit shell browses Scanner and Pair Detail using read-only services,
-  published scores and stored SHAP. It neither trains nor writes analytical rows.
-  Historical probability replays display their fitting/evaluation role and the
-  final outcome lock caps UI dates at 2023. P5 controller/trading status is absent.
+## 22. Source-only parsing amendment before model assessment
+
+This engineering amendment preceded actual expanded A/B assessment. Preserve
+all source, evidence, feature, cohort, label and schedule values. Use at most 128
+parsed inventories in RAM plus private operation-local spill. Every independent
+verifier starts empty and reconstructs each distinct verified raw inventory itself;
+it must not trust a builder-generated parser cache. All raw-hash/SGML/cutoff and
+coverage checks remain mandatory. Benchmarks establish narrow replay behavior,
+not a measured whole-job speedup; their receipts remain in the decision history.
+
+## 23. Detached, audited intelligence recovery
+
+On 2026-10-10 the user authorized a detached feature build without ongoing chat
+polling. Preserve registry `research_registry_0bd415d2a5af1f4891dc1f0d`, all
+37,421 events, SEC `source_v3`, quality-v2 FinBERT, pinned assets, the frozen
+500-event catalyst schedule, A/B definitions and the final-test lock.
+
+Preserve the stopped `development_primary_v2` attempt and its 2,290 checkpoints.
+Its baseline receipt SHA is
+`b5c29ff2b0a9580fa2ab3c0a6ff7c5ed635c3ba2fb7f72bc3a19265ef1c26bbb`.
+The parser repair collapses only verified exact primary/EX-99 logical-document
+aliases, retaining original chunk IDs and every raw response/sidecar. Conflicting
+issuer/time/URL/body/role/path claims still fail; no evidence budget changes.
+
+Use distinct immutable batch `development_detached_v2`. Its explicit audit binds
+the baseline, all checkpoint bytes, inputs differing only by builder code hash,
+event identities, schedule, source/SGML clocks and validated stored extraction/tone
+features. Copy bytes unchanged. Recheck the externally bound audit SHA, source/
+parent files at startup and each checkpoint on load. Only that audited prefix may
+skip repeated HTML/stored-tone replay. The audited builder writes a complete
+manifest with independent verification explicitly pending and defers duplicate
+final raw replay. Model fitting, native verification and publication still perform
+unchanged fresh raw replay of every event; this audit is resumability evidence only.
+
+Launch through `scripts/start_research_intelligence.ps1`, with file-backed logs,
+atomic progress, a service-parent worker and durable exit status. Use
+`scripts/check_research_intelligence.ps1` for manual status. The launcher does not
+fit models, publish, retry failed jobs, unlock the final test or merge `main`.
+Keep the live checkout frozen until its worker exits. Parallel repository cleanup
+is prepared in an isolated checkout and is integrated only after the active job.
+
+## 24. Bounded source prefetch and interrupted-connection recovery
+
+On 2026-10-10 the user clarified that parallelism should accelerate the full
+37,421-event feature computation. The preceding detached attempt exited 1 at
+4,727 completed checkpoints with `RemoteDisconnected`; the exact failing request
+was not recorded. Preserve its original bytes, logs and terminal receipts. Its
+baseline is `.acceptance/detached_v2_failed_attempt_20261010T051843Z_6a54dac86d30/receipt.json`,
+SHA-256 `0a23c5445e4c35353117087b870920406c85fdbb432c17cfa1c8ed94d524242c`.
+
+The engineering design overlaps the next chronological event's SEC acquisition
+and parsing with the current event's extraction and local tone scoring. Permit
+only one outstanding source future, with one producer owning its HTTP pacing and
+operation-local parser cache. The coordinator alone performs Gemma/FinBERT calls,
+tone/extraction-cache writes, checkpoint publication, progress and canonical final
+assembly. Share one CPU model; do not multiply model processes or provider budgets.
+Inference batch size, window selection, pinned assets, evidence policy, population,
+source-v3 clock envelope, catalyst schedule, A/B definitions and final lock stay fixed.
+The opt-in `--source-prefetch 1` is operational and recorded in the launch plan.
+
+Disconnected/incomplete public-source transfers use the existing bounded HTTP
+attempt/backoff policy. Discard partial bodies; permanent HTTP errors and rejected
+redirects remain hard failures. This adds no Gemma retries or model fallbacks.
+Prepare and test changes in isolation, audit all retained checkpoints against the
+frozen stopped-attempt baseline, and use new immutable batch `development_prefetch_v2`.
+The audit permits only the engineering builder-code hash difference in scientific
+inputs. Independent verification remains fresh raw replay. Do not claim a measured
+whole-job speedup from synthetic concurrency tests or a cache-only replay benchmark.
+
+## 25. Explicitly empty official acceptance clocks
+
+On 2026-10-10 the source-prefetch attempt exited 1 after 6,835 checkpoints.
+The user authorized continuation. Source-only diagnosis identified NOC accession
+`0000950134-09-000321`, whose official submission has one top-level
+`<ACCEPTANCE-DATETIME>` field containing only whitespace. Its raw response SHA-256
+is `1ef7c17b421958602c140526c8d35183d10d619df40e6f02ec9fdd75c53718c4`.
+This amendment follows quantitative cohort construction and counts, but precedes
+expanded Model B fitting and A/B assessment. Diagnosis reads cached source and
+event identities, without outcomes, model scores or final-test data.
+
+Treat only a unique, genuinely empty top-level official acceptance field as
+unavailable source text. Retain the selected accession, all response bytes and
+sidecars, selected-filing denominators and every event. Exclude that accession's
+primary/exhibit text before parsing, extraction or tone inference; mark its
+affected leg's coverage gap explicitly. Other admissible sources can supply partial
+evidence. Incomplete coverage cannot establish `NONE` or confirmed one-sided
+absence. Never infer acceptance from filing/header/document dates, backfill an
+older filing or neutral tone, drop an event, or relax the source-v3 clock envelope.
+Frozen metadata-only features continue using the unchanged source-v3 JSON bounds.
+
+Nonempty malformed values, duplicate acceptance markers and contradictory valid
+clocks remain hard failures. The existing absent-marker policy is unchanged and
+does not assert an exact verified SGML clock. Builder, checkpoint audit and fresh
+independent replay apply the same empty-clock exclusion. The audit must reject a
+saved checkpoint that uses excluded text or fails to disclose its coverage gap;
+it cannot bless a changed feature value merely because old bytes were preserved.
+
+Preserve the failed `development_prefetch_v2` source, logs and 6,835 checkpoints.
+Freeze and test the repair, bind a new failed-attempt baseline and audit all retained
+checkpoints before the distinct immutable `development_clockgap_v2` generation.
+The registry, 37,421-event population, SEC source-v3 bytes, evidence budgets,
+quality-v2 FinBERT, pinned assets, 500-event schedule, matched A/B definitions and
+2024–2025 outcome lock remain fixed. Main promotion and independent raw/native
+verification remain pending.
+
+## 26. Two complete independent source reconstructions for matched horizons
+
+On 2026-10-14, before expanded assessment results were available, the user
+explicitly approved [the shared-source verification amendment](VERIFICATION_EFFICIENCY_PROPOSAL.md).
+This supersedes section 23's requirement to repeat the identical complete text
+reconstruction at every model fitting, native verification and publication step.
+
+Run one genuinely complete, fresh 37,421-event raw-source reconstruction before
+fitting, and a second independent complete reconstruction after all models finish
+and before publication. Both must start with an empty private parser cache and
+reproduce every evidence pack, stored text feature, source-clock/cutoff claim,
+source inventory, coverage denominator and target-blind schedule. Neither can
+trust builder parsing outputs or mint a receipt from sampling/checksums alone.
+
+Bind the actual source commands, exits/logs, immutable proof bytes, registry,
+features, complete checkpoint/raw inventories, verifier code/runtime and proof
+purpose. Recheck every bound file checksum before each fitting/native stage.
+Reject changed inputs, stale runtime/code, partial populations, substituted
+receipts or use of a fitting proof as the final independent reconstruction.
+Preserve all thirty fits and native/report/calibration/paired checks at the same
+1e-12 prediction tolerance. Publication requires both genuine source passes,
+all six actual model stages, current hosted CI and the real read-only app gate.
+
+The dataset, source-v3 bytes, quality-v2 policy, provider schedule/budget, A/B
+definitions, cohort matching, chronology, tuning, calibration, uncertainty and
+final-test lock remain unchanged. Preserve the old run and all prior artifacts.
+Prepare and test changes in isolation; replace the old frozen run only after
+the new source passes its engineering and Linux/Windows/Colab CI gates.
+
+Twelve complete reconstructions become two: ten expensive reconstructions are
+removed, not ten scientific checks. This is an 83% reduction in reconstruction
+count, not a claimed 83% whole-job runtime improvement. Hashing/fitting and
+independent publication still require actual acceptance before main promotion.
+
+### Four-core source verification execution
+
+On 2026-10-15 the user explicitly authorized restarting the verification run and
+using all four physical CPU cores to meet a 2026-10-16 midday deadline. This is an
+execution change, with both complete source passes and all scientific gates intact.
+An optional four-process verifier partitions events by the frozen business group,
+balances target-free event counts, and restores the original canonical event order
+before the unchanged complete source-inventory and feature-frame comparisons.
+Each process starts its own empty private parser cache, retains at most sixteen
+hot frames and uses one native-library thread. No builder cache is shared or used
+as independent evidence. Only the coordinator can complete the full-population
+comparison and source proof; a worker result or a benchmark sample cannot mint it.
+Worker count is bound in proof bytes, runtime/command/launch receipts and progress.
+The serial path remains reproducible. Changed verifier code needs its own source
+freeze and genuine complete Linux/Windows/Colab CI before production cutover.
+
+## 27. Colab support retired; parallel CI
+
+On 2026-10-15, before the v2 assessment was published, the user retired Google
+Colab as a supported platform: no group member uses it. `scripts/colab_bootstrap.py`,
+`docs/COLAB.md` and the `colab-bootstrap` CI job are removed. Supported platforms
+are local Windows and Linux with Python 3.11 and `uv`. Full release validation is
+now `foundation` and `acceptance` on Linux and Windows plus the `nlp-runtime`
+CPU PyTorch/Transformers install check; earlier references to Linux/Windows/Colab
+CI gates are read as this set. Release evidence recorded with the earlier
+`colab-bootstrap` job stays valid for its revisions. Archived documents keep
+their historical Colab references.
+
+CI runs pytest with one process per runner CPU and moves the synthetic CLI
+acceptance checks into a parallel job. Test content, fixtures and blocked network
+sockets are unchanged; this is an execution change with no scientific effect.
+Package source under `src/` is untouched, so the computational identity of the
+running v2 generation is unaffected.
+
+## 28. Phase 5 bounded adversarial investigation
+
+On 2026-10-11 the user explicitly authorized updating the multi-agent pipeline
+and Phase 5 plan to the Week 4-inspired design and beginning implementation.
+This amendment follows v2 quantitative cohort construction and precedes the
+genuine Phase 5 agent evaluation. It does not retrospectively change the v2
+scientific freeze or assume expanded Model B improvement.
+
+Reuse accepted quantitative state, calibrated Model B, admissible SEC evidence,
+structured catalysts and FinBERT tone as the analyst inputs. The advocates address
+mean reversion versus persistent pair-relative repricing, rather than a stock's
+bullish versus bearish direction. Produce independent opening cases in parallel,
+then exactly one rebuttal per advocate after both openings. Each rebuttal can see
+both openings and the original inputs, but not the other rebuttal. A distinct
+synthesis/facilitator produces a cited research interpretation and proposed
+LOW/MEDIUM/HIGH/UNKNOWN break risk. A separate semantic Risk/Validation stage
+checks that interpretation before deterministic Python applies the controller.
+There is no LLM-authorized trade, open-ended debate, contemporary historical
+browsing or new external information set.
+
+Use explicitly configured free Gemma for both opening/rebuttal roles and
+Flash-Lite for separate synthesis and semantic-validation roles. This is four
+Gemma and two Flash-Lite calls per complete uncached event before retries, not
+one Flash-Lite call. Pin actual model, prompt, graph, schema and inference-setting
+identities in each run/cache. Changing the model or number of rounds requires a
+new version; do not silently fall back. Respect pacing, timeouts and shared
+attempt budgets including retries; paid API use and hidden SDK retries remain
+disabled. The Phase 5 adapter is distinct from v2's catalyst-only Gemma contract.
+The first provider's counters are invocation-local; they do not reconstruct
+unsaved failed requests across process restarts or reset actual project quotas.
+Preserve failed receipts and disclose that limitation when scheduling a pilot.
+
+Python mechanically checks schemas, cited chunk/issuer identity, exact quotes,
+timestamps and quantitative references. Semantic validation separately checks
+claim support, fact versus inference, contradictions, coverage and break risk.
+Valid quotation is insufficient evidence that its interpretation is true. LLM
+validation cannot override failed mechanical checks or modify stored numerical
+state. Failed or insufficient required evidence yields UNKNOWN/ABSTAIN; explicit
+high-risk or deterministic ineligibility may yield NO TRADE. Controller statuses
+remain exactly CANDIDATE, REVIEW, NO TRADE and ABSTAIN with fixed reason codes.
+Unvalidated fixture thresholds are not frozen research policy.
+
+A source-grounded stored HIGH-materiality catalyst affecting A or B with DIRECT
+relationship relevance cannot be silently downgraded to CANDIDATE by an
+otherwise LOW-risk validator output. Unless semantic validation confirms HIGH
+break risk or the high-materiality one-sided veto, retain REVIEW with fixed
+reason `UNRESOLVED_CATALYST_RISK`. The unconfirmed extraction is not itself an
+automatic NO TRADE rule; confirmed risk and deterministic hard gates govern
+vetoes. This preserves an unresolved warning without equating exact quotation
+with semantic confirmation.
+
+Full-System automatic candidates require ACTIVE at the historical event timestamp,
+the frozen Model B candidate threshold and hard data/risk/liquidity gates.
+Preflight may skip expensive reasoning when deterministic gates already make
+CANDIDATE impossible, but persist the status, eligibility and skip reason for
+every event. Count eligible events after accepted B fitting. Declare any optional
+REVIEW/audit population separately. If quotas require a subset, freeze a
+target-blind investigation schedule and retain matched B/Full-System denominators
+before evaluating those agent outputs. Do not impose the v2 extraction schedule's
+500-event cap on agents or claim a subset result for the whole cohort.
+
+Keep the broad 37,421-event matched A/B forecasting population, UNKNOWN rows,
+SEC source-v3 bytes, quality-v2 FinBERT, frozen 500-event catalyst schedule, model
+definitions and final-test lock unchanged. Prepare implementation on the isolated
+`phase5/agents-controller-foundation` branch. Do not synchronize it into the live
+v2 checkout until full feature/model/replay/CI/publication acceptance; worker exit
+alone is insufficient. This amendment does not start P6/P7 or authorize
+2024–2025 outcome/performance access.
+
+Mocks establish contracts, orchestration, reproducibility and fail-safe controller
+behavior only. Phase 5 completion additionally requires accepted-generation
+integration, a genuine provider pilot and fixed human source-support/category/
+materiality/relevance evaluation on at least 50 historical events, aiming for 100.
+Any development outcome stratification belongs only to evaluation selection;
+agent prompts and production scheduling never receive realized outcomes. Record
+unsupported interpretations, failures, UNKNOWNs and abstentions honestly. No
+agent usefulness or Full-System benefit is established by the fixture slice.
+
+## 29. Phase 5 durable batches and blind source review
+
+On 2026-10-11 the user authorized continuing the independent Phase 5 batch
+infrastructure while the detached v2 feature build runs. This engineering slice
+adds a target-blind frozen schedule, immutable per-event checkpoints, complete
+scheduled/skipped/budget-failed denominators, a prepared mock-input inventory and
+a source-only human annotation workflow. It does not change the v2 population,
+500-event catalyst schedule, model definitions or final-test lock.
+
+Durable attempt accounting supersedes the invocation-only limitation described
+for the first adapter in section 28 when the provider is attached to the journal.
+Reserve each transport attempt before sending it, including retries. Reservations
+are never refunded after a timeout or interrupted process because its actual
+provider outcome may be unknown. Bind immutable total/per-model/per-provider-day
+limits to the same allocation across restarts. Ledger integrity and exclusive
+leases fail closed; an abandoned lease requires explicit stopped-owner attestation,
+the exact token and a preserved recovery receipt. This journal does not measure
+other applications' use of the same provider project or reset provider quotas.
+
+Persist the schedule before inference. If capped, rank historically eligible
+events only by a declared seed and event/pair/time identity, never by outcomes or
+favourable agent results. All input rows retain a deterministic disposition.
+Intentional pauses do not publish a complete manifest. Resume verifies completed
+input/checkpoint/provider/code/policy identities and replays the deterministic
+controller without rerunning the graph or transport. Changed scientific inputs,
+implementation or explicit retry identity create a distinct batch, preserving
+previous failed records and shared allocation accounting.
+
+The prepared-input CLI currently accepts mock manifests only. Files are bounded,
+content addressed and checksum checked lazily; this is not an independently
+verified adapter to accepted native Model B and registered historical SEC assets.
+Source review selects a frozen event-identity sample and omits probabilities,
+suggested catalyst labels and outcomes. Human annotations bind the exact inventory
+and source bytes, preserve incomplete acquisition and cite the claimed affected
+legs. Format/provenance checks do not measure semantic accuracy. Genuine source
+review, advocate/synthesis interpretation evaluation and at least 50 historical
+annotations (aiming for 100) remain completion gates.
+
+## 30. Phase 6 fixed-share development simulator
+
+On 2026-10-11 the user authorized parallel Phase 5 batch infrastructure and the
+Phase 6 shared event-level simulator while the frozen v2 feature job continues.
+Prepare this simulator on isolated `phase6/shared-simulator`; do not synchronize
+new computational source into the running v2 checkout or claim that fixture
+success completes v2 or Phase 6. This amendment precedes any genuine Phase 6
+economic assessment. The primary forecast comparison remains calibrated
+logistic B-both versus matched A, with fit 2006-2019, calibration 2020-2021 and
+assessment 2022-2023, the complete-window embargo, all predeclared ablations and
+10/30-session sensitivities. Final 2024-2025 outcomes/performance stay locked.
+
+The event engine uses the frozen signal-close alpha, beta, spread mean and
+standard deviation, entering at the exact next XNYS open. Snapshot availability
+means first usability and cannot precede the next XNYS open after its formation
+endpoint; a same-close newly formed fit cannot drive that signal. The primary timeout
+is the close of the twentieth session after the signal; preserve separately
+versioned 10/30-session sensitivities. Monitor each close from the entry session.
+An observed |z| <= 0.5 triggers convergence; signal-sign times z >= 3 triggers
+the same-side adverse stop. An opposite-side jump outside the success band is
+neither convergence nor that adverse stop. Every close trigger, including
+timeout, exits at the exact following XNYS open. Never substitute a later
+convenient open, interpolate a required price or reuse new relationship fits.
+
+Positive beta is an economic execution gate only; it does not alter the broad
+v2 A/B cohort. Size entry gross notional with signed beta weights, then freeze
+share units using entry prices. No daily constant-weight rebalancing is allowed.
+Gross return is fixed-share exit-minus-entry P&L divided by entry gross notional.
+Entry cost applies to actual gross entry turnover; exit cost applies to actual
+gross exit turnover, which can differ as prices move. The synthetic scenario
+uses 5 bps on each turnover and 3% annual borrow on entry short notional times
+actual open-to-open XNYS session intervals / 252. These are disclosed fixture
+parameters, not measured execution prices or frozen production assumptions.
+
+The production `configs/phase6_execution.json` remains DEVELOPMENT/DRAFT with
+costs, annual borrow and positive-beta ceiling unresolved. Execution refuses
+real captured inputs until a production policy is explicitly frozen. The
+fixture's beta ceiling is a test scenario, not a forecast population restriction.
+A later immutable economic experiment must freeze the real cost/sensitivity,
+borrow, price-adjustment, liquidity/eligibility and execution assumptions before
+economic assessment. Keep `configs/backtest.yaml` and original reference
+artifacts unchanged.
+
+Synthetic prices declare one compatible open/close basis. A future Yahoo
+adapter must use adjusted open = raw open * (adjusted close / raw close) and
+the matching adjusted close from the same capture; retrospective adjustments
+are a disclosed historical limitation rather than a vintage feed. This slice
+does not ingest market data or settle actual corporate actions. A declared
+lifecycle termination produces explicit unknown execution until its economic
+settlement policy is implemented; statistical WATCH/RETIRED alone does not
+terminate a frozen path.
+
+Retain a row and reason for NOT_ENTERED and UNPRICED results. Missing entry/exit
+opens, missing monitored prices, truncation and unresolved lifecycle settlement
+cannot produce fabricated zero return. Completed MAE/MFE sample entry zero,
+observed monitored closes and executed exit open; they do not claim intraday
+extrema. A partially observed path is not a completed event outcome. Existing
+supervised labels and economic returns remain distinct. For UNPRICED paths,
+final MAE/MFE remain null; separately named partial excursion fields describe
+the observed prefix and are excluded from completed-event statistics.
+
+The first acceptance boundary is synthetic event-level execution only. Raw
+signal generation, all five capability filters, actual stored v2/controller
+integration, common-subset economic evaluation, portfolio allocation and human
+agent metrics remain pending. Preserve the v2 paired calendar-quarter forecast
+bootstrap; the older calendar-month economic-bootstrap proposal is separate
+and must be specified/frozen before economic assessment. Do not silently
+redefine forecast uncertainty through the new simulator.
+
+## 31. Phase 6 fixture ladder and coverage reporting
+
+On 2026-10-11 the user authorized the next Phase 6 engineering slice while
+the detached v2 feature build continues. Extend the isolated shared-simulator
+branch with frozen capability selection, event-level reporting and immutable
+verification using synthetic inputs only. This does not open genuine historical
+assessment, change the v2 research protocol or synchronize computational code
+into its running checkout.
+
+Baseline 0 requires an estimable fresh divergence under the admissible current
+relationship snapshot: evaluate the prior and signal-close spread with those
+same current parameters, rather than comparing z-scores from two different
+rolling fits. Baseline 1 adds historical ACTIVE status at signal time. A and B
+each independently add their own frozen calibrated probability at the same
+declared threshold to Baseline 1. B is not required to pass A. The Full System
+adds a stored CANDIDATE controller decision to the B-accepted set; REVIEW,
+NO TRADE and ABSTAIN are withheld. Execution eligibility, including positive
+beta and available next-open prices, stays a separate shared-engine gate.
+
+Persist every input event and every variant's selection/disposition. Simulate
+each fresh raw event once under the common execution policy, preserving
+rejected-event counterfactuals and explicit unavailable/unpriced reasons. A
+counterfactual is the outcome of this same frozen simulator, not a prediction
+or an agent label.
+Retain rows lacking A/B predictions, agent results, labels or prices. Selection
+must not read supervised targets; join target identities and development-only
+labels through a separate reporting input. Convergence and positive net return
+cannot substitute for the supervised success label.
+
+Adjacent-rung comparisons disclose natural populations, common required-data
+availability and the intersection of actual selected events separately. The
+common-data population is not the selected intersection. A/B economic selection
+tables do not replace the broad matched v2 forecasting analysis. Fixture
+forecast metrics use estimable fresh events regardless of ACTIVE status and
+report exclusions for nonfresh or unknown crossings separately. Every reported
+return uses COMPLETE, priced trades only and names its selected, missing,
+NOT_ENTERED and UNPRICED denominators. Label rates use only available bound
+labels, with unavailable labels counted separately; zero eligible observations
+produce an explicit undefined rate rather than a favorable zero.
+
+Full-System coverage distinguishes the frozen scheduled B-candidate population
+from successful investigations. Scheduled missing/failed results remain in that
+denominator as unavailable/ABSTAIN; do not redefine the scheduled cohort around
+completed favorable cases. Report unscheduled events separately. Distinguish
+NO TRADE vetoes from REVIEW deferrals, ABSTAIN/unavailable investigations and
+unscheduled rows. False-veto and failed-opportunity rejection describe NO TRADE
+on labeled scheduled B candidates; a separate all-withheld measure may describe
+REVIEW and ABSTAIN too, without calling them confirmed agent vetoes.
+
+The synthetic ladder freezes its fixture threshold, model/decision identities,
+event inventory, execution scenario and code identities in an immutable
+manifest. Reverification reconstructs selection and reports from bound inputs
+and reruns the same simulator; it cannot repair or overwrite mismatched bytes.
+Reject implementation/runtime drift during computation or verification before
+publishing or attesting the result.
+Report assembly also rechecks the deterministic selector against its input
+policy without executing the price path again.
+Fixture economics and mock controller outputs establish engineering behavior
+only. Production policy remains DRAFT. Accepted historical generation adapters,
+genuine controller/source and human-quality integration, portfolio accounting,
+economic bootstrap and production assumption freeze remain completion gates.
+The final 2024-2025 outcome/performance lock remains intact.
+
+## 32. Historical bridges and economic analysis before v2 completion
+
+On 2026-10-11 the user authorized the remaining independent Phase 5/6 work:
+historical artifact adapters, genuine blind source-review preparation, robustness
+and cost analysis, economic uncertainty engineering and secondary portfolio
+accounting. Implement on the isolated Phase 5 and stacked Phase 6 branches. Keep
+the running v2 source, registry, population, feature policies, catalyst schedule,
+model comparison and final-test lock unchanged. These choices follow previously
+observed original development results and precede genuine v2 economic assessment;
+they must not be described as decisions made before all development observations.
+
+Source-only human review may use an explicit registered H20 registry and verified
+SEC source-v3 without a fitted Model B. Freeze a seeded event-identity sample of
+50–100 events before reading its captures. Snapshot only the selected stored raw
+receipts/documents, preserve unavailable captures and replay each packet from
+that frozen copy. Omit targets, model probabilities and suggested catalyst labels.
+Bind source manifests, registry/universe identities and the source recipe. Citation
+offsets address the stored cleaned chunk, not original HTML characters. Human
+annotations and their semantic evaluation remain human work; format/provenance
+validation cannot certify accuracy.
+
+Scored historical agent inputs additionally require the explicit registered
+primary publication and its accepted native/source/hosted-CI evidence. Replay
+the exact primary logistic B-both/H20 model and selected calibrated/raw prediction,
+SEC pack, pinned quality-v2 tone and stored extraction. A declared manifest or
+acceptance flag cannot substitute for publication. Admit only 2022–2023 assessment
+scores; fit/calibration scores from the final fitted bundle are not vintage
+out-of-sample agent inputs. Preserve unavailable lifecycle, liquidity or
+implementation eligibility instead of inventing approval. Nullable eligibility
+produces ABSTAIN with explicit UNKNOWN reason codes; known hard failures still
+produce NO TRADE. Genuine
+provider pilots, the historically eligible schedule and Full-System claims remain
+pending; exporting a source review does not complete them.
+
+The independent Phase 6 analysis bundle is synthetic engineering. Report all
+predeclared turnover scenarios (2.5/5/10/20 bps per entry/exit turnover) crossed
+with annual borrow scenarios (0/3/10 percent), using the same event inventory,
+selection and shared execution engine. Never select a winning scenario or change
+model acceptance using its return. Actual production costs and borrow remain DRAFT.
+Robustness slices cover year, pair, sector, divergence sign, source coverage,
+previous-session VIX/trailing-volatility stress and event type/materiality. Missing
+context is UNKNOWN; bind its event/cutoff and report small populations, pair
+concentration and leave-one-pair/sector-out diagnostics without selecting a
+favorable subset.
+
+The separate fixture economic bootstrap uses 2,000 seeded paired calendar-month
+draws (seed 5557), drawing identical complete-range month indices for every
+strategy and retaining all pairs in a block. Distinguish natural selected
+COMPLETE-only event mean differences, common known allocation-per-raw-candidate
+differences and the both-selected COMPLETE intersection. Explicit WITHHELD means
+zero allocation under that estimand; UNAVAILABLE or selected unknown execution
+does not become a zero return. Retain status/denominator and undefined-draw counts.
+Suppress intervals below 12 contributing populated months for each estimand,
+including support on both sides of natural mean comparisons. These fixture
+intervals establish no inference. The canonical v2 paired-quarter predictive
+bootstrap remains unchanged; the production economic freeze is still pending.
+
+The fixture secondary portfolio starts at NAV 1 and targets 25 percent of current
+NAV gross per accepted entry, clips simultaneous entries equally to available
+gross capacity, reserves entry fees and processes previously triggered exits before
+new allocations. Freeze entry shares, allow one position per pair and report shared
+ticker/sector concentration. The gross limit of one is an entry admission cap;
+passive price drift can breach it and must be disclosed. There is no automatic
+deleveraging, financing/margin or idle-cash-yield model. Chronological open/close
+marks supply NAV, exposure, turnover, costs, borrow, drawdown and close-to-close
+returns. Future COMPLETE status cannot select surviving entries. Missing held
+quotes or unresolved settlement invalidate subsequent NAV and block new allocation;
+do not average event returns into portfolio Sharpe. Actual portfolio policy and
+historical price acceptance remain pending.
+
+Persist the complete analysis inputs, contexts, policies, rows, scenarios and reports
+immutably with code/runtime identities; independently rebuild outputs on verification
+and reject source/runtime drift. These artifacts and mock controller results cannot
+self-attest scientific acceptance, model improvement or agent quality. No change
+authorizes 2024–2025 outcomes or merging unfinished v2 into main.
+
+## 33. Native report replay tolerance and the v2 completion rerun
+
+Recorded 2026-10-16, before any accepted v2 publication. No assessment result
+was used to choose any change below.
+
+The shared-source completion attempt (`v2_completion_four_core_20261014T2355Z_76d9db8`,
+revision `76d9db8`) completed source pass 1 and the h20 fit and verification.
+It then stopped on 2026-10-15 in the h10 in-fit native self-check. Every h10
+model reproduced its stored probabilities within 1e-12, but a few recomputed
+subgroup report metrics differed from the stored report in the last binary
+digits (for example log loss `…193` vs `…196`). The check used exact float
+equality, so the result depended on BLAS threading and reduction order.
+
+On 2026-10-16 the user authorized a resumed attempt
+(`v2_resume_b_20261016T0100_76d9db8`) that reused the verified pass-1 proof and
+h20 stages and ran native replays without the one-thread cap. h10 then passed,
+but h30's standalone verification failed the same way in the opposite thread
+mode. Read-only replays showed h20 passing in both modes, h10 only without the
+cap and h30 only with it. A publication replay of all thirty models in one
+process could therefore not pass under any setting. The resumed attempt's
+records and amendment note remain in its directory; no generation from either
+attempt is accepted.
+
+The user then authorized a code fix and a complete rerun. `verify_research_models`
+now compares recomputed report floats within a 1e-12 relative tolerance; keys,
+lengths, counts, labels and nulls stay exact. The 1e-12 probability tolerance and
+the exact calibrator check are unchanged. With the fixed comparator, all thirty
+models registered by the earlier attempts pass the full replay in both thread
+modes. Because package source changed, the rerun
+(`v2_rerun_a_20261016_4764c65`, revision `4764c65`) starts again from source
+pass 1 and creates new generations, both complete source passes and full hosted
+CI. Fitting code, data, event population, protocol, model definitions, tuning,
+calibration and the 2024–2025 final-test lock are unchanged.
+
+The full-validation CI gate for the rerun is the section 27 job set
+(`foundation` and `acceptance` on Linux and Windows, plus `nlp-runtime`). A
+provisional, clearly unaccepted export of the earlier registered generations
+was prepared for group members to start exploratory work; it is replaced by the
+official snapshot once the rerun is accepted.
+
+## 34. Accepted research v2 publication
+
+Recorded 2026-10-17. The rerun `v2_rerun_a_20261016_4764c65` (revision `4764c65`,
+computational source `73c4539b…`, full hosted CI run 38822935350) completed both
+complete source passes, all six fit/verification stages for the thirty models and
+`promote-primary`, which performed the fresh source and native replay and
+published primary `research_primary_5c01ab3d29c74e3e9154d9e3` with evaluations
+`research_evaluation_16a431c4fea73ffd35f56062` (h20, primary),
+`research_evaluation_219b30fcf452cd5e1609ec3c` (h10) and
+`research_evaluation_bc319e752527bdd7f10ff0c2` (h30). The final-test lock is unchanged.
+
+The supervisor's last gate, the read-only real-app check, stopped because importing
+Streamlit calls `platform.system()`, which on Windows with Python 3.11 runs
+`cmd /c ver`; the checker's audit hook denies every subprocess as a forbidden
+provider call. The app performed no download, fit, provider call or write. With
+the user's approval the unchanged checker was run again in a fresh process after
+caching `platform.uname()` before the guard was installed. It passed: both pages
+rendered without exceptions, displayed metrics and denominators matched the
+accepted reports, external sockets were blocked and the database and publication
+files were unchanged (receipt
+`real_app_acceptance_receipt_prewarmed_platform.json`, SHA-256 `40ae1db3…`, in the
+run directory). The supervisor's own receipts record the stop and are not
+rewritten; this section is the acceptance record for the app gate. Future checker
+versions should cache the platform lookup before installing the guard.
+

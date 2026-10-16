@@ -1,13 +1,13 @@
 # Backtesting & Evaluation Framework
 
-> **Agent-use specification.** Canonical implementation decisions are in [`../DECISIONS.md`](../DECISIONS.md). This Markdown is the coding-agent source of truth for this subsystem. The PDF in `docs/PDFs/` is archival/human-readable only.
+> **Agent-use specification.** Canonical implementation decisions are in [`../DECISIONS.md`](../DECISIONS.md). This Markdown is the coding-agent source of truth for this subsystem. The PDF in `docs/archive/pdfs/` is archival/human-readable only.
 
 # 1. Evaluation objectives and hypotheses
 
 | **Comparison**           | **Question**                                                                                               |
 |--------------------------|------------------------------------------------------------------------------------------------------------|
 | Baseline 0 vs Baseline 1 | Does rolling econometric relationship validity improve threshold-based pair selection?                     |
-| Baseline 1 vs Model A    | Does the supervised XGBoost filter select divergence events with higher realised mean-reversion quality?   |
+| Baseline 1 vs Model A    | Does the calibrated quantitative model select divergence events with higher realised mean-reversion quality? |
 | Model A vs Model B       | Do structured point-in-time event/NLP features improve ranking/calibration and downstream event selection? |
 | Model B vs Full System   | Does source-grounded language AI reduce failed opportunities without vetoing too many successful ones?     |
 
@@ -25,12 +25,24 @@ A higher Sharpe alone is not sufficient. The report must show whether the predic
 
 # 2. Experimental freeze and chronological partitions
 
+Research v2's calibrated logistic B-both versus matched A at the 20-session
+horizon is the primary forecasting comparison. XGBoost, the structured-feature
+ablations and the 10/30-session horizons remain predeclared comparisons. The
+trading ladder below is a separate economic evaluation; it does not restrict
+the broad v2 forecasting population to ACTIVE events.
+
 | **Partition** | **Working dates**                      | **Allowed use**                                                                                                                  |
 |---------------|----------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| Training      | 2018-2021 usable events                | Fit logistic/XGBoost, training-fold model selection.                                                                             |
-| Validation    | 2022-2023 usable events                | Feature/event-feature decisions, probability calibration, policy thresholds, agent prompt/policy development on labelled subset. |
-| Final test    | 2024-2025 usable events                | Opened once after method freeze; headline out-of-sample results.                                                                 |
-| Embargo       | At least 10 trading days at boundaries | Prevents labels from earlier partition using future partition prices.                                                            |
+| Fitting       | 2006-2019 eligible events; source history starts in 2004 | Fit preprocessing and models after the 504-common-session formation warm-up. |
+| Forward tuning | 2018/2019 folds within the fitting period | Select among the frozen, matched logistic/XGBoost tuning budgets. |
+| Calibration   | 2020-2021 eligible events | Fit the frozen monotone Platt calibrator, without assessment outcomes. |
+| Assessment    | 2022-2023 eligible events | Report the predeclared development comparisons; do not select a favorable model, horizon or subgroup. |
+| Final test    | 2024-2025 eligible events | Outcomes/performance remain locked until method freeze and explicit user authorization. |
+| Embargo       | Complete 20-session target window; 10/30 for the corresponding sensitivities | Purge every partition/fold boundary by the full target horizon, even when an event converges earlier. |
+
+Phase 5's genuine historical pilot and Phase 6's economic assessment are pending.
+Any further development policy choice must retain its actual timing and a new
+version; the assessment period is not an unrestricted threshold-tuning set.
 
 ## 2.1 Freeze manifest
 
@@ -43,15 +55,23 @@ Before the final test is opened, write a machine-readable experiment manifest co
 
 | **Version**                   | **What changes**                                                                  | **Automated acceptance rule**                                                             |
 |-------------------------------|-----------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
-| Baseline 0 - threshold only   | Trade every fresh divergence crossing in the curated pair universe.               | Fresh \|z\| crossing; ignores cointegration/lifecycle validity.                           |
+| Baseline 0 - threshold only   | Select every estimable fresh divergence crossing in the curated pair universe.    | Prior \|z\| below and signal-close \|z\| at/above the frozen threshold, both under the same admissible current snapshot; ignores lifecycle validity. |
 | Baseline 1 - valid pairs only | Add econometric eligibility.                                                      | Fresh crossing AND pair ACTIVE at event time.                                             |
-| Model A - ML filter           | Add quantitative XGBoost selection.                                               | Baseline 1 event AND calibrated P(revert) >= frozen ML threshold.                        |
-| Model B - ML + event features | Use XGBoost model/features including structured point-in-time event/NLP features. | Baseline 1 event AND Model B calibrated probability >= frozen threshold.                 |
-| Full system                   | Add point-in-time event intelligence, agents and deterministic controller.        | Only final status CANDIDATE enters simulated trade; REVIEW/NO TRADE/ABSTAIN are withheld. |
+| Model A - ML filter           | Add calibrated quantitative-model selection; logistic is primary. | Baseline 1 event AND calibrated A P(revert) >= frozen ML threshold. |
+| Model B - ML + event features | Add structured point-in-time SEC metadata/tone/catalyst features; logistic B-both is primary. | Baseline 1 event AND calibrated B P(revert) >= the matched frozen threshold. |
+| Full system                   | Add point-in-time event intelligence, agents and deterministic controller.        | Model B accepted AND stored final status CANDIDATE; REVIEW/NO TRADE/ABSTAIN are withheld. |
 
 One change per rung
 
-The headline Model B adds structured point-in-time event/NLP features to XGBoost. The Full System then uses the underlying admissible evidence and structured extraction in the agent/controller layer, so the incremental value of reasoning can be measured separately from tabular event features.
+The primary Model B adds structured SEC features to calibrated logistic A.
+The Full System then uses the underlying admissible evidence and structured
+extraction in the agent/controller layer, so the incremental value of reasoning
+can be measured separately from tabular event features. Keep the complete
+predeclared model-family/feature-block comparisons; economic results must name
+the stored model identities driving acceptance. A and B independently filter
+Baseline 1 at the same threshold. B does not inherit A's acceptance. Only the
+Full System is a subset of B. Shared execution eligibility follows selection
+and cannot silently alter the forecast population.
 
 # 4. Raw signal universe versus ML event universe
 
@@ -61,12 +81,33 @@ Baseline 0 requires threshold crossings even when a pair is not currently cointe
 |--------------------------|-----------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
 | raw_divergence_signals   | Any curated pair with an estimable current spread/z-score and fresh threshold crossing. | Baseline 0 candidate universe; stores relationship-validity fields even when invalid. |
 | valid_divergence_signals | Raw signal where pair lifecycle=ACTIVE and required econometric rules pass.             | Baseline 1 universe.                                                                  |
-| divergence_events        | Valid signal with complete ML features/label-policy metadata.                           | Model A/B training and scoring.                                                       |
+| divergence_events        | Estimable fresh crossing with required ML features/label-policy metadata, irrespective of ACTIVE. | Broad matched v2 Model A/B forecasting and scoring population; UNKNOWN evidence remains explicit. |
 | full_system_events       | Scored event with admissible evidence/agent/controller outputs.                         | Full-system evaluation subset; coverage/abstention explicitly reported.               |
 
 ## 4.1 Fair-comparison principle
 
 When comparing two adjacent rungs, report results on both the natural eligible universe and a common matched subset where both versions have the required data. This prevents a layer from appearing better merely because missing data removed difficult observations.
+
+Keep three denominators distinct: each variant's natural population, the
+common required-data population and the intersection of the variants' selected
+events. The common-data set is established before acceptance and may contain
+events that neither variant selects. On that set, compare the independent
+selection rules as well as the shared selected-event outcomes. Do not describe
+the accepted intersection alone as a matched capability comparison.
+
+Every proposed simulation retains an explicit disposition, including failed
+execution. Unknown returns are excluded from return calculations with their
+denominator and reason reported; they are never converted to zero or silently
+dropped. A quota-limited Full-System schedule requires a separately frozen,
+target-blind schedule and a matched B comparison, not a whole-cohort claim.
+
+For the fixture ladder, apply selection without labels and simulate each fresh
+raw event once with the shared engine. Persist each event row with a disposition
+for every variant, including unknown predictions, unscheduled agents and
+unavailable executions.
+The same event result supplies accepted and rejected counterfactual reporting.
+Supervised development labels enter through a separate bound reporting input;
+no price-derived return or exit reason is relabeled as supervised success.
 
 # 5. Simulated pair construction and position sizing
 
@@ -80,13 +121,29 @@ $$
 
 If z>0, leg A is rich relative to B: short A and long beta-weighted B. If z<0, the signs reverse. Absolute weights sum to approximately one for positive beta, so one event uses one unit of gross pair notional in the event-level return calculation.
 
+For initial gross notional $G_i$, entry prices $P_{j,i}^{entry}$ and the above
+signed notional weights, freeze share units
+$q_{j,i}=G_iw_{j,i}/P_{j,i}^{entry}$. At any mark $u$, gross event return is
+
 $$
-r_{i,t}^{pair}=w_{A,i}r_{A,t}+w_{B,i}r_{B,t}-C_{i,t}.
+R_{i,u}^{gross}=\frac{\sum_jq_{j,i}(P_{j,u}-P_{j,i}^{entry})}{G_i}.
 $$
+
+The weights size the entry only. Share units remain fixed until exit; do not
+compound daily constant-weight pair returns or rebalance the legs each day.
 
 **Frozen hedge ratio**
 
 The entry hedge ratio is frozen for the life of the simulated event. Re-estimating beta after entry would change the position using information not available at the original decision and make comparisons harder to interpret.
+
+The positive-beta rule is an execution eligibility gate, not a change to v2
+forecast labels or the broad A/B cohort. Invalid execution snapshots are
+reported as not entered rather than rewriting registry membership.
+
+Monthly relationship parameters become usable at the exact next XNYS open
+after their formation endpoint. The request's snapshot `available_at` is
+that first-usability bound or later, and must be no later than the signal cutoff.
+A same-close refit cannot drive the signal formed at that close.
 
 # 6. Signal timing, entry, monitoring, and exit
 
@@ -96,10 +153,25 @@ The entry hedge ratio is frozen for the life of the simulated event. Re-estimati
 | Entry               | Next trading day open (t0+1) using adjusted/open-consistent price series; captures overnight gap after the signal.      |
 | Monitoring          | At each subsequent close, compute z using the relationship parameters frozen for the signal period.                     |
 | Convergence trigger | Close reaches \|z\| <= 0.5.                                                                                            |
-| Adverse trigger     | Close reaches same-side \|z\| >= 3.0.                                                                                  |
-| Time stop           | 10 trading days after event signal if neither trigger occurs.                                                           |
-| Execution of exit   | Next available open after a close-based convergence/stop trigger; horizon exit uses the specified next-open convention. |
+| Adverse trigger     | Close reaches $s_i z \ge 3.0$, where signal sign $s_i$ is frozen; an opposite-side overshoot is neither convergence nor this stop. |
+| Time stop           | Close of the 20th XNYS session after the signal if neither trigger occurs; separately versioned 10/30-session sensitivities. |
+| Execution of exit   | Open of the exact next XNYS session after the close-based convergence/stop/timeout trigger. |
 | Missing next open   | Use explicit missing-execution flag; do not silently substitute a future convenient price.                              |
+
+Monitoring begins at the entry session's close. Success requires an observed
+close in the convergence band; a jump from positive to negative z without a
+band observation is not convergence. No later refit changes the frozen
+alpha/beta/spread mean/standard deviation. Missing required monitoring prices,
+truncated paths or declared lifecycle termination produce an explicit unknown
+execution result; later statistical WATCH/RETIRED alone does not censor a path.
+
+The fixture slice requires an explicit ordered XNYS session list and
+open/close prices on a declared compatible adjustment basis. A later Yahoo
+adapter must derive adjusted open as `raw_open * (adjusted_close / raw_close)`
+from a single captured price generation, with the corresponding adjusted
+close. This is a retrospective corporate-action adjustment assumption, not a
+vintage feed. The current synthetic tests do not establish actual historical
+adapter correctness or dividend/borrow executability.
 
 ## 6.1 Label versus realised trade
 
@@ -108,14 +180,16 @@ The supervised label is defined from the close-based z path. The economic backte
 # 7. Transaction costs, borrow costs, and implementation assumptions
 
 $$
-C_i=c_{entry}\sum_j|w_{j,i}|+c_{exit}\sum_j|w_{j,i}|+b_i|w_i^{short}|\frac{H_i}{252}.
+C_i=\frac{c_{entry}\sum_j|q_{j,i}|P_{j,i}^{entry}
+ +c_{exit}\sum_j|q_{j,i}|P_{j,i}^{exit}}{G_i}
+ +b_i|w_i^{short}|\frac{H_i}{252}.
 $$
 
-| **Cost component**          | **Working baseline**                             | **Sensitivity**                                                                |
+| **Cost component**          | **Synthetic scenario; production assumptions remain DRAFT** | **Predeclared sensitivity proposals; freeze before economic assessment** |
 |-----------------------------|--------------------------------------------------|--------------------------------------------------------------------------------|
-| Entry trading cost          | 5 bps per unit gross notional                    | 2.5 / 5 / 10 / 20 bps.                                                         |
-| Exit trading cost           | 5 bps per unit gross notional                    | Same grid.                                                                     |
-| Short borrow                | 3% annualised on short notional for holding days | 0% / 3% / 10% annualised.                                                      |
+| Entry trading cost          | 5 bps of actual entry gross turnover | 2.5 / 5 / 10 / 20 bps. |
+| Exit trading cost           | 5 bps of actual exit gross turnover | Same grid. |
+| Short borrow                | 3% annualised on entry short notional, using exact open-to-open held XNYS sessions / 252 | 0% / 3% / 10% annualised. |
 | Market impact               | Not separately modelled with daily public data   | Disclose as deployment limitation; high-cost sensitivity partially proxies it. |
 | Hard borrow availability    | Not reliably available in public history         | Prototype flag/limitation; no claim of live executability.                     |
 | Dividends/corporate actions | Adjusted price framework where possible          | Large corporate events manually checked in case studies.                       |
@@ -124,18 +198,34 @@ $$
 
 The baseline values are transparent scenario parameters, not claims about institutional execution. Headline results must include a cost sensitivity table.
 
+The first Phase 6 implementation uses these numbers solely for deterministic
+fixtures. The new production execution configuration leaves required cost and
+adjustment assumptions unresolved and refuses execution while DRAFT. Freeze
+the actual cost scenarios, borrow convention and adjustment policy in a new
+experiment identity before a historical economic assessment. Preserve the
+legacy `configs/backtest.yaml` reference contract.
+
 # 8. Event-level return and path metrics
 
 | **Metric**                         | **Definition / purpose**                                                                       |
 |------------------------------------|------------------------------------------------------------------------------------------------|
 | label_success                      | Whether the predefined mean-reversion target succeeded.                                        |
-| gross_pair_return                  | Compounded/summed realised pair return between simulated entry and exit before costs.          |
+| gross_pair_return                  | Fixed-share mark-to-market P&L between exact entry/exit opens divided by entry gross notional. |
 | net_pair_return                    | Gross pair return minus trading and borrow costs.                                              |
-| holding_days                       | Number of trading days position is open.                                                       |
-| maximum adverse excursion (MAE)    | Worst mark-to-market return or same-direction z excursion while open.                          |
-| maximum favourable excursion (MFE) | Best mark-to-market return or movement toward/beyond equilibrium while open.                   |
+| holding_days                       | Exact XNYS open-to-open session intervals from entry through executed exit. |
+| maximum adverse excursion (MAE)    | Minimum gross fixed-share return sampled at entry (zero), observed monitored closes and executed exit open. |
+| maximum favourable excursion (MFE) | Maximum gross fixed-share return over the same discrete observations; intraday extrema are unavailable. |
 | exit_reason                        | CONVERGENCE / ADVERSE_STOP / TIMEOUT / DATA_FAILURE.                                           |
 | overnight_entry_gap                | Difference between signal close and next-open execution state; useful error-analysis variable. |
+
+`label_success` belongs to the existing supervised target and must be joined
+under its immutable label identity; it is not inferred from realized net
+return. The fixture engine can explain its own close-based exit without reading
+stored target files. For an entered but unpriced trade, final gross/net return,
+final costs and full-path metrics remain null; partial observations are not a
+completed economic outcome. Separately named `partial_mae`/`partial_mfe`
+record the observed gross-return prefix for an UNPRICED position, including
+entry zero; they cannot enter completed-event excursion statistics.
 
 ## 8.1 Selection metrics
 
@@ -145,27 +235,40 @@ The baseline values are transparent scenario parameters, not claims about instit
 - Rejected-event counterfactual success/failure and return distribution, using the same simulator.
 - Candidate retention rate: accepted / eligible events.
 
+Each selection table must disclose input, eligible, selected, prediction/agent
+availability and labeled counts. Economic summaries use COMPLETE selected
+trades and separately report selected NOT_ENTERED and UNPRICED counts and
+reasons. Counterfactual summaries use the same engine and disclose their own
+priced/labeled denominators. Missing labels and prices are neither failures nor
+zero returns. Undefined rates and empty mean/median summaries remain null.
+
 # 9. Portfolio-level simulation
 
-Event-level analysis is primary because it measures selection quality directly. A secondary portfolio simulation converts accepted events into one daily strategy return series for Sharpe/drawdown reporting.
+Event-level analysis is primary because it measures selection quality directly.
+Decision 30 records the implemented secondary synthetic portfolio policy; the
+production policy and accepted historical price adapter remain pending.
 
-| **Rule**          | **Working specification**                                                                                                                                                                                                                |
-|-------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Capital           | Normalised initial NAV = 1.0.                                                                                                                                                                                                            |
-| Allocation        | Equal gross allocation across all open accepted pair trades on each day.                                                                                                                                                                 |
-| Gross exposure    | Total gross exposure capped at 1.0 in the prototype; no leverage.                                                                                                                                                                        |
-| Concurrent trades | All accepted trades may coexist subject to one open trade per pair; report number of simultaneous positions.                                                                                                                             |
-| Reweighting       | Daily equalisation across open pairs is avoided to reduce artificial turnover; allocate equal notional at entry from available capital and release on exit. A simpler equal-open-position alternative may be used if frozen before test. |
-| Cash              | Unused capital earns zero in the prototype; disclose.                                                                                                                                                                                    |
-| Overlapping pairs | Allowed, but report concentration by ticker and sector; no hidden manual exclusions.                                                                                                                                                     |
+| **Rule** | **Implemented fixture policy** |
+|---|---|
+| Capital | Normalised initial NAV = 1.0. |
+| Allocation | Target 25% of current NAV gross per new proposal; equally clip simultaneous entries to remaining gross capacity and reserve entry fees. |
+| Gross exposure | Entry admission cap 1.0; passive price drift may breach it and is reported. No automatic deleveraging or financing/margin model. |
+| Concurrent trades | One open position per pair; release previous-close-triggered exits before admitting new entries. |
+| Reweighting | Freeze entry shares until exit; no daily equalisation. |
+| Cash | Unused cash earns zero. |
+| Overlapping pairs | Report gross ticker/sector concentration, exposure and position counts. |
+| Missing valuation | Missing held quotes or unresolved settlement permanently invalidate subsequent NAV and block new allocation. No entry selection using future COMPLETE status. |
 
 ## 9.1 Daily portfolio return
 
 $$
-r_t^{port}=\sum_{i\in O_t}a_{i,t}r_{i,t}^{pair}.
+r_t^{port}=\frac{NAV_t}{NAV_{t-1}}-1.
 $$
 
-Weights a_i,t are determined by the frozen portfolio rule, not optimised using final-test performance.
+Compute NAV from the chronological cash/marked fixed-share ledger including
+actual fees and accrued borrow. Close-to-close returns and sampled drawdown come
+from that NAV series; averaged event returns cannot supply portfolio Sharpe.
+The current two-proposal example checks accounting, not five-strategy performance.
 
 # 10. Predictive ML evaluation
 
@@ -188,6 +291,13 @@ $$
 
 A naive classifier can look good under imbalance. Ranking, calibration, and accepted-event precision/recall are more informative for this application.
 
+The fixture comparison uses estimable fresh divergences for its descriptive
+forecast metrics, regardless of ACTIVE or economic selection. Report separately
+the retained all-input inventory, nonfresh/unknown-crossing exclusions, missing
+scores and labels. The common-score A/B comparison uses matched labels on the
+same fresh population. It does not replace the canonical full v2 assessment or
+introduce new uncertainty intervals through this engineering slice.
+
 # 11. Calibration and selection-efficiency evaluation
 
 | **Analysis**                 | **Output**                                                                                                                             |
@@ -196,7 +306,7 @@ A naive classifier can look good under imbalance. Ranking, calibration, and acce
 | Probability buckets          | LOW / MEDIUM / HIGH bucket count, success rate, mean net return, failure rate.                                                         |
 | Raw vs calibrated Brier      | Shows whether Platt calibration improves probability quality.                                                                          |
 | Top-decile / high-score lift | Success rate in high-score subset relative to Baseline 1 event base rate.                                                              |
-| Threshold curve              | Validation only: candidate count, precision, recall, success rate and net return across policy thresholds. Test uses frozen threshold. |
+| Threshold curve              | Explicitly labelled development sensitivity under its recorded timing; the matched v2 0.65 reporting threshold remains unchanged. Final evaluation uses frozen policy. |
 
 ## 11.1 Selection efficiency
 
@@ -217,6 +327,15 @@ A useful ML layer should rank events so that higher predicted-probability groups
 
 ## 12.1 Feature-family ablations
 
+The authorized v2 comparison retains A, B-metadata, B-tone, B-catalyst and
+B-both under both calibrated logistic and the matched-budget XGBoost family
+for each of the 20/10/30-session horizons: thirty bundles overall. Logistic
+B-both versus A at twenty sessions is primary. Economic acceptance must use
+named frozen prediction identities rather than refitting inside a backtester.
+
+The older quantitative-family proposals below are optional future experiments,
+not additional frozen v2 bundles or implementation requirements for this slice.
+
 | **Ablation**                       | **Question**                                                          |
 |------------------------------------|-----------------------------------------------------------------------|
 | Remove spread-state family         | Does the model need immediate divergence dynamics beyond entry z?     |
@@ -226,37 +345,54 @@ A useful ML layer should rank events so that higher predicted-probability groups
 | Remove liquidity family            | Does implementation state help selection?                             |
 | Remove event/NLP feature family    | How much value comes from structured point-in-time event information? |
 
-**Ablations are validation-driven**
+**Preserve the declared comparison**
 
-Feature-family decisions are made before final-test opening. The final report can evaluate frozen ablations on test, but should not repeatedly modify the production feature set in response to test results.
+Do not use development assessment to choose a favorable family/horizon or
+silently replace the v2 primary. Any new ablation needs its own recorded
+timing/version before evaluation. Final results never authorize repeated
+changes to the production feature set.
 
 # 13. Agent/controller evaluation
 
 $$
-\mathrm{Failure\ Rejection\ Rate}=\frac{\#\{y=0\text{ events withheld}\}}{\#\{y=0\text{ Model B events}\}}.
+\mathrm{Failure\ Rejection\ Rate}=\frac{\#\{y=0\text{ scheduled B candidates with NO TRADE}\}}{\#\{y=0\text{ labeled scheduled B candidates}\}}.
 $$
 
 $$
-\mathrm{False\ Veto\ Rate}=\frac{\#\{y=1\text{ events withheld}\}}{\#\{y=1\text{ Model B events}\}}.
+\mathrm{False\ Veto\ Rate}=\frac{\#\{y=1\text{ scheduled B candidates with NO TRADE}\}}{\#\{y=1\text{ labeled scheduled B candidates}\}}.
 $$
 
 | **Metric**                        | **Definition / interpretation**                                                                        |
 |-----------------------------------|--------------------------------------------------------------------------------------------------------|
-| Failed-opportunity rejection rate | Share of Model B failures converted to REVIEW/NO TRADE/ABSTAIN by the full system.                     |
-| False-veto rate                   | Share of Model B successes withheld by the full system.                                                |
-| Candidate retention               | Share of Model B eligible events that remain CANDIDATE.                                                |
+| Failed-opportunity rejection rate | Share of labeled, scheduled B failures with an explicit NO TRADE decision. |
+| False-veto rate                   | Share of labeled, scheduled B successes with an explicit NO TRADE decision. |
+| All-withheld failure/success rate | Separate share withheld as NO TRADE/REVIEW/ABSTAIN or unavailable; never describe all withholding as a confirmed veto. |
+| Candidate retention               | Share of scheduled B candidates that remain CANDIDATE; missing/failed scheduled results stay in the denominator. |
 | Net failure reduction             | Change in number/rate of failed simulated trades after agent/controller gate.                          |
 | Tail-loss reduction               | Change in worst/lower-tail event returns and drawdown contribution.                                    |
-| Abstention rate                   | Share withheld because the system cannot make a defensible classification.                             |
+| Abstention/availability coverage  | Scheduled B rows split into stored ABSTAIN, missing/failed results, REVIEW, NO TRADE and CANDIDATE; report unscheduled B rows separately. |
 | Reason-code distribution          | Why opportunities were withheld: high break risk, data failure, low score, market-stress warning, etc. |
 
 ## 13.1 Interpretation trade-off
 
 A system that rejects every event has perfect failure rejection but zero usefulness. Agent evaluation must therefore report failure rejection and false-veto/retention together.
 
+Freeze the scheduled B population before investigation. Missing/failed results
+must remain in its inventory, rather than conditioning the denominator on
+successful completion. A genuinely stored ABSTAIN is distinguishable from an
+unavailable result even when both withhold selection. Coverage rates do not
+establish evidence quality; genuine human source/interpretation review is a
+separate gate. The fixture slice reports descriptive event counts and returns,
+without portfolio Sharpe, drawdown, uncertainty intervals or significance claims.
+
 # 14. Human-labelled NLP evaluation subset
 
-The agent layer requires direct evaluation of its evidence-processing quality, not only downstream returns. Build a stratified human-labelled subset from historical events before inspecting full-system test outcomes.
+The agent layer requires direct evaluation of its evidence-processing quality,
+not only downstream returns. Decision 27 governs the source-review inventory:
+freeze a target-blind event-identity sample before annotation and conceal model
+probabilities, suggested extraction labels and outcomes from the source reviewer.
+Evaluate advocate/synthesis interpretation separately from source extraction
+format/provenance. Do not choose favorable outcomes to establish semantic quality.
 
 | **Label field**          | **Human annotation**                                             |
 |--------------------------|------------------------------------------------------------------|
@@ -269,7 +405,7 @@ The agent layer requires direct evaluation of its evidence-processing quality, n
 | source completeness note | Whether available SEC evidence appears sufficient for the label. |
 
 - Minimum 50 events; aim for about 100 if group capacity permits.
-- Stratify across sectors, years, successful/failed events, and events with/without recent 8-Ks.
+- Report sector/year, source-coverage and event-type coverage after the frozen review; any development success/failure composition is a later reporting join, not sample selection or reviewer input.
 - Report per-field accuracy and macro-F1 for categorical fields where class counts support it.
 - Report evidence-validity rate separately from event-classification accuracy.
 
@@ -285,7 +421,7 @@ The agent layer requires direct evaluation of its evidence-processing quality, n
 | By event type/materiality | Full-system subset where labels exist.                                                                                  |
 | Transaction cost          | 2.5 / 5 / 10 / 20 bps per side.                                                                                         |
 | Borrow cost               | 0% / 3% / 10% annualised short notional.                                                                                |
-| Threshold sensitivity     | Validation-focused; report frozen test policy plus nearby pre-specified thresholds as sensitivity, not re-optimisation. |
+| Threshold sensitivity     | Explicit development sensitivity with recorded timing; preserve canonical v2 0.65 coverage and report later frozen trading policy plus predeclared sensitivities. |
 | Label sensitivity         | Optional pre-specified alternative horizon/exit definitions reported separately; do not choose best after test.         |
 
 # 16. Statistical uncertainty and dependence
@@ -295,7 +431,8 @@ Divergence events are not perfectly independent: multiple pairs can trigger in t
 | **Method**                        | **Use**                                                                                                                                                             |
 |-----------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Descriptive counts/distributions  | Always report N; avoid interpreting tiny slices as stable.                                                                                                          |
-| Block bootstrap by calendar month | Resample months, preserving same-month event clustering; construct uncertainty intervals for success rate, mean event return, and selected performance differences. |
+| Paired calendar-quarter forecast bootstrap | Canonical v2 predictive B-minus-A losses use 2,000 seeded paired quarter-block resamples; 2022-2023 has only eight blocks. Preserve these existing predictive reports. |
+| Calendar-month economic bootstrap fixture | Decision 30 implements 2,000 seeded paired complete-range calendar-month draws (5557), retaining within-month pairs. Report natural COMPLETE-only event means, common known allocation per raw candidate and both-selected COMPLETE intersections separately. Intervals require twelve contributing months per estimand; unknown execution is never an invented zero. The production economic policy remains unfrozen. |
 | Pair-cluster sensitivity          | Recompute headline event metrics after leaving one pair out or one sector out.                                                                                      |
 | No p-value fishing                | Do not run dozens of significance tests and select only favourable ones.                                                                                            |
 
@@ -342,7 +479,7 @@ Every evaluation output should be keyed by experiment_id containing data snapsho
 | Evaluation ladder      | Side-by-side table of B0, B1, Model A, Model B, Full System event counts and key outcomes.                        |
 | Equity curves          | Net portfolio curves under identical cost convention; clearly label gross/net and variant.                        |
 | Predictive diagnostics | ROC/PR, calibration curve, Brier, probability-bucket success rates.                                               |
-| Selection funnel       | Raw signals -> valid pairs -> ML accepted -> Model B accepted -> final CANDIDATE, with reasons for rejection. |
+| Selection funnel       | Raw signals -> valid pairs -> independent A/B acceptance branches; B -> final CANDIDATE, with missing and withheld reasons. |
 | Agent impact           | Failure rejection, false-veto, abstention, break-risk buckets, rejected-trade counterfactual returns.             |
 | Robustness controls    | Sector/year/market-stress filters; cost/borrow scenario selector.                                                 |
 | Trade/event table      | Sortable event-level entry/exit, status, P(revert), break risk, return, exit reason and links to Pair Detail.     |
@@ -403,7 +540,7 @@ Every evaluation output should be keyed by experiment_id containing data snapsho
 | **Order** | **Deliverable**         | **Acceptance condition**                                                              |
 |-----------|-------------------------|---------------------------------------------------------------------------------------|
 | 1         | Raw signal generator    | B0 signal history reproducible independently of pair ACTIVE status.                   |
-| 2         | Pair trade simulator    | Synthetic fixtures verify direction, beta weights, next-open timing, exits and costs. |
+| 2         | Pair trade simulator    | Synthetic fixtures verify frozen share direction/size, exact next-open timing, close-based exits, gaps, costs and explicit unknown execution. |
 | 3         | B0/B1 backtests         | Same simulator; only econometric eligibility differs.                                 |
 | 4         | Model A/B evaluation    | Stored frozen predictions drive acceptance; no model fitting inside backtester.       |
 | 5         | Full-system integration | Stored decisions drive trade acceptance; REVIEW/NO TRADE/ABSTAIN withheld.            |
@@ -419,7 +556,11 @@ Every evaluation output should be keyed by experiment_id containing data snapsho
 - Coverage and sample counts accompany every metric.
 - Headline conclusions distinguish predictive, risk-control, and simulated economic evidence.
 
-# Appendix A. Working backtest defaults
+# Appendix A. Execution defaults and unresolved production assumptions
+
+These are fixture scenario values and predeclared proposals. They are not
+accepted historical execution assumptions. Production remains DRAFT until its
+required costs/adjustment policy and immutable experiment identity are frozen.
 
 | **Parameter**                        | **Default**                                                                    |
 |--------------------------------------|--------------------------------------------------------------------------------|
@@ -427,15 +568,15 @@ Every evaluation output should be keyed by experiment_id containing data snapsho
 | Entry threshold                      | fresh \|z\| >= 2.0                                                            |
 | Convergence trigger                  | \|z\| <= 0.5                                                                  |
 | Adverse stop                         | same-side \|z\| >= 3.0                                                        |
-| Maximum horizon                      | 10 trading days                                                                |
+| Maximum horizon                      | 20 XNYS sessions primary; separate 10/30 sensitivities |
 | Execution                            | Signal after close; enter next open; close-triggered exit next open            |
-| Position weights                     | Frozen beta-weighted pair; gross event notional normalised to 1                |
-| Entry cost                           | 5 bps per unit gross                                                           |
-| Exit cost                            | 5 bps per unit gross                                                           |
-| Borrow                               | 3% annualised short notional baseline                                          |
+| Position weights                     | Beta-weighted entry notional, gross normalised to 1; fixed entry share units until exit |
+| Entry cost                           | Fixture 5 bps of entry gross turnover; production unresolved |
+| Exit cost                            | Fixture 5 bps of actual exit gross turnover; production unresolved |
+| Borrow                               | Fixture 3% annualised entry short notional × open-to-open sessions / 252; production unresolved |
 | Portfolio leverage                   | None; total gross <=1.0                                                       |
 | Full-system auto-trade status        | CANDIDATE only                                                                 |
-| Model A/B candidate threshold        | 0.65 working start, validation-frozen                                          |
-| Review band                          | 0.45-0.65 in controller                                                        |
+| Model A/B candidate threshold        | Preserve matched v2 0.65 reporting threshold; actual trading policy must be explicitly versioned |
+| Review band                          | Defined by the separate versioned Phase 5 controller; fixture 0.45-0.65 is not a production freeze |
 | Final test                           | 2024-2025                                                                      |
 | Risk-free return in prototype Sharpe | 0 unless a separately versioned risk-free series is added; disclose explicitly |

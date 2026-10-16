@@ -1,0 +1,6 @@
+{
+  "policy_version": "phase5-fixture-v1",
+  "status": "FIXTURE",
+  "no_trade_probability": 0.45,
+  "candidate_probability": 0.65
+}

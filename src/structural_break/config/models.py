@@ -138,11 +138,24 @@ class AgentsConfig(SettingsModel):
     timeout_seconds: PositiveInt
     max_retries: Annotated[int, Field(strict=True, ge=0, le=5)]
     historical_web_browsing: Literal[False]
+    evidence_policy_version: Version = "sec-evidence-v1"
+    extraction_prompt_version: Version = "sec-catalyst-v2"
+    recent_8k_days: PositiveInt = 30
+    periodic_days: PositiveInt = 180
+    periodic_extension_days: PositiveInt = 400
+    chunk_chars: Annotated[int, Field(strict=True, ge=500, le=10000)] = 2200
+    max_chunks_per_leg: Annotated[int, Field(strict=True, ge=1, le=30)] = 8
+    max_evidence_chars: Annotated[int, Field(strict=True, ge=2000, le=100000)] = 32000
+    extraction_min_interval_seconds: Annotated[float, Field(ge=0, le=60)] = 32
+    extraction_max_calls: Annotated[int, Field(strict=True, ge=1, le=1000)] = 20
+    extraction_max_output_tokens: Annotated[int, Field(strict=True, ge=256, le=10000)] = 4000
 
     @model_validator(mode="after")
     def live_aliases(self) -> Self:
         if self.mode == "live" and (not self.provider or not self.model):
             raise ValueError("Live mode requires explicit provider and model aliases")
+        if self.periodic_days > self.periodic_extension_days:
+            raise ValueError("Periodic evidence extension must cover the regular lookback")
         return self
 
 
@@ -209,4 +222,6 @@ class RuntimeSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="SB_", extra="ignore", frozen=True)
     workspace_root: str | None = None
     llm_api_key: SecretStr | None = None
+    llm_provider: str | None = None
+    llm_model: str | None = None
     sec_user_agent: SecretStr | None = None

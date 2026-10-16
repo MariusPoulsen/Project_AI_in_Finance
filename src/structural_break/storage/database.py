@@ -3,16 +3,19 @@
 import hashlib
 import re
 from collections.abc import Iterator
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 from pathlib import Path
 
 import duckdb
 
+from structural_break.storage.process_lock import database_process_lock
+
 
 @dataclass(frozen=True)
 class DuckDBConnectionFactory:
     path: Path
+    coordinated: bool = False
 
     @contextmanager
     def connect(self, *, read_only: bool = True) -> Iterator[duckdb.DuckDBPyConnection]:
@@ -20,12 +23,14 @@ class DuckDBConnectionFactory:
             raise FileNotFoundError("Database is not initialized; run init-db first")
         if not read_only:
             self.path.parent.mkdir(parents=True, exist_ok=True)
-        connection = duckdb.connect(str(self.path), read_only=read_only)
-        try:
-            connection.execute("SET TimeZone = 'UTC'")
-            yield connection
-        finally:
-            connection.close()
+        ownership = database_process_lock(self.path) if self.coordinated else nullcontext()
+        with ownership:
+            connection = duckdb.connect(str(self.path), read_only=read_only)
+            try:
+                connection.execute("SET TimeZone = 'UTC'")
+                yield connection
+            finally:
+                connection.close()
 
 
 def migrate(factory: DuckDBConnectionFactory, directory: Path) -> list[int]:

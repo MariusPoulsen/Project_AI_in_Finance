@@ -40,7 +40,6 @@ def test_hash_stable_for_yaml_order_and_comments(project_root, tmp_path, config)
         ("econometrics", "entry_z", 0.1),
         ("econometrics", "cointegration_alpha", 2),
         ("econometrics", "entry_z", float("nan")),
-        ("agents", "mode", "live"),
         ("agents", "historical_web_browsing", True),
         ("data", "start", "2020-01-01"),
         ("decision", "status", "frozen"),
@@ -54,6 +53,21 @@ def test_invalid_config_fails_before_work(config, section, field, value):
     raw[section][field] = value
     with pytest.raises(ValidationError):
         ProjectConfig.model_validate(raw)
+
+
+@pytest.mark.parametrize("missing_alias", ["provider", "model"])
+def test_live_agent_config_requires_each_alias(config, missing_alias):
+    raw = config.model_dump(mode="json")
+    raw["agents"]["mode"] = "live"
+    raw["agents"][missing_alias] = None
+    with pytest.raises(ValidationError, match="provider and model aliases"):
+        ProjectConfig.model_validate(raw)
+
+
+def test_live_agent_config_accepts_declared_aliases(config):
+    raw = config.model_dump(mode="json")
+    raw["agents"]["mode"] = "live"
+    assert ProjectConfig.model_validate(raw).agents.mode == "live"
 
 
 def test_overlapping_partitions_rejected(config):

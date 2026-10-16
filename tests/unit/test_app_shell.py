@@ -16,7 +16,10 @@ from structural_break.services.app_queries import (
 
 # AppTest's asyncio wake-up pipe uses a loopback socket pair on Windows.
 # External hosts remain blocked; Linux uses a local socket pair.
-pytestmark = pytest.mark.allow_hosts(["127.0.0.1", "::1"])
+pytestmark = [
+    pytest.mark.allow_hosts(["127.0.0.1", "::1"]),
+    pytest.mark.usefixtures("preserve_main_module"),
+]
 
 
 class FrozenService:
@@ -82,7 +85,7 @@ class FrozenService:
 
 
 def app_script(service) -> None:
-    from app.streamlit_app import main
+    from app.reference_streamlit_app import main
 
     main(service)
 

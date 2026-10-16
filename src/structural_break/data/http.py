@@ -1,5 +1,6 @@
 """Bounded public-source retrieval with explicit SEC identity and conservative pacing."""
 
+import http.client
 import re
 import time
 import urllib.error
@@ -109,12 +110,19 @@ class HttpClient:
                 url, headers={"User-Agent": agent, "Accept-Encoding": "identity"}
             )
             status: int | None = None
+            redirect_error: ValueError | None = None
             try:
                 with self.opener.open(request, timeout=self.timeout) as response:
                     status = response.status
-                    validate_redirect(url, response.url)
+                    try:
+                        validate_redirect(url, response.url)
+                    except ValueError as error:
+                        redirect_error = error
+                        raise
+                    if status != 200:
+                        raise SourceError(url, status)
                     body = response.read()
-                    if status != 200 or not body:
+                    if not body:
                         raise SourceError(url, status)
                     return FetchedResponse(body, url, status, datetime.now(UTC))
             except urllib.error.HTTPError as error:
@@ -124,8 +132,21 @@ class HttpClient:
             except SourceError as error:
                 if error.status_code not in _RETRYABLE_HTTP_STATUSES | {200, None}:
                     raise
-            except (urllib.error.URLError, TimeoutError):
-                pass
+            except (
+                urllib.error.URLError,
+                TimeoutError,
+                http.client.RemoteDisconnected,
+                http.client.IncompleteRead,
+                ConnectionResetError,
+                ConnectionAbortedError,
+                BrokenPipeError,
+            ):
+                # A dropped connection can happen while opening, reading or closing.
+                # Cleanup must not turn a rejected redirect/permanent status into a retry.
+                if redirect_error is not None:
+                    raise redirect_error from None
+                if status not in _RETRYABLE_HTTP_STATUSES | {200, None}:
+                    raise SourceError(url, status) from None
             if attempt + 1 < self.attempts:
                 self.sleeper(min(2**attempt, 8))
         raise SourceError(url, status)

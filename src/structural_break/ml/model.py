@@ -13,7 +13,7 @@ import os
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import joblib
 import numpy as np
@@ -67,6 +67,8 @@ def fit_sigmoid(margins: Any, labels: Any) -> SigmoidCalibrator:
 
     The nonnegative slope preserves the base model ranking. One-class or constant
     margins cannot identify discrimination, so a smoothed constant prior is saved.
+    A line-search failure retries the identical objective with SLSQP. Both solvers
+    must satisfy finite/feasible, projected-gradient and constant-baseline checks.
     """
     x = np.asarray(margins, dtype=float).reshape(-1)
     observed_labels = np.asarray(labels, dtype=float).reshape(-1)
@@ -92,15 +94,52 @@ def fit_sigmoid(margins: Any, labels: Any) -> SigmoidCalibrator:
         gradient = np.array([np.dot(residual, x), residual.sum()], dtype=float)
         return loss, gradient
 
+    margin_scale = float(x.std())
+    standardized = (x - x.mean()) / margin_scale
+    constant_intercept = float(np.log(target.mean() / (1.0 - target.mean())))
+    constant_loss, _ = objective(np.array([0.0, constant_intercept]))
+
+    def converged(result: Any) -> bool:
+        if not result.success or not np.isfinite(result.x).all() or result.x[0] < 0:
+            return False
+        logits = result.x[0] * x + result.x[1]
+        loss, gradient = objective(result.x)
+        if (
+            not np.isfinite(logits).all()
+            or not np.isfinite(loss)
+            or not np.isfinite(gradient).all()
+            or loss > constant_loss + 1e-10 * len(y)
+        ):
+            return False
+        # Check KKT stationarity per observation in unit-variance coordinates,
+        # independently of a solver's step-size/objective stopping criterion.
+        residual = expit(logits) - target
+        slope_gradient = float(np.dot(residual, standardized) / len(y))
+        if result.x[0] * margin_scale <= 1e-10:
+            slope_gradient = min(slope_gradient, 0.0)
+        intercept_gradient = float(residual.mean())
+        return max(abs(slope_gradient), abs(intercept_gradient)) <= 1e-6
+
+    initial = np.array([0.0, intercept])
     fitted = minimize(
         objective,
-        np.array([0.0, intercept]),
+        initial,
         jac=True,
         method="L-BFGS-B",
         bounds=[(0.0, None), (None, None)],
         options={"ftol": 1e-12, "gtol": 1e-9, "maxiter": 1000},
     )
-    if not fitted.success or not np.isfinite(fitted.x).all():
+    if not converged(fitted):
+        warm_start = fitted.x if np.isfinite(fitted.x).all() and fitted.x[0] >= 0 else initial
+        fitted = minimize(
+            objective,
+            warm_start,
+            jac=True,
+            method="SLSQP",
+            bounds=[(0.0, None), (None, None)],
+            options={"ftol": 1e-12, "maxiter": 1000},
+        )
+    if not converged(fitted):
         raise ModelTrainingError(f"Sigmoid calibration failed: {fitted.message}")
     slope, fitted_intercept = (float(value) for value in fitted.x)
     status = "FITTED" if slope > 1e-10 else "CONSTANT_NONNEGATIVE_BOUNDARY"
@@ -523,7 +562,7 @@ def _fold_summary(scores: list[dict[str, Any]]) -> dict[str, Any]:
     return summary
 
 
-def train_model_a(
+def train_chronological_model(
     rows: pd.DataFrame,
     feature_schema: dict[str, Any],
     settings: MLConfig,
@@ -533,10 +572,12 @@ def train_model_a(
     dataset_version: str,
     tracking_directory: Path | None = None,
     label_policy: dict[str, Any] | None = None,
+    expected_feature_schema_version: str,
+    model_variant: Literal["A", "B"],
 ) -> TrainingResult:
-    """Tune inside training; calibrate validation and freeze the predeclared policy."""
+    """Apply the same frozen chronology to an explicit Model A or Model B schema."""
     columns = _schema_columns(feature_schema)
-    if feature_schema["version"] != settings.feature_schema_version:
+    if feature_schema["version"] != expected_feature_schema_version:
         raise ValueError("Configured and dataset feature schema versions differ")
     required = {
         "event_id",
@@ -809,7 +850,22 @@ def train_model_a(
             p,
             policy["candidate_threshold"],
         )
-    ablations["A2"] = metrics["partitions"]["validation"]["xgboost_raw"]
+    if model_variant == "A":
+        ablations["A2"] = metrics["partitions"]["validation"]["xgboost_raw"]
+    else:
+        quantitative = [
+            item["name"] for item in feature_schema["columns"] if item.get("family") != "event"
+        ]
+        if not quantitative or len(quantitative) == len(columns):
+            raise ValueError("Model B requires quantitative and structured event feature families")
+        fitted = _xgboost(best_xgb["parameters"], settings.seed)
+        fitted.fit(x_train[quantitative], y_train)
+        ablations["A2_same_B_hyperparameters"] = predictive_metrics(
+            development.loc[validation_mask, "y_revert_success"].astype(int),
+            fitted.predict_proba(matrix.loc[validation_mask, quantitative])[:, 1],
+            policy["candidate_threshold"],
+        )
+        ablations["B_full"] = metrics["partitions"]["validation"]["xgboost_raw"]
     metrics["raw_validation_feature_ablations"] = ablations
     metrics["global_mean_abs_shap_validation"] = {
         name: float(value)
@@ -857,7 +913,9 @@ def train_model_a(
         "development_predictions.parquet": predictions.to_parquet(index=False),
         "model_card.json": _json_bytes(
             {
-                "family": "Model A quantitative XGBoost",
+                "family": "Model A quantitative XGBoost"
+                if model_variant == "A"
+                else "Model B quantitative plus structured SEC-event XGBoost",
                 "benchmark": "L2 logistic same information",
                 "calibration": calibrator.__dict__,
                 "limits": metrics["sample_limitations"],
@@ -876,12 +934,13 @@ def train_model_a(
     tracking = (tracking_directory or output_directory.parent / "mlflow").resolve()
     tracking.mkdir(parents=True, exist_ok=True)
     mlflow.set_tracking_uri(f"sqlite:///{(tracking / 'tracking.sqlite').as_posix()}")
-    experiment = mlflow.get_experiment_by_name("structural-break-model-a")
+    experiment_name = f"structural-break-model-{model_variant.lower()}"
+    experiment = mlflow.get_experiment_by_name(experiment_name)
     experiment_id = (
         experiment.experiment_id
         if experiment is not None
         else mlflow.create_experiment(
-            "structural-break-model-a", artifact_location=(tracking / "artifacts").as_uri()
+            experiment_name, artifact_location=(tracking / "artifacts").as_uri()
         )
     )
     mlflow.set_experiment(experiment_id=experiment_id)
@@ -922,6 +981,32 @@ def train_model_a(
     }
     write_bytes(output_directory / "bundle_manifest.json", _json_bytes(manifest))
     return TrainingResult(bundle, metrics, predictions, manifest)
+
+
+def train_model_a(
+    rows: pd.DataFrame,
+    feature_schema: dict[str, Any],
+    settings: MLConfig,
+    output_directory: Path,
+    *,
+    model_version: str,
+    dataset_version: str,
+    tracking_directory: Path | None = None,
+    label_policy: dict[str, Any] | None = None,
+) -> TrainingResult:
+    """Preserve the quantitative-only training contract used by Phase 3."""
+    return train_chronological_model(
+        rows,
+        feature_schema,
+        settings,
+        output_directory,
+        model_version=model_version,
+        dataset_version=dataset_version,
+        tracking_directory=tracking_directory,
+        label_policy=label_policy,
+        expected_feature_schema_version=settings.feature_schema_version,
+        model_variant="A",
+    )
 
 
 def load_bundle(directory: Path) -> ModelBundle:

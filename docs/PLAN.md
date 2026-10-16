@@ -42,14 +42,14 @@ If a criterion cannot be completed, record it as BLOCKED with the exact reason a
 ---
 ## P0 — Repository, environment and storage foundation
 
-Status: complete; all P0 acceptance gates passed. See `docs/STATUS.md` for evidence.
+Status: complete; all P0 acceptance gates passed. See `docs/archive/IMPLEMENTATION_HISTORY.md` for evidence.
 Stopped at the P0 boundary; P1 requires a separate instruction.
 
 ### Build
 
 - [x] Create the repository skeleton from the Software Engineering specification.
 - [x] Add Python 3.11, `pyproject.toml`, `uv.lock`, `.python-version`, `.env.example`, `.gitignore`.
-- [x] Keep the canonical agent-facing Markdown specifications under `docs/specs/`; PDFs may remain under `docs/PDFs/` as archival/human-readable copies.
+- [x] Keep the canonical agent-facing Markdown specifications under `docs/specs/`; PDFs remain under `docs/archive/pdfs/` as archival/human-readable copies.
 - [x] Implement typed configuration loading for universe, data, econometrics, ML, agents, decision, backtest and app settings.
 - [x] Implement structured logging and run IDs.
 - [x] Implement the canonical directory resolver from `docs/DECISIONS.md`.
@@ -70,7 +70,7 @@ Stopped at the P0 boundary; P1 requires a separate instruction.
 
 ## P1 — Data ingestion, reference data and lineage
 
-Status: complete; all P1 acceptance gates passed on 2026-10-03. See `docs/STATUS.md`
+Status: complete; all P1 acceptance gates passed on 2026-10-03. See `docs/archive/IMPLEMENTATION_HISTORY.md`
 for live freeze, offline reproduction and hosted acceptance evidence. Stopped at P1.
 
 ### Build
@@ -127,7 +127,7 @@ for live freeze, offline reproduction and hosted acceptance evidence. Stopped at
 
 ## P3 — Divergence dataset, Model A and minimal app shell
 
-Status: complete; all P3 acceptance gates passed on 2026-10-03. See `docs/STATUS.md`
+Status: complete; all P3 acceptance gates passed on 2026-10-03. See `docs/archive/IMPLEMENTATION_HISTORY.md`
 for frozen-data counts, development metrics, reload/app checks and hosted CI.
 Stopped at P3. Sparse one-class validation limits predictive conclusions.
 
@@ -165,81 +165,183 @@ Stopped at P3. Sparse one-class validation limits predictive conclusions.
 
 ## P4 — Point-in-time SEC event intelligence and Model B
 
+Status: complete; all P4 acceptance gates passed on 2026-10-05. See
+`docs/archive/IMPLEMENTATION_HISTORY.md` for the genuine partial extraction pilot, stored-model replay,
+paired validation limits and Windows/Linux/Colab evidence. Stopped at P4.
+Final-test outcomes remain locked; current P5 work is tracked below.
+
 ### Build
 
-- [ ] Implement event-specific SEC evidence selection using only filings accepted at/before event cutoff.
-- [ ] Lazily download/cache required filing bodies and exhibits by accession number.
-- [ ] Parse/clean SEC documents while retaining provenance.
-- [ ] Chunk and index documents with stable chunk IDs.
-- [ ] Implement deterministic admissibility filtering before relevance ranking.
-- [ ] Implement local lexical retrieval; optional semantic reranking only if it does not become a dependency for correctness.
-- [ ] Build bounded evidence packs.
-- [ ] Implement schema-constrained catalyst extraction from admissible SEC evidence.
-- [ ] Persist structured event features and evidence IDs.
-- [ ] Create Model B feature schema = Model A + structured event block.
-- [ ] Train/tune/calibrate Model B under the same chronological protocol as Model A.
-- [ ] Freeze Model B threshold using validation data.
-- [ ] Save Model B artifacts and SHAP outputs.
-- [ ] Implement extraction/Model-B caches and mocked extraction fixtures for CI.
+- [x] Implement event-specific SEC evidence selection using only filings accepted at/before event cutoff.
+- [x] Lazily download/cache required filing bodies and exhibits by accession number.
+- [x] Parse/clean SEC documents while retaining provenance.
+- [x] Chunk and index documents with stable chunk IDs.
+- [x] Implement deterministic admissibility filtering before relevance ranking.
+- [x] Implement local lexical retrieval; optional semantic reranking only if it does not become a dependency for correctness.
+- [x] Build bounded evidence packs.
+- [x] Implement schema-constrained catalyst extraction from admissible SEC evidence.
+- [x] Persist structured event features and evidence IDs.
+- [x] Create Model B feature schema = Model A + structured event block.
+- [x] Train/tune/calibrate Model B under the same chronological protocol as Model A.
+- [x] Freeze Model B threshold using validation data.
+- [x] Save Model B artifacts and SHAP outputs.
+- [x] Implement extraction/Model-B caches and mocked extraction fixtures for CI.
 
 ### Acceptance gate P4
 
-- [ ] Every non-`NONE` structured catalyst has admissible evidence IDs.
-- [ ] Every supporting SEC timestamp is `<= event_timestamp`.
-- [ ] `NONE` is distinguishable from retrieval/coverage `UNKNOWN`.
-- [ ] Model B can be rebuilt from stored structured event features without re-calling an LLM.
-- [ ] Model A vs Model B validation comparison is reproducible.
-- [ ] Missing event evidence cannot silently remove difficult observations from evaluation; coverage flags are explicit.
+- [x] Every non-`NONE` structured catalyst has admissible evidence IDs.
+- [x] Every supporting SEC timestamp is `<= event_timestamp`.
+- [x] `NONE` is distinguishable from retrieval/coverage `UNKNOWN`.
+- [x] Model B can be rebuilt from stored structured event features without re-calling an LLM.
+- [x] Model A vs Model B validation comparison is reproducible.
+- [x] Missing event evidence cannot silently remove difficult observations from evaluation; coverage flags are explicit.
+
+---
+
+## Research v2 — authorized development redesign
+
+Status: **ACCEPTED** 2026-10-17 (DECISIONS section 34). Current delivery gates are in `docs/STATUS.md`; the
+scientific authority is `docs/RESEARCH_V2_PROTOCOL.md`. Detailed prior acceptance
+and recovery records are archived, rather than repeated in this plan.
+
+- [x] Freeze the 250-issuer, 40-group, 736-pair business-peer roster and original orientations.
+- [x] Capture and verify 2004–2023 market sources and corrected SEC `source_v3`.
+- [x] Complete the 10/20/30-session quantitative registries for all 736 pairs.
+- [x] Implement free guarded Gemma, pinned FinBERT, metadata/tone/catalyst ablations and matched A/B evaluation.
+- [x] Verify quality-v2 preprocessing, compact aggregation, operation-local parsing and native reporting with offline engineering checks.
+- [x] Freeze detached source `a02aadf` and pass its exact Windows/Linux/Colab hosted CI.
+- [x] Audit and copy 2,290 preserved checkpoints unchanged; launch the full 37,421-event `development_detached_v2` build with the frozen 500-event catalyst schedule.
+- [x] Recover the interrupted 4,727-checkpoint attempt into `development_prefetch_v2` with bounded parallel source preparation, a fresh audit and a new source/CI freeze; retain unchanged scientific inputs.
+- [x] Complete genuine SEC/metadata/FinBERT feature generation and disclose source/inference coverage.
+- [x] Fit all thirty primary and sensitivity bundles and independently replay native inference, reports and matched A/B comparisons.
+- [ ] Record actual denominators, positive outcomes, paired uncertainty and positive/negative comparison results.
+- [x] Complete the current source/CI/app release gates and genuine six-stage pipeline receipt for the detached generation.
+- [x] Publish verified readiness using `structural-break promote-primary --pipeline-receipt PIPELINE_RECEIPT --ci-gate CI_GATE` bound to the accepted generation.
+- [x] Promote accepted v2 to GitHub `main` and the default app/run path, retaining original Git history and immutable reference artifacts.
+
+The detached worker performs feature generation only. Model fits, independent
+verification, publication and merge are separate gates. It does not open the
+2024–2025 final test or establish Model B improvement. The old worker has exited;
+cleanup and recovery are integrated before the next frozen launch. Commands are in
+`docs/RESEARCH_V2_RUNBOOK.md`.
 
 ---
 
 ## P5 — Multi-agent structural-break investigation and decision controller
 
+Status: **IN PROGRESS**, begun on 2026-10-11 following the user's authorization of
+the bounded Week 4-inspired redesign. The first slice implements typed fixture
+inputs, independent openings, one rebuttal exchange, separate synthesis and
+validation, fail-safe caching and the Python controller. The current architecture
+is in `docs/specs/04_MULTI_AGENT_PIPELINE.md` and DECISIONS section 28.
+
+Work is isolated on `phase5/agents-controller-foundation`. Keep the live v2
+checkout and its 37,421-event population, source-v3 inputs, quality-v2 FinBERT,
+500-event catalyst schedule and A/B definitions frozen. Integrate only after all
+v2 acceptance gates, including model/replay/CI/publication, have passed. Fixture
+success does not complete P5, establish semantic quality or unlock 2024–2025.
+
 ### Build
 
-- [ ] Implement typed LangGraph/shared state.
-- [ ] Load Model B quantitative state before advocate reasoning.
-- [ ] Feed both advocates the same admissible evidence and structured extraction.
-- [ ] Implement Mean-Reversion Advocate.
-- [ ] Implement Structural-Break Advocate.
-- [ ] Run advocate nodes independently/in parallel before synthesis where supported.
-- [ ] Implement Risk/Validation Agent for citations, timestamps, contradictions, source support, coverage and mandate compliance.
-- [ ] Implement validated break-risk synthesis.
-- [ ] Implement deterministic decision controller and reason codes.
-- [ ] Implement explicit `CANDIDATE`, `REVIEW`, `NO TRADE`, `ABSTAIN` semantics.
-- [ ] Implement timeouts/retries/schema validation/fail-safe abstention.
-- [ ] Cache agent outputs by event/source/prompt/graph/model version.
-- [ ] Build human-labelled NLP/agent evaluation subset workflow.
+Checked implementation items describe the verified fixture slice. They do not
+complete accepted-generation integration or genuine semantic evaluation.
+
+- [x] Implement immutable typed event contracts and LangGraph shared state.
+- [x] Implement the deterministic controller with versioned categorical-risk policy and reason codes.
+- [ ] Load accepted Model B quantitative state and reused SEC/FinBERT/catalyst inputs through a generation-bound historical adapter.
+- [x] Implement the publication-gated historical adapter and source/native replay refusal checks; actual accepted v2 integration remains pending.
+- [x] Feed both advocates the same immutable fixture evidence and structured reports; genuine adapter remains pending.
+- [x] Implement Mean-Reversion Advocate role prompts and provider contract; genuine pilot remains pending.
+- [x] Implement Structural-Break Advocate role prompts and provider contract; genuine pilot remains pending.
+- [x] Run opening advocate nodes independently/in parallel, without seeing each other's drafts.
+- [x] Implement exactly one independent rebuttal per advocate after both openings finish.
+- [x] Implement a distinct synthesis/facilitator stage with cited interpretation and proposed categorical break risk.
+- [x] Implement Python mechanical checks for exact quotes, identity, timestamps and quantitative references.
+- [x] Implement separate semantic Risk/Validation for claim support, contradictions, coverage, mandate compliance and accepted break risk.
+- [ ] Configure Gemma opening/rebuttal roles and Flash-Lite synthesis/validation with explicit model/prompt/graph versions; run a real pilot.
+- [x] Implement explicit `CANDIDATE`, `REVIEW`, `NO TRADE`, `ABSTAIN` semantics.
+- [x] Implement timeouts/retries/schema validation/fail-safe abstention and attempt budgets including retries.
+- [x] Cache agent outputs by exact event/source/upstream-output/prompt/graph/model identity.
+- [x] Implement durable total/model/day attempt reservations, exclusive leases and explicit audited recovery.
+- [x] Implement frozen target-blind batch scheduling, complete denominator records and resumable immutable event checkpoints on mock inputs.
+- [x] Implement checksum-checked lazy mock input inventories and blind source annotation export/validation; genuine adapter and quality evaluation remain pending.
+- [ ] Count historically ACTIVE + frozen Model B threshold + hard-gate eligible events after genuine fitting.
+- [ ] Persist statuses/reasons for deterministically skipped calls and declare optional REVIEW/audit schedules separately.
+- [ ] If required by quota, freeze a target-blind agent schedule and matched B/Full-System denominator before evaluating that schedule.
+- [ ] Build the fixed human-labelled evaluation workflow: at least 50 historical events, aim 100, source support/category/materiality/relevance and agent interpretation.
+- [x] Implement genuine source-only review export/replay independently of fitted B, with a frozen raw capture and target-blind 50–100-event inventory.
 
 ### Acceptance gate P5
 
 - [ ] No agent can alter stored econometric or ML values.
 - [ ] Material claims resolve to valid evidence IDs and historical timestamps.
+- [x] Opening independence, one-round topology and separate synthesis/semantic-validation roles pass deterministic integration checks.
+- [x] Exact-quote checks are distinguished from semantic support, and failed mechanical checks cannot be overridden in the tested workflow.
 - [ ] Invalid/failing LLM outputs end in safe retry/`ABSTAIN` behaviour.
-- [ ] Same frozen event/source/prompt/model configuration is cache-reproducible.
-- [ ] Controller output is deterministic for a fixed validated state.
-- [ ] Agent integration tests pass with mocked provider responses and no network.
+- [x] Same frozen fixture input/provider/prompt/model configuration is cache-reproducible.
+- [x] Controller output is deterministic for a fixed validated state.
+- [x] Agent integration tests pass with mocked provider responses and blocked sockets (180 Phase 5 tests, including batch/budget/input/review checks).
+- [ ] Accepted-generation inputs and genuine provider outputs pass an auditable historical pilot without exposing outcomes to agents.
+- [ ] Human source-support and classification evaluation is completed with at least 50 annotations and honest error/coverage reporting.
+- [ ] Scheduled and skipped denominators are retained; no subset result is represented as a whole-cohort Full-System result.
+- [ ] Freeze the actual provider/prompt/graph/controller identities before later final-test authorization.
 
 ---
 
 ## P6 — Backtesting framework, experiment freeze and final evaluation
 
+Status: **IN PROGRESS**, authorized on 2026-10-11 for an isolated, synthetic
+event-level slice on `phase6/shared-simulator`, in parallel with Phase 5 batch
+infrastructure. The next authorized fixture slice adds the capability ladder,
+coverage-aware event reports and immutable manifest verification. See DECISIONS
+sections 30-32 and `docs/BACKTEST_RUNBOOK.md`.
+Implementation does not run genuine historical economics, integrate unfinished
+v2 outputs or open 2024-2025 outcomes. Production execution policy remains
+DRAFT; fixture scenarios are not an execution-cost freeze.
+
 ### Build before final-test unlock
 
-- [ ] Implement one execution engine shared by all five variants.
-- [ ] Implement beta-weighted long/short pair construction.
-- [ ] Implement close-signal / next-open execution convention.
-- [ ] Implement convergence, adverse-stop and timeout exits.
-- [ ] Implement transaction-cost and short-borrow assumptions and sensitivity grids.
-- [ ] Implement event-level MAE/MFE/holding/return metrics.
-- [ ] Implement secondary portfolio simulation and exposure/turnover accounting.
-- [ ] Implement predictive/calibration metrics.
-- [ ] Implement agent/controller metrics.
-- [ ] Implement common-subset and coverage-aware adjacent-rung comparisons.
-- [ ] Implement robustness slices by year, pair, sector, divergence sign, market-stress context, event type/materiality and cost assumptions.
-- [ ] Implement block-bootstrap / pair-concentration uncertainty analyses specified in `docs/specs/05_BACKTESTING_EVALUATION.md`.
-- [ ] Implement experiment manifest and immutable result persistence.
+- [x] Implement the common event execution engine on synthetic inputs.
+- [x] Verify synthetic five-rung selection, with independent A/B filters and Full as a subset of B.
+- [ ] Implement accepted historical input/prediction/controller adapters for all five variants.
+- [x] Implement beta-weighted entry construction with frozen share units until exit.
+- [x] Implement close-signal / next-open execution convention.
+- [x] Implement convergence, adverse-stop and timeout exits.
+- [x] Implement twelve predeclared fixture transaction-cost/borrow scenarios; freeze production assumptions separately.
+- [x] Implement explicit fixture turnover/borrow accounting and 10/20/30-session horizon support; production policy remains DRAFT.
+- [x] Implement event-level MAE/MFE/holding/return metrics, with separate partial excursions for unpriced paths.
+- [x] Implement secondary fixture fixed-share portfolio simulation, cash/NAV/exposure/turnover accounting and missing-valuation refusal.
+- [x] Implement fixture predictive/calibration metrics on the fresh forecasting population.
+- [x] Implement fixture agent/controller metrics with scheduled coverage and explicit veto/deferral distinctions.
+- [x] Implement fixture common-data and coverage-aware adjacent-rung comparisons, separate from selected intersections.
+- [ ] Verify accepted historical predictive, controller and common-data comparison outputs.
+- [x] Implement fixture robustness slices by year, pair, sector, divergence sign, admissible stress context, event type/materiality and cost assumptions, retaining UNKNOWN.
+- [x] Implement fixture paired-month economic bootstrap and leave-one-pair/sector-out diagnostics; intervals require twelve contributing months per estimand.
+- [ ] Verify accepted historical portfolio, robustness/cost and economic uncertainty outputs under frozen production policies.
+- [ ] Implement accepted historical experiment manifest and immutable result persistence.
+- [x] Verify the fixture-only ladder manifest, complete row inventory and fresh deterministic replay.
+- [x] Implement the immutable fixture analysis bundle and independent replay of all eighteen bound artifacts.
 - [ ] Freeze methodology/config/model/prompt/policy/execution assumptions.
+
+The first slice covers the event engine and fixture artifacts. The second
+slice adds synthetic five-rung selection, labeled event reporting, common-data
+versus selected-intersection comparisons and explicit agent coverage. Actual
+historical generation binding remains a separate gate. The third slice adds fixture
+portfolio accounting, sensitivity grids, robustness and economic uncertainty.
+Canonical v2 forecast chronology, logistic B-both primary
+and paired quarter-block reports remain unchanged.
+The previous combined Phase 5/6 slice passed 381 tests with sockets blocked:
+180 Phase 5 and 201 Phase 6 (75 simulator, 57 ladder, 32 reporting and 37
+experiment checks). The earlier simulator slice had 255 combined tests.
+Repository lint/formatting, strict typing and lockfile checks pass. The console
+ladder preserves all 14 synthetic rows, independently verifies its manifest and
+replays with the same immutable identity. These are engineering checks;
+genuine economic acceptance and hosted checks on the expanded branch commit
+remain separate. The analysis adds 95 checks (36 portfolio, 37 robustness/uncertainty,
+11 cost and 11 immutable analysis checks), bringing Phase 6 to 296.
+After integration the current Phase 5/6 slice passes 514 checks with sockets
+blocked (218 Phase 5 and 296 Phase 6). The console analysis independently verifies
+all eighteen bound artifacts and repeats with the same immutable identity.
 
 ### Final-test lock gate
 
@@ -298,6 +400,9 @@ Stopped at P3. Sparse one-class validation limits predictive conclusions.
 - [ ] Complete unit/integration/leakage/regression/app-smoke test suites.
 - [ ] Ensure CI passes on a clean clone without external APIs.
 - [ ] Finalise demo snapshot packaging.
+- [-] Prepare the offline group snapshot and setup/app/prediction/backtest-input commands;
+  tooling and fixture checks are on `collaboration/portable-research-snapshot`.
+  Export and fresh-workspace checks with the real bundle await accepted v2 outputs.
 - [ ] Finalise model card, data dictionary, README and technical runbook.
 - [ ] Document all commands for bootstrap, migrations, data build, model training, agent batch, backtest, demo packaging and Streamlit launch.
 - [ ] Add deployment config for Streamlit Community Cloud or approved equivalent.
