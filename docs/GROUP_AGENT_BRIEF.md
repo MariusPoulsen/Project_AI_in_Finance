@@ -144,10 +144,16 @@ stop and ask the human.
 
 ## 5. Work streams
 
-Your human will tell you which one is theirs. Start by producing a short written
-plan (in `docs/team/<stream>.md`) and confirm it with your human before large changes.
+Your human will tell you which one is theirs. `docs/PLAN.md` is the authoritative
+checklist: each stream below maps onto a PLAN phase, and its open checkboxes and
+acceptance gate define "done". Start by producing a short written plan against
+those checkboxes (in `docs/team/<stream>.md`) and confirm it with your human before
+large changes. PLAN status and checkboxes are updated only when a gate truly passes.
 
 ### WS1: Gradient boosting, tuning and cross-validation
+PLAN phase: none yet (exploratory research on top of the frozen v2 protocol; a
+methodology change needs a new authorized experiment).
+
 Goal: find out whether better-tuned tree models, or better validation and
 calibration, change the A-versus-B conclusion, without breaking the matched design.
 
@@ -171,6 +177,8 @@ vs no calibration; class-imbalance handling; stability of chosen hyperparameters
 across folds; SHAP/permutation importance of B's SEC features; learning curves.
 
 ### WS2: Frontend / Streamlit app
+PLAN phase: **P7** (full Streamlit research application).
+
 Goal: turn the minimal read-only app (`app/streamlit_app.py`, currently "Model
 comparison" and "Event scores") into the full research application (PLAN.md P7).
 
@@ -189,6 +197,8 @@ empty/pending/error states; add app smoke tests. Optional later: Streamlit
 Community Cloud deployment from a small demo snapshot.
 
 ### WS3: Backtesting framework
+PLAN phase: **P6** (backtesting framework, experiment freeze, final evaluation).
+
 Goal: one shared execution engine that turns events and model selections into
 simulated trades and returns, for all strategy rungs, on development data only.
 
@@ -212,6 +222,8 @@ Model B selected; Full System waits for the agents. Freeze execution
 assumptions in writing before looking at 2022-2023 returns.
 
 ### WS4: Predictions and results analysis
+PLAN phase: supports the v2 reporting gates and P6 predictive metrics; no own phase.
+
 Goal: understand where and why B differs from A, and produce clean, traceable
 tables and figures for the group.
 
@@ -225,6 +237,8 @@ events with their SEC evidence metadata; denominators and positive counts for
 every table; all ten bundles and all three horizons reported (no cherry-picking).
 
 ### WS5 (optional): Agents and human annotation
+PLAN phase: **P5** (multi-agent investigation and decision controller).
+
 The merged Phase 5 foundation in `src/structural_break/agents/` (CLI
 `structural-break-agents`, runbook `docs/PHASE5_RUNBOOK.md`, DECISIONS sections
 28-29) has bounded LLM agents and a deterministic controller plus a 50-case blinded
