@@ -107,7 +107,7 @@ def test_sensitivity_values_must_be_unique(tmp_path: Path) -> None:
         load_sensitivities(configs)
 
 
-def test_analysis_policies_freeze_bootstrap_and_portfolio_but_not_robustness() -> None:
+def test_analysis_policies_are_frozen_by_decisions_35_and_38() -> None:
     analysis = load_analysis_policies(CONFIGS)
     assert (analysis.bootstrap.status, analysis.bootstrap.version) == (
         "FROZEN",
@@ -119,8 +119,12 @@ def test_analysis_policies_freeze_bootstrap_and_portfolio_but_not_robustness() -
         "DEVELOPMENT",
         0.25,
     )
-    assert analysis.robustness.status == "DRAFT"
-    assert (analysis.robustness.vix_elevated, analysis.robustness.vix_high) == (20.0, 30.0)
+    robustness = analysis.robustness
+    assert (robustness.status, robustness.version) == ("FROZEN", "phase6-robustness-20261016")
+    assert (robustness.vix_elevated, robustness.vix_high) == (20.0, 30.0)
+    assert (robustness.volatility_elevated, robustness.volatility_high) == (0.2, 0.4)
+    assert robustness.tiny_population_threshold == 20
+    assert robustness.context_policy_version == "phase6-feature-context-v1"
 
 
 @pytest.mark.parametrize(

@@ -36,15 +36,16 @@ HEADLINE = "threshold=0.3|phase6-execution-v2-20261016"
 Experiment = tuple[HistoricalSources, Path, Path]
 
 
-def _configs(directory: Path, *, robustness: str = "FROZEN") -> Path:
-    """Repository configs; the robustness status is set here only as a test stand-in."""
+def _configs(directory: Path, *, robustness: str | None = None) -> Path:
+    """Copy the frozen repository configs; optionally alter the robustness status."""
     directory.mkdir(parents=True, exist_ok=True)
     for name in CONFIG_NAMES:
         shutil.copy(REPOSITORY_CONFIGS / name, directory / name)
-    analysis = directory / "phase6_analysis.json"
-    value = json.loads(analysis.read_text(encoding="utf-8"))
-    value["robustness"]["status"] = robustness
-    analysis.write_text(json.dumps(value), encoding="utf-8")
+    if robustness is not None:
+        analysis = directory / "phase6_analysis.json"
+        value = json.loads(analysis.read_text(encoding="utf-8"))
+        value["robustness"]["status"] = robustness
+        analysis.write_text(json.dumps(value), encoding="utf-8")
     return directory
 
 
@@ -93,11 +94,17 @@ def test_experiment_binds_frozen_policies_and_declared_combinations(
     assert {policy["status"] for policy in policies["policies"]} == {"FROZEN"}
 
 
-def test_repository_robustness_policy_awaits_owner_approval(tmp_path: Path) -> None:
+def test_repository_configs_are_frozen_and_a_draft_slice_policy_is_refused(
+    tmp_path: Path,
+) -> None:
     sources = _sources(tmp_path / "workspace")
+    manifest = run_historical_experiment(sources, REPOSITORY_CONFIGS, tmp_path / "out")
+    analysis = json.loads((manifest.parent / "analysis-policies.json").read_text("utf-8"))
+    assert analysis["robustness"]["status"] == "FROZEN"
+    draft = _configs(tmp_path / "draft", robustness="DRAFT")
     with pytest.raises(ValueError, match="awaits owner approval"):
-        run_historical_experiment(sources, REPOSITORY_CONFIGS, tmp_path / "out")
-    assert not (tmp_path / "out").exists()
+        run_historical_experiment(sources, draft, tmp_path / "draft-out")
+    assert not (tmp_path / "draft-out").exists()
 
 
 def test_reports_are_post_hoc_development_with_full_system_not_run(

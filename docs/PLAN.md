@@ -317,7 +317,7 @@ DRAFT; fixture scenarios are not an execution-cost freeze.
 - [ ] Verify accepted historical predictive, controller and common-data comparison outputs.
 - [x] Implement fixture robustness slices by year, pair, sector, divergence sign, admissible stress context, event type/materiality and cost assumptions, retaining UNKNOWN.
 - [x] Implement fixture paired-month economic bootstrap and leave-one-pair/sector-out diagnostics; intervals require twelve contributing months per estimand.
-- [-] Verify accepted historical portfolio, robustness/cost and economic uncertainty outputs under frozen production policies. Implemented inside the accepted experiment and fixture-verified (Decision 37); the robustness slice boundaries await owner approval and the acceptance run waits for the official snapshot.
+- [-] Verify accepted historical portfolio, robustness/cost and economic uncertainty outputs under frozen production policies. Implemented inside the accepted experiment and fixture-verified (Decision 37); the analysis policies, including the robustness slice boundaries, are frozen (Decisions 35 and 38), and the acceptance run waits for the official snapshot.
 - [-] Implement accepted historical experiment manifest and immutable result persistence. Implemented and fixture-verified (Decision 36: accepted-only `historical-experiment`, content-addressed artifacts, independent replay via `verify-historical-experiment`); the acceptance run on the official snapshot is pending.
 - [x] Verify the fixture-only ladder manifest, complete row inventory and fresh deterministic replay.
 - [x] Implement the immutable fixture analysis bundle and independent replay of all eighteen bound artifacts.

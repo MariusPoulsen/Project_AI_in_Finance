@@ -260,8 +260,10 @@ adds four outputs on the headline combination:
 - `portfolios.json`: the frozen fixed-share portfolio per run rung. Positions
   open at the development end stay `UNPRICED` and no terminal NAV is claimed.
 
-The run is refused while `configs/phase6_analysis.json` has its robustness
-policy in DRAFT.
+Decision 38 froze the robustness slice policy in `configs/phase6_analysis.json`
+(VIX 20/30, volatility 0.20/0.40, small-population flag below 20). All analysis
+policies the experiment uses are now frozen; the run waits only for the
+official accepted snapshot.
 Verification rebuilds the events from the bound sources and replays
 everything. A changed config, source, runtime or artifact fails verification;
 nothing is rewritten.

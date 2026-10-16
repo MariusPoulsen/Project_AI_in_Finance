@@ -25,7 +25,7 @@
   },
   "robustness": {
     "version": "phase6-robustness-20261016",
-    "status": "DRAFT",
+    "status": "FROZEN",
     "context_policy_version": "phase6-feature-context-v1",
     "tiny_population_threshold": 20,
     "vix_elevated": 20.0,

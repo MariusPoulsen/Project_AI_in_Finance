@@ -1055,3 +1055,32 @@ leave-one-sector-out diagnostics, are all reported; none is selected.
 These values carry over the Decision 32 fixture boundaries unchanged, but were
 not part of the Decision 35 approval. The experiment refuses to run until the
 owner freezes them. Tests use a test-only frozen copy.
+
+## 38. Frozen Phase 6 robustness slice policy
+
+Recorded 2026-10-16. The owner approved the Decision 37 robustness slice policy
+as proposed, and it is now **FROZEN** in `configs/phase6_analysis.json`
+(`phase6-robustness-20261016`).
+
+**Timing.** The approval came after the 2022–2023 assessment forecasts and the
+empty 0.65 A/B inventory had been observed. No historical return, slice result
+or stress-bucket count had been computed. The boundaries are the unchanged
+Decision 32 fixture values, chosen without any historical outcome.
+
+**Frozen values:**
+
+- previous-session VIX buckets: LOW below 20, ELEVATED from 20, HIGH from 30;
+- trailing annualized 20-session SPY volatility buckets: LOW below 0.20,
+  ELEVATED from 0.20, HIGH from 0.40;
+- a slice with fewer than 20 events is flagged as a small population;
+- contexts (`phase6-feature-context-v1`) come from the bound `h{h}_features`
+  table at their point-in-time clocks, and missing context stays UNKNOWN.
+
+All slices and the leave-one-pair-out and leave-one-sector-out diagnostics are
+reported; none is selected. Event type and materiality remain UNKNOWN until an
+accepted controller generation exists.
+
+**What this unblocks.** Every Phase 6 execution and analysis policy the
+accepted experiment uses is now frozen. The acceptance run still requires the
+official accepted snapshot. The Full System, the controller and prompt
+identities (P5), and the 2024–2025 final-test lock are unchanged.
