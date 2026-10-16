@@ -268,6 +268,30 @@ Verification rebuilds the events from the bound sources and replays
 everything. A changed config, source, runtime or artifact fails verification;
 nothing is rewritten.
 
+### Official acceptance in one command (official snapshot only)
+
+Run this once the accepted snapshot is imported (Decision 40):
+
+```powershell
+uv run --frozen structural-break-backtest p6-acceptance --workspace-root WORKSPACE --output-dir .acceptance/p6-official
+```
+
+For each of h20, h10 and h30 it runs the experiment, verifies it by fresh
+replay and writes the policy diagnostics. It then writes
+`freeze/<freeze_id>/freeze-manifest.json`. On a single thread, expect roughly
+10-20 minutes per horizon, most of it in the leave-one-pair-out robustness
+reports and their replay. Review the manifest's `open_decisions`.
+
+The final test stays locked. Check the gate with:
+
+```powershell
+uv run --frozen structural-break-backtest final-test-gate --freeze-manifest FREEZE_MANIFEST
+```
+
+It exits with status 2 unless every decision is closed and an owner-written
+unlock record binds that exact manifest. Passing the gate does not run or fetch
+2024-2025 data.
+
 ### Target-blind execution-policy diagnostics
 
 The proposal in `docs/proposals/P6_EXECUTION_POLICY.md` is supported by a

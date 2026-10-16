@@ -346,9 +346,9 @@ all eighteen bound artifacts and repeats with the same immutable identity.
 
 ### Final-test lock gate
 
-- [ ] Generate and review a freeze manifest.
-- [ ] Confirm all validation-driven decisions are closed.
-- [ ] Require explicit user approval / unlock flag before producing headline 2024-2025 outcome metrics.
+- [-] Generate and review a freeze manifest. The generator is implemented and fixture-verified (Decision 40, `p6-acceptance`); the genuine manifest is generated on the official snapshot and then reviewed by the owner.
+- [-] Confirm all validation-driven decisions are closed. The freeze manifest carries the checklist: execution, threshold and analysis policies are CLOSED, Full System is DEFERRED (Decision 39), and the accepted experiments for all three horizons remain OPEN until the official run.
+- [-] Require explicit user approval / unlock flag before producing headline 2024-2025 outcome metrics. The gate is implemented and refuses by default (`final-test-gate`, Decision 40); no final-test run or data capture exists yet.
 
 ### Final run after explicit unlock
 

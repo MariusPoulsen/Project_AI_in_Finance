@@ -240,6 +240,54 @@ def _historical_experiment(arguments: list[str], *, verify: bool) -> None:
     print(json.dumps(result, indent=2))
 
 
+def _acceptance(arguments: list[str]) -> None:
+    """Official P6 acceptance: every horizon, fresh replay, diagnostics, freeze manifest."""
+    from structural_break.backtest.freeze import run_acceptance
+    from structural_break.backtest.historical import HistoricalSources, bind_accepted
+    from structural_break.config.paths import ProjectPaths
+
+    parser = argparse.ArgumentParser(description="Accepted P6 development acceptance run")
+    parser.add_argument("--workspace-root", type=Path, required=True)
+    parser.add_argument("--configs-dir", type=Path, default=Path("configs"))
+    parser.add_argument("--primary-version")
+    parser.add_argument("--output-dir", type=Path, required=True)
+    args = parser.parse_args(arguments)
+    root = args.workspace_root.resolve()
+    paths = ProjectPaths.resolve(Path.cwd(), root)
+
+    def open_sources(horizon: int) -> HistoricalSources:
+        binding = bind_accepted(paths, horizon, primary_version=args.primary_version)
+        return HistoricalSources.open(root, binding, paths=paths)
+
+    result = run_acceptance(open_sources, args.configs_dir, args.output_dir)
+    print(json.dumps(result, indent=2, sort_keys=True))
+
+
+def _final_test_gate(arguments: list[str]) -> None:
+    """Report whether the final test may be unlocked; it never runs or fetches it."""
+    from structural_break.backtest.freeze import require_final_test_unlock
+
+    parser = argparse.ArgumentParser(description="Check the P6 final-test unlock gate")
+    parser.add_argument("--freeze-manifest", type=Path, required=True)
+    parser.add_argument("--unlock", type=Path)
+    args = parser.parse_args(arguments)
+    try:
+        manifest = require_final_test_unlock(args.freeze_manifest, args.unlock)
+    except PermissionError as error:
+        print(json.dumps({"final_test_unlocked": False, "reason": str(error)}, indent=2))
+        raise SystemExit(2) from None
+    print(
+        json.dumps(
+            {
+                "final_test_unlock_authorized": True,
+                "freeze_id": manifest.freeze_id,
+                "note": "Authorization verified; the final-test run itself is a separate step",
+            },
+            indent=2,
+        )
+    )
+
+
 def main() -> None:
     if len(sys.argv) > 1 and sys.argv[1] in {"analysis", "verify-analysis"}:
         _analysis(sys.argv[2:], verify=sys.argv[1] == "verify-analysis")
@@ -252,6 +300,12 @@ def main() -> None:
         "verify-historical-experiment",
     }:
         _historical_experiment(sys.argv[2:], verify=sys.argv[1] == "verify-historical-experiment")
+        return
+    if len(sys.argv) > 1 and sys.argv[1] == "p6-acceptance":
+        _acceptance(sys.argv[2:])
+        return
+    if len(sys.argv) > 1 and sys.argv[1] == "final-test-gate":
+        _final_test_gate(sys.argv[2:])
         return
     if len(sys.argv) > 1 and sys.argv[1] == "policy-diagnostics":
         _policy_diagnostics(sys.argv[2:])

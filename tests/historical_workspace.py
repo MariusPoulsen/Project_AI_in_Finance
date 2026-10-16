@@ -110,6 +110,24 @@ def make_workspace(
     horizon: int = HORIZON,
 ) -> tuple[str, str]:
     """Write the registered chain; return the evaluation manifest path and checksum."""
+    return make_workspace_horizons(
+        root,
+        (horizon,),
+        previous_z_shift=previous_z_shift,
+        extra_event_fields=extra_event_fields,
+        protocol_overrides=protocol_overrides,
+    )[horizon]
+
+
+def make_workspace_horizons(
+    root: Path,
+    horizons: tuple[int, ...],
+    *,
+    previous_z_shift: float = 0.0,
+    extra_event_fields: dict[str, Any] | None = None,
+    protocol_overrides: dict[str, Any] | None = None,
+) -> dict[int, tuple[str, str]]:
+    """One registry with every horizon and one evaluation generation per horizon."""
     protocol = {**PROTOCOL, **(protocol_overrides or {})}
     closes: dict[tuple[str, date], float] = {}
     price_rows = []
@@ -233,7 +251,9 @@ def make_workspace(
                 "sha256": _json(directory / "manifest.json", {"pair_id": pair_id, "files": files}),
             }
         )
-    events, targets, predictions = [], [], []
+    events: list[dict[str, Any]] = []
+    predictions: list[dict[str, Any]] = []
+    targets: dict[int, list[dict[str, Any]]] = {horizon: [] for horizon in horizons}
     for event_id, (pair_id, day, _status, scores, label) in EVENTS.items():
         leg_a, leg_b = pair_id.split("__")
         events.append(
@@ -250,20 +270,22 @@ def make_workspace(
                 "spread_std": STD,
                 "entry_z": _snapshot_z(pair_id, closes[(leg_a, day)], closes[(leg_b, day)]),
                 "label_policy_version": "label-fixture-v1",
+                "feature_schema_version": "features-fixture-v1",
                 **(extra_event_fields or {}).get(event_id, {}),
             }
         )
         window = canonical_sessions(day, date(2023, 12, 29))
-        complete = len(window) > horizon
-        targets.append(
-            {
-                "event_id": event_id,
-                "label_policy_version": "label-fixture-v1",
-                "y_revert_success": label if complete else float("nan"),
-                "label_eligible": complete and label is not None,
-                "horizon_end_date": window[horizon][0] if complete else None,
-            }
-        )
+        for horizon in horizons:
+            complete = len(window) > horizon
+            targets[horizon].append(
+                {
+                    "event_id": event_id,
+                    "label_policy_version": "label-fixture-v1",
+                    "y_revert_success": label if complete else float("nan"),
+                    "label_eligible": complete and label is not None,
+                    "horizon_end_date": window[horizon][0] if complete else None,
+                }
+            )
         if scores is not None:
             predictions.append(
                 {
@@ -298,23 +320,21 @@ def make_workspace(
                 "market_available_at": pd.Timestamp(session_close(day)) if known else pd.NaT,
             }
         )
-    registry_files = [
-        {
-            "name": f"h{horizon}_events",
-            "path": f"h{horizon}_events.parquet",
-            "sha256": _parquet(registry / f"h{horizon}_events.parquet", pd.DataFrame(events)),
-        },
-        {
-            "name": f"h{horizon}_targets",
-            "path": f"h{horizon}_targets.parquet",
-            "sha256": _parquet(registry / f"h{horizon}_targets.parquet", pd.DataFrame(targets)),
-        },
-        {
-            "name": f"h{horizon}_features",
-            "path": f"h{horizon}_features.parquet",
-            "sha256": _parquet(registry / f"h{horizon}_features.parquet", pd.DataFrame(features)),
-        },
-    ]
+    registry_files = []
+    for horizon in horizons:
+        for kind, rows in (
+            ("events", events),
+            ("targets", targets[horizon]),
+            ("features", features),
+        ):
+            name = f"h{horizon}_{kind}"
+            registry_files.append(
+                {
+                    "name": name,
+                    "path": f"{name}.parquet",
+                    "sha256": _parquet(registry / f"{name}.parquet", pd.DataFrame(rows)),
+                }
+            )
     registry_sha = _json(
         registry / "manifest.json",
         {
@@ -330,51 +350,54 @@ def make_workspace(
             "pair_manifests": pair_manifests,
         },
     )
-    evaluation_version = "research_evaluation_" + "2" * 24
-    evaluation = root / "artifacts/research" / evaluation_version
-    model_files = []
-    for name in ("logistic_A", "logistic_B_both"):
-        path = evaluation / "models" / f"{name}.joblib"
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(f"synthetic bundle {name}".encode())
-        model_files.append(
+    result: dict[int, tuple[str, str]] = {}
+    for horizon in horizons:
+        evaluation_version = "research_evaluation_" + f"{horizon:024d}"
+        evaluation = root / "artifacts/research" / evaluation_version
+        model_files = []
+        for name in ("logistic_A", "logistic_B_both"):
+            path = evaluation / "models" / f"{name}.joblib"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(f"synthetic bundle {name}".encode())
+            model_files.append(
+                {
+                    "name": name,
+                    "path": f"models/{name}.joblib",
+                    "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                }
+            )
+        relative = f"artifacts/research/{evaluation_version}/manifest.json"
+        sha = _json(
+            root / relative,
             {
-                "name": name,
-                "path": f"models/{name}.joblib",
-                "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
-            }
-        )
-    relative = f"artifacts/research/{evaluation_version}/manifest.json"
-    sha = _json(
-        root / relative,
-        {
-            "stage": "evaluation",
-            "research_version": evaluation_version,
-            "final_test_read": False,
-            "protocol": protocol,
-            "protocol_hash": "a" * 64,
-            "identity_inputs": {
-                "horizon": horizon,
-                "registry_version": registry_version,
-                "registry_manifest_sha256": registry_sha,
+                "stage": "evaluation",
+                "research_version": evaluation_version,
+                "final_test_read": False,
+                "protocol": protocol,
+                "protocol_hash": "a" * 64,
+                "identity_inputs": {
+                    "horizon": horizon,
+                    "registry_version": registry_version,
+                    "registry_manifest_sha256": registry_sha,
+                },
+                "parents": [
+                    {
+                        "role": "registry",
+                        "path": f"artifacts/research/{registry_version}/manifest.json",
+                        "sha256": registry_sha,
+                    }
+                ],
+                "files": [
+                    {
+                        "name": "predictions",
+                        "path": "predictions.parquet",
+                        "sha256": _parquet(
+                            evaluation / "predictions.parquet", pd.DataFrame(predictions)
+                        ),
+                    }
+                ],
+                "model_files": model_files,
             },
-            "parents": [
-                {
-                    "role": "registry",
-                    "path": f"artifacts/research/{registry_version}/manifest.json",
-                    "sha256": registry_sha,
-                }
-            ],
-            "files": [
-                {
-                    "name": "predictions",
-                    "path": "predictions.parquet",
-                    "sha256": _parquet(
-                        evaluation / "predictions.parquet", pd.DataFrame(predictions)
-                    ),
-                }
-            ],
-            "model_files": model_files,
-        },
-    )
-    return relative, sha
+        )
+        result[horizon] = relative, sha
+    return result

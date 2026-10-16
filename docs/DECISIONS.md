@@ -1104,3 +1104,43 @@ completed.
   does not rewrite the four-rung artifacts.
 - The rule that the Full System is a subset of Model B, its frozen policies and
   the final-test lock are unchanged.
+
+## 40. Freeze manifest, final-test unlock gate and one-command acceptance
+
+Recorded 2026-10-16. This section changes no scientific rule. It implements
+the specification §2.1 freeze manifest and the final-test lock gate.
+
+**One-command acceptance.** `structural-break-backtest p6-acceptance` derives
+accepted bindings only through `load_primary`. For each of h20, h10 and h30 it:
+
+1. runs the historical experiment;
+2. verifies it by fresh replay;
+3. writes the target-blind policy diagnostics.
+
+It then writes a content-addressed freeze manifest.
+
+**Freeze manifest.** The manifest binds:
+
+- the primary version, protocol, registry, market capture and pair universe;
+- per horizon: the experiment and its manifest checksum, verification status,
+  feature schema, label policy, Model A/B bundles and calibrators, trading
+  thresholds and execution-policy versions;
+- the three frozen config files;
+- the code and runtime identity;
+- the execution convention;
+- `controller: DEFERRED_NOT_RUN` (Decision 39).
+
+All horizons must bind the same accepted generations. The checklist of
+validation decisions covers execution, threshold, analysis policies, accepted
+experiments and the Full System. Accepted experiments stay OPEN until all
+three horizons are verified, and the Full System is DEFERRED. The manifest
+always records `final_test_unlocked: false`.
+
+**Unlock gate.** `final-test-gate` and `require_final_test_unlock` refuse
+unless every decision is closed and an owner-authored unlock record is
+supplied. The record must bind the exact manifest checksum and freeze ID and
+contain the required authorization statement verbatim. The code never creates
+that record.
+
+Implementing the gate does not authorize, capture or run the 2024–2025 final
+test. That run remains a later, separately authorized step.
