@@ -16,14 +16,13 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from structural_break.backtest.historical import HistoricalSources
+from structural_break.backtest.historical import HistoricalSources, trailing_adv20
 
 DIAGNOSTICS_VERSION = "p6-policy-diagnostics-v1"
 BETA_CEILINGS = (2.0, 3.0, 5.0)
 DOLLAR_VOLUME_FLOORS = (1e6, 5e6, 1e7, 2.5e7)
 SCORE_THRESHOLDS = (0.2, 0.3, 0.4, 0.5, 0.65)
 QUANTILES = (0.01, 0.05, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99)
-ADV_SESSIONS = 20
 
 
 def _quantiles(values: pd.Series) -> dict[str, float | None]:
@@ -60,20 +59,18 @@ def beta_summary(frame: pd.DataFrame) -> dict[str, Any]:
 def liquidity_summary(
     events: pd.DataFrame, universe: pd.DataFrame, prices: pd.DataFrame
 ) -> dict[str, Any]:
-    """Minimum-leg trailing mean dollar volume over the 20 sessions ending at the signal.
+    """Minimum-leg mean dollar volume over the exact 20 sessions ending at the signal.
 
-    `dollar_volume` = split-adjusted close x split-adjusted volume, so it is
-    split-invariant. A share-price floor is not computed: retrospective split
-    adjustment through the capture date makes historical price levels unreliable.
+    Uses the execution adapter's own `trailing_adv20`. `dollar_volume` is
+    split-adjusted close x split-adjusted volume, so it is split-invariant. A
+    share-price floor is not computed: retrospective split adjustment through the
+    capture date makes historical price levels unreliable.
     """
-    frame = prices.sort_values(["ticker", "trading_date"], kind="mergesort")
-    rolling = frame.groupby("ticker", sort=False)["dollar_volume"].rolling(
-        ADV_SESSIONS, min_periods=ADV_SESSIONS
-    )
-    frame = frame.assign(adv=rolling.mean().reset_index(level=0, drop=True))
-    lookup = {
-        (str(ticker), pd.Timestamp(day).date()): value
-        for ticker, day, value in frame[["ticker", "trading_date", "adv"]].itertuples(
+    volumes = {
+        (str(ticker), pd.Timestamp(day).date()): (
+            float(value) if np.isfinite(value) and value >= 0 else None
+        )
+        for ticker, day, value in prices[["ticker", "trading_date", "dollar_volume"]].itertuples(
             index=False, name=None
         )
     }
@@ -82,8 +79,11 @@ def liquidity_summary(
     for pair_id, day in events[["pair_id", "event_date"]].itertuples(index=False, name=None):
         leg_a, leg_b = legs.loc[pair_id]
         signal = pd.Timestamp(day).date()
-        values = (lookup.get((str(leg_a), signal)), lookup.get((str(leg_b), signal)))
-        known = [float(value) for value in values if value is not None and np.isfinite(value)]
+        values = (
+            trailing_adv20(volumes, str(leg_a), signal),
+            trailing_adv20(volumes, str(leg_b), signal),
+        )
+        known = [value for value in values if value is not None]
         minimum.append(min(known) if len(known) == 2 else np.nan)
     series = pd.Series(minimum, dtype=float)
     return {

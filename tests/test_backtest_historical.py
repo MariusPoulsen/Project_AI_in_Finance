@@ -4,7 +4,7 @@ import hashlib
 import json
 import sys
 from datetime import UTC, date, datetime
-from math import isclose
+from math import exp, isclose
 from pathlib import Path
 from typing import Any
 
@@ -13,7 +13,7 @@ import pytest
 from pydantic import ValidationError
 
 from structural_break.backtest import cli
-from structural_break.backtest.contracts import ExecutionConfig
+from structural_break.backtest.contracts import ExecutionConfig, canonical_sessions
 from structural_break.backtest.experiment import run_ladder_experiment, verify_ladder_experiment
 from structural_break.backtest.historical import (
     HistoricalSources,
@@ -26,15 +26,21 @@ from structural_break.backtest.historical import (
     historical_labels,
     inventory_summary,
     select_inventory,
+    trailing_adv20,
 )
 from structural_break.backtest.historical_contracts import HistoricalSpec
 from structural_break.backtest.ladder import evaluate_ladder
 from structural_break.backtest.ladder_contracts import LadderPolicy, RungSelection
 from structural_break.backtest.ladder_fixtures import fixture_ladder
+from structural_break.backtest.production_policy import (
+    expand_policies,
+    load_headline,
+    load_sensitivities,
+)
 from structural_break.backtest.reporting import build_comparison_report
 from structural_break.config.paths import ProjectPaths
 from structural_break.research.primary import PrimaryNotReadyError
-from tests.historical_workspace import HORIZON, make_workspace, session_close
+from tests.historical_workspace import DAYS, HORIZON, make_workspace, session_close
 
 
 @pytest.fixture
@@ -174,7 +180,7 @@ def test_inventory_selects_without_prices_or_labels(
     )
     rows = {row.event_id: row for row in inventory.rows}
     expected = {
-        "E1": ("SELECTED", "SELECTED", "WITHHELD", "SELECTED", "NOT_RUN"),
+        "E1": ("SELECTED", "SELECTED", "WITHHELD", "SELECTED", "NOT_RUN"),  # A 0.25, B 0.70
         "E2": ("SELECTED", "SELECTED", "UNAVAILABLE", "UNAVAILABLE", "NOT_RUN"),
         "E3": ("SELECTED", "WITHHELD", "WITHHELD", "WITHHELD", "NOT_RUN"),
     }
@@ -250,7 +256,7 @@ def test_spec_refuses_fixture_run_retuned_or_unaccepted_frozen_policies(
     cases = [
         (("ladder", "status"), "FIXTURE", "synthetic fixture"),
         (("ladder", "full_system"), "RUN", "not run"),
-        (("ladder", "candidate_threshold"), 0.6, "matched v2 threshold"),
+        (("ladder", "candidate_threshold"), 0.5, "approved Decision 35"),
         (("ladder", "status"), "FROZEN", "Unaccepted"),
         (("window_start",), "2023-06-01", "assessment window"),
         (("ladder", "horizon_sessions"), 20, "horizon"),
@@ -280,12 +286,39 @@ def test_draft_or_unaccepted_inputs_cannot_produce_returns(
         evaluate_historical_ladder(
             events, HistoricalSpec.model_validate_json(json.dumps(draft_ladder)), frozen
         )
+    draft = frozen.model_dump(mode="json") | {"status": "DRAFT"}
+    with pytest.raises(ValueError, match="frozen production"):
+        evaluate_historical_ladder(
+            events, accepted, ExecutionConfig.model_validate_json(json.dumps(draft))
+        )
+
+
+def test_frozen_production_policy_runs_with_signal_time_leg_liquidity(
+    workspace: tuple[Path, HistoricalSources],
+) -> None:
+    _, sources = workspace
+    spec, events, _ = _inventory(sources)
     configs = Path(__file__).resolve().parents[1] / "configs"
-    for name in ("phase6_execution.json", "phase6_execution_proposed.json"):
-        draft = ExecutionConfig.model_validate_json((configs / name).read_text())
-        assert (draft.mode, draft.status) == ("DEVELOPMENT", "DRAFT")
-        with pytest.raises(ValueError, match="frozen production"):
-            evaluate_historical_ladder(events, accepted, draft)
+    policies = {
+        policy.version.split(":")[-1]: policy
+        for policy in expand_policies(load_headline(configs), load_sensitivities(configs))
+    }
+    # The fixture registry is a 10-session horizon: use the frozen 10-session variant.
+    ten = policies["horizon=10"]
+    assert (ten.status, ten.min_leg_adv20_usd, ten.positive_beta_limit) == (
+        "FROZEN",
+        5_000_000.0,
+        3.0,
+    )
+    rows = {row.event_id: row for row in evaluate_historical_ladder(events, _accepted(spec), ten)}
+    first = rows["E1"].execution
+    assert first is not None and (first.status, first.reason) == ("COMPLETE", "CONVERGENCE")
+    assert first.execution_config_version == "phase6-execution-v2-20261016:horizon=10"
+    strict = ten.model_dump(mode="json") | {"min_leg_adv20_usd": 1e12}
+    illiquid = evaluate_historical_ladder(
+        events, _accepted(spec), ExecutionConfig.model_validate_json(json.dumps(strict))
+    )
+    assert {row.execution.reason for row in illiquid if row.execution} == {"ILLIQUID_LEG"}
 
 
 def test_frozen_accepted_path_runs_the_shared_engine_once_per_event(
@@ -390,3 +423,36 @@ def test_inventory_cli_is_content_addressed_and_idempotent(
     monkeypatch.setattr(sys, "argv", [*arguments[:-2], "--horizon", "20", *arguments[-2:]])
     with pytest.raises(SystemExit):
         cli.main()
+
+
+def test_signal_time_liquidity_uses_exact_sessions(
+    workspace: tuple[Path, HistoricalSources],
+) -> None:
+    _, sources = workspace
+    _, events, _ = _inventory(sources)
+    request = next(event.request for event in events if event.state.event_id == "E1")
+    signal = DAYS.index(date(2023, 11, 6))
+    # Fixture leg B: adjusted close 50 * exp(0.001 i), raw = 1.01 x adjusted, shares 1e6 + 1e3 i.
+    expected = (
+        sum(
+            50.0 * exp(0.001 * index) * 1.01 * (1_000_000.0 + 1000.0 * index)
+            for index in range(signal - 19, signal + 1)
+        )
+        / 20
+    )
+    assert request.signal_adv20_usd_b is not None
+    assert isclose(request.signal_adv20_usd_b, expected, rel_tol=1e-12)
+    sessions = canonical_sessions(date(2023, 10, 1), date(2023, 11, 6))[-20:]
+    volumes = {("XYZ", day): 1.0 for day, _, _ in sessions}
+    assert trailing_adv20(volumes, "XYZ", date(2023, 11, 6)) == 1.0
+    del volumes[("XYZ", sessions[3][0])]
+    assert trailing_adv20(volumes, "XYZ", date(2023, 11, 6)) is None
+    assert trailing_adv20(volumes, "XYZ", date(2023, 11, 4)) is None  # not a session
+
+
+@pytest.mark.parametrize("threshold", [0.2, 0.3, 0.4, 0.65])
+def test_spec_admits_only_decision_35_thresholds(
+    workspace: tuple[Path, HistoricalSources], threshold: float
+) -> None:
+    _, sources = workspace
+    assert default_spec(sources, threshold=threshold).ladder.candidate_threshold == threshold

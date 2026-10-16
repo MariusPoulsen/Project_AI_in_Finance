@@ -1,15 +1,16 @@
 {
-  "schema_version": "pair-execution-policy-v1",
-  "version": "phase6-execution-draft-v1",
+  "schema_version": "pair-execution-policy-v2",
+  "version": "phase6-execution-v2-20261016",
   "mode": "DEVELOPMENT",
-  "status": "DRAFT",
+  "status": "FROZEN",
   "horizon_sessions": 20,
   "entry_threshold": 2.0,
   "convergence_band": 0.5,
   "adverse_boundary": 3.0,
-  "positive_beta_limit": null,
-  "entry_cost_bps": null,
-  "exit_cost_bps": null,
-  "annual_borrow_rate": null,
-  "annual_trading_sessions": 252
+  "positive_beta_limit": 3.0,
+  "entry_cost_bps": 5.0,
+  "exit_cost_bps": 5.0,
+  "annual_borrow_rate": 0.01,
+  "annual_trading_sessions": 252,
+  "min_leg_adv20_usd": 5000000.0
 }

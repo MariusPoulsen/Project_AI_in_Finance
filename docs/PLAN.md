@@ -321,7 +321,7 @@ DRAFT; fixture scenarios are not an execution-cost freeze.
 - [ ] Implement accepted historical experiment manifest and immutable result persistence.
 - [x] Verify the fixture-only ladder manifest, complete row inventory and fresh deterministic replay.
 - [x] Implement the immutable fixture analysis bundle and independent replay of all eighteen bound artifacts.
-- [-] Freeze methodology/config/model/prompt/policy/execution assumptions. A DRAFT production execution-policy proposal (costs, borrow, beta ceiling, liquidity floor, price adjustment and the A/B threshold question) with cited sources and target-blind 2006-2021 diagnostics is in `docs/proposals/P6_EXECUTION_POLICY.md`; it awaits owner approval and nothing is frozen.
+- [-] Freeze methodology/config/model/prompt/policy/execution assumptions. The production execution policy, its 24-variant sensitivity set and the 0.30 common A/B trading threshold are frozen (Decision 35; `configs/phase6_execution.json`, `configs/phase6_execution_sensitivities.json`). Controller/prompt identities (P5), the official-snapshot diagnostics re-run and the accepted experiment manifest remain open.
 
 The first slice covers the event engine and fixture artifacts. The second
 slice adds synthetic five-rung selection, labeled event reporting, common-data

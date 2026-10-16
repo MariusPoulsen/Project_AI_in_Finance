@@ -27,6 +27,8 @@ Reason: TypeAlias = Literal[
     "POLICY_NOT_FROZEN",
     "POLICY_PARAMETERS_MISSING",
     "INVALID_ECONOMIC_BETA",
+    "ILLIQUID_LEG",
+    "MISSING_LEG_LIQUIDITY",
     "SIGNAL_NOT_DIVERGED",
     "MISSING_SIGNAL_CLOSE",
     "MISSING_ENTRY_OPEN",
@@ -144,6 +146,10 @@ class PairTradeRequest(FrozenModel):
     sessions: Annotated[tuple[MarketSession, ...], Field(min_length=1, max_length=64)]
     prices: Annotated[tuple[PairPrices, ...], Field(max_length=64)]
     lifecycle_termination: date | None = None
+    # Mean dollar volume over the exact 20 XNYS sessions ending at the signal
+    # close (admissible at the signal); None means unknown, never zero.
+    signal_adv20_usd_a: Annotated[float, Field(ge=0, le=1e15)] | None = None
+    signal_adv20_usd_b: Annotated[float, Field(ge=0, le=1e15)] | None = None
 
     @model_validator(mode="after")
     def coherent(self) -> Self:
@@ -189,7 +195,9 @@ class PairTradeRequest(FrozenModel):
 
 
 class ExecutionConfig(FrozenModel):
-    schema_version: Literal["pair-execution-policy-v1"] = "pair-execution-policy-v1"
+    schema_version: Literal["pair-execution-policy-v1", "pair-execution-policy-v2"] = (
+        "pair-execution-policy-v1"
+    )
     version: Identifier
     mode: Literal["FIXTURE", "DEVELOPMENT"]
     status: Literal["DRAFT", "FROZEN"]
@@ -202,11 +210,15 @@ class ExecutionConfig(FrozenModel):
     exit_cost_bps: Annotated[float, Field(ge=0, le=100)] | None = None
     annual_borrow_rate: Annotated[float, Field(ge=0, le=1)] | None = None
     annual_trading_sessions: Literal[252] = 252
+    # v2 adds a shared minimum-leg liquidity gate; 0 explicitly disables it.
+    min_leg_adv20_usd: Annotated[float, Field(ge=0, le=1e12)] | None = None
 
     @model_validator(mode="after")
     def coherent(self) -> Self:
         if self.mode == "FIXTURE" and self.status != "DRAFT":
             raise ValueError("Synthetic fixture assumptions cannot freeze a production policy")
+        if self.schema_version == "pair-execution-policy-v1" and self.min_leg_adv20_usd is not None:
+            raise ValueError("The liquidity floor requires execution policy schema v2")
         return self
 
 

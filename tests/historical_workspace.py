@@ -39,7 +39,7 @@ ALPHA, MEAN, STD = 0.1, 0.0, 0.05
 Z_PATHS = {
     "AAA__BBB": {
         date(2023, 11, 3): 1.5,
-        date(2023, 11, 6): 2.4,  # E1, ACTIVE, A 0.60 / B 0.70
+        date(2023, 11, 6): 2.4,  # E1, ACTIVE, A 0.25 / B 0.70
         date(2023, 11, 7): 2.0,
         date(2023, 11, 8): 1.4,
         date(2023, 11, 9): 0.9,
@@ -56,7 +56,7 @@ Z_PATHS = {
     },
 }
 EVENTS = {
-    "E1": ("AAA__BBB", date(2023, 11, 6), "ACTIVE", {"A": 0.60, "B": 0.70}, 1.0),
+    "E1": ("AAA__BBB", date(2023, 11, 6), "ACTIVE", {"A": 0.25, "B": 0.70}, 1.0),
     "E2": ("AAA__BBB", date(2023, 12, 20), "ACTIVE", None, None),
     "E3": ("CCC__DDD", date(2023, 11, 10), "WATCH", {"A": 0.50, "B": 0.80}, 0.0),
 }

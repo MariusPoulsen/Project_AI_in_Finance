@@ -231,7 +231,8 @@ not trading rows. Each event is rebuilt from bound data in this order:
 
 Historical execution (`evaluate_historical_ladder`) additionally requires an
 accepted binding, a FROZEN ladder policy and a FROZEN `DEVELOPMENT` execution
-policy. With today's DRAFT `configs/phase6_execution.json` it refuses.
+policy. Decision 35 froze that policy in `configs/phase6_execution.json`, so on
+the provisional pack it still refuses because the binding is unaccepted.
 
 ### Target-blind execution-policy diagnostics
 
@@ -254,16 +255,38 @@ accepted. Re-run it on the official snapshot before any policy freeze.
 
 ## Production policy and future data adapter
 
-`configs/phase6_execution.json` is deliberately DEVELOPMENT/DRAFT. Costs,
-annual borrow and the economically sensible beta ceiling are unresolved.
-The engine refuses captured development input with an unfrozen policy.
-The fixture mode cannot admit a captured market request. Legacy
-`configs/backtest.yaml` remains an original reference contract.
+[Decision 35](DECISIONS.md#35-frozen-phase-6-production-execution-policy-and-trading-threshold)
+froze the production policy. `configs/phase6_execution.json` is the
+`pair-execution-policy-v2` DEVELOPMENT/FROZEN headline:
+
+- 5 bps per entry and exit turnover;
+- 1 % annual borrow;
+- 0 < β ≤ 3;
+- a minimum-leg 20-session mean dollar volume of at least $5 M, measured over
+  exact XNYS sessions ending at the signal close.
+
+Missing leg liquidity is `NOT_ENTERED / MISSING_LEG_LIQUIDITY`; a thin leg is
+`ILLIQUID_LEG`. `configs/phase6_execution_sensitivities.json` declares the
+frozen sensitivity set. `structural_break.backtest.production_policy` expands
+it deterministically into 24 identified policies:
+
+- the 4 × 4 cost/borrow grid;
+- β ceilings of 2, 5 and none (encoded as 100);
+- liquidity floors of 0, $1 M and $10 M;
+- 10- and 30-session horizons.
+
+Every variant is reported and none is selected. The common A/B trading
+threshold is 0.30, with 0.20, 0.40 and 0.65 reported.
+
+The engine still refuses captured input under a DRAFT policy, and fixture mode
+cannot admit a captured market request. Legacy `configs/backtest.yaml` remains
+an original reference contract. The cited rationale is in
+`docs/proposals/P6_EXECUTION_POLICY.md`.
 
 Typed input/config files can be submitted explicitly:
 
 ```powershell
-uv run --frozen structural-break-backtest --input REQUEST.json --config configs/phase6_execution.json --output-dir .acceptance/phase6-draft-check
+uv run --frozen structural-break-backtest --input REQUEST.json --config configs/phase6_execution.json --output-dir .acceptance/phase6-policy-check
 ```
 
 This is a contract/refusal check, not permission to construct arbitrary
@@ -274,15 +297,15 @@ adjusted close / raw close from the same capture. Retrospective adjustments
 are a disclosed limitation, not vintage historical prices. Delisting/corporate
 action settlement and actual borrow availability are not implemented here.
 
-Before genuine economic assessment, freeze the actual cost/sensitivity,
-borrow, price-adjustment, execution/eligibility and experiment assumptions.
-Then integrate accepted generation-bound signals and frozen stored
-predictions/controller decisions. All five variants must share this engine
+Execution, cost, borrow, price-adjustment and eligibility assumptions are
+frozen (Decision 35). Genuine economic assessment still requires the accepted
+experiment manifest (step C) on the official snapshot, bound to accepted
+generation signals and frozen stored predictions. Full System waits for
+accepted controller decisions. All five variants must share this engine
 and cost policy; only their declared capability filters differ. Model A/B
 forecast evaluation still uses the broad matched v2 cohort and its canonical
-paired calendar-quarter bootstrap. Economic month-block uncertainty remains
-a separately implemented fixture policy; its production freeze remains pending
-before assessment.
+paired calendar-quarter bootstrap. Decision 35 also freezes the economic
+month-block uncertainty and the secondary portfolio policies for production use.
 
 ## Verification and remaining gates
 

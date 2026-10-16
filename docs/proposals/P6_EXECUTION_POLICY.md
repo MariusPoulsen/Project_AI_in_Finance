@@ -1,9 +1,14 @@
 # P6 production execution policy: proposal
 
-Status: **DRAFT, awaiting owner approval (2026-10-16).** Nothing here is frozen.
-The machine-readable draft is `configs/phase6_execution_proposed.json`
-(`status: DRAFT`), and the engine refuses it for historical execution.
-`configs/phase6_execution.json` and `configs/backtest.yaml` are unchanged.
+Status: **APPROVED and FROZEN on 2026-10-16** (DECISIONS section 35), as
+drafted, with threshold option 2 (common 0.30; 0.20, 0.40 and 0.65 reported).
+
+- The values live in `configs/phase6_execution.json` (`pair-execution-policy-v2`,
+  FROZEN) and `configs/phase6_execution_sensitivities.json`.
+- The interim `configs/phase6_execution_proposed.json` was removed.
+- The text below is the proposal as approved.
+- Re-running the diagnostics with the exact-XNYS-session ADV rule reproduced
+  every figure below.
 
 **Timing and information used.** This proposal was written after the
 2022–2023 assessment forecasts had already been observed in earlier

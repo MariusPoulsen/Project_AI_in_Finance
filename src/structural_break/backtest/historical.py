@@ -31,6 +31,7 @@ from structural_break.backtest.contracts import (
     utc,
 )
 from structural_break.backtest.historical_contracts import (
+    HEADLINE_TRADING_THRESHOLD,
     PRICE_ADJUSTMENT_POLICY,
     Acceptance,
     GenerationBinding,
@@ -264,6 +265,7 @@ class HistoricalSources:
             "close",
             "adj_close",
             "quality_flag",
+            "dollar_volume",
         ),
     ) -> pd.DataFrame:
         path = self._market_file("prices.parquet", self.binding.prices_sha256)
@@ -296,6 +298,29 @@ class HistoricalSources:
         return pd.read_parquet(file, columns=list(columns) if columns else None)
 
 
+ADV_SESSIONS = 20
+
+
+def trailing_adv20(
+    volumes: Mapping[tuple[str, date], float | None], ticker: str, signal: date
+) -> float | None:
+    """Mean dollar volume over the exact 20 XNYS sessions ending at the signal close.
+
+    Any missing session or value makes liquidity unknown; zero volume is observed.
+    """
+    sessions = canonical_sessions(signal - timedelta(days=45), signal)[-ADV_SESSIONS:]
+    if len(sessions) != ADV_SESSIONS or sessions[-1][0] != signal:
+        return None
+    values = [volumes.get((ticker, day)) for day, _, _ in sessions]
+    known = [value for value in values if value is not None]
+    return sum(known) / ADV_SESSIONS if len(known) == ADV_SESSIONS else None
+
+
+def _volume(value: object) -> float | None:
+    number = float(cast(Any, value))
+    return number if math.isfinite(number) and number >= 0 else None
+
+
 def _flags(value: object) -> frozenset[str]:
     return frozenset(value.split("|")) if isinstance(value, str) and value else frozenset()
 
@@ -306,6 +331,7 @@ class PriceBook:
 
     lineage: PriceLineage
     bars: Mapping[tuple[str, date], tuple[float | None, float | None]]
+    volumes: Mapping[tuple[str, date], float | None]
 
     @classmethod
     def build(cls, frame: pd.DataFrame, spec: HistoricalSpec) -> PriceBook:
@@ -313,6 +339,12 @@ class PriceBook:
             raise ValueError("Price capture must have one row per ticker and session")
         fills, closes = set(spec.fill_quality_flags), set(spec.close_quality_flags)
         bars: dict[tuple[str, date], tuple[float | None, float | None]] = {}
+        volumes: dict[tuple[str, date], float | None] = {}
+        if "dollar_volume" in frame:
+            for ticker, day, value in frame[["ticker", "trading_date", "dollar_volume"]].itertuples(
+                index=False, name=None
+            ):
+                volumes[(str(ticker), _date(day))] = _volume(value)
         for ticker, day, raw_open, raw_close, adjusted, flag in frame[
             ["ticker", "trading_date", "open", "close", "adj_close", "quality_flag"]
         ].itertuples(index=False, name=None):
@@ -330,7 +362,10 @@ class PriceBook:
             price_basis="ADJUSTED_OPEN_CLOSE",
             adjustment_policy=PRICE_ADJUSTMENT_POLICY,
         )
-        return cls(lineage=lineage, bars=bars)
+        return cls(lineage=lineage, bars=bars, volumes=volumes)
+
+    def adv20(self, ticker: str, day: date) -> float | None:
+        return trailing_adv20(self.volumes, ticker, day)
 
     def close(self, ticker: str, day: date) -> float | None:
         return self.bars.get((ticker, day), (None, None))[1]
@@ -379,8 +414,9 @@ def historical_policy(
     status: Literal["DRAFT", "FROZEN"] = "DRAFT",
     model_family: Literal["logistic", "xgboost"] = "logistic",
     model_b_variant: Literal["B-metadata", "B-tone", "B-catalyst", "B-both"] = "B-both",
+    threshold: float = HEADLINE_TRADING_THRESHOLD,
 ) -> LadderPolicy:
-    """Headline: calibrated logistic A vs B-both at the matched v2 threshold."""
+    """Headline: calibrated logistic A vs B-both at one common trading threshold."""
     binding = sources.binding
     labels = sources.registry_frame(
         f"h{binding.horizon_sessions}_events", ["label_policy_version"]
@@ -394,7 +430,7 @@ def historical_policy(
         population_id=f"{binding.evaluation.version}:{binding.registry.version}",
         status=status,
         horizon_sessions=binding.horizon_sessions,
-        candidate_threshold=binding.candidate_threshold,
+        candidate_threshold=threshold,
         model_family=model_family,
         model_a_bundle_id=model_a,
         model_a_calibrator_id="embedded-in-bundle:" + model_a,
@@ -408,13 +444,16 @@ def historical_policy(
 
 
 def default_spec(
-    sources: HistoricalSources, *, status: Literal["DRAFT", "FROZEN"] = "DRAFT"
+    sources: HistoricalSources,
+    *,
+    status: Literal["DRAFT", "FROZEN"] = "DRAFT",
+    threshold: float = HEADLINE_TRADING_THRESHOLD,
 ) -> HistoricalSpec:
     """Assessment window only, for all five rungs (stored earlier scores are in-sample)."""
     binding = sources.binding
     return HistoricalSpec(
         binding=binding,
-        ladder=historical_policy(sources, status=status),
+        ladder=historical_policy(sources, status=status, threshold=threshold),
         window_start=binding.assessment_start,
         window_end=binding.assessment_end,
     )
@@ -535,6 +574,8 @@ def build_event(
         sessions=sessions,
         prices=prices.pair_bars(leg_a, leg_b, sessions),
         lifecycle_termination=_lifecycle(pair, binding.development_end),
+        signal_adv20_usd_a=prices.adv20(leg_a, signal_date),
+        signal_adv20_usd_b=prices.adv20(leg_b, signal_date),
     )
     status = crossing["pair_status"]
     state = LadderState(
@@ -603,7 +644,7 @@ def build_historical_events(
     )
     universe = _records(sources.pair_universe(), "pair_id")
     prices = PriceBook.build(
-        sources.prices(spec.window_start - timedelta(days=21), spec.binding.development_end),
+        sources.prices(spec.window_start - timedelta(days=45), spec.binding.development_end),
         spec,
     )
     by_pair: dict[str, list[dict[str, Any]]] = {}

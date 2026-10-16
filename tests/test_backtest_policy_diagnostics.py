@@ -2,12 +2,14 @@
 
 import json
 import sys
+from datetime import date
 from pathlib import Path
 
 import pandas as pd
 import pytest
 
 from structural_break.backtest import cli
+from structural_break.backtest.contracts import canonical_sessions
 from structural_break.backtest.historical import HistoricalSources, bind_unaccepted
 from structural_break.backtest.policy_diagnostics import (
     beta_summary,
@@ -71,7 +73,7 @@ def test_pure_summaries_count_ceilings_floors_and_thresholds() -> None:
     betas = beta_summary(pd.DataFrame({"beta": [-0.5, 0.5, 2.5, 4.0, 6.0, None]}))
     assert betas["nonpositive_beta_n"] == 1 and betas["missing_beta_n"] == 1
     assert betas["positive_beta_above_ceiling_n"] == {"2.0": 3, "3.0": 2, "5.0": 1}
-    days = pd.bdate_range("2023-01-02", periods=21).date
+    days = [row[0] for row in canonical_sessions(date(2023, 1, 3), date(2023, 2, 15))][:21]
     prices = pd.DataFrame(
         [
             {"ticker": ticker, "trading_date": day, "dollar_volume": volume}

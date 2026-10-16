@@ -123,7 +123,7 @@ def simulate_pair_trade(event: PairTradeRequest, config: ExecutionConfig) -> Pai
             config.exit_cost_bps,
             config.annual_borrow_rate,
         )
-    ):
+    ) or (config.schema_version == "pair-execution-policy-v2" and config.min_leg_adv20_usd is None):
         return result("NOT_ENTERED", "POLICY_PARAMETERS_MISSING")
     assert config.positive_beta_limit is not None
     assert config.entry_cost_bps is not None
@@ -131,6 +131,12 @@ def simulate_pair_trade(event: PairTradeRequest, config: ExecutionConfig) -> Pai
     assert config.annual_borrow_rate is not None
     if not 0 < event.snapshot.beta <= config.positive_beta_limit:
         return result("NOT_ENTERED", "INVALID_ECONOMIC_BETA")
+    if config.min_leg_adv20_usd is not None and config.min_leg_adv20_usd > 0:
+        liquidity = (event.signal_adv20_usd_a, event.signal_adv20_usd_b)
+        if any(value is None for value in liquidity):
+            return result("NOT_ENTERED", "MISSING_LEG_LIQUIDITY")
+        if min(value for value in liquidity if value is not None) < config.min_leg_adv20_usd:
+            return result("NOT_ENTERED", "ILLIQUID_LEG")
     if abs(event.signal_z) < config.entry_threshold:
         return result("NOT_ENTERED", "SIGNAL_NOT_DIVERGED")
     prices = {bar.session_date: bar for bar in event.prices}

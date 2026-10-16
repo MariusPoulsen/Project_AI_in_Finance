@@ -31,6 +31,10 @@ Partition: TypeAlias = Literal["fit", "calibration", "assessment"]
 PRICE_ADJUSTMENT_POLICY = "yahoo-retrospective-adjclose-ratio-v1"
 INVENTORY_RULE = "nonoverlapping-episode-events-v1"
 QualityFlag: TypeAlias = Literal["OK", "ZERO_VOLUME"]
+# Decision 35: one common A/B trading threshold, plus reported sensitivities.
+# The bound v2 reporting threshold (0.65) is always an admissible sensitivity.
+HEADLINE_TRADING_THRESHOLD = 0.30
+SENSITIVITY_TRADING_THRESHOLDS = (0.20, 0.40)
 
 
 class ManifestBinding(FrozenModel):
@@ -104,8 +108,13 @@ class HistoricalSpec(FrozenModel):
             raise ValueError("No accepted controller generation exists; Full System is not run")
         if binding.acceptance != "ACCEPTED" and ladder.status != "DRAFT":
             raise ValueError("Unaccepted engineering bindings cannot use a frozen policy")
-        if ladder.candidate_threshold != binding.candidate_threshold:
-            raise ValueError("The trading threshold must equal the matched v2 threshold")
+        approved = (
+            HEADLINE_TRADING_THRESHOLD,
+            *SENSITIVITY_TRADING_THRESHOLDS,
+            binding.candidate_threshold,
+        )
+        if ladder.candidate_threshold not in approved:
+            raise ValueError("The trading threshold must be an approved Decision 35 value")
         if not self.window_start <= self.window_end <= binding.development_end:
             raise ValueError("Inventory window must lie inside the development period")
         if self.admitted_partitions == ("assessment",) and not (

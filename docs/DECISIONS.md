@@ -907,3 +907,64 @@ Fixture tests establish engineering behaviour only. Accepted-snapshot
 verification, the production policy freeze, the accepted experiment manifest
 and the Full-System controller adapter remain separate gates. The 2024–2025
 final-test lock is unchanged.
+
+## 35. Frozen Phase 6 production execution policy and trading threshold
+
+Recorded 2026-10-16. The owner approved
+`docs/proposals/P6_EXECUTION_POLICY.md` as drafted, with threshold option 2.
+
+**Timing.** The approval came after the 2022–2023 assessment forecasts had
+been observed in earlier development work. It also came after the P6
+selection inventory showed that Model A and Model B select no assessment
+event at 0.65. It came before any historical simulated return, path or
+economic metric was computed. The values were chosen from cited literature
+and from target-blind 2006–2021 diagnostics that never load labels. Results
+under this policy for 2022–2023 are post-hoc development results.
+
+**Frozen headline execution policy** (`configs/phase6_execution.json`,
+`pair-execution-policy-v2`, `DEVELOPMENT/FROZEN`):
+
+- 5 bps per entry and per exit gross turnover;
+- 1.0 % annual borrow on entry short notional over open-to-open sessions / 252;
+- execution eligibility 0 < β ≤ 3;
+- minimum-leg 20-session mean dollar volume of at least $5 M. The 20 sessions
+  are the exact XNYS sessions ending at the signal close, and any missing
+  session makes liquidity unknown;
+- no share-price floor;
+- the 20-session horizon, with the unchanged 2.0 / 0.5 / 3.0 z rules.
+
+**Frozen sensitivity set** (`configs/phase6_execution_sensitivities.json`).
+Every variant is reported and none is selected:
+
+- the 4 × 4 cost/borrow grid: 2.5 / 5 / 10 / 20 bps crossed with
+  0 / 1 / 3 / 10 %;
+- β ceilings of 2 and 5, and "none", encoded as the schema maximum of 100
+  (the largest observed β is about 13);
+- liquidity floors of none (encoded as 0), $1 M and $10 M;
+- 10- and 30-session horizons.
+
+**Trading threshold.** The common A/B trading threshold is **0.30**. It
+supersedes Decision 34's equality with the 0.65 v2 reporting threshold for
+the economic ladder only. Thresholds of 0.20, 0.40 and 0.65 are reported as
+sensitivities. A and B still apply the same declared value independently. The
+canonical v2 forecasting reports and their 0.65 coverage are unchanged.
+
+**Other frozen conventions:**
+
+- Prices use Yahoo retrospective adjusted closes, with adjusted open =
+  open × adj_close / close from the same row (Decision 34).
+- The economic uncertainty policy is 2,000 paired calendar-month draws with
+  seed 5557, and intervals require at least 12 contributing months.
+- The secondary portfolio policy is 25 % of NAV gross per entry, a gross
+  admission cap of 1, one position per pair, zero cash yield and no
+  financing.
+
+**Disclosed limitations.** No rebate is earned on short proceeds. Borrow
+availability and recalls are not modelled. Price data are retrospective, not
+vintage.
+
+**Data check.** The diagnostics must be re-run on the official snapshot. A
+material difference requires a new, explicitly versioned policy rather than
+silent re-selection. Freezing the execution policy does not complete the
+P6 methodology freeze: the controller/prompt identities (P5) and the accepted
+experiment manifest remain open. The 2024–2025 final-test lock is unchanged.
