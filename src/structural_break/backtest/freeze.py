@@ -241,31 +241,31 @@ def _decisions(configs: Path, horizons: Sequence[int]) -> tuple[DecisionItem, ..
         item(
             "execution_cost_borrow_eligibility_policy",
             headline.status == "FROZEN",
-            "DECISIONS 35",
+            "DECISIONS 36",
             "Headline v2 policy and its 24-variant sensitivity set",
         ),
         item(
             "trading_threshold",
             True,
-            "DECISIONS 35",
+            "DECISIONS 36",
             "Common A/B threshold 0.30; 0.20, 0.40 and 0.65 reported",
         ),
         item(
             "analysis_policies",
             analysis.robustness.status == "FROZEN",
-            "DECISIONS 35, 38",
+            "DECISIONS 36, 39",
             "Month bootstrap, portfolio and robustness slice policies",
         ),
         item(
             "accepted_development_experiments",
             complete,
-            "DECISIONS 36, 37",
+            "DECISIONS 37, 38",
             "Verified accepted experiments for every predeclared horizon (10/20/30)",
         ),
         DecisionItem(
             name="full_system_controller",
             status="DEFERRED",
-            reference="DECISIONS 39",
+            reference="DECISIONS 40",
             note="Multi-agent layer deferred; Full System is NOT_RUN and excluded",
         ),
     )

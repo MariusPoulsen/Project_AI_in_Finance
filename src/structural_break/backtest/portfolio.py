@@ -54,7 +54,7 @@ DEVELOPMENT_END = date(2023, 12, 31)
 class PortfolioPolicy(FrozenModel):
     schema_version: Literal["pair-portfolio-policy-v1"] = "pair-portfolio-policy-v1"
     version: Identifier
-    # Decision 35 froze the fixture allocation rules for accepted historical use.
+    # Decision 36 froze the fixture allocation rules for accepted historical use.
     mode: Literal["FIXTURE", "DEVELOPMENT"] = "FIXTURE"
     initial_nav: Annotated[float, Field(gt=0, le=1e12)] = 1.0
     target_entry_fraction: Annotated[float, Field(gt=0, le=1)] = 0.25
@@ -70,7 +70,7 @@ class PortfolioPolicy(FrozenModel):
     @model_validator(mode="after")
     def frozen_identity(self) -> Self:
         if (self.mode == "DEVELOPMENT") != (self.version == FROZEN_PORTFOLIO_VERSION):
-            raise ValueError("Only the Decision 35 portfolio identity is a development policy")
+            raise ValueError("Only the Decision 36 portfolio identity is a development policy")
         return self
 
 

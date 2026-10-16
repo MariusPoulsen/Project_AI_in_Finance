@@ -256,7 +256,7 @@ def test_spec_refuses_fixture_run_retuned_or_unaccepted_frozen_policies(
     cases = [
         (("ladder", "status"), "FIXTURE", "synthetic fixture"),
         (("ladder", "full_system"), "RUN", "not run"),
-        (("ladder", "candidate_threshold"), 0.5, "approved Decision 35"),
+        (("ladder", "candidate_threshold"), 0.5, "approved Decision 36"),
         (("ladder", "status"), "FROZEN", "Unaccepted"),
         (("window_start",), "2023-06-01", "assessment window"),
         (("ladder", "horizon_sessions"), 20, "horizon"),

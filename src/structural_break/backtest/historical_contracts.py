@@ -31,7 +31,7 @@ Partition: TypeAlias = Literal["fit", "calibration", "assessment"]
 PRICE_ADJUSTMENT_POLICY = "yahoo-retrospective-adjclose-ratio-v1"
 INVENTORY_RULE = "nonoverlapping-episode-events-v1"
 QualityFlag: TypeAlias = Literal["OK", "ZERO_VOLUME"]
-# Decision 35: one common A/B trading threshold, plus reported sensitivities.
+# Decision 36: one common A/B trading threshold, plus reported sensitivities.
 # The bound v2 reporting threshold (0.65) is always an admissible sensitivity.
 HEADLINE_TRADING_THRESHOLD = 0.30
 SENSITIVITY_TRADING_THRESHOLDS = (0.20, 0.40)
@@ -114,7 +114,7 @@ class HistoricalSpec(FrozenModel):
             binding.candidate_threshold,
         )
         if ladder.candidate_threshold not in approved:
-            raise ValueError("The trading threshold must be an approved Decision 35 value")
+            raise ValueError("The trading threshold must be an approved Decision 36 value")
         if not self.window_start <= self.window_end <= binding.development_end:
             raise ValueError("Inventory window must lie inside the development period")
         if self.admitted_partitions == ("assessment",) and not (

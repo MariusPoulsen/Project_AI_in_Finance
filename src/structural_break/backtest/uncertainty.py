@@ -41,7 +41,7 @@ FROZEN_BOOTSTRAP_VERSION = "phase6-month-bootstrap-20261016"
 
 class EconomicBootstrapPolicy(FrozenModel):
     version: Identifier = "phase6-fixture-month-bootstrap-v1"
-    # Decision 35 froze these fixture parameters for accepted historical use.
+    # Decision 36 froze these fixture parameters for accepted historical use.
     status: Literal["FIXTURE", "FROZEN"] = "FIXTURE"
     replicates: Annotated[int, Field(ge=100, le=10000)] = 2000
     seed: Annotated[int, Field(ge=0, le=2**63 - 1)] = 5557
@@ -58,7 +58,7 @@ class EconomicBootstrapPolicy(FrozenModel):
     @model_validator(mode="after")
     def frozen_identity(self) -> Self:
         if (self.status == "FROZEN") != (self.version == FROZEN_BOOTSTRAP_VERSION):
-            raise ValueError("Only the Decision 35 bootstrap identity is frozen")
+            raise ValueError("Only the Decision 36 bootstrap identity is frozen")
         return self
 
 

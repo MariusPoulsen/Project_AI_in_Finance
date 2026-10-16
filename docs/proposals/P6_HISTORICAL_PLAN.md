@@ -1,6 +1,6 @@
 # P6 historical adapters, execution policy and experiment manifest: plan
 
-Status: **Q1–Q7 APPROVED by the owner on 2026-10-16** (recorded as DECISIONS section 34).
+Status: **Q1–Q7 APPROVED by the owner on 2026-10-16** (recorded as DECISIONS section 35).
 Step A is implemented; step B (production policy proposal) is next, and step C waits
 for its approval. Two implementation refinements of step A were made:
 

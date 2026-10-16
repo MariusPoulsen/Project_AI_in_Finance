@@ -1,6 +1,6 @@
 # P6 production execution policy: proposal
 
-Status: **APPROVED and FROZEN on 2026-10-16** (DECISIONS section 35), as
+Status: **APPROVED and FROZEN on 2026-10-16** (DECISIONS section 36), as
 drafted, with threshold option 2 (common 0.30; 0.20, 0.40 and 0.65 reported).
 
 - The values live in `configs/phase6_execution.json` (`pair-execution-policy-v2`,
@@ -167,7 +167,7 @@ sensitivities.
 ## 6. Price adjustment and corporate actions
 
 - Closes are the Yahoo adjusted close; opens are open × adj_close / close from
-  the same capture row (implemented, Decision 34).
+  the same capture row (implemented, Decision 35).
 - Dividends sit in the total-return basis of both legs. The short leg
   therefore pays the dividend implicitly, which matches the manufactured
   dividend described in D'Avolio §2.1.3.

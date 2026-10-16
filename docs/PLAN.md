@@ -293,10 +293,10 @@ complete accepted-generation integration or genuine semantic evaluation.
 Status: **IN PROGRESS**. The synthetic engine, ladder, reporting and analysis
 slices (DECISIONS 30-32) are complete. The generation-bound historical adapters,
 the accepted historical experiment and its analyses are fixture-verified
-(Decisions 34-37). The production execution, sensitivity, threshold and analysis
-policies are frozen (Decisions 35 and 38). The acceptance run waits for the
+(Decisions 35-38). The production execution, sensitivity, threshold and analysis
+policies are frozen (Decisions 36 and 39). The acceptance run waits for the
 official accepted v2 snapshot; until then no genuine historical return exists.
-2024-2025 outcomes stay locked. Full System is deferred (Decision 39): it is
+2024-2025 outcomes stay locked. Full System is deferred (Decision 40): it is
 reported as NOT_RUN and added as a new experiment only if the multi-agent layer
 is completed. See `docs/BACKTEST_RUNBOOK.md`.
 
@@ -304,12 +304,12 @@ is completed. See `docs/BACKTEST_RUNBOOK.md`.
 
 - [x] Implement the common event execution engine on synthetic inputs.
 - [x] Verify synthetic five-rung selection, with independent A/B filters and Full as a subset of B.
-- [-] Implement accepted historical input/prediction/controller adapters for all five variants. Generation-bound input/prediction/label adapters, the outcome-free selection inventory and the frozen-only execution path are implemented and fixture-tested (Decision 34). Acceptance of the four Baseline/Model rungs on the official snapshot is pending. The Full System controller adapter is deferred (Decision 39): the rung is reported as NOT_RUN and is added as a new experiment only if the multi-agent layer is completed.
+- [-] Implement accepted historical input/prediction/controller adapters for all five variants. Generation-bound input/prediction/label adapters, the outcome-free selection inventory and the frozen-only execution path are implemented and fixture-tested (Decision 35). Acceptance of the four Baseline/Model rungs on the official snapshot is pending. The Full System controller adapter is deferred (Decision 40): the rung is reported as NOT_RUN and is added as a new experiment only if the multi-agent layer is completed.
 - [x] Implement beta-weighted entry construction with frozen share units until exit.
 - [x] Implement close-signal / next-open execution convention.
 - [x] Implement convergence, adverse-stop and timeout exits.
-- [x] Implement twelve predeclared fixture transaction-cost/borrow scenarios; the production 4x4 grid and assumptions are frozen separately (Decision 35).
-- [x] Implement explicit fixture turnover/borrow accounting and 10/20/30-session horizon support; the production policy is frozen (Decision 35).
+- [x] Implement twelve predeclared fixture transaction-cost/borrow scenarios; the production 4x4 grid and assumptions are frozen separately (Decision 36).
+- [x] Implement explicit fixture turnover/borrow accounting and 10/20/30-session horizon support; the production policy is frozen (Decision 36).
 - [x] Implement event-level MAE/MFE/holding/return metrics, with separate partial excursions for unpriced paths.
 - [x] Implement secondary fixture fixed-share portfolio simulation, cash/NAV/exposure/turnover accounting and missing-valuation refusal.
 - [x] Implement fixture predictive/calibration metrics on the fresh forecasting population.
@@ -318,11 +318,11 @@ is completed. See `docs/BACKTEST_RUNBOOK.md`.
 - [ ] Verify accepted historical predictive, controller and common-data comparison outputs.
 - [x] Implement fixture robustness slices by year, pair, sector, divergence sign, admissible stress context, event type/materiality and cost assumptions, retaining UNKNOWN.
 - [x] Implement fixture paired-month economic bootstrap and leave-one-pair/sector-out diagnostics; intervals require twelve contributing months per estimand.
-- [-] Verify accepted historical portfolio, robustness/cost and economic uncertainty outputs under frozen production policies. Implemented inside the accepted experiment and fixture-verified (Decision 37); the analysis policies, including the robustness slice boundaries, are frozen (Decisions 35 and 38), and the acceptance run waits for the official snapshot.
-- [-] Implement accepted historical experiment manifest and immutable result persistence. Implemented and fixture-verified (Decision 36: accepted-only `historical-experiment`, content-addressed artifacts, independent replay via `verify-historical-experiment`); the acceptance run on the official snapshot is pending.
+- [-] Verify accepted historical portfolio, robustness/cost and economic uncertainty outputs under frozen production policies. Implemented inside the accepted experiment and fixture-verified (Decision 38); the analysis policies, including the robustness slice boundaries, are frozen (Decisions 36 and 39), and the acceptance run waits for the official snapshot.
+- [-] Implement accepted historical experiment manifest and immutable result persistence. Implemented and fixture-verified (Decision 37: accepted-only `historical-experiment`, content-addressed artifacts, independent replay via `verify-historical-experiment`); the acceptance run on the official snapshot is pending.
 - [x] Verify the fixture-only ladder manifest, complete row inventory and fresh deterministic replay.
 - [x] Implement the immutable fixture analysis bundle and independent replay of all eighteen bound artifacts.
-- [-] Freeze methodology/config/model/prompt/policy/execution assumptions. The production execution policy, its 24-variant sensitivity set and the 0.30 common A/B trading threshold are frozen (Decision 35; `configs/phase6_execution.json`, `configs/phase6_execution_sensitivities.json`). Controller/prompt identities (P5), the official-snapshot diagnostics re-run and the accepted experiment manifest remain open.
+- [-] Freeze methodology/config/model/prompt/policy/execution assumptions. The production execution policy, its 24-variant sensitivity set and the 0.30 common A/B trading threshold are frozen (Decision 36; `configs/phase6_execution.json`, `configs/phase6_execution_sensitivities.json`). Controller/prompt identities (P5), the official-snapshot diagnostics re-run and the accepted experiment manifest remain open.
 
 The first slice covers the event engine and fixture artifacts. The second
 slice adds synthetic five-rung selection, labeled event reporting, common-data
@@ -346,9 +346,9 @@ all eighteen bound artifacts and repeats with the same immutable identity.
 
 ### Final-test lock gate
 
-- [-] Generate and review a freeze manifest. The generator is implemented and fixture-verified (Decision 40, `p6-acceptance`); the genuine manifest is generated on the official snapshot and then reviewed by the owner.
-- [-] Confirm all validation-driven decisions are closed. The freeze manifest carries the checklist: execution, threshold and analysis policies are CLOSED, Full System is DEFERRED (Decision 39), and the accepted experiments for all three horizons remain OPEN until the official run.
-- [-] Require explicit user approval / unlock flag before producing headline 2024-2025 outcome metrics. The gate is implemented and refuses by default (`final-test-gate`, Decision 40); no final-test run or data capture exists yet.
+- [-] Generate and review a freeze manifest. The generator is implemented and fixture-verified (Decision 41, `p6-acceptance`); the genuine manifest is generated on the official snapshot and then reviewed by the owner.
+- [-] Confirm all validation-driven decisions are closed. The freeze manifest carries the checklist: execution, threshold and analysis policies are CLOSED, Full System is DEFERRED (Decision 40), and the accepted experiments for all three horizons remain OPEN until the official run.
+- [-] Require explicit user approval / unlock flag before producing headline 2024-2025 outcome metrics. The gate is implemented and refuses by default (`final-test-gate`, Decision 41); no final-test run or data capture exists yet.
 
 ### Final run after explicit unlock
 
@@ -356,7 +356,7 @@ all eighteen bound artifacts and repeats with the same immutable identity.
 - [ ] Run Baseline 1.
 - [ ] Run Model A.
 - [ ] Run Model B.
-- [ ] Run Full System (deferred, Decision 39: only if the multi-agent layer is completed and accepted).
+- [ ] Run Full System (deferred, Decision 40: only if the multi-agent layer is completed and accepted).
 - [ ] Persist headline metrics, event/trade rows, matched-subset comparisons and robustness artifacts immutably.
 - [ ] Do not retune after viewing final-test results; any methodological change creates a new explicitly labelled experiment.
 

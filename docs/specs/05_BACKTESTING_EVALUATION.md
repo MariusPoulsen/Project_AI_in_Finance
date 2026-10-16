@@ -571,9 +571,9 @@ required costs/adjustment policy and immutable experiment identity are frozen.
 | Maximum horizon                      | 20 XNYS sessions primary; separate 10/30 sensitivities |
 | Execution                            | Signal after close; enter next open; close-triggered exit next open            |
 | Position weights                     | Beta-weighted entry notional, gross normalised to 1; fixed entry share units until exit |
-| Entry cost                           | Fixture 5 bps; production 5 bps of entry gross turnover (Decision 35) |
-| Exit cost                            | Fixture 5 bps; production 5 bps of actual exit gross turnover (Decision 35) |
-| Borrow                               | Fixture 3%; production 1% annualised entry short notional × open-to-open sessions / 252 (Decision 35) |
+| Entry cost                           | Fixture 5 bps; production 5 bps of entry gross turnover (Decision 36) |
+| Exit cost                            | Fixture 5 bps; production 5 bps of actual exit gross turnover (Decision 36) |
+| Borrow                               | Fixture 3%; production 1% annualised entry short notional × open-to-open sessions / 252 (Decision 36) |
 | Portfolio leverage                   | None; total gross <=1.0                                                       |
 | Full-system auto-trade status        | CANDIDATE only                                                                 |
 | Model A/B candidate threshold        | Preserve matched v2 0.65 reporting threshold; actual trading policy must be explicitly versioned |

@@ -853,7 +853,7 @@ run directory). The supervisor's own receipts record the stop and are not
 rewritten; this section is the acceptance record for the app gate. Future checker
 versions should cache the platform lookup before installing the guard.
 
-## 34. Phase 6 historical adapters and selection inventory
+## 35. Phase 6 historical adapters and selection inventory
 
 Recorded 2026-10-16. The owner approved the P6 adapter design questions
 (`docs/proposals/P6_HISTORICAL_PLAN.md`, Q1–Q7) before any historical economic
@@ -908,7 +908,7 @@ verification, the production policy freeze, the accepted experiment manifest
 and the Full-System controller adapter remain separate gates. The 2024–2025
 final-test lock is unchanged.
 
-## 35. Frozen Phase 6 production execution policy and trading threshold
+## 36. Frozen Phase 6 production execution policy and trading threshold
 
 Recorded 2026-10-16. The owner approved
 `docs/proposals/P6_EXECUTION_POLICY.md` as drafted, with threshold option 2.
@@ -944,7 +944,7 @@ Every variant is reported and none is selected:
 - 10- and 30-session horizons.
 
 **Trading threshold.** The common A/B trading threshold is **0.30**. It
-supersedes Decision 34's equality with the 0.65 v2 reporting threshold for
+supersedes Decision 35's equality with the 0.65 v2 reporting threshold for
 the economic ladder only. Thresholds of 0.20, 0.40 and 0.65 are reported as
 sensitivities. A and B still apply the same declared value independently. The
 canonical v2 forecasting reports and their 0.65 coverage are unchanged.
@@ -952,7 +952,7 @@ canonical v2 forecasting reports and their 0.65 coverage are unchanged.
 **Other frozen conventions:**
 
 - Prices use Yahoo retrospective adjusted closes, with adjusted open =
-  open × adj_close / close from the same row (Decision 34).
+  open × adj_close / close from the same row (Decision 35).
 - The economic uncertainty policy is 2,000 paired calendar-month draws with
   seed 5557, and intervals require at least 12 contributing months.
 - The secondary portfolio policy is 25 % of NAV gross per entry, a gross
@@ -969,9 +969,9 @@ silent re-selection. Freezing the execution policy does not complete the
 P6 methodology freeze: the controller/prompt identities (P5) and the accepted
 experiment manifest remain open. The 2024–2025 final-test lock is unchanged.
 
-## 36. Accepted historical experiment manifest and persistence
+## 37. Accepted historical experiment manifest and persistence
 
-Recorded 2026-10-16, after Decision 35 and before any historical return was
+Recorded 2026-10-16, after Decision 36 and before any historical return was
 computed. This section records the reporting scope and persistence of the
 historical ladder experiment. It changes no scientific rule.
 
@@ -979,7 +979,7 @@ historical ladder experiment. It changes no scientific rule.
   horizon). It runs only through `structural-break-backtest
   historical-experiment`, which derives the binding through `load_primary`.
   There is no unaccepted or provisional option.
-- **Policies.** The experiment runs every Decision 35 frozen policy for its
+- **Policies.** The experiment runs every Decision 36 frozen policy for its
   horizon. At h20 that is the headline plus 21 execution sensitivities; the
   10- and 30-session variants are separate experiments bound to their own
   evaluation generations.
@@ -1005,12 +1005,12 @@ historical ladder experiment. It changes no scientific rule.
   bytes.
 - **Reports.** Reports are post-hoc 2022–2023 development assessment, never
   final-test results. Full System is `NOT_RUN`. DuckDB registration remains
-  deferred (Decision 34).
+  deferred (Decision 35).
 
-## 37. Historical portfolio, robustness/cost and economic uncertainty analysis
+## 38. Historical portfolio, robustness/cost and economic uncertainty analysis
 
 Recorded 2026-10-16, before any historical return was computed. This section
-extends the Decision 36 experiment with the secondary analyses that Decisions 32
+extends the Decision 37 experiment with the secondary analyses that Decisions 32
 and 35 define. Each analysis runs once, on the headline combination
 (0.30 × primary policy).
 
@@ -1018,7 +1018,7 @@ and 35 define. Each analysis runs once, on the headline combination
 scenarios for every rung from the per-combination reports. The trade
 selection is identical in every scenario and no scenario is selected.
 
-**Economic uncertainty.** `uncertainty.json` applies the Decision 35 frozen
+**Economic uncertainty.** `uncertainty.json` applies the Decision 36 frozen
 paired calendar-month bootstrap (`phase6-month-bootstrap-20261016`: 2,000
 draws, seed 5557, intervals only with at least 12 contributing months) to the
 headline rows. The B→Full comparison is `NOT_RUN`, never zero. This bootstrap
@@ -1053,12 +1053,12 @@ leave-one-sector-out diagnostics, are all reported; none is selected.
 - small-population flag below 20 events.
 
 These values carry over the Decision 32 fixture boundaries unchanged, but were
-not part of the Decision 35 approval. The experiment refuses to run until the
+not part of the Decision 36 approval. The experiment refuses to run until the
 owner freezes them. Tests use a test-only frozen copy.
 
-## 38. Frozen Phase 6 robustness slice policy
+## 39. Frozen Phase 6 robustness slice policy
 
-Recorded 2026-10-16. The owner approved the Decision 37 robustness slice policy
+Recorded 2026-10-16. The owner approved the Decision 38 robustness slice policy
 as proposed, and it is now **FROZEN** in `configs/phase6_analysis.json`
 (`phase6-robustness-20261016`).
 
@@ -1085,7 +1085,7 @@ accepted experiment uses is now frozen. The acceptance run still requires the
 official accepted snapshot. The Full System, the controller and prompt
 identities (P5), and the 2024–2025 final-test lock are unchanged.
 
-## 39. Full System deferred from the Phase 6 acceptance scope
+## 40. Full System deferred from the Phase 6 acceptance scope
 
 Recorded 2026-10-16. The owner stated that the multi-agent layer (P5) may not be
 completed.
@@ -1105,7 +1105,7 @@ completed.
 - The rule that the Full System is a subset of Model B, its frozen policies and
   the final-test lock are unchanged.
 
-## 40. Freeze manifest, final-test unlock gate and one-command acceptance
+## 41. Freeze manifest, final-test unlock gate and one-command acceptance
 
 Recorded 2026-10-16. This section changes no scientific rule. It implements
 the specification §2.1 freeze manifest and the final-test lock gate.
@@ -1128,7 +1128,7 @@ It then writes a content-addressed freeze manifest.
 - the three frozen config files;
 - the code and runtime identity;
 - the execution convention;
-- `controller: DEFERRED_NOT_RUN` (Decision 39).
+- `controller: DEFERRED_NOT_RUN` (Decision 40).
 
 All horizons must bind the same accepted generations. The checklist of
 validation decisions covers execution, threshold, analysis policies, accepted

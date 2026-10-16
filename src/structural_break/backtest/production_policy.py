@@ -1,6 +1,6 @@
 """The frozen Phase 6 production execution policy and its predeclared sensitivities.
 
-Decision 35 froze one headline `pair-execution-policy-v2` configuration and a
+Decision 36 froze one headline `pair-execution-policy-v2` configuration and a
 compact sensitivity declaration. Expansion is deterministic, so every reported
 variant has a stable identity, and no variant can be added, dropped or chosen
 after returns are observed without changing this file's identity.
@@ -107,7 +107,7 @@ def expand_policies(
     if sensitivities.headline_trading_threshold != HEADLINE_TRADING_THRESHOLD or set(
         sensitivities.sensitivity_trading_thresholds
     ) != {*SENSITIVITY_TRADING_THRESHOLDS, V2_REPORTING_THRESHOLD}:
-        raise ValueError("Trading thresholds differ from the Decision 35 declaration")
+        raise ValueError("Trading thresholds differ from the Decision 36 declaration")
     base = headline.model_dump(mode="json")
 
     def variant(name: str, **updates: object) -> ExecutionConfig:
@@ -145,7 +145,7 @@ def expand_policies(
 
 
 class AnalysisPolicies(FrozenModel):
-    """Decision 35 froze the bootstrap and portfolio; robustness boundaries need approval."""
+    """Decision 36 froze the bootstrap and portfolio; robustness boundaries need approval."""
 
     schema_version: Literal["phase6-analysis-policies-v1"] = "phase6-analysis-policies-v1"
     version: Identifier
@@ -156,7 +156,7 @@ class AnalysisPolicies(FrozenModel):
     @model_validator(mode="after")
     def production_identities(self) -> Self:
         if self.bootstrap.status != "FROZEN" or self.portfolio.mode != "DEVELOPMENT":
-            raise ValueError("Historical analysis uses the Decision 35 bootstrap and portfolio")
+            raise ValueError("Historical analysis uses the Decision 36 bootstrap and portfolio")
         if self.robustness.status == "FIXTURE":
             raise ValueError("Historical analysis needs a declared production slice policy")
         return self

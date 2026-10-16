@@ -521,7 +521,7 @@ def build_comparison_report(
             (
                 "Synthetic engineering outputs do not establish predictive or economic benefit"
                 if historical_spec is None
-                else "Post-hoc 2022-2023 development assessment under Decision 35; not final test"
+                else "Post-hoc 2022-2023 development assessment under Decision 36; not final test"
             ),
             "Supervised mean-reversion success and positive net trade return are separate outcomes",
             "Economic statistics require COMPLETE; missing returns remain explicit",

@@ -1,7 +1,7 @@
 """Accepted historical ladder experiment: frozen policies, immutable artifacts, replay.
 
 One experiment binds one accepted evaluation generation (one horizon), the
-Decision 35 frozen execution policies and trading thresholds, the outcome-free
+Decision 36 frozen execution policies and trading thresholds, the outcome-free
 event inventory and the separate label input. Executions are computed once per
 frozen policy and selections once per threshold, because neither depends on the
 other; the declared combinations are reported. Every artifact is
@@ -353,7 +353,7 @@ def _summary(
             )
     return (
         "# Historical strategy ladder (post-hoc development assessment)\n\n"
-        "Accepted-generation 2022-2023 development assessment under the Decision 35 "
+        "Accepted-generation 2022-2023 development assessment under the Decision 36 "
         "frozen execution policy. These were observed development years; this is "
         "not a final-test result. Full System is not run until an accepted controller "
         "generation exists. Returns are fractions of event entry gross notional for "

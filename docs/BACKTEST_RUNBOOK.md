@@ -191,7 +191,7 @@ false and final-test outcomes remain locked.
 
 ## Historical selection inventory (generation-bound, no returns)
 
-[Decision 34](DECISIONS.md#34-phase-6-historical-adapters-and-selection-inventory)
+[Decision 35](DECISIONS.md#35-phase-6-historical-adapters-and-selection-inventory)
 governs the historical adapters. They read registered v2 outputs only through
 manifest checksums, starting from one evaluation manifest and following its
 registry and market parents. The inventory selects the five rungs over the
@@ -231,12 +231,12 @@ not trading rows. Each event is rebuilt from bound data in this order:
 
 Historical execution (`evaluate_historical_ladder`) additionally requires an
 accepted binding, a FROZEN ladder policy and a FROZEN `DEVELOPMENT` execution
-policy. Decision 35 froze that policy in `configs/phase6_execution.json`, so on
+policy. Decision 36 froze that policy in `configs/phase6_execution.json`, so on
 the provisional pack it still refuses because the binding is unaccepted.
 
 ### Accepted historical experiment (official snapshot only)
 
-[Decision 36](DECISIONS.md#36-accepted-historical-experiment-manifest-and-persistence)
+[Decision 37](DECISIONS.md#37-accepted-historical-experiment-manifest-and-persistence)
 governs the experiment. It accepts only a binding derived from the published
 primary readiness record; the provisional pack is refused before anything is
 computed. Run one experiment per horizon and verify it independently:
@@ -250,7 +250,7 @@ At h20 the experiment runs the 22 frozen h20 policies and the four trading
 thresholds as 25 declared combinations. `summary.md` labels the results as
 post-hoc 2022-2023 development assessment. Full System is shown as not run.
 Read `reports.json` for every denominator, unknown execution and label count.
-[Decision 37](DECISIONS.md#37-historical-portfolio-robustnesscost-and-economic-uncertainty-analysis)
+[Decision 38](DECISIONS.md#38-historical-portfolio-robustnesscost-and-economic-uncertainty-analysis)
 adds four outputs on the headline combination:
 
 - `cost-grid.json`: the frozen 4 × 4 cost/borrow table;
@@ -260,7 +260,7 @@ adds four outputs on the headline combination:
 - `portfolios.json`: the frozen fixed-share portfolio per run rung. Positions
   open at the development end stay `UNPRICED` and no terminal NAV is claimed.
 
-Decision 38 froze the robustness slice policy in `configs/phase6_analysis.json`
+Decision 39 froze the robustness slice policy in `configs/phase6_analysis.json`
 (VIX 20/30, volatility 0.20/0.40, small-population flag below 20). All analysis
 policies the experiment uses are now frozen; the run waits only for the
 official accepted snapshot.
@@ -270,7 +270,7 @@ nothing is rewritten.
 
 ### Official acceptance in one command (official snapshot only)
 
-Run this once the accepted snapshot is imported (Decision 40):
+Run this once the accepted snapshot is imported (Decision 41):
 
 ```powershell
 uv run --frozen structural-break-backtest p6-acceptance --workspace-root WORKSPACE --output-dir .acceptance/p6-official
@@ -313,7 +313,7 @@ accepted. Re-run it on the official snapshot before any policy freeze.
 
 ## Production policy and future data adapter
 
-[Decision 35](DECISIONS.md#35-frozen-phase-6-production-execution-policy-and-trading-threshold)
+[Decision 36](DECISIONS.md#36-frozen-phase-6-production-execution-policy-and-trading-threshold)
 froze the production policy. `configs/phase6_execution.json` is the
 `pair-execution-policy-v2` DEVELOPMENT/FROZEN headline:
 
@@ -356,13 +356,13 @@ are a disclosed limitation, not vintage historical prices. Delisting/corporate
 action settlement and actual borrow availability are not implemented here.
 
 Execution, cost, borrow, price-adjustment and eligibility assumptions are
-frozen (Decision 35). Genuine economic assessment still requires the accepted
+frozen (Decision 36). Genuine economic assessment still requires the accepted
 experiment manifest (step C) on the official snapshot, bound to accepted
 generation signals and frozen stored predictions. Full System waits for
 accepted controller decisions. All five variants must share this engine
 and cost policy; only their declared capability filters differ. Model A/B
 forecast evaluation still uses the broad matched v2 cohort and its canonical
-paired calendar-quarter bootstrap. Decision 35 also freezes the economic
+paired calendar-quarter bootstrap. Decision 36 also freezes the economic
 month-block uncertainty and the secondary portfolio policies for production use.
 
 ## Verification and remaining gates

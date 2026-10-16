@@ -1,4 +1,4 @@
-"""The Decision 35 frozen execution policy and its deterministic sensitivity set."""
+"""The Decision 36 frozen execution policy and its deterministic sensitivity set."""
 
 import json
 import shutil
@@ -87,8 +87,8 @@ def test_loader_refuses_an_unfrozen_or_v1_headline(tmp_path: Path) -> None:
         ({"headline_version": "other"}, "headline version"),
         ({"annual_borrow_rates": [0.0, 0.03, 0.1]}, "headline scenario"),
         ({"positive_beta_limits": [2.0, 3.0]}, "differ from the headline"),
-        ({"headline_trading_threshold": 0.5}, "Decision 35"),
-        ({"sensitivity_trading_thresholds": [0.2, 0.4]}, "Decision 35"),
+        ({"headline_trading_threshold": 0.5}, "Decision 36"),
+        ({"sensitivity_trading_thresholds": [0.2, 0.4]}, "Decision 36"),
     ],
 )
 def test_sensitivity_set_cannot_drift_from_the_frozen_declaration(
