@@ -290,25 +290,26 @@ complete accepted-generation integration or genuine semantic evaluation.
 
 ## P6 — Backtesting framework, experiment freeze and final evaluation
 
-Status: **IN PROGRESS**, authorized on 2026-10-11 for an isolated, synthetic
-event-level slice on `phase6/shared-simulator`, in parallel with Phase 5 batch
-infrastructure. The next authorized fixture slice adds the capability ladder,
-coverage-aware event reports and immutable manifest verification. See DECISIONS
-sections 30-32 and `docs/BACKTEST_RUNBOOK.md`.
-Implementation does not run genuine historical economics, integrate unfinished
-v2 outputs or open 2024-2025 outcomes. Production execution policy remains
-DRAFT; fixture scenarios are not an execution-cost freeze.
+Status: **IN PROGRESS**. The synthetic engine, ladder, reporting and analysis
+slices (DECISIONS 30-32) are complete. The generation-bound historical adapters,
+the accepted historical experiment and its analyses are fixture-verified
+(Decisions 34-37). The production execution, sensitivity, threshold and analysis
+policies are frozen (Decisions 35 and 38). The acceptance run waits for the
+official accepted v2 snapshot; until then no genuine historical return exists.
+2024-2025 outcomes stay locked. Full System is deferred (Decision 39): it is
+reported as NOT_RUN and added as a new experiment only if the multi-agent layer
+is completed. See `docs/BACKTEST_RUNBOOK.md`.
 
 ### Build before final-test unlock
 
 - [x] Implement the common event execution engine on synthetic inputs.
 - [x] Verify synthetic five-rung selection, with independent A/B filters and Full as a subset of B.
-- [-] Implement accepted historical input/prediction/controller adapters for all five variants. Generation-bound input/prediction/label adapters, the outcome-free selection inventory and the frozen-only execution path are implemented and fixture-tested (Decision 34). Acceptance on the official snapshot is pending; Full System stays NOT_RUN until P5 supplies an accepted controller generation.
+- [-] Implement accepted historical input/prediction/controller adapters for all five variants. Generation-bound input/prediction/label adapters, the outcome-free selection inventory and the frozen-only execution path are implemented and fixture-tested (Decision 34). Acceptance of the four Baseline/Model rungs on the official snapshot is pending. The Full System controller adapter is deferred (Decision 39): the rung is reported as NOT_RUN and is added as a new experiment only if the multi-agent layer is completed.
 - [x] Implement beta-weighted entry construction with frozen share units until exit.
 - [x] Implement close-signal / next-open execution convention.
 - [x] Implement convergence, adverse-stop and timeout exits.
-- [x] Implement twelve predeclared fixture transaction-cost/borrow scenarios; freeze production assumptions separately.
-- [x] Implement explicit fixture turnover/borrow accounting and 10/20/30-session horizon support; production policy remains DRAFT.
+- [x] Implement twelve predeclared fixture transaction-cost/borrow scenarios; the production 4x4 grid and assumptions are frozen separately (Decision 35).
+- [x] Implement explicit fixture turnover/borrow accounting and 10/20/30-session horizon support; the production policy is frozen (Decision 35).
 - [x] Implement event-level MAE/MFE/holding/return metrics, with separate partial excursions for unpriced paths.
 - [x] Implement secondary fixture fixed-share portfolio simulation, cash/NAV/exposure/turnover accounting and missing-valuation refusal.
 - [x] Implement fixture predictive/calibration metrics on the fresh forecasting population.
@@ -355,7 +356,7 @@ all eighteen bound artifacts and repeats with the same immutable identity.
 - [ ] Run Baseline 1.
 - [ ] Run Model A.
 - [ ] Run Model B.
-- [ ] Run Full System.
+- [ ] Run Full System (deferred, Decision 39: only if the multi-agent layer is completed and accepted).
 - [ ] Persist headline metrics, event/trade rows, matched-subset comparisons and robustness artifacts immutably.
 - [ ] Do not retune after viewing final-test results; any methodological change creates a new explicitly labelled experiment.
 

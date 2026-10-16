@@ -1084,3 +1084,23 @@ accepted controller generation exists.
 accepted experiment uses is now frozen. The acceptance run still requires the
 official accepted snapshot. The Full System, the controller and prompt
 identities (P5), and the 2024–2025 final-test lock are unchanged.
+
+## 39. Full System deferred from the Phase 6 acceptance scope
+
+Recorded 2026-10-16. The owner stated that the multi-agent layer (P5) may not be
+completed.
+
+- The Phase 6 historical acceptance scope is the four Baseline/Model rungs:
+  Baseline 0, Baseline 1, Model A and Model B.
+- Every historical experiment keeps the fifth rung in its rows, reports,
+  bootstrap and portfolios as `FULL_SYSTEM: NOT_RUN /
+  CONTROLLER_GENERATION_NOT_ACCEPTED`. It is never shown as zero-selected,
+  withheld or zero-return.
+- An experiment, report or summary must not be described as a five-variant
+  result while that rung is not run.
+- If the multi-agent layer is completed and accepted later, its controller
+  adapter is added as a new, separately identified experiment version. That
+  version binds the accepted controller, prompt and schedule identities, and it
+  does not rewrite the four-rung artifacts.
+- The rule that the Full System is a subset of Model B, its frozen policies and
+  the final-test lock are unchanged.
