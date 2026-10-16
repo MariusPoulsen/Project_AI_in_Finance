@@ -853,3 +853,57 @@ run directory). The supervisor's own receipts record the stop and are not
 rewritten; this section is the acceptance record for the app gate. Future checker
 versions should cache the platform lookup before installing the guard.
 
+## 34. Phase 6 historical adapters and selection inventory
+
+Recorded 2026-10-16. The owner approved the P6 adapter design questions
+(`docs/proposals/P6_HISTORICAL_PLAN.md`, Q1–Q7) before any historical economic
+number was computed. These choices follow earlier development observations,
+including the already observed 2022–2023 assessment forecasts. They must not be
+described as decisions made before all development observations.
+
+- **Trading inventory.** Every rung of the historical ladder uses the horizon's
+  non-overlapping episode events (the v2 one-open-episode/reset rule). Raw
+  fresh crossings in the window that this registry omits are kept as separate
+  `NOT_IN_HORIZON_EVENT_REGISTRY` records, not as trading rows. A and B can
+  only score episode events, so this keeps one change per rung.
+- **Window.** The headline development ladder covers the 2022–2023 assessment
+  window for all five rungs. Stored fit- and calibration-period scores are
+  in-sample for the model or the calibrator and are not admitted. Economic
+  numbers from this window are post-hoc development results, never final-test
+  results. A separately labelled Baseline 0/1 history for 2006–2021 remains
+  optional.
+- **Selection policy.** The headline uses calibrated logistic A and logistic
+  B-both at the bound horizon, with the matched v2 threshold read from the
+  bound protocol (0.65). The adapter refuses any other threshold. XGBoost, the
+  B ablations and the 10/30-session horizons are labelled sensitivities, and
+  every variant is reported.
+- **Bindings.** An ACCEPTED binding is derived only through `load_primary` and
+  the registered evaluation manifest. An explicit path-and-checksum binding to
+  an unpublished pack is `UNACCEPTED_ENGINEERING`. It may build an
+  outcome-free selection inventory. A frozen policy, historical execution and
+  an accepted manifest all refuse it. Model bundle bytes are checksum-verified.
+  Native probability replay is part of the later accepted-manifest run.
+- **Full System.** Without an accepted controller generation, every row
+  carries `FULL_SYSTEM: NOT_RUN / CONTROLLER_GENERATION_NOT_ACCEPTED`. Reports
+  show the rung, its B→Full comparison and its agent metrics as status-only
+  with null metrics. These are never zero-selected, withheld or zero-return.
+  The PLAN.md adapter checkbox stays in progress until P5 supplies an accepted
+  controller generation.
+- **Prices.** Closes are the Yahoo adjusted close. The adjusted open is
+  `open × adj_close / close` from the same capture row. Monitoring closes
+  accept `OK` and `ZERO_VOLUME`, as the relationship engine does. Fills
+  require `OK`, so a `ZERO_VOLUME` fill session is an explicit missing fill.
+  Paths that would need sessions after 2023-12-31 are truncated, never
+  constructed.
+- **Execution gate.** `evaluate_historical_ladder` requires an accepted
+  binding, a FROZEN ladder policy and a FROZEN `DEVELOPMENT` execution policy.
+  The production execution policy remains DRAFT until the owner approves it
+  separately.
+- **Persistence.** Content-addressed files and a manifest come first. DuckDB
+  registration (`ops.experiments`, `analytics.backtest_trades`) follows later
+  for the Strategy Lab.
+
+Fixture tests establish engineering behaviour only. Accepted-snapshot
+verification, the production policy freeze, the accepted experiment manifest
+and the Full-System controller adapter remain separate gates. The 2024–2025
+final-test lock is unchanged.

@@ -151,7 +151,9 @@ def _select_validated_event(
     model_b = _model_selection(
         "MODEL_B", baseline_1, event.state.model_b, policy.candidate_threshold
     )
-    if not model_b.selected:
+    if policy.full_system == "NOT_RUN":
+        full = _selection("FULL_SYSTEM", "NOT_RUN", "CONTROLLER_GENERATION_NOT_ACCEPTED")
+    elif not model_b.selected:
         full = _base_gate("FULL_SYSTEM", model_b)
     elif not event.state.agent_scheduled:
         full = _selection("FULL_SYSTEM", "UNAVAILABLE", "AGENT_UNSCHEDULED")

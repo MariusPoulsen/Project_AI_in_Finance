@@ -303,7 +303,7 @@ DRAFT; fixture scenarios are not an execution-cost freeze.
 
 - [x] Implement the common event execution engine on synthetic inputs.
 - [x] Verify synthetic five-rung selection, with independent A/B filters and Full as a subset of B.
-- [ ] Implement accepted historical input/prediction/controller adapters for all five variants.
+- [-] Implement accepted historical input/prediction/controller adapters for all five variants. Generation-bound input/prediction/label adapters, the outcome-free selection inventory and the frozen-only execution path are implemented and fixture-tested (Decision 34). Acceptance on the official snapshot is pending; Full System stays NOT_RUN until P5 supplies an accepted controller generation.
 - [x] Implement beta-weighted entry construction with frozen share units until exit.
 - [x] Implement close-signal / next-open execution convention.
 - [x] Implement convergence, adverse-stop and timeout exits.

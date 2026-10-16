@@ -3,9 +3,9 @@
 Phase 6 starts with a synthetic, event-level execution engine and capability
 comparison reports. It is prepared on isolated branch
 `phase6/shared-simulator` while v2's live source and
-checkpoints remain frozen. [Decision 28](DECISIONS.md#28-phase-6-fixed-share-development-simulator)
+checkpoints remain frozen. [Decision 30](DECISIONS.md#30-phase-6-fixed-share-development-simulator)
 and [the specification](specs/05_BACKTESTING_EVALUATION.md) govern execution.
-[Decision 29](DECISIONS.md#29-phase-6-fixture-ladder-and-coverage-reporting)
+[Decision 31](DECISIONS.md#31-phase-6-fixture-ladder-and-coverage-reporting)
 governs fixture selection and coverage reporting.
 It does not download prices, fit models, call an LLM or unlock 2024-2025 outcomes.
 Its separate portfolio accounting example is synthetic. Historical economic
@@ -184,10 +184,54 @@ or idle-cash return model. Missing held quotes make later NAV unknown and block 
 allocations; future COMPLETE status cannot determine entry eligibility. These two
 proposals are an accounting check, not a five-strategy portfolio assessment.
 
-[Decision 30](DECISIONS.md#30-historical-bridges-and-economic-analysis-before-v2-completion)
+[Decision 32](DECISIONS.md#32-historical-bridges-and-economic-analysis-before-v2-completion)
 records these fixture choices and their timing. Actual execution, portfolio and
 historical-data assumptions remain unfrozen. All scientific acceptance flags are
 false and final-test outcomes remain locked.
+
+## Historical selection inventory (generation-bound, no returns)
+
+[Decision 34](DECISIONS.md#34-phase-6-historical-adapters-and-selection-inventory)
+governs the historical adapters. They read registered v2 outputs only through
+manifest checksums, starting from one evaluation manifest and following its
+registry and market parents. The inventory selects the five rungs over the
+horizon's non-overlapping episode events in the 2022-2023 assessment window.
+It never simulates a price path or reads a label, so it runs while the
+production execution policy is DRAFT. Full System is `NOT_RUN` for every row
+until an accepted controller generation exists.
+
+Accepted binding (official snapshot; derives every identity from the published
+primary readiness record):
+
+```powershell
+uv run --frozen structural-break-backtest historical-inventory --workspace-root WORKSPACE --accepted --horizon 20 --output-dir .acceptance/p6-inventory
+```
+
+Unaccepted engineering binding (for example the provisional pack). This needs an
+explicit workspace-relative evaluation manifest and its exact checksum. The
+result is marked `UNACCEPTED_ENGINEERING` and cannot reach a frozen policy,
+execution or an accepted manifest:
+
+```powershell
+uv run --frozen structural-break-backtest historical-inventory --workspace-root WORKSPACE --evaluation-manifest artifacts/research/EVALUATION/manifest.json --evaluation-sha256 SHA256 --horizon 20 --output-dir .acceptance/p6-inventory
+```
+
+The content-addressed `inventories/<id>/` directory holds `spec.json`,
+`inventory.json` (one row per episode event, with five rung selections) and
+`summary.json` (counts and reasons only). Raw crossings in the window that the
+episode registry omits are listed as `NOT_IN_HORIZON_EVENT_REGISTRY`; they are
+not trading rows. Each event is rebuilt from bound data in this order:
+
+- the frozen relationship snapshot is joined;
+- the signal close and the previous z are reconciled from adjusted prices
+  (1e-9), and any mismatch stops the run;
+- adjusted opens are `open * adj_close / close` from the same capture row;
+- `ZERO_VOLUME` sessions supply monitoring closes but not fills;
+- paths that would need 2024 sessions are truncated, never constructed.
+
+Historical execution (`evaluate_historical_ladder`) additionally requires an
+accepted binding, a FROZEN ladder policy and a FROZEN `DEVELOPMENT` execution
+policy. With today's DRAFT `configs/phase6_execution.json` it refuses.
 
 ## Production policy and future data adapter
 

@@ -4,6 +4,7 @@ These typed declarations are fixture adapters, not independent verification of
 native models, SEC generations or stored historical controller receipts.
 """
 
+from collections.abc import Sequence
 from datetime import date, datetime, timedelta
 from math import isclose
 from typing import Annotated, Literal, Self, TypeAlias
@@ -46,6 +47,7 @@ SelectionReason: TypeAlias = Literal[
     "CONTROLLER_REVIEW",
     "CONTROLLER_NO_TRADE",
     "CONTROLLER_ABSTAIN",
+    "CONTROLLER_GENERATION_NOT_ACCEPTED",
     "BASE_RULE_WITHHELD",
     "BASE_RULE_UNAVAILABLE",
 ]
@@ -177,12 +179,23 @@ class LadderPolicy(FrozenModel):
     model_b_variant: Literal["B-metadata", "B-tone", "B-catalyst", "B-both"] = "B-both"
     controller_policy_version: Identifier
     label_policy_version: Identifier
+    # NOT_RUN states that no accepted controller generation exists: the whole
+    # Full-System rung is unknown, never withheld, zero-selected or zero-return.
+    full_system: Literal["RUN", "NOT_RUN"] = "RUN"
 
 
 class RungSelection(FrozenModel):
     rung: Rung
-    disposition: Literal["SELECTED", "WITHHELD", "UNAVAILABLE"]
+    disposition: Literal["SELECTED", "WITHHELD", "UNAVAILABLE", "NOT_RUN"]
     reason_codes: Annotated[tuple[SelectionReason, ...], Field(min_length=1, max_length=4)]
+
+    @model_validator(mode="after")
+    def not_run_scope(self) -> Self:
+        not_run = self.disposition == "NOT_RUN"
+        declared = self.reason_codes == ("CONTROLLER_GENERATION_NOT_ACCEPTED",)
+        if not_run != declared or (not_run and self.rung != "FULL_SYSTEM"):
+            raise ValueError("Only an unaccepted controller generation leaves Full System not run")
+        return self
 
     @property
     def selected(self) -> bool:
@@ -190,7 +203,20 @@ class RungSelection(FrozenModel):
 
     @property
     def available(self) -> bool:
-        return self.disposition != "UNAVAILABLE"
+        return self.disposition in ("SELECTED", "WITHHELD")
+
+
+def check_selection_chain(selections: Sequence[RungSelection]) -> None:
+    """Every row keeps five canonical rungs; filtered rungs nest as the ladder declares."""
+    if tuple(selection.rung for selection in selections) != RUNG_ORDER:
+        raise ValueError("Every event must preserve all five rungs in canonical order")
+    selected = {selection.rung for selection in selections if selection.selected}
+    if selected - {"BASELINE_0"} and "BASELINE_0" not in selected:
+        raise ValueError("All filtered strategies require a fresh raw signal")
+    if selected & {"MODEL_A", "MODEL_B", "FULL_SYSTEM"} and "BASELINE_1" not in selected:
+        raise ValueError("Model and controller selection require historical ACTIVE")
+    if "FULL_SYSTEM" in selected and "MODEL_B" not in selected:
+        raise ValueError("Full System must remain a subset of Model B")
 
 
 class LadderRow(FrozenModel):
@@ -207,8 +233,6 @@ class LadderRow(FrozenModel):
     def coherent_rows(self) -> Self:
         if utc(self.signal_at).year >= 2024:
             raise ValueError("Ladder rows cannot open locked 2024+ outcomes")
-        if tuple(selection.rung for selection in self.selections) != RUNG_ORDER:
-            raise ValueError("Every event must preserve all five rungs in canonical order")
         if (self.raw_fresh is True) != (self.execution is not None):
             raise ValueError("Every fresh event requires one shared counterfactual execution")
         if self.execution is not None and (
@@ -217,13 +241,7 @@ class LadderRow(FrozenModel):
             or self.execution.request_sha256 != self.request_sha256
         ):
             raise ValueError("Shared execution must bind this exact event request")
-        selected = {selection.rung for selection in self.selections if selection.selected}
-        if selected - {"BASELINE_0"} and "BASELINE_0" not in selected:
-            raise ValueError("All filtered strategies require a fresh raw signal")
-        if selected & {"MODEL_A", "MODEL_B", "FULL_SYSTEM"} and "BASELINE_1" not in selected:
-            raise ValueError("Model and controller selection require historical ACTIVE")
-        if "FULL_SYSTEM" in selected and "MODEL_B" not in selected:
-            raise ValueError("Full System must remain a subset of Model B")
+        check_selection_chain(self.selections)
         return self
 
 

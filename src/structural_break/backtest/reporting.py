@@ -273,6 +273,16 @@ def _validate_report_inputs(
     return event_map, row_map, label_map
 
 
+def _not_run(population_n: int) -> dict[str, Any]:
+    """A rung without an accepted controller generation has no metrics, not zeros."""
+    return {
+        "status": "NOT_RUN",
+        "reason": "CONTROLLER_GENERATION_NOT_ACCEPTED",
+        "population_n": population_n,
+        "metrics": None,
+    }
+
+
 def _agent_report(
     events: dict[str, LadderEvent], rows: Sequence[LadderRow], labels: dict[str, EvaluationLabel]
 ) -> dict[str, Any]:
@@ -373,7 +383,15 @@ def build_comparison_report(
         if scores_a[event_id] is not None and scores_b[event_id] is not None
     ]
     comparisons: dict[str, Any] = {}
+    full_run = policy.full_system == "RUN"
     for left, right in zip(RUNG_ORDER[:-1], RUNG_ORDER[1:], strict=True):
+        if (left, right) == ("MODEL_B", "FULL_SYSTEM") and not full_run:
+            comparisons[f"{left}__{right}"] = {
+                "left": left,
+                "right": right,
+                **_not_run(len(aligned)),
+            }
+            continue
         if (left, right) == ("MODEL_B", "FULL_SYSTEM"):
             common = [
                 row
@@ -432,7 +450,12 @@ def build_comparison_report(
         "label_coverage": _label_summary(event_ids, label_map),
         "source_coverage_counts": _counts([event.state.source_coverage for event in events]),
         "natural_rungs": {
-            rung: _rung_report(event_map, aligned, rung, label_map) for rung in RUNG_ORDER
+            rung: (
+                _rung_report(event_map, aligned, rung, label_map)
+                if full_run or rung != "FULL_SYSTEM"
+                else _not_run(len(aligned))
+            )
+            for rung in RUNG_ORDER
         },
         "adjacent_comparisons": comparisons,
         "predictive": {
@@ -458,7 +481,9 @@ def build_comparison_report(
                 "only separately supplied labels enter supervised metrics"
             ),
         },
-        "agent_controller": _agent_report(event_map, aligned, label_map),
+        "agent_controller": (
+            _agent_report(event_map, aligned, label_map) if full_run else _not_run(len(aligned))
+        ),
         "limitations": [
             "Synthetic engineering outputs do not establish predictive or economic benefit",
             "Supervised mean-reversion success and positive net trade return are separate outcomes",

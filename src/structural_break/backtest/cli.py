@@ -118,12 +118,68 @@ def _analysis(arguments: list[str], *, verify: bool) -> None:
     print(json.dumps(result, indent=2))
 
 
+def _historical_inventory(arguments: list[str]) -> None:
+    """Outcome-free selection inventory; never simulates prices or reads labels."""
+    from structural_break.backtest.historical import (
+        HistoricalSources,
+        bind_accepted,
+        bind_unaccepted,
+        build_historical_events,
+        default_spec,
+        inventory_summary,
+        select_inventory,
+    )
+    from structural_break.config.paths import ProjectPaths
+
+    parser = argparse.ArgumentParser(description="Generation-bound historical selection inventory")
+    parser.add_argument("--workspace-root", type=Path, required=True)
+    binding = parser.add_mutually_exclusive_group(required=True)
+    binding.add_argument("--accepted", action="store_true", help="Bind the primary publication")
+    binding.add_argument("--evaluation-manifest", help="Unaccepted: workspace-relative path")
+    parser.add_argument("--evaluation-sha256", help="Unaccepted: exact manifest checksum")
+    parser.add_argument("--horizon", type=int, choices=(10, 20, 30), default=20)
+    parser.add_argument("--primary-version")
+    parser.add_argument("--output-dir", type=Path, required=True)
+    args = parser.parse_args(arguments)
+    root = args.workspace_root.resolve()
+    paths = None
+    if args.accepted:
+        if args.evaluation_sha256:
+            parser.error("--accepted derives every checksum from the primary publication")
+        paths = ProjectPaths.resolve(Path.cwd(), root)
+        bound = bind_accepted(paths, args.horizon, primary_version=args.primary_version)
+    else:
+        if not args.evaluation_sha256 or args.primary_version:
+            parser.error("An unaccepted binding needs --evaluation-sha256 and no primary version")
+        bound = bind_unaccepted(root, args.evaluation_manifest, args.evaluation_sha256)
+        if bound.horizon_sessions != args.horizon:
+            parser.error("--horizon differs from the bound evaluation generation")
+    sources = HistoricalSources.open(root, bound, paths=paths)
+    spec = default_spec(sources)
+    events, partitions, suppressed = build_historical_events(sources, spec)
+    inventory = select_inventory(events, partitions, suppressed, spec)
+    summary = inventory_summary(inventory)
+    body = canonical_bytes(inventory)
+    # Content-addressed: an identical rerun is idempotent and never overwrites.
+    directory = args.output_dir / "inventories" / hashlib.sha256(body).hexdigest()
+    write_bytes(directory / "spec.json", canonical_bytes(spec))
+    write_bytes(directory / "inventory.json", body)
+    write_bytes(
+        directory / "summary.json",
+        (json.dumps(summary, indent=2, sort_keys=True) + "\n").encode("utf-8"),
+    )
+    print(json.dumps({**summary, "directory": str(directory)}, indent=2, sort_keys=True))
+
+
 def main() -> None:
     if len(sys.argv) > 1 and sys.argv[1] in {"analysis", "verify-analysis"}:
         _analysis(sys.argv[2:], verify=sys.argv[1] == "verify-analysis")
         return
     if len(sys.argv) > 1 and sys.argv[1] == "ladder":
         _ladder(sys.argv[2:])
+        return
+    if len(sys.argv) > 1 and sys.argv[1] == "historical-inventory":
+        _historical_inventory(sys.argv[2:])
         return
     if len(sys.argv) > 1 and sys.argv[1] == "verify":
         _verify(sys.argv[2:])
