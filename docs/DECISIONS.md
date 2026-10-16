@@ -827,3 +827,29 @@ The full-validation CI gate for the rerun is the section 27 job set
 provisional, clearly unaccepted export of the earlier registered generations
 was prepared for group members to start exploratory work; it is replaced by the
 official snapshot once the rerun is accepted.
+
+## 34. Accepted research v2 publication
+
+Recorded 2026-10-17. The rerun `v2_rerun_a_20261016_4764c65` (revision `4764c65`,
+computational source `73c4539b…`, full hosted CI run 38822935350) completed both
+complete source passes, all six fit/verification stages for the thirty models and
+`promote-primary`, which performed the fresh source and native replay and
+published primary `research_primary_5c01ab3d29c74e3e9154d9e3` with evaluations
+`research_evaluation_16a431c4fea73ffd35f56062` (h20, primary),
+`research_evaluation_219b30fcf452cd5e1609ec3c` (h10) and
+`research_evaluation_bc319e752527bdd7f10ff0c2` (h30). The final-test lock is unchanged.
+
+The supervisor's last gate, the read-only real-app check, stopped because importing
+Streamlit calls `platform.system()`, which on Windows with Python 3.11 runs
+`cmd /c ver`; the checker's audit hook denies every subprocess as a forbidden
+provider call. The app performed no download, fit, provider call or write. With
+the user's approval the unchanged checker was run again in a fresh process after
+caching `platform.uname()` before the guard was installed. It passed: both pages
+rendered without exceptions, displayed metrics and denominators matched the
+accepted reports, external sockets were blocked and the database and publication
+files were unchanged (receipt
+`real_app_acceptance_receipt_prewarmed_platform.json`, SHA-256 `40ae1db3…`, in the
+run directory). The supervisor's own receipts record the stop and are not
+rewritten; this section is the acceptance record for the app gate. Future checker
+versions should cache the platform lookup before installing the guard.
+
