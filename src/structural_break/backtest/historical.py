@@ -231,10 +231,12 @@ class HistoricalSources:
         path = checked_file(self.registry_file.parent, self.registry, name)
         return pd.read_parquet(path, columns=list(columns) if columns else None)
 
-    def predictions(self) -> pd.DataFrame:
-        return pd.read_parquet(
-            checked_file(self.evaluation_file.parent, self.evaluation, "predictions")
-        )
+    def predictions(self, columns: Sequence[str]) -> pd.DataFrame:
+        """Explicit columns only, so stored supervised targets are never loaded."""
+        if any(name.startswith("y_") for name in columns):
+            raise ValueError("Prediction reads must not request supervised target columns")
+        path = checked_file(self.evaluation_file.parent, self.evaluation, "predictions")
+        return pd.read_parquet(path, columns=list(columns))
 
     def model_sha256(self, name: str) -> str:
         entries = [item for item in self.evaluation["model_files"] if item["name"] == name]
@@ -251,10 +253,21 @@ class HistoricalSources:
             raise ValueError("Bound market file checksum differs")
         return path
 
-    def prices(self, start: date, end: date) -> pd.DataFrame:
+    def prices(
+        self,
+        start: date,
+        end: date,
+        columns: Sequence[str] = (
+            "ticker",
+            "trading_date",
+            "open",
+            "close",
+            "adj_close",
+            "quality_flag",
+        ),
+    ) -> pd.DataFrame:
         path = self._market_file("prices.parquet", self.binding.prices_sha256)
-        columns = ["ticker", "trading_date", "open", "close", "adj_close", "quality_flag"]
-        frame = pd.read_parquet(path, columns=columns)
+        frame = pd.read_parquet(path, columns=list(dict.fromkeys(["trading_date", *columns])))
         dates = pd.to_datetime(frame["trading_date"]).dt.date
         if dates.gt(self.binding.development_end).any():
             raise ValueError("Bound prices extend past the development period")
@@ -580,7 +593,14 @@ def build_historical_events(
     dates = pd.to_datetime(events["event_date"]).dt.date
     events = events.loc[dates.ge(spec.window_start) & dates.le(spec.window_end)]
     events = events.sort_values(["event_date", "pair_id", "event_id"], kind="mergesort")
-    predictions = _records(sources.predictions(), "event_id")
+    policy = spec.ladder
+    columns = [
+        f"{policy.model_family}_{_ROLE_COLUMNS[role]}_calibrated"
+        for role in ("A", policy.model_b_variant)
+    ]
+    predictions = _records(
+        sources.predictions(["event_id", "research_partition", *columns]), "event_id"
+    )
     universe = _records(sources.pair_universe(), "pair_id")
     prices = PriceBook.build(
         sources.prices(spec.window_start - timedelta(days=21), spec.binding.development_end),

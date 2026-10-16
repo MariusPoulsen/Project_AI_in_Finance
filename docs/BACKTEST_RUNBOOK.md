@@ -233,6 +233,25 @@ Historical execution (`evaluate_historical_ladder`) additionally requires an
 accepted binding, a FROZEN ladder policy and a FROZEN `DEVELOPMENT` execution
 policy. With today's DRAFT `configs/phase6_execution.json` it refuses.
 
+### Target-blind execution-policy diagnostics
+
+The proposal in `docs/proposals/P6_EXECUTION_POLICY.md` is supported by a
+diagnostics command. It reads only fit- and calibration-period data (dates
+before the bound assessment start) and summarizes three things:
+
+- relationship betas against candidate ceilings;
+- minimum-leg 20-session dollar volume against candidate floors;
+- calibration-period calibrated score distributions.
+
+It never loads a supervised target column and computes no return:
+
+```powershell
+uv run --frozen structural-break-backtest policy-diagnostics --workspace-root WORKSPACE --accepted --horizon 20 --output-dir .acceptance/p6-diagnostics
+```
+
+The same explicit unaccepted binding flags as `historical-inventory` are
+accepted. Re-run it on the official snapshot before any policy freeze.
+
 ## Production policy and future data adapter
 
 `configs/phase6_execution.json` is deliberately DEVELOPMENT/DRAFT. Costs,

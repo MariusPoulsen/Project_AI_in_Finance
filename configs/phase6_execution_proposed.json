@@ -1,0 +1,15 @@
+{
+  "schema_version": "pair-execution-policy-v1",
+  "version": "phase6-execution-proposal-v1",
+  "mode": "DEVELOPMENT",
+  "status": "DRAFT",
+  "horizon_sessions": 20,
+  "entry_threshold": 2.0,
+  "convergence_band": 0.5,
+  "adverse_boundary": 3.0,
+  "positive_beta_limit": 3.0,
+  "entry_cost_bps": 5.0,
+  "exit_cost_bps": 5.0,
+  "annual_borrow_rate": 0.01,
+  "annual_trading_sessions": 252
+}

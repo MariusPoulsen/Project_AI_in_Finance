@@ -5,6 +5,7 @@ import hashlib
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 from structural_break.backtest.contracts import ExecutionConfig, PairTradeRequest
 from structural_break.backtest.fixtures import synthetic_trade_request
@@ -118,20 +119,16 @@ def _analysis(arguments: list[str], *, verify: bool) -> None:
     print(json.dumps(result, indent=2))
 
 
-def _historical_inventory(arguments: list[str]) -> None:
-    """Outcome-free selection inventory; never simulates prices or reads labels."""
+def _bound_sources(description: str, arguments: list[str]) -> tuple[Any, argparse.Namespace]:
+    """Shared generation binding: accepted publication or explicit unaccepted checksum."""
     from structural_break.backtest.historical import (
         HistoricalSources,
         bind_accepted,
         bind_unaccepted,
-        build_historical_events,
-        default_spec,
-        inventory_summary,
-        select_inventory,
     )
     from structural_break.config.paths import ProjectPaths
 
-    parser = argparse.ArgumentParser(description="Generation-bound historical selection inventory")
+    parser = argparse.ArgumentParser(description=description)
     parser.add_argument("--workspace-root", type=Path, required=True)
     binding = parser.add_mutually_exclusive_group(required=True)
     binding.add_argument("--accepted", action="store_true", help="Bind the primary publication")
@@ -154,7 +151,19 @@ def _historical_inventory(arguments: list[str]) -> None:
         bound = bind_unaccepted(root, args.evaluation_manifest, args.evaluation_sha256)
         if bound.horizon_sessions != args.horizon:
             parser.error("--horizon differs from the bound evaluation generation")
-    sources = HistoricalSources.open(root, bound, paths=paths)
+    return HistoricalSources.open(root, bound, paths=paths), args
+
+
+def _historical_inventory(arguments: list[str]) -> None:
+    """Outcome-free selection inventory; never simulates prices or reads labels."""
+    from structural_break.backtest.historical import (
+        build_historical_events,
+        default_spec,
+        inventory_summary,
+        select_inventory,
+    )
+
+    sources, args = _bound_sources("Generation-bound historical selection inventory", arguments)
     spec = default_spec(sources)
     events, partitions, suppressed = build_historical_events(sources, spec)
     inventory = select_inventory(events, partitions, suppressed, spec)
@@ -171,12 +180,27 @@ def _historical_inventory(arguments: list[str]) -> None:
     print(json.dumps({**summary, "directory": str(directory)}, indent=2, sort_keys=True))
 
 
+def _policy_diagnostics(arguments: list[str]) -> None:
+    """Pre-assessment, label-free inputs for the DRAFT execution-policy proposal."""
+    from structural_break.backtest.policy_diagnostics import policy_diagnostics
+
+    sources, args = _bound_sources("Target-blind execution-policy diagnostics", arguments)
+    report = policy_diagnostics(sources)
+    body = (json.dumps(report, indent=2, sort_keys=True) + "\n").encode("utf-8")
+    directory = args.output_dir / "policy-diagnostics" / hashlib.sha256(body).hexdigest()
+    write_bytes(directory / "diagnostics.json", body)
+    print(json.dumps({**report, "directory": str(directory)}, indent=2, sort_keys=True))
+
+
 def main() -> None:
     if len(sys.argv) > 1 and sys.argv[1] in {"analysis", "verify-analysis"}:
         _analysis(sys.argv[2:], verify=sys.argv[1] == "verify-analysis")
         return
     if len(sys.argv) > 1 and sys.argv[1] == "ladder":
         _ladder(sys.argv[2:])
+        return
+    if len(sys.argv) > 1 and sys.argv[1] == "policy-diagnostics":
+        _policy_diagnostics(sys.argv[2:])
         return
     if len(sys.argv) > 1 and sys.argv[1] == "historical-inventory":
         _historical_inventory(sys.argv[2:])
