@@ -42,6 +42,7 @@ from structural_break.backtest.historical import (
     HistoricalSources,
     build_historical_events,
     default_spec,
+    historical_contexts,
     historical_labels,
     select_historical_event,
 )
@@ -54,27 +55,45 @@ from structural_break.backtest.historical_contracts import (
 from structural_break.backtest.ladder_contracts import (
     RUNG_ORDER,
     EvaluationLabel,
+    LadderEvent,
     LadderRow,
     RungSelection,
 )
+from structural_break.backtest.portfolio import PortfolioProposal, simulate_portfolio
 from structural_break.backtest.production_policy import (
     HEADLINE_CONFIG,
     SENSITIVITY_CONFIG,
+    AnalysisPolicies,
     expand_policies,
+    load_analysis_policies,
     load_headline,
     load_sensitivities,
 )
 from structural_break.backtest.reporting import build_comparison_report
+from structural_break.backtest.robustness import PointInTimeContext, build_robustness_report
 from structural_break.backtest.simulator import canonical_bytes, sha256, simulate_pair_trade
+from structural_break.backtest.uncertainty import paired_month_bootstrap
 from structural_break.storage.files import write_bytes
 
 EXPERIMENT_VERSION = "historical-ladder-experiment-v1"
-INPUT_NAMES = ("binding.json", "policies.json", "specs.json", "inventory.json", "labels.json")
+INPUT_NAMES = (
+    "binding.json",
+    "policies.json",
+    "analysis-policies.json",
+    "specs.json",
+    "inventory.json",
+    "labels.json",
+    "contexts.json",
+)
 OUTPUT_NAMES = (
     "selections.json",
     "executions-primary.json",
     "executions-sensitivity.json",
     "reports.json",
+    "cost-grid.json",
+    "uncertainty.json",
+    "robustness.json",
+    "portfolios.json",
     "summary.md",
 )
 ARTIFACT_NAMES = INPUT_NAMES + OUTPUT_NAMES
@@ -88,6 +107,9 @@ SOURCE_NAMES = (
     "backtest/historical_contracts.py",
     "backtest/historical.py",
     "backtest/production_policy.py",
+    "backtest/robustness.py",
+    "backtest/uncertainty.py",
+    "backtest/portfolio.py",
     "backtest/historical_experiment.py",
     "backtest/experiment.py",
     "agents/contracts.py",
@@ -144,6 +166,11 @@ class InventoryDocument(FrozenModel):
     schema_version: Literal["historical-event-inventory-v1"] = "historical-event-inventory-v1"
     events: Annotated[tuple[EventIdentity, ...], Field(min_length=1, max_length=100_000)]
     suppressed: Annotated[tuple[SuppressedCrossing, ...], Field(max_length=200_000)]
+
+
+class ContextsDocument(FrozenModel):
+    schema_version: Literal["historical-contexts-v1"] = "historical-contexts-v1"
+    contexts: Annotated[tuple[PointInTimeContext, ...], Field(max_length=100_000)]
 
 
 class PolicySetDocument(FrozenModel):
@@ -299,7 +326,12 @@ def _compact(result: PairTradeResult) -> CompactExecution:
     )
 
 
-def _summary(manifest_combinations: Sequence[Combination], reports: dict[str, Any]) -> bytes:
+def _summary(
+    manifest_combinations: Sequence[Combination],
+    reports: dict[str, Any],
+    portfolios: dict[str, Any],
+    uncertainty: dict[str, Any],
+) -> bytes:
     lines = []
     for combination in manifest_combinations:
         report = reports[combination.key]
@@ -329,13 +361,126 @@ def _summary(manifest_combinations: Sequence[Combination], reports: dict[str, An
         "never zero. See `reports.json` for denominators, labels and comparisons.\n\n"
         "| Combination | Strategy | Rows | Selected | Priced selected | "
         "Unknown selected return | Mean selected net return |\n"
-        "| --- | --- | ---: | ---: | ---: | ---: | ---: |\n" + "\n".join(lines) + "\n"
+        "| --- | --- | ---: | ---: | ---: | ---: | ---: |\n" + "\n".join(lines) + "\n\n"
+        "## Secondary fixed-share portfolio (headline combination)\n\n"
+        "| Strategy | Final NAV | Total return | Maximum drawdown | NAV unknown since |\n"
+        "| --- | ---: | ---: | ---: | --- |\n"
+        + "\n".join(_portfolio_line(rung, portfolios[rung]) for rung in RUNG_ORDER)
+        + "\n\nEconomic paired calendar-month bootstrap: "
+        f"{uncertainty['policy']['replicates']} draws (seed {uncertainty['policy']['seed']}), "
+        f"{uncertainty['populated_calendar_month_blocks_n']} populated of "
+        f"{uncertainty['calendar_month_blocks_n']} calendar months; intervals need "
+        f"{uncertainty['policy']['minimum_populated_months_for_interval']} contributing "
+        "months per estimand. See `uncertainty.json`, `robustness.json` and "
+        "`cost-grid.json`; no scenario, slice or subgroup is selected.\n"
     ).encode()
+
+
+def _number(value: object) -> str:
+    return f"{value:.6f}" if isinstance(value, float) else "undefined"
+
+
+def _portfolio_line(rung: str, result: dict[str, Any]) -> str:
+    if result.get("status") == "NOT_RUN":
+        return f"| {rung} | not run | - | - | - |"
+    return (
+        f"| {rung} | {_number(result['final_nav'])} | {_number(result['total_return'])} | "
+        f"{_number(result['maximum_drawdown'])} | {result['unknown_nav_since'] or '-'} |"
+    )
+
+
+def _portfolios(
+    events: Sequence[LadderEvent],
+    rows: Sequence[LadderRow],
+    sectors: dict[str, str],
+    analysis: AnalysisPolicies,
+    primary: ExecutionConfig,
+) -> dict[str, Any]:
+    """Secondary fixed-share NAV per run rung; every fresh event keeps a proposal row."""
+    result: dict[str, Any] = {}
+    row_map = {row.event_id: row for row in rows}
+    for index, rung in enumerate(RUNG_ORDER):
+        if {row.selections[index].disposition for row in rows} == {"NOT_RUN"}:
+            result[rung] = {"status": "NOT_RUN", "reason": "CONTROLLER_GENERATION_NOT_ACCEPTED"}
+            continue
+        proposals = tuple(
+            PortfolioProposal(
+                request=event.request,
+                decision_id=f"{rung}:{event.state.event_id}",
+                decision_at=event.state.signal_at,
+                selected=row_map[event.state.event_id].selections[index].selected,
+                sector_a=sectors.get(event.request.leg_a, "UNKNOWN"),
+                sector_b=sectors.get(event.request.leg_b, "UNKNOWN"),
+            )
+            for event in events
+            if row_map[event.state.event_id].raw_fresh is True
+        )
+        portfolio = simulate_portfolio(proposals, analysis.portfolio, primary)
+        result[rung] = portfolio.model_dump(mode="json")
+    return result
+
+
+COST_FIELDS = (
+    "priced_n",
+    "unknown_return_n",
+    "mean_net_return",
+    "median_net_return",
+    "mean_gross_return",
+    "mean_trading_cost",
+    "mean_borrow_cost",
+)
+
+
+def _cost_grid(
+    policies: Sequence[ExecutionConfig],
+    combinations: Sequence[Combination],
+    reports: dict[str, Any],
+) -> dict[str, Any]:
+    """The frozen cost x borrow grid, read from the per-combination reports."""
+    primary = policies[0]
+    fixed = ("positive_beta_limit", "min_leg_adv20_usd", "horizon_sessions")
+    grid = {
+        policy.version: policy
+        for policy in policies
+        if all(getattr(policy, name) == getattr(primary, name) for name in fixed)
+    }
+    scenarios = []
+    for combination in combinations:
+        policy = grid.get(combination.execution_config_version)
+        if policy is None or combination.role == "THRESHOLD_SENSITIVITY":
+            continue
+        rungs: dict[str, Any] = {}
+        for rung, record in reports[combination.key]["natural_rungs"].items():
+            if record.get("status") == "NOT_RUN":
+                rungs[rung] = {"status": "NOT_RUN"}
+                continue
+            economics = record["selected_economics"]
+            rungs[rung] = {
+                "selected_n": record["selected_n"],
+                **{name: economics[name] for name in COST_FIELDS},
+            }
+        scenarios.append(
+            {
+                "combination": combination.key,
+                "execution_config_version": policy.version,
+                "cost_bps_per_side": policy.entry_cost_bps,
+                "annual_borrow_rate": policy.annual_borrow_rate,
+                "rungs": rungs,
+            }
+        )
+    return {
+        "schema_version": "historical-cost-grid-v1",
+        "scenario_n": len(scenarios),
+        "scenarios": scenarios,
+        "selection_threshold": combinations[0].threshold,
+        "winner_selected": False,
+        "post_hoc_development": True,
+    }
 
 
 def _check_inputs(
     sources: HistoricalSources, configs: Path
-) -> tuple[list[ExecutionConfig], list[HistoricalSpec], PolicySetDocument]:
+) -> tuple[list[ExecutionConfig], list[HistoricalSpec], PolicySetDocument, AnalysisPolicies]:
     binding = sources.binding
     if binding.acceptance != "ACCEPTED":
         raise ValueError("Historical experiments require an accepted generation binding")
@@ -357,14 +502,17 @@ def _check_inputs(
         sensitivities_file_sha256=checksum((configs / SENSITIVITY_CONFIG).read_bytes()),
         policies=tuple(policies),
     )
-    return policies, specs, document
+    analysis = load_analysis_policies(configs)
+    if analysis.robustness.status != "FROZEN":
+        raise ValueError("The robustness slice policy awaits owner approval (status DRAFT)")
+    return policies, specs, document, analysis
 
 
 def _compute(
     sources: HistoricalSources, configs: Path
 ) -> tuple[dict[str, bytes], tuple[Combination, ...], int]:
     """All artifacts from bound sources and frozen configs; deterministic."""
-    policies, specs, policy_document = _check_inputs(sources, configs)
+    policies, specs, policy_document, analysis = _check_inputs(sources, configs)
     primary = policies[0]
     events, partitions, suppressed = build_historical_events(sources, specs[0])
     inventory = InventoryDocument(
@@ -421,8 +569,8 @@ def _compute(
             if fresh[event.state.event_id]
         }
 
-    def report(spec: HistoricalSpec, results: dict[str, PairTradeResult]) -> dict[str, Any]:
-        rows = [
+    def rows_for(spec: HistoricalSpec, results: dict[str, PairTradeResult]) -> list[LadderRow]:
+        return [
             LadderRow(
                 event_id=event.state.event_id,
                 pair_id=event.state.pair_id,
@@ -437,8 +585,10 @@ def _compute(
                 events, selected[_threshold(spec)], strict=True
             )
         ]
+
+    def report(spec: HistoricalSpec, results: dict[str, PairTradeResult]) -> dict[str, Any]:
         return build_comparison_report(
-            events, rows, spec.ladder, labels=labels, historical_spec=spec
+            events, rows_for(spec, results), spec.ladder, labels=labels, historical_spec=spec
         )
 
     primary_results = execute(primary)
@@ -462,6 +612,29 @@ def _compute(
             if fresh[event.state.event_id]
         ]
         del results
+    headline = specs[0]
+    headline_rows = rows_for(headline, primary_results)
+    contexts = historical_contexts(
+        sources, headline, events, analysis.robustness.context_policy_version
+    )
+    uncertainty = paired_month_bootstrap(
+        events,
+        headline_rows,
+        headline.ladder,
+        bootstrap_policy=analysis.bootstrap,
+        historical_spec=headline,
+    )
+    robustness = build_robustness_report(
+        events,
+        headline_rows,
+        headline.ladder,
+        labels=labels,
+        contexts=contexts,
+        slice_policy=analysis.robustness,
+        historical_spec=headline,
+    )
+    portfolios = _portfolios(events, headline_rows, sources.security_sectors(), analysis, primary)
+    cost_grid = _cost_grid(policies, combinations, reports)
     selections = SelectionsDocument(
         thresholds=tuple(
             ThresholdSelections(
@@ -478,6 +651,8 @@ def _compute(
     artifacts = {
         "binding.json": canonical_bytes(sources.binding),
         "policies.json": canonical_bytes(policy_document),
+        "analysis-policies.json": canonical_bytes(analysis),
+        "contexts.json": canonical_bytes(ContextsDocument(contexts=contexts)),
         "specs.json": canonical_bytes(SpecsDocument(specs=tuple(specs))),
         "inventory.json": canonical_bytes(inventory),
         "labels.json": canonical_bytes(LabelsDocument(labels=labels, unavailable=unavailable)),
@@ -496,8 +671,12 @@ def _compute(
             SensitivityExecutionsDocument(results=tuple(compact))
         ),
         "reports.json": json_bytes(reports),
+        "cost-grid.json": json_bytes(cost_grid),
+        "uncertainty.json": json_bytes(uncertainty),
+        "robustness.json": json_bytes(robustness),
+        "portfolios.json": json_bytes(portfolios),
     }
-    artifacts["summary.md"] = _summary(combinations, reports)
+    artifacts["summary.md"] = _summary(combinations, reports, portfolios, uncertainty)
     return artifacts, tuple(combinations), len(events)
 
 
@@ -574,8 +753,11 @@ def verify_historical_experiment(
         raise ValueError("Verification sources do not reproduce the bound generations")
     if _identity(sources.binding, stored) != manifest.identity:
         raise ValueError("Historical input, source or runtime identity differs from this verifier")
-    _, _, policy_document = _check_inputs(sources, configs)
-    if canonical_bytes(policy_document) != stored["policies.json"]:
+    _, _, policy_document, analysis = _check_inputs(sources, configs)
+    if (
+        canonical_bytes(policy_document) != stored["policies.json"]
+        or canonical_bytes(analysis) != stored["analysis-policies.json"]
+    ):
         raise ValueError("Frozen execution configs differ from the bound policy set")
     artifacts, combinations, event_count = _compute(sources, configs)
     if combinations != manifest.combinations or event_count != manifest.event_count:

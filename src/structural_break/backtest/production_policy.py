@@ -19,9 +19,13 @@ from structural_break.backtest.historical_contracts import (
     HEADLINE_TRADING_THRESHOLD,
     SENSITIVITY_TRADING_THRESHOLDS,
 )
+from structural_break.backtest.portfolio import PortfolioPolicy
+from structural_break.backtest.robustness import RobustnessPolicy
+from structural_break.backtest.uncertainty import EconomicBootstrapPolicy
 
 HEADLINE_CONFIG = "phase6_execution.json"
 SENSITIVITY_CONFIG = "phase6_execution_sensitivities.json"
+ANALYSIS_CONFIG = "phase6_analysis.json"
 Number = Annotated[float, Field(ge=0, le=1e12)]
 # The canonical v2 matched reporting threshold stays a reported trading sensitivity.
 V2_REPORTING_THRESHOLD = 0.65
@@ -138,3 +142,25 @@ def expand_policies(
     if len({policy.version for policy in policies}) != len(policies):
         raise ValueError("Every expanded execution policy needs a unique version")
     return tuple(policies)
+
+
+class AnalysisPolicies(FrozenModel):
+    """Decision 35 froze the bootstrap and portfolio; robustness boundaries need approval."""
+
+    schema_version: Literal["phase6-analysis-policies-v1"] = "phase6-analysis-policies-v1"
+    version: Identifier
+    bootstrap: EconomicBootstrapPolicy
+    portfolio: PortfolioPolicy
+    robustness: RobustnessPolicy
+
+    @model_validator(mode="after")
+    def production_identities(self) -> Self:
+        if self.bootstrap.status != "FROZEN" or self.portfolio.mode != "DEVELOPMENT":
+            raise ValueError("Historical analysis uses the Decision 35 bootstrap and portfolio")
+        if self.robustness.status == "FIXTURE":
+            raise ValueError("Historical analysis needs a declared production slice policy")
+        return self
+
+
+def load_analysis_policies(configs: Path) -> AnalysisPolicies:
+    return AnalysisPolicies.model_validate_json(_strict(configs / ANALYSIS_CONFIG))

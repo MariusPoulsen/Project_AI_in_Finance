@@ -4,10 +4,12 @@ These helpers do not accept genuine historical generations or open final-test
 outcomes. Context is an outcome-free declaration, not source acceptance proof.
 """
 
+from __future__ import annotations
+
 import hashlib
 from collections.abc import Sequence
 from datetime import datetime, timedelta
-from typing import Annotated, Any, Literal, Self
+from typing import TYPE_CHECKING, Annotated, Any, Literal, Self
 
 from pydantic import Field, model_validator
 
@@ -28,6 +30,9 @@ from structural_break.backtest.ladder_contracts import (
 )
 from structural_break.backtest.reporting import build_comparison_report
 from structural_break.backtest.simulator import sha256
+
+if TYPE_CHECKING:
+    from structural_break.backtest.historical_contracts import HistoricalSpec
 
 
 class PointInTimeContext(FrozenModel):
@@ -80,7 +85,7 @@ class PointInTimeContext(FrozenModel):
 
 class RobustnessPolicy(FrozenModel):
     version: Identifier = "phase6-fixture-robustness-v1"
-    status: Literal["FIXTURE"] = "FIXTURE"
+    status: Literal["FIXTURE", "DRAFT", "FROZEN"] = "FIXTURE"
     context_policy_version: Identifier = "phase6-fixture-context-v1"
     tiny_population_threshold: Annotated[int, Field(ge=2, le=10000)] = 20
     vix_elevated: Annotated[float, Field(ge=0, le=1000)] = 20.0
@@ -92,6 +97,8 @@ class RobustnessPolicy(FrozenModel):
     def increasing_boundaries(self) -> Self:
         if self.vix_elevated >= self.vix_high or self.volatility_elevated >= self.volatility_high:
             raise ValueError("Stress bucket boundaries must be strictly increasing")
+        if (self.status == "FIXTURE") != (self.version == "phase6-fixture-robustness-v1"):
+            raise ValueError("Production slice policies need their own declared version")
         return self
 
 
@@ -221,10 +228,17 @@ def build_robustness_report(
     labels: Sequence[EvaluationLabel] = (),
     contexts: Sequence[PointInTimeContext] = (),
     slice_policy: RobustnessPolicy | None = None,
+    historical_spec: HistoricalSpec | None = None,
 ) -> dict[str, Any]:
-    """Fixed fixture slices and leave-one-group-out diagnostics; retain all unknowns."""
+    """Fixed slices and leave-one-group-out diagnostics; retain all unknowns."""
     declared = slice_policy or RobustnessPolicy()
-    baseline = build_comparison_report(events, rows, policy, labels=labels)
+    if historical_spec is None and declared.status != "FIXTURE":
+        raise ValueError("Synthetic robustness uses the fixture slice policy")
+    if historical_spec is not None and declared.status != "FROZEN":
+        raise ValueError("Historical robustness requires a frozen slice policy")
+    baseline = build_comparison_report(
+        events, rows, policy, labels=labels, historical_spec=historical_spec
+    )
     context_map = _context_inventory(events, contexts, declared)
     row_map = {row.event_id: row for row in rows}
     label_map = {label.event_id: label for label in labels}
@@ -242,6 +256,7 @@ def build_robustness_report(
             [row_map[event_id] for event_id in event_ids],
             policy,
             labels=[label_map[event_id] for event_id in event_ids if event_id in label_map],
+            historical_spec=historical_spec,
         )
         return _summary(report, declared)
 
@@ -259,7 +274,8 @@ def build_robustness_report(
             )
     return {
         "schema_version": "phase6-fixture-robustness-report-v1",
-        "data_kind": "SYNTHETIC_FIXTURE",
+        "data_kind": "SYNTHETIC_FIXTURE" if historical_spec is None else "DEVELOPMENT_CAPTURE",
+        "post_hoc_development": historical_spec is not None,
         "descriptive_only": True,
         "genuine_economic_acceptance_passed": False,
         "final_test_read": False,

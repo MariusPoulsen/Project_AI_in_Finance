@@ -9,6 +9,7 @@ from pydantic import ValidationError
 
 from structural_break.backtest.production_policy import (
     expand_policies,
+    load_analysis_policies,
     load_headline,
     load_sensitivities,
 )
@@ -104,3 +105,42 @@ def test_sensitivity_values_must_be_unique(tmp_path: Path) -> None:
     _edit(configs / "phase6_execution_sensitivities.json", cost_bps_per_side=[5.0, 5.0])
     with pytest.raises(ValidationError, match="unique"):
         load_sensitivities(configs)
+
+
+def test_analysis_policies_freeze_bootstrap_and_portfolio_but_not_robustness() -> None:
+    analysis = load_analysis_policies(CONFIGS)
+    assert (analysis.bootstrap.status, analysis.bootstrap.version) == (
+        "FROZEN",
+        "phase6-month-bootstrap-20261016",
+    )
+    assert (analysis.bootstrap.replicates, analysis.bootstrap.seed) == (2000, 5557)
+    assert analysis.bootstrap.minimum_populated_months_for_interval == 12
+    assert (analysis.portfolio.mode, analysis.portfolio.target_entry_fraction) == (
+        "DEVELOPMENT",
+        0.25,
+    )
+    assert analysis.robustness.status == "DRAFT"
+    assert (analysis.robustness.vix_elevated, analysis.robustness.vix_high) == (20.0, 30.0)
+
+
+@pytest.mark.parametrize(
+    ("section", "updates", "message"),
+    [
+        ("bootstrap", {"version": "phase6-fixture-month-bootstrap-v1"}, "bootstrap identity"),
+        ("portfolio", {"mode": "FIXTURE"}, "portfolio identity"),
+        (
+            "robustness",
+            {"status": "FIXTURE", "version": "phase6-fixture-robustness-v1"},
+            "declared production slice policy",
+        ),
+    ],
+)
+def test_analysis_policies_refuse_fixture_identities(
+    tmp_path: Path, section: str, updates: dict[str, object], message: str
+) -> None:
+    shutil.copy(CONFIGS / "phase6_analysis.json", tmp_path / "phase6_analysis.json")
+    value = json.loads((tmp_path / "phase6_analysis.json").read_text(encoding="utf-8"))
+    value[section].update(updates)
+    (tmp_path / "phase6_analysis.json").write_text(json.dumps(value), encoding="utf-8")
+    with pytest.raises(ValidationError, match=message):
+        load_analysis_policies(tmp_path)

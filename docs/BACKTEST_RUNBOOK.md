@@ -250,6 +250,18 @@ At h20 the experiment runs the 22 frozen h20 policies and the four trading
 thresholds as 25 declared combinations. `summary.md` labels the results as
 post-hoc 2022-2023 development assessment. Full System is shown as not run.
 Read `reports.json` for every denominator, unknown execution and label count.
+[Decision 37](DECISIONS.md#37-historical-portfolio-robustnesscost-and-economic-uncertainty-analysis)
+adds four outputs on the headline combination:
+
+- `cost-grid.json`: the frozen 4 × 4 cost/borrow table;
+- `uncertainty.json`: the frozen paired calendar-month bootstrap;
+- `robustness.json`: feature-based VIX and volatility stress slices, plus
+  leave-one-pair-out and leave-one-sector-out diagnostics;
+- `portfolios.json`: the frozen fixed-share portfolio per run rung. Positions
+  open at the development end stay `UNPRICED` and no terminal NAV is claimed.
+
+The run is refused while `configs/phase6_analysis.json` has its robustness
+policy in DRAFT.
 Verification rebuilds the events from the bound sources and replays
 everything. A changed config, source, runtime or artifact fails verification;
 nothing is rewritten.

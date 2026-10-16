@@ -153,6 +153,16 @@ def make_workspace(
                 ]
             ),
         ),
+        "security_master.parquet": _parquet(
+            market / "security_master.parquet",
+            pd.DataFrame(
+                [
+                    {"ticker": ticker, "sector": PAIRS[pair_id]["sector"]}
+                    for pair_id in PAIRS
+                    for ticker in pair_id.split("__")
+                ]
+            ),
+        ),
     }
     market_sha = _json(
         market / "manifest.json",
@@ -268,6 +278,26 @@ def make_workspace(
                     "xgboost_B_both_calibrated": scores["B"] - 0.05,
                 }
             )
+    # Point-in-time stress context: previous-session VIX at a 16:16 New York proxy
+    # clock and trailing market volatility at the signal close. E2 has neither,
+    # so it must stay UNKNOWN in every stress slice.
+    features = []
+    for event_id, (_pair_id, day, _status, _scores, _label) in EVENTS.items():
+        previous = DAYS[DAYS.index(day) - 1]
+        known = event_id != "E2"
+        features.append(
+            {
+                "event_id": event_id,
+                "feature_cutoff_timestamp": pd.Timestamp(session_close(day)),
+                "vix_level": {"E1": 18.0, "E3": 33.0}.get(event_id, float("nan")),
+                "vix_source_available_at": pd.Timestamp(session_close(previous))
+                + pd.Timedelta(minutes=16)
+                if known
+                else pd.NaT,
+                "market_rv20": {"E1": 0.15, "E3": 0.45}.get(event_id, float("nan")),
+                "market_available_at": pd.Timestamp(session_close(day)) if known else pd.NaT,
+            }
+        )
     registry_files = [
         {
             "name": f"h{horizon}_events",
@@ -278,6 +308,11 @@ def make_workspace(
             "name": f"h{horizon}_targets",
             "path": f"h{horizon}_targets.parquet",
             "sha256": _parquet(registry / f"h{horizon}_targets.parquet", pd.DataFrame(targets)),
+        },
+        {
+            "name": f"h{horizon}_features",
+            "path": f"h{horizon}_features.parquet",
+            "sha256": _parquet(registry / f"h{horizon}_features.parquet", pd.DataFrame(features)),
         },
     ]
     registry_sha = _json(

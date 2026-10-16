@@ -54,6 +54,7 @@ from structural_break.backtest.ladder_contracts import (
     RungSelection,
     StoredPrediction,
 )
+from structural_break.backtest.robustness import PointInTimeContext
 from structural_break.backtest.simulator import sha256, simulate_pair_trade
 from structural_break.config.paths import ProjectPaths, confined_path
 from structural_break.research.primary import (
@@ -274,6 +275,20 @@ class HistoricalSources:
         if dates.gt(self.binding.development_end).any():
             raise ValueError("Bound prices extend past the development period")
         return frame.loc[dates.ge(start) & dates.le(end)].copy()
+
+    def security_sectors(self) -> dict[str, str]:
+        """Per-ticker sector from the bound security master (portfolio concentration)."""
+        name = "security_master.parquet"
+        digest = self.market["files"].get(name)
+        if not isinstance(digest, str):
+            raise ValueError("Bound market generation has no security master")
+        frame = pd.read_parquet(self._market_file(name, digest), columns=["ticker", "sector"])
+        if frame["ticker"].duplicated().any():
+            raise ValueError("Security master tickers must be unique")
+        return {
+            str(ticker): str(sector) if isinstance(sector, str) and sector else "UNKNOWN"
+            for ticker, sector in frame.itertuples(index=False, name=None)
+        }
 
     def pair_universe(self) -> pd.DataFrame:
         path = self._market_file("pair_universe.parquet", self.binding.pair_universe_sha256)
@@ -833,3 +848,69 @@ def evaluate_historical_ladder(
             )
         )
     return tuple(rows)
+
+
+def _finite(value: object) -> float | None:
+    if value is None or pd.isna(cast(Any, value)):
+        return None
+    number = float(cast(Any, value))
+    return number if math.isfinite(number) else None
+
+
+def historical_contexts(
+    sources: HistoricalSources,
+    spec: HistoricalSpec,
+    events: Sequence[LadderEvent],
+    context_policy_version: str,
+) -> tuple[PointInTimeContext, ...]:
+    """Previous-session VIX and trailing SPY volatility from the bound feature table.
+
+    Both values and their observation clocks are admissible at the signal close.
+    Events without either value keep no context and remain UNKNOWN in every slice;
+    event type and materiality stay UNKNOWN until an accepted controller exists.
+    """
+    name = f"h{spec.binding.horizon_sessions}_features"
+    digest = next(item["sha256"] for item in sources.registry["files"] if item["name"] == name)
+    rows = _records(
+        sources.registry_frame(
+            name,
+            [
+                "event_id",
+                "feature_cutoff_timestamp",
+                "vix_level",
+                "vix_source_available_at",
+                "market_rv20",
+                "market_available_at",
+            ],
+        ),
+        "event_id",
+    )
+    contexts = []
+    for event in events:
+        row = rows.get(event.state.event_id)
+        if row is None:
+            continue
+        cutoff = event.state.signal_at
+        if utc(_timestamp(row["feature_cutoff_timestamp"])) != utc(cutoff):
+            raise ValueError("Feature context cutoff must equal the event signal close")
+        vix, volatility = _finite(row["vix_level"]), _finite(row["market_rv20"])
+        vix_at = _timestamp(row["vix_source_available_at"]) if vix is not None else None
+        volatility_at = _timestamp(row["market_available_at"]) if volatility is not None else None
+        clocks = [clock for clock in (vix_at, volatility_at) if clock is not None]
+        if not clocks:
+            continue
+        contexts.append(
+            PointInTimeContext(
+                event_id=event.state.event_id,
+                pair_id=event.state.pair_id,
+                information_cutoff=cutoff,
+                source_manifest_sha256=digest,
+                context_policy_version=context_policy_version,
+                evidence_available_at=max(clocks),
+                vix_previous_close=vix,
+                vix_observed_at=vix_at,
+                trailing_annualized_volatility=volatility,
+                volatility_observed_at=volatility_at,
+            )
+        )
+    return tuple(contexts)

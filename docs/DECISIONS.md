@@ -1006,3 +1006,52 @@ historical ladder experiment. It changes no scientific rule.
 - **Reports.** Reports are post-hoc 2022–2023 development assessment, never
   final-test results. Full System is `NOT_RUN`. DuckDB registration remains
   deferred (Decision 34).
+
+## 37. Historical portfolio, robustness/cost and economic uncertainty analysis
+
+Recorded 2026-10-16, before any historical return was computed. This section
+extends the Decision 36 experiment with the secondary analyses that Decisions 32
+and 35 define. Each analysis runs once, on the headline combination
+(0.30 × primary policy).
+
+**Cost grid.** `cost-grid.json` tabulates the frozen 4 × 4 cost/borrow
+scenarios for every rung from the per-combination reports. The trade
+selection is identical in every scenario and no scenario is selected.
+
+**Economic uncertainty.** `uncertainty.json` applies the Decision 35 frozen
+paired calendar-month bootstrap (`phase6-month-bootstrap-20261016`: 2,000
+draws, seed 5557, intervals only with at least 12 contributing months) to the
+headline rows. The B→Full comparison is `NOT_RUN`, never zero. This bootstrap
+does not replace v2's paired-quarter forecast uncertainty.
+
+**Portfolios.** `portfolios.json` runs the frozen secondary portfolio
+(`phase6-portfolio-20261016`) separately for each run rung. Every fresh event
+keeps a proposal row, and selection comes only from the stored rung decision.
+Ticker sectors come from the bound security master. A position still open at
+the last development session is `UNPRICED / DEVELOPMENT_END_TRUNCATION`: no
+2024 session is constructed and no terminal NAV is claimed. Full System is
+`NOT_RUN`.
+
+**Robustness.** `robustness.json` uses point-in-time contexts from the bound
+`h{h}_features` table:
+
+- previous-session VIX (`vix_level`), observed at its 16:16 New York proxy
+  clock;
+- trailing annualized 20-session SPY volatility (`market_rv20`), observed at
+  the signal close.
+
+Events without either value stay UNKNOWN. Event type and materiality stay
+UNKNOWN until an accepted controller generation exists. Year, pair, sector,
+sign, coverage and stress slices, plus leave-one-pair-out and
+leave-one-sector-out diagnostics, are all reported; none is selected.
+
+**Pending approval.** The robustness slice boundaries in
+`configs/phase6_analysis.json` (`phase6-robustness-20261016`) remain **DRAFT**:
+
+- VIX buckets: elevated at 20, high at 30;
+- volatility buckets: elevated at 0.20, high at 0.40;
+- small-population flag below 20 events.
+
+These values carry over the Decision 32 fixture boundaries unchanged, but were
+not part of the Decision 35 approval. The experiment refuses to run until the
+owner freezes them. Tests use a test-only frozen copy.

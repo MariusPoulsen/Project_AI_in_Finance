@@ -407,9 +407,10 @@ def test_inconsistent_ticker_sector_rejected() -> None:
 
 
 def test_real_price_capture_and_late_decision_rejected() -> None:
-    proposals, _, _ = fixture_portfolio()
-    with pytest.raises(ValidationError, match="synthetic"):
-        update_request(proposals[0], data_kind="DEVELOPMENT_CAPTURE")
+    proposals, policy, config = fixture_portfolio()
+    captured = update_request(proposals[0], data_kind="DEVELOPMENT_CAPTURE")
+    with pytest.raises(ValueError, match="synthetic fixtures only"):
+        simulate_portfolio((captured, *proposals[1:]), policy, config)
     with pytest.raises(ValidationError, match="signal cutoff"):
         PortfolioProposal.model_validate(
             {
