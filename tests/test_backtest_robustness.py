@@ -449,7 +449,7 @@ def test_locked_metadata_and_captured_economic_inputs_fail_closed() -> None:
     payload["request"]["data_kind"] = "DEVELOPMENT_CAPTURE"
     captured = LadderEvent.model_validate_json(json.dumps(payload))
     rows = evaluate_ladder(events[:1], policy, execution)
-    with pytest.raises(ValueError, match="Genuine"):
+    with pytest.raises(ValueError, match="declared data kind"):
         paired_month_bootstrap((captured,), rows, policy)
 
 

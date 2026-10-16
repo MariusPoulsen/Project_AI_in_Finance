@@ -318,7 +318,7 @@ DRAFT; fixture scenarios are not an execution-cost freeze.
 - [x] Implement fixture robustness slices by year, pair, sector, divergence sign, admissible stress context, event type/materiality and cost assumptions, retaining UNKNOWN.
 - [x] Implement fixture paired-month economic bootstrap and leave-one-pair/sector-out diagnostics; intervals require twelve contributing months per estimand.
 - [ ] Verify accepted historical portfolio, robustness/cost and economic uncertainty outputs under frozen production policies.
-- [ ] Implement accepted historical experiment manifest and immutable result persistence.
+- [-] Implement accepted historical experiment manifest and immutable result persistence. Implemented and fixture-verified (Decision 36: accepted-only `historical-experiment`, content-addressed artifacts, independent replay via `verify-historical-experiment`); the acceptance run on the official snapshot is pending.
 - [x] Verify the fixture-only ladder manifest, complete row inventory and fresh deterministic replay.
 - [x] Implement the immutable fixture analysis bundle and independent replay of all eighteen bound artifacts.
 - [-] Freeze methodology/config/model/prompt/policy/execution assumptions. The production execution policy, its 24-variant sensitivity set and the 0.30 common A/B trading threshold are frozen (Decision 35; `configs/phase6_execution.json`, `configs/phase6_execution_sensitivities.json`). Controller/prompt identities (P5), the official-snapshot diagnostics re-run and the accepted experiment manifest remain open.

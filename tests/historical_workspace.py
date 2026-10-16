@@ -107,6 +107,7 @@ def make_workspace(
     previous_z_shift: float = 0.0,
     extra_event_fields: dict[str, Any] | None = None,
     protocol_overrides: dict[str, Any] | None = None,
+    horizon: int = HORIZON,
 ) -> tuple[str, str]:
     """Write the registered chain; return the evaluation manifest path and checksum."""
     protocol = {**PROTOCOL, **(protocol_overrides or {})}
@@ -243,14 +244,14 @@ def make_workspace(
             }
         )
         window = canonical_sessions(day, date(2023, 12, 29))
-        complete = len(window) > HORIZON
+        complete = len(window) > horizon
         targets.append(
             {
                 "event_id": event_id,
                 "label_policy_version": "label-fixture-v1",
                 "y_revert_success": label if complete else float("nan"),
                 "label_eligible": complete and label is not None,
-                "horizon_end_date": window[HORIZON][0] if complete else None,
+                "horizon_end_date": window[horizon][0] if complete else None,
             }
         )
         if scores is not None:
@@ -269,14 +270,14 @@ def make_workspace(
             )
     registry_files = [
         {
-            "name": f"h{HORIZON}_events",
-            "path": f"h{HORIZON}_events.parquet",
-            "sha256": _parquet(registry / f"h{HORIZON}_events.parquet", pd.DataFrame(events)),
+            "name": f"h{horizon}_events",
+            "path": f"h{horizon}_events.parquet",
+            "sha256": _parquet(registry / f"h{horizon}_events.parquet", pd.DataFrame(events)),
         },
         {
-            "name": f"h{HORIZON}_targets",
-            "path": f"h{HORIZON}_targets.parquet",
-            "sha256": _parquet(registry / f"h{HORIZON}_targets.parquet", pd.DataFrame(targets)),
+            "name": f"h{horizon}_targets",
+            "path": f"h{horizon}_targets.parquet",
+            "sha256": _parquet(registry / f"h{horizon}_targets.parquet", pd.DataFrame(targets)),
         },
     ]
     registry_sha = _json(
@@ -318,7 +319,7 @@ def make_workspace(
             "protocol": protocol,
             "protocol_hash": "a" * 64,
             "identity_inputs": {
-                "horizon": HORIZON,
+                "horizon": horizon,
                 "registry_version": registry_version,
                 "registry_manifest_sha256": registry_sha,
             },

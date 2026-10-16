@@ -357,7 +357,7 @@ def test_development_price_capture_cannot_be_treated_as_an_accepted_fixture_adap
     payload = events[0].request.model_dump(mode="json")
     payload["data_kind"] = "DEVELOPMENT_CAPTURE"
     events = (changed_event(events[0], request=payload), *events[1:])
-    with pytest.raises(ValueError, match="blocked pending adapter acceptance"):
+    with pytest.raises(ValueError, match="declared data kind"):
         build_comparison_report(events, rows, policy, labels=labels)
 
 

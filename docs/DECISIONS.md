@@ -968,3 +968,41 @@ material difference requires a new, explicitly versioned policy rather than
 silent re-selection. Freezing the execution policy does not complete the
 P6 methodology freeze: the controller/prompt identities (P5) and the accepted
 experiment manifest remain open. The 2024–2025 final-test lock is unchanged.
+
+## 36. Accepted historical experiment manifest and persistence
+
+Recorded 2026-10-16, after Decision 35 and before any historical return was
+computed. This section records the reporting scope and persistence of the
+historical ladder experiment. It changes no scientific rule.
+
+- **Scope.** One experiment binds one accepted evaluation generation (one
+  horizon). It runs only through `structural-break-backtest
+  historical-experiment`, which derives the binding through `load_primary`.
+  There is no unaccepted or provisional option.
+- **Policies.** The experiment runs every Decision 35 frozen policy for its
+  horizon. At h20 that is the headline plus 21 execution sensitivities; the
+  10- and 30-session variants are separate experiments bound to their own
+  evaluation generations.
+- **Thresholds.** The 0.20, 0.40 and 0.65 trading thresholds are evaluated
+  under the primary policy for the horizon.
+- **Declared combinations.** These are the headline (0.30 × primary policy),
+  the three threshold sensitivities and the execution sensitivities at 0.30.
+  The two families are not crossed, and no combination is selected.
+- **Computation.** Each fresh event is simulated once per frozen policy, and
+  selection runs once per threshold. Freshness is checked to be independent of
+  the threshold.
+- **Persisted artifacts.** The content-addressed
+  `historical-experiments/<id>/` directory holds:
+  - inputs: binding, policy set, specs, event inventory, labels;
+  - outputs: selections, full primary-policy trade results, compact
+    sensitivity results bound to each full result's hash, reports and summary;
+  - the manifest, written last.
+- **Identity.** The experiment identity binds the accepted generation, input
+  checksums, computational source and runtime.
+- **Verification.** It rebuilds the events from the bound sources, checks that
+  the current frozen configs reproduce the bound policy set, replays selection
+  and simulation, and compares every artifact byte for byte. It never repairs
+  bytes.
+- **Reports.** Reports are post-hoc 2022–2023 development assessment, never
+  final-test results. Full System is `NOT_RUN`. DuckDB registration remains
+  deferred (Decision 34).

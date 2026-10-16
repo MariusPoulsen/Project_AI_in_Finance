@@ -234,6 +234,26 @@ accepted binding, a FROZEN ladder policy and a FROZEN `DEVELOPMENT` execution
 policy. Decision 35 froze that policy in `configs/phase6_execution.json`, so on
 the provisional pack it still refuses because the binding is unaccepted.
 
+### Accepted historical experiment (official snapshot only)
+
+[Decision 36](DECISIONS.md#36-accepted-historical-experiment-manifest-and-persistence)
+governs the experiment. It accepts only a binding derived from the published
+primary readiness record; the provisional pack is refused before anything is
+computed. Run one experiment per horizon and verify it independently:
+
+```powershell
+uv run --frozen structural-break-backtest historical-experiment --workspace-root WORKSPACE --horizon 20 --output-dir .acceptance/p6-experiment
+uv run --frozen structural-break-backtest verify-historical-experiment --workspace-root WORKSPACE --manifest RETURNED_MANIFEST_PATH
+```
+
+At h20 the experiment runs the 22 frozen h20 policies and the four trading
+thresholds as 25 declared combinations. `summary.md` labels the results as
+post-hoc 2022-2023 development assessment. Full System is shown as not run.
+Read `reports.json` for every denominator, unknown execution and label count.
+Verification rebuilds the events from the bound sources and replays
+everything. A changed config, source, runtime or artifact fails verification;
+nothing is rewritten.
+
 ### Target-blind execution-policy diagnostics
 
 The proposal in `docs/proposals/P6_EXECUTION_POLICY.md` is supported by a

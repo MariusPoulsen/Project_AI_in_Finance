@@ -192,12 +192,66 @@ def _policy_diagnostics(arguments: list[str]) -> None:
     print(json.dumps({**report, "directory": str(directory)}, indent=2, sort_keys=True))
 
 
+def _historical_experiment(arguments: list[str], *, verify: bool) -> None:
+    """Accepted generations only: there is no unaccepted or provisional option."""
+    from structural_break.backtest.historical import HistoricalSources, bind_accepted
+    from structural_break.backtest.historical_experiment import (
+        read_manifest,
+        run_historical_experiment,
+        verify_historical_experiment,
+    )
+    from structural_break.config.paths import ProjectPaths
+
+    parser = argparse.ArgumentParser(
+        description="Verify an accepted historical experiment"
+        if verify
+        else "Run the accepted historical ladder experiment under the frozen policy"
+    )
+    parser.add_argument("--workspace-root", type=Path, required=True)
+    parser.add_argument("--configs-dir", type=Path, default=Path("configs"))
+    if verify:
+        parser.add_argument("--manifest", type=Path, required=True)
+    else:
+        parser.add_argument("--horizon", type=int, choices=(10, 20, 30), default=20)
+        parser.add_argument("--primary-version")
+        parser.add_argument("--output-dir", type=Path, required=True)
+    args = parser.parse_args(arguments)
+    root = args.workspace_root.resolve()
+    paths = ProjectPaths.resolve(Path.cwd(), root)
+    if verify:
+        bound = read_manifest(args.manifest).identity.binding
+        binding = bind_accepted(
+            paths, bound.horizon_sessions, primary_version=bound.primary_version
+        )
+    else:
+        binding = bind_accepted(paths, args.horizon, primary_version=args.primary_version)
+    sources = HistoricalSources.open(root, binding, paths=paths)
+    if verify:
+        result = verify_historical_experiment(args.manifest, sources, args.configs_dir)
+    else:
+        manifest = run_historical_experiment(sources, args.configs_dir, args.output_dir)
+        result = {
+            "mode": "POST_HOC_DEVELOPMENT_ASSESSMENT",
+            "manifest": str(manifest),
+            "summary": str(manifest.parent / "summary.md"),
+            "full_system": "NOT_RUN",
+            "final_test_unlocked": False,
+        }
+    print(json.dumps(result, indent=2))
+
+
 def main() -> None:
     if len(sys.argv) > 1 and sys.argv[1] in {"analysis", "verify-analysis"}:
         _analysis(sys.argv[2:], verify=sys.argv[1] == "verify-analysis")
         return
     if len(sys.argv) > 1 and sys.argv[1] == "ladder":
         _ladder(sys.argv[2:])
+        return
+    if len(sys.argv) > 1 and sys.argv[1] in {
+        "historical-experiment",
+        "verify-historical-experiment",
+    }:
+        _historical_experiment(sys.argv[2:], verify=sys.argv[1] == "verify-historical-experiment")
         return
     if len(sys.argv) > 1 and sys.argv[1] == "policy-diagnostics":
         _policy_diagnostics(sys.argv[2:])
