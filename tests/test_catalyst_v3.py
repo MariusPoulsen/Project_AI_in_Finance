@@ -257,6 +257,7 @@ def test_transient_failure_is_retried_and_keeps_its_audit_trail(tmp_path: Path) 
         cv.MODELS,
         say=lambda m: None,
         client_factory=lambda model: _client(failing),
+        extra_passes=0,
         in_flight=1,
     )
     key = str(packs.loc[0, "pack_key"])
@@ -335,3 +336,29 @@ def test_server_errors_do_not_consume_the_token_budget() -> None:
     cv.extract_view(client, _pack())
     assert sorted(entry[1] for entry in client.window) == [0.0, 3000.0]
     assert client.statuses == {500: 1, 200: 1}
+
+
+def test_server_failed_packs_get_automatic_retry_passes(tmp_path: Path) -> None:
+    checkpoints = tmp_path / "events"
+    checkpoints.mkdir()
+    pack = _pack("e1")
+    body = {
+        "event": {"event_id": "e1", "pair_id": "A__B", "event_timestamp": pack["event_timestamp"]}
+    }
+    (checkpoints / "e1.json").write_text(json.dumps({**body, "pack": pack}))
+    output = tmp_path / "out"
+    packs = cc.work_queue(cc.build_index(checkpoints, output, workers=1), set())
+    replies = [(500, None)] * 7 + [_ok(json.dumps(M_AND_A))]
+    waits: list[float] = []
+    counts = cc.run_batch(
+        checkpoints,
+        output,
+        packs,
+        cv.MODELS,
+        say=lambda m: None,
+        client_factory=lambda model: _client(replies),
+        in_flight=1,
+        between_passes=waits.append,
+    )
+    assert waits == [600.0] and counts == {"UNKNOWN": 1, "SUCCESS": 1}
+    assert cc.load_record(output, str(packs.loc[0, "pack_key"]))["status"] == "SUCCESS"

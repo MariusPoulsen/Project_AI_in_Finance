@@ -124,6 +124,43 @@ def run_batch(
     packs: pd.DataFrame,
     models: Sequence[str],
     *,
+    extra_passes: int = 3,
+    pass_delay_seconds: float = 600.0,
+    between_passes: Callable[[float], None] = time.sleep,
+    **options: Any,
+) -> Counter[str]:
+    """Extract every pack, then retry server-failed packs in up to ``extra_passes``.
+
+    A pack whose server errors outlast the client's quick retries is left
+    PROVIDER_UNAVAILABLE; later passes, spaced ``pass_delay_seconds`` apart,
+    send it again so a temporary outage does not leave it UNKNOWN.
+    """
+    say = options.get("say", print)
+    counts = _run_pass(checkpoints, output, packs, models, **options)
+    options.pop("limit", None)
+    for number in range(1, extra_passes + 1):
+        leftover = sum(
+            1
+            for key in packs["pack_key"].astype(str)
+            if (record := load_record(output, key)) is not None
+            and record.get("adapter_version") == cv.ADAPTER_VERSION
+            and needs_work(record)
+        )
+        if not leftover:
+            break
+        say(f"retry pass {number}: {leftover} packs failed on server errors; waiting first")
+        between_passes(pass_delay_seconds)
+        counts += _run_pass(checkpoints, output, packs, models, **options)
+    _write_state(output, phase="finished")
+    return counts
+
+
+def _run_pass(
+    checkpoints: Path,
+    output: Path,
+    packs: pd.DataFrame,
+    models: Sequence[str],
+    *,
     retry_invalid: bool = False,
     limit: int | None = None,
     say: Callable[[str], None] = print,
@@ -197,7 +234,6 @@ def run_batch(
         thread.start()
     for thread in threads:
         thread.join()
-    _write_state(output, phase="finished")
     return counts
 
 
