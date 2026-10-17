@@ -3,9 +3,9 @@
 Phase 6 starts with a synthetic, event-level execution engine and capability
 comparison reports. It is prepared on isolated branch
 `phase6/shared-simulator` while v2's live source and
-checkpoints remain frozen. [Decision 28](DECISIONS.md#28-phase-6-fixed-share-development-simulator)
+checkpoints remain frozen. [Decision 30](DECISIONS.md#30-phase-6-fixed-share-development-simulator)
 and [the specification](specs/05_BACKTESTING_EVALUATION.md) govern execution.
-[Decision 29](DECISIONS.md#29-phase-6-fixture-ladder-and-coverage-reporting)
+[Decision 31](DECISIONS.md#31-phase-6-fixture-ladder-and-coverage-reporting)
 governs fixture selection and coverage reporting.
 It does not download prices, fit models, call an LLM or unlock 2024-2025 outcomes.
 Its separate portfolio accounting example is synthetic. Historical economic
@@ -184,23 +184,167 @@ or idle-cash return model. Missing held quotes make later NAV unknown and block 
 allocations; future COMPLETE status cannot determine entry eligibility. These two
 proposals are an accounting check, not a five-strategy portfolio assessment.
 
-[Decision 30](DECISIONS.md#30-historical-bridges-and-economic-analysis-before-v2-completion)
+[Decision 32](DECISIONS.md#32-historical-bridges-and-economic-analysis-before-v2-completion)
 records these fixture choices and their timing. Actual execution, portfolio and
 historical-data assumptions remain unfrozen. All scientific acceptance flags are
 false and final-test outcomes remain locked.
 
+## Historical selection inventory (generation-bound, no returns)
+
+[Decision 35](DECISIONS.md#35-phase-6-historical-adapters-and-selection-inventory)
+governs the historical adapters. They read registered v2 outputs only through
+manifest checksums, starting from one evaluation manifest and following its
+registry and market parents. The inventory selects the five rungs over the
+horizon's non-overlapping episode events in the 2022-2023 assessment window.
+It never simulates a price path or reads a label, so it runs while the
+production execution policy is DRAFT. Full System is `NOT_RUN` for every row
+until an accepted controller generation exists.
+
+Accepted binding (official snapshot; derives every identity from the published
+primary readiness record):
+
+```powershell
+uv run --frozen structural-break-backtest historical-inventory --workspace-root WORKSPACE --accepted --horizon 20 --output-dir .acceptance/p6-inventory
+```
+
+Unaccepted engineering binding (for example the provisional pack). This needs an
+explicit workspace-relative evaluation manifest and its exact checksum. The
+result is marked `UNACCEPTED_ENGINEERING` and cannot reach a frozen policy,
+execution or an accepted manifest:
+
+```powershell
+uv run --frozen structural-break-backtest historical-inventory --workspace-root WORKSPACE --evaluation-manifest artifacts/research/EVALUATION/manifest.json --evaluation-sha256 SHA256 --horizon 20 --output-dir .acceptance/p6-inventory
+```
+
+The content-addressed `inventories/<id>/` directory holds `spec.json`,
+`inventory.json` (one row per episode event, with five rung selections) and
+`summary.json` (counts and reasons only). Raw crossings in the window that the
+episode registry omits are listed as `NOT_IN_HORIZON_EVENT_REGISTRY`; they are
+not trading rows. Each event is rebuilt from bound data in this order:
+
+- the frozen relationship snapshot is joined;
+- the signal close and the previous z are reconciled from adjusted prices
+  (1e-9), and any mismatch stops the run;
+- adjusted opens are `open * adj_close / close` from the same capture row;
+- `ZERO_VOLUME` sessions supply monitoring closes but not fills;
+- paths that would need 2024 sessions are truncated, never constructed.
+
+Historical execution (`evaluate_historical_ladder`) additionally requires an
+accepted binding, a FROZEN ladder policy and a FROZEN `DEVELOPMENT` execution
+policy. Decision 36 froze that policy in `configs/phase6_execution.json`, so on
+the provisional pack it still refuses because the binding is unaccepted.
+
+### Accepted historical experiment (official snapshot only)
+
+[Decision 37](DECISIONS.md#37-accepted-historical-experiment-manifest-and-persistence)
+governs the experiment. It accepts only a binding derived from the published
+primary readiness record; the provisional pack is refused before anything is
+computed. Run one experiment per horizon and verify it independently:
+
+```powershell
+uv run --frozen structural-break-backtest historical-experiment --workspace-root WORKSPACE --horizon 20 --output-dir .acceptance/p6-experiment
+uv run --frozen structural-break-backtest verify-historical-experiment --workspace-root WORKSPACE --manifest RETURNED_MANIFEST_PATH
+```
+
+At h20 the experiment runs the 22 frozen h20 policies and the four trading
+thresholds as 25 declared combinations. `summary.md` labels the results as
+post-hoc 2022-2023 development assessment. Full System is shown as not run.
+Read `reports.json` for every denominator, unknown execution and label count.
+[Decision 38](DECISIONS.md#38-historical-portfolio-robustnesscost-and-economic-uncertainty-analysis)
+adds four outputs on the headline combination:
+
+- `cost-grid.json`: the frozen 4 × 4 cost/borrow table;
+- `uncertainty.json`: the frozen paired calendar-month bootstrap;
+- `robustness.json`: feature-based VIX and volatility stress slices, plus
+  leave-one-pair-out and leave-one-sector-out diagnostics;
+- `portfolios.json`: the frozen fixed-share portfolio per run rung. Positions
+  open at the development end stay `UNPRICED` and no terminal NAV is claimed.
+
+Decision 39 froze the robustness slice policy in `configs/phase6_analysis.json`
+(VIX 20/30, volatility 0.20/0.40, small-population flag below 20). All analysis
+policies the experiment uses are now frozen; the run waits only for the
+official accepted snapshot.
+Verification rebuilds the events from the bound sources and replays
+everything. A changed config, source, runtime or artifact fails verification;
+nothing is rewritten.
+
+### Official acceptance in one command (official snapshot only)
+
+Run this once the accepted snapshot is imported (Decision 41):
+
+```powershell
+uv run --frozen structural-break-backtest p6-acceptance --workspace-root WORKSPACE --output-dir .acceptance/p6-official
+```
+
+For each of h20, h10 and h30 it runs the experiment, verifies it by fresh
+replay and writes the policy diagnostics. It then writes
+`freeze/<freeze_id>/freeze-manifest.json`. The official run on 2026-10-17 took
+135 minutes on one thread (h20 took about 45 minutes including its replay);
+see `docs/P6_DEVELOPMENT_RESULTS.md`. Review the manifest's `open_decisions`.
+
+The final test stays locked. Check the gate with:
+
+```powershell
+uv run --frozen structural-break-backtest final-test-gate --freeze-manifest FREEZE_MANIFEST
+```
+
+It exits with status 2 unless every decision is closed and an owner-written
+unlock record binds that exact manifest. Passing the gate does not run or fetch
+2024-2025 data.
+
+### Target-blind execution-policy diagnostics
+
+The proposal in `docs/proposals/P6_EXECUTION_POLICY.md` is supported by a
+diagnostics command. It reads only fit- and calibration-period data (dates
+before the bound assessment start) and summarizes three things:
+
+- relationship betas against candidate ceilings;
+- minimum-leg 20-session dollar volume against candidate floors;
+- calibration-period calibrated score distributions.
+
+It never loads a supervised target column and computes no return:
+
+```powershell
+uv run --frozen structural-break-backtest policy-diagnostics --workspace-root WORKSPACE --accepted --horizon 20 --output-dir .acceptance/p6-diagnostics
+```
+
+The same explicit unaccepted binding flags as `historical-inventory` are
+accepted. Re-run it on the official snapshot before any policy freeze.
+
 ## Production policy and future data adapter
 
-`configs/phase6_execution.json` is deliberately DEVELOPMENT/DRAFT. Costs,
-annual borrow and the economically sensible beta ceiling are unresolved.
-The engine refuses captured development input with an unfrozen policy.
-The fixture mode cannot admit a captured market request. Legacy
-`configs/backtest.yaml` remains an original reference contract.
+[Decision 36](DECISIONS.md#36-frozen-phase-6-production-execution-policy-and-trading-threshold)
+froze the production policy. `configs/phase6_execution.json` is the
+`pair-execution-policy-v2` DEVELOPMENT/FROZEN headline:
+
+- 5 bps per entry and exit turnover;
+- 1 % annual borrow;
+- 0 < β ≤ 3;
+- a minimum-leg 20-session mean dollar volume of at least $5 M, measured over
+  exact XNYS sessions ending at the signal close.
+
+Missing leg liquidity is `NOT_ENTERED / MISSING_LEG_LIQUIDITY`; a thin leg is
+`ILLIQUID_LEG`. `configs/phase6_execution_sensitivities.json` declares the
+frozen sensitivity set. `structural_break.backtest.production_policy` expands
+it deterministically into 24 identified policies:
+
+- the 4 × 4 cost/borrow grid;
+- β ceilings of 2, 5 and none (encoded as 100);
+- liquidity floors of 0, $1 M and $10 M;
+- 10- and 30-session horizons.
+
+Every variant is reported and none is selected. The common A/B trading
+threshold is 0.30, with 0.20, 0.40 and 0.65 reported.
+
+The engine still refuses captured input under a DRAFT policy, and fixture mode
+cannot admit a captured market request. Legacy `configs/backtest.yaml` remains
+an original reference contract. The cited rationale is in
+`docs/proposals/P6_EXECUTION_POLICY.md`.
 
 Typed input/config files can be submitted explicitly:
 
 ```powershell
-uv run --frozen structural-break-backtest --input REQUEST.json --config configs/phase6_execution.json --output-dir .acceptance/phase6-draft-check
+uv run --frozen structural-break-backtest --input REQUEST.json --config configs/phase6_execution.json --output-dir .acceptance/phase6-policy-check
 ```
 
 This is a contract/refusal check, not permission to construct arbitrary
@@ -211,15 +355,15 @@ adjusted close / raw close from the same capture. Retrospective adjustments
 are a disclosed limitation, not vintage historical prices. Delisting/corporate
 action settlement and actual borrow availability are not implemented here.
 
-Before genuine economic assessment, freeze the actual cost/sensitivity,
-borrow, price-adjustment, execution/eligibility and experiment assumptions.
-Then integrate accepted generation-bound signals and frozen stored
-predictions/controller decisions. All five variants must share this engine
+Execution, cost, borrow, price-adjustment and eligibility assumptions are
+frozen (Decision 36). Genuine economic assessment still requires the accepted
+experiment manifest (step C) on the official snapshot, bound to accepted
+generation signals and frozen stored predictions. Full System waits for
+accepted controller decisions. All five variants must share this engine
 and cost policy; only their declared capability filters differ. Model A/B
 forecast evaluation still uses the broad matched v2 cohort and its canonical
-paired calendar-quarter bootstrap. Economic month-block uncertainty remains
-a separately implemented fixture policy; its production freeze remains pending
-before assessment.
+paired calendar-quarter bootstrap. Decision 36 also freezes the economic
+month-block uncertainty and the secondary portfolio policies for production use.
 
 ## Verification and remaining gates
 

@@ -195,6 +195,9 @@ def _summary(report: dict[str, object]) -> bytes:
         record = natural.get(rung)
         if not isinstance(record, dict):
             raise ValueError("Comparison report is missing a rung")
+        if record.get("status") == "NOT_RUN":
+            lines.append(f"| {rung} | {record['population_n']} | not run | - | - | - | - |")
+            continue
         economics = record.get("selected_economics")
         if not isinstance(economics, dict):
             raise ValueError("Comparison report has no execution coverage summary")

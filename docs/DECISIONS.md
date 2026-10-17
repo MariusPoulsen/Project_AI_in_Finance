@@ -853,3 +853,516 @@ run directory). The supervisor's own receipts record the stop and are not
 rewritten; this section is the acceptance record for the app gate. Future checker
 versions should cache the platform lookup before installing the guard.
 
+## 35. Phase 6 historical adapters and selection inventory
+
+Recorded 2026-10-16. The owner approved the P6 adapter design questions
+(`docs/proposals/P6_HISTORICAL_PLAN.md`, Q1–Q7) before any historical economic
+number was computed. These choices follow earlier development observations,
+including the already observed 2022–2023 assessment forecasts. They must not be
+described as decisions made before all development observations.
+
+- **Trading inventory.** Every rung of the historical ladder uses the horizon's
+  non-overlapping episode events (the v2 one-open-episode/reset rule). Raw
+  fresh crossings in the window that this registry omits are kept as separate
+  `NOT_IN_HORIZON_EVENT_REGISTRY` records, not as trading rows. A and B can
+  only score episode events, so this keeps one change per rung.
+- **Window.** The headline development ladder covers the 2022–2023 assessment
+  window for all five rungs. Stored fit- and calibration-period scores are
+  in-sample for the model or the calibrator and are not admitted. Economic
+  numbers from this window are post-hoc development results, never final-test
+  results. A separately labelled Baseline 0/1 history for 2006–2021 remains
+  optional.
+- **Selection policy.** The headline uses calibrated logistic A and logistic
+  B-both at the bound horizon, with the matched v2 threshold read from the
+  bound protocol (0.65). The adapter refuses any other threshold. XGBoost, the
+  B ablations and the 10/30-session horizons are labelled sensitivities, and
+  every variant is reported.
+- **Bindings.** An ACCEPTED binding is derived only through `load_primary` and
+  the registered evaluation manifest. An explicit path-and-checksum binding to
+  an unpublished pack is `UNACCEPTED_ENGINEERING`. It may build an
+  outcome-free selection inventory. A frozen policy, historical execution and
+  an accepted manifest all refuse it. Model bundle bytes are checksum-verified.
+  Native probability replay is part of the later accepted-manifest run.
+- **Full System.** Without an accepted controller generation, every row
+  carries `FULL_SYSTEM: NOT_RUN / CONTROLLER_GENERATION_NOT_ACCEPTED`. Reports
+  show the rung, its B→Full comparison and its agent metrics as status-only
+  with null metrics. These are never zero-selected, withheld or zero-return.
+  The PLAN.md adapter checkbox stays in progress until P5 supplies an accepted
+  controller generation.
+- **Prices.** Closes are the Yahoo adjusted close. The adjusted open is
+  `open × adj_close / close` from the same capture row. Monitoring closes
+  accept `OK` and `ZERO_VOLUME`, as the relationship engine does. Fills
+  require `OK`, so a `ZERO_VOLUME` fill session is an explicit missing fill.
+  Paths that would need sessions after 2023-12-31 are truncated, never
+  constructed.
+- **Execution gate.** `evaluate_historical_ladder` requires an accepted
+  binding, a FROZEN ladder policy and a FROZEN `DEVELOPMENT` execution policy.
+  The production execution policy remains DRAFT until the owner approves it
+  separately.
+- **Persistence.** Content-addressed files and a manifest come first. DuckDB
+  registration (`ops.experiments`, `analytics.backtest_trades`) follows later
+  for the Strategy Lab.
+
+Fixture tests establish engineering behaviour only. Accepted-snapshot
+verification, the production policy freeze, the accepted experiment manifest
+and the Full-System controller adapter remain separate gates. The 2024–2025
+final-test lock is unchanged.
+
+## 36. Frozen Phase 6 production execution policy and trading threshold
+
+Recorded 2026-10-16. The owner approved
+`docs/proposals/P6_EXECUTION_POLICY.md` as drafted, with threshold option 2.
+
+**Timing.** The approval came after the 2022–2023 assessment forecasts had
+been observed in earlier development work. It also came after the P6
+selection inventory showed that Model A and Model B select no assessment
+event at 0.65. It came before any historical simulated return, path or
+economic metric was computed. The values were chosen from cited literature
+and from target-blind 2006–2021 diagnostics that never load labels. Results
+under this policy for 2022–2023 are post-hoc development results.
+
+**Frozen headline execution policy** (`configs/phase6_execution.json`,
+`pair-execution-policy-v2`, `DEVELOPMENT/FROZEN`):
+
+- 5 bps per entry and per exit gross turnover;
+- 1.0 % annual borrow on entry short notional over open-to-open sessions / 252;
+- execution eligibility 0 < β ≤ 3;
+- minimum-leg 20-session mean dollar volume of at least $5 M. The 20 sessions
+  are the exact XNYS sessions ending at the signal close, and any missing
+  session makes liquidity unknown;
+- no share-price floor;
+- the 20-session horizon, with the unchanged 2.0 / 0.5 / 3.0 z rules.
+
+**Frozen sensitivity set** (`configs/phase6_execution_sensitivities.json`).
+Every variant is reported and none is selected:
+
+- the 4 × 4 cost/borrow grid: 2.5 / 5 / 10 / 20 bps crossed with
+  0 / 1 / 3 / 10 %;
+- β ceilings of 2 and 5, and "none", encoded as the schema maximum of 100
+  (the largest observed β is about 13);
+- liquidity floors of none (encoded as 0), $1 M and $10 M;
+- 10- and 30-session horizons.
+
+**Trading threshold.** The common A/B trading threshold is **0.30**. It
+supersedes Decision 35's equality with the 0.65 v2 reporting threshold for
+the economic ladder only. Thresholds of 0.20, 0.40 and 0.65 are reported as
+sensitivities. A and B still apply the same declared value independently. The
+canonical v2 forecasting reports and their 0.65 coverage are unchanged.
+
+**Other frozen conventions:**
+
+- Prices use Yahoo retrospective adjusted closes, with adjusted open =
+  open × adj_close / close from the same row (Decision 35).
+- The economic uncertainty policy is 2,000 paired calendar-month draws with
+  seed 5557, and intervals require at least 12 contributing months.
+- The secondary portfolio policy is 25 % of NAV gross per entry, a gross
+  admission cap of 1, one position per pair, zero cash yield and no
+  financing.
+
+**Disclosed limitations.** No rebate is earned on short proceeds. Borrow
+availability and recalls are not modelled. Price data are retrospective, not
+vintage.
+
+**Data check.** The diagnostics must be re-run on the official snapshot. A
+material difference requires a new, explicitly versioned policy rather than
+silent re-selection. Freezing the execution policy does not complete the
+P6 methodology freeze: the controller/prompt identities (P5) and the accepted
+experiment manifest remain open. The 2024–2025 final-test lock is unchanged.
+
+## 37. Accepted historical experiment manifest and persistence
+
+Recorded 2026-10-16, after Decision 36 and before any historical return was
+computed. This section records the reporting scope and persistence of the
+historical ladder experiment. It changes no scientific rule.
+
+- **Scope.** One experiment binds one accepted evaluation generation (one
+  horizon). It runs only through `structural-break-backtest
+  historical-experiment`, which derives the binding through `load_primary`.
+  There is no unaccepted or provisional option.
+- **Policies.** The experiment runs every Decision 36 frozen policy for its
+  horizon. At h20 that is the headline plus 21 execution sensitivities; the
+  10- and 30-session variants are separate experiments bound to their own
+  evaluation generations.
+- **Thresholds.** The 0.20, 0.40 and 0.65 trading thresholds are evaluated
+  under the primary policy for the horizon.
+- **Declared combinations.** These are the headline (0.30 × primary policy),
+  the three threshold sensitivities and the execution sensitivities at 0.30.
+  The two families are not crossed, and no combination is selected.
+- **Computation.** Each fresh event is simulated once per frozen policy, and
+  selection runs once per threshold. Freshness is checked to be independent of
+  the threshold.
+- **Persisted artifacts.** The content-addressed
+  `historical-experiments/<id>/` directory holds:
+  - inputs: binding, policy set, specs, event inventory, labels;
+  - outputs: selections, full primary-policy trade results, compact
+    sensitivity results bound to each full result's hash, reports and summary;
+  - the manifest, written last.
+- **Identity.** The experiment identity binds the accepted generation, input
+  checksums, computational source and runtime.
+- **Verification.** It rebuilds the events from the bound sources, checks that
+  the current frozen configs reproduce the bound policy set, replays selection
+  and simulation, and compares every artifact byte for byte. It never repairs
+  bytes.
+- **Reports.** Reports are post-hoc 2022–2023 development assessment, never
+  final-test results. Full System is `NOT_RUN`. DuckDB registration remains
+  deferred (Decision 35).
+
+## 38. Historical portfolio, robustness/cost and economic uncertainty analysis
+
+Recorded 2026-10-16, before any historical return was computed. This section
+extends the Decision 37 experiment with the secondary analyses that Decisions 32
+and 35 define. Each analysis runs once, on the headline combination
+(0.30 × primary policy).
+
+**Cost grid.** `cost-grid.json` tabulates the frozen 4 × 4 cost/borrow
+scenarios for every rung from the per-combination reports. The trade
+selection is identical in every scenario and no scenario is selected.
+
+**Economic uncertainty.** `uncertainty.json` applies the Decision 36 frozen
+paired calendar-month bootstrap (`phase6-month-bootstrap-20261016`: 2,000
+draws, seed 5557, intervals only with at least 12 contributing months) to the
+headline rows. The B→Full comparison is `NOT_RUN`, never zero. This bootstrap
+does not replace v2's paired-quarter forecast uncertainty.
+
+**Portfolios.** `portfolios.json` runs the frozen secondary portfolio
+(`phase6-portfolio-20261016`) separately for each run rung. Every fresh event
+keeps a proposal row, and selection comes only from the stored rung decision.
+Ticker sectors come from the bound security master. A position still open at
+the last development session is `UNPRICED / DEVELOPMENT_END_TRUNCATION`: no
+2024 session is constructed and no terminal NAV is claimed. Full System is
+`NOT_RUN`.
+
+**Robustness.** `robustness.json` uses point-in-time contexts from the bound
+`h{h}_features` table:
+
+- previous-session VIX (`vix_level`), observed at its 16:16 New York proxy
+  clock;
+- trailing annualized 20-session SPY volatility (`market_rv20`), observed at
+  the signal close.
+
+Events without either value stay UNKNOWN. Event type and materiality stay
+UNKNOWN until an accepted controller generation exists. Year, pair, sector,
+sign, coverage and stress slices, plus leave-one-pair-out and
+leave-one-sector-out diagnostics, are all reported; none is selected.
+
+**Pending approval.** The robustness slice boundaries in
+`configs/phase6_analysis.json` (`phase6-robustness-20261016`) remain **DRAFT**:
+
+- VIX buckets: elevated at 20, high at 30;
+- volatility buckets: elevated at 0.20, high at 0.40;
+- small-population flag below 20 events.
+
+These values carry over the Decision 32 fixture boundaries unchanged, but were
+not part of the Decision 36 approval. The experiment refuses to run until the
+owner freezes them. Tests use a test-only frozen copy.
+
+## 39. Frozen Phase 6 robustness slice policy
+
+Recorded 2026-10-16. The owner approved the Decision 38 robustness slice policy
+as proposed, and it is now **FROZEN** in `configs/phase6_analysis.json`
+(`phase6-robustness-20261016`).
+
+**Timing.** The approval came after the 2022–2023 assessment forecasts and the
+empty 0.65 A/B inventory had been observed. No historical return, slice result
+or stress-bucket count had been computed. The boundaries are the unchanged
+Decision 32 fixture values, chosen without any historical outcome.
+
+**Frozen values:**
+
+- previous-session VIX buckets: LOW below 20, ELEVATED from 20, HIGH from 30;
+- trailing annualized 20-session SPY volatility buckets: LOW below 0.20,
+  ELEVATED from 0.20, HIGH from 0.40;
+- a slice with fewer than 20 events is flagged as a small population;
+- contexts (`phase6-feature-context-v1`) come from the bound `h{h}_features`
+  table at their point-in-time clocks, and missing context stays UNKNOWN.
+
+All slices and the leave-one-pair-out and leave-one-sector-out diagnostics are
+reported; none is selected. Event type and materiality remain UNKNOWN until an
+accepted controller generation exists.
+
+**What this unblocks.** Every Phase 6 execution and analysis policy the
+accepted experiment uses is now frozen. The acceptance run still requires the
+official accepted snapshot. The Full System, the controller and prompt
+identities (P5), and the 2024–2025 final-test lock are unchanged.
+
+## 40. Full System deferred from the Phase 6 acceptance scope
+
+Recorded 2026-10-16. The owner stated that the multi-agent layer (P5) may not be
+completed.
+
+- The Phase 6 historical acceptance scope is the four Baseline/Model rungs:
+  Baseline 0, Baseline 1, Model A and Model B.
+- Every historical experiment keeps the fifth rung in its rows, reports,
+  bootstrap and portfolios as `FULL_SYSTEM: NOT_RUN /
+  CONTROLLER_GENERATION_NOT_ACCEPTED`. It is never shown as zero-selected,
+  withheld or zero-return.
+- An experiment, report or summary must not be described as a five-variant
+  result while that rung is not run.
+- If the multi-agent layer is completed and accepted later, its controller
+  adapter is added as a new, separately identified experiment version. That
+  version binds the accepted controller, prompt and schedule identities, and it
+  does not rewrite the four-rung artifacts.
+- The rule that the Full System is a subset of Model B, its frozen policies and
+  the final-test lock are unchanged.
+
+## 41. Freeze manifest, final-test unlock gate and one-command acceptance
+
+Recorded 2026-10-16. This section changes no scientific rule. It implements
+the specification §2.1 freeze manifest and the final-test lock gate.
+
+**One-command acceptance.** `structural-break-backtest p6-acceptance` derives
+accepted bindings only through `load_primary`. For each of h20, h10 and h30 it:
+
+1. runs the historical experiment;
+2. verifies it by fresh replay;
+3. writes the target-blind policy diagnostics.
+
+It then writes a content-addressed freeze manifest.
+
+**Freeze manifest.** The manifest binds:
+
+- the primary version, protocol, registry, market capture and pair universe;
+- per horizon: the experiment and its manifest checksum, verification status,
+  feature schema, label policy, Model A/B bundles and calibrators, trading
+  thresholds and execution-policy versions;
+- the three frozen config files;
+- the code and runtime identity;
+- the execution convention;
+- `controller: DEFERRED_NOT_RUN` (Decision 40).
+
+All horizons must bind the same accepted generations. The checklist of
+validation decisions covers execution, threshold, analysis policies, accepted
+experiments and the Full System. Accepted experiments stay OPEN until all
+three horizons are verified, and the Full System is DEFERRED. The manifest
+always records `final_test_unlocked: false`.
+
+**Unlock gate.** `final-test-gate` and `require_final_test_unlock` refuse
+unless every decision is closed and an owner-authored unlock record is
+supplied. The record must bind the exact manifest checksum and freeze ID and
+contain the required authorization statement verbatim. The code never creates
+that record.
+
+Implementing the gate does not authorize, capture or run the 2024–2025 final
+test. That run remains a later, separately authorized step.
+
+## 42. Phase 6 development acceptance on the accepted v2 snapshot
+
+Recorded 2026-10-17. `structural-break-backtest p6-acceptance` ran once, on one
+thread in 135 minutes, against the official snapshot. That snapshot is
+`group-v2.zip` (SHA-256 `8acc3af0…3def3f`), imported with `team.py setup`, and
+its `team.py check` passed on 11,864 files. The run used primary
+`research_primary_5c01ab3d29c74e3e9154d9e3`.
+
+**Experiments.** All three passed `VERIFIED_HISTORICAL_REPLAY`:
+
+| Horizon | Experiment | Events |
+|---|---|---|
+| h20 | `d828d7ac…69cab5` | 3,558 |
+| h10 | `bea3126d…79e11a` | 4,305 |
+| h30 | `02a2c5fa…3e82eb` | 3,179 |
+
+**Freeze manifest.** `2266d696…72bf7de` records every decision as CLOSED,
+except the Full System, which is DEFERRED (Decision 40).
+
+**Policy check.** The official diagnostics reproduced the provisional ones
+exactly: β ceiling counts, liquidity floor counts and calibration-period score
+distributions. The Decision 36 data check therefore passes, and no policy was
+changed.
+
+**Status.** These are post-hoc 2022–2023 development results, recorded in
+`docs/P6_DEVELOPMENT_RESULTS.md`; they are not final-test results. Phase 6
+development acceptance passes for the four Baseline/Model rungs.
+
+**What remains:**
+
+- the owner's review of the freeze manifest;
+- an explicit owner unlock record before any 2024–2025 capture or final run;
+- the Full System, only if the multi-agent layer is completed (Decision 40).
+
+The final-test gate reports locked.
+
+## 43. Pre-registered P6 model and trading improvements (exploratory)
+
+Recorded 2026-10-17, after the Decision 42 development results were observed and
+before any variant in this section was evaluated on 2022–2023. The owner asked
+for five improvements and delegated the decisions. The full plan is
+`docs/proposals/P6_IMPROVEMENT_PLAN.md`, committed together with this section.
+
+**The five improvements:**
+
+1. **Exit rule.** Eight research-only variants (adverse stop × take-profit),
+   chosen on 2006–2019 Baseline 0 economics, with a 2020–2021 guard.
+2. **Economic target.** Positive net return of a COMPLETE trade.
+3. **Veto rule.** Drop each model's bottom 20 % or 33 % by calibration-period
+   quantile.
+4. **Features and families.** Matched-budget feature sets and families (A;
+   B_both, B_lean, B_plus), selected on four forward folds (2016–2019).
+5. **Rank rule.** Each model's top 10 %, 20 % or 33 % by calibration-period
+   quantile on a Baseline 0 or Baseline 1 gate.
+
+The gate is chosen by 2006–2021 economics. Calibration uses 2020–2021.
+
+**Primary contrast.** B − A mean net return per gated candidate under the
+top-20 % rule, with a paired calendar-month bootstrap.
+
+**Rules that hold throughout:**
+
+- All results are post-hoc exploratory and every variant is reported.
+- Nothing is re-selected after viewing 2022–2023.
+- A and B stay matched.
+- The Decision 36 frozen production policy and the Decision 42 accepted results
+  are unchanged.
+- The 2024–2025 final-test lock is unchanged; only that test can confirm an
+  improvement.
+
+### 43a. Development-stage choices, frozen before the 2022–2023 evaluation
+
+Recorded 2026-10-17. The development stage of
+`structural_break.experiments.p6_improvement` used only events with signals in
+2006–2021: 22,111 fresh h20 events, simulated once under eight exit variants.
+It wrote `outputs/p6_improvement/run1/frozen_choices.json`, SHA-256
+`000953d667e5efbff560885ce31c6a40368883e4c90d91836574655129995e26`. No
+2022–2023 outcome was simulated, scored or read before this record.
+
+**Plan amendment, made before execution.** The mean-crossing take-profit
+variant became a |z| ≤ 0.25 band, because a crossing exit would change engine
+semantics. Exit variants run in the explicit `RESEARCH` execution mode, which
+is always DRAFT. The ladder and experiment paths, which require a FROZEN
+`DEVELOPMENT` policy, refuse it.
+
+**Choices:**
+
+- **Exit.** No adverse stop, with take-profit at |z| ≤ 0.25. It had the best
+  2006–2019 Baseline 0 mean net per COMPLETE trade: −5.7 bps against −13.5
+  bps for the frozen rule (n = 18,629). The 2020–2021 guard passed: +21.8 bps
+  against −8.4 bps.
+- **Gate.** Baseline 1 (ACTIVE): +20.2 bps (n = 2,035) against −1.4 bps for
+  Baseline 0 (n = 22,111) over 2006–2021.
+- **Economic-target models.** A and B both use XGBoost (depth 3, 100 trees,
+  learning rate 0.05). B's forward folds selected the B_both feature set. Mean
+  fold Brier was 0.24808 for A and 0.24780 for B.
+- **Reversion-target models.** A uses logistic regression with C = 0.01 (fold
+  Brier 0.06241). B uses XGBoost (depth 3, 400 trees, learning rate 0.03) on
+  B_both (0.06199).
+- **Thresholds.** The top-k (10/20/33 %) and veto (20/33 %) cut-offs come from
+  2020–2021 calibrated scores for each gate.
+
+**A bug fixed after this run.** After the run, a unit test found that an exactly
+zero mean was ordered as missing in the exit and gate choosers. Recomputing
+both choices from the stored tables with the fixed code gives the same
+decisions, because no mean is exactly zero.
+
+## 44. Results of the pre-registered P6 improvements (post-hoc exploratory)
+
+Recorded 2026-10-17. The Decision 43/43a variants were evaluated on 2022–2023
+(h20, 3,558 events, 3,430 scored) under the frozen choices `000953d6…`. The
+full record is `docs/P6_IMPROVEMENT_RESULTS.md`.
+
+**Primary contrast.** B − A per gated candidate (Baseline 1 gate,
+trade-outcome target, top 20 %) is **−13.8 bps, 95 % interval [−34.9, +4.5]**.
+No pre-registered improvement makes B better.
+
+**Findings:**
+
+- **Trading-outcome target.** Unpredictable: ROC-AUC 0.528 (A) and 0.526 (B).
+- **Veto rule.** No benefit.
+- **Baseline 1 gate.** It reversed out of sample: −20.2 bps against +2.6 bps
+  for Baseline 0 when trading everything.
+- **Research exit rule.** Its 2020–2021 advantage largely disappeared.
+- **Reversion-target B (XGBoost, B_both).** ROC-AUC 0.760 against 0.736 for A,
+  PR-AUC 0.168 against 0.158, and paired-quarter Brier B − A −0.00038
+  [−0.00147, +0.00093]. It is better on every metric but not significantly,
+  and A's family differs from B's.
+- **An exploratory lead.** On the Baseline 0 gate, B − A is positive at every
+  rank cut (+2.7 to +4.4 bps per candidate) with intervals that just include
+  zero. This is a non-primary, post-hoc observation from a 20-cell grid.
+
+**Implementation correction.** The plan specified the v2-style quarter Brier
+bootstrap: 8 quarters, 2,000 draws, seed 42. The first evaluation output
+wrongly applied the economic 12-block minimum to it, which suppressed those
+intervals. After correcting that, the evaluation was re-run deterministically.
+Every other section is byte-identical, and the first output is retained as
+`evaluation-initial.json`.
+
+**Nothing adopted.** The Decision 36–42 freeze and its manifest
+`2266d696…` are unchanged. Any of these methods, including the Baseline 0
+reversion-rank lead, could become the final-test method only through a new
+pre-registration and freeze manifest and the owner's explicit unlock.
+
+## 45. Pre-registered walk-forward replication of the Baseline 0 reversion-rank lead
+
+Recorded 2026-10-17, before the test below was run. Decision 44 found a
+post-hoc lead in 2022–2023: on the Baseline 0 gate, a top-20 % rank rule on
+reversion-target B beat A. The owner asked for a proper test and for adoption
+only if the lead holds.
+
+The untouched 2024–2025 data remain locked, and opening them needs the owner's
+explicit unlock and a new data capture. This test therefore replicates the lead
+on the twelve earlier years in which it was not discovered.
+
+**Design (h20, frozen Decision 36 headline execution policy and exit):**
+
+1. **Rolling setup.** For each test year Y from 2010 to 2021:
+   - train on supervised events whose full label window ends before 1 January
+     of Y−1 (2006 onwards);
+   - set each model's rank threshold to the 80th percentile of its scores on
+     all Baseline 0 events with signals in Y−1, which are out of sample for
+     that model;
+   - trade every Baseline 0 event with a signal in Y whose score is at least
+     that threshold.
+
+   Scores rank events, so calibration does not affect selection.
+2. **Primary models.** XGBoost with the same fixed parameters for A and B (the
+   Decision 43a B reversion model: depth 3, 400 trees, learning rate 0.03,
+   min_child_weight 20, lambda 10) on the reversion label. A uses the 36
+   quantitative columns and B uses B_both. Using one family isolates B's
+   information.
+3. **Secondary models.** Logistic A (C = 0.01) against XGBoost B, the Decision
+   43a pairing.
+4. **Primary measure.** B − A mean net return per Baseline 0 candidate, pooled
+   over 2010–2021. A selected COMPLETE trade contributes its net return, a
+   withheld event contributes 0, and a selected unknown execution or a missing
+   score is excluded and counted. The interval comes from 2,000 paired
+   calendar-month bootstrap draws (seed 5557).
+5. **Pass criterion, fixed in advance.** The lead passes only if **both**
+   hold:
+   - the 95 % interval of the pooled primary measure lies above zero;
+   - B − A is positive in at least 8 of the 12 test years.
+
+   Otherwise it fails and is not adopted.
+6. **Reporting.** Every year, both model pairs, the selected counts and the
+   mean net per COMPLETE trade are reported. 2022 and 2023 are recomputed
+   under the same rolling protocol for reference only; they play no part in
+   the pass/fail decision.
+
+**If it passes,** the rule is implemented as a separately versioned
+final-test candidate method, with a new freeze proposal. It replaces nothing
+in the Decision 36–42 freeze without the owner's final-test unlock decision.
+**If it fails,** it is recorded and not adopted.
+
+## 46. Walk-forward replication result: the lead fails and is not adopted
+
+Recorded 2026-10-17. The Decision 45 test ran once, as pre-registered: h20,
+the frozen Decision 36 headline execution policy, and yearly rolling
+retraining with prior-year out-of-sample top-20 % thresholds.
+
+| Model pair | B − A per Baseline 0 candidate, 2010–2021 pooled | 95 % interval | Years B > A | Result |
+|---|---|---|---|---|
+| Primary: same XGBoost family for A and B | +1.11 bps | [−0.49, +2.79] | 8 of 12 | **Fails** (interval includes zero) |
+| Secondary: logistic A, XGBoost B | +2.12 bps | [−0.26, +4.58] | 7 of 12 | Fails |
+
+The primary pair pools 144 months and 18,294 candidates.
+
+B's point estimate is positive and its sign is fairly consistent, but the
+pre-registered pass criterion is not met. Under that rule, the Baseline 0
+reversion-rank lead is **not adopted**. No final-test candidate method or new
+freeze manifest is created.
+
+Mean net returns of the selected trades are negative in many years for both
+models, so the rule is not a profitable strategy on its own.
+
+The 2022 and 2023 reference rows, which played no part in the decision, are
++1.0 and +2.1 bps per candidate for the primary pair.
+
+The Decision 36–42 freeze and its manifest `2266d696…` are unchanged. The
+2024–2025 final test stays locked.

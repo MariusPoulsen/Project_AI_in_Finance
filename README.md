@@ -1,27 +1,42 @@
 # Project_AI_in_Finance
 
-Group members: see [GROUP_QUICKSTART.md](docs/GROUP_QUICKSTART.md) for the prepared
-offline setup, app, existing-model inference and backtest-input handoff. The real
-working snapshot will be exported after v2 acceptance.
+Group members: see [GROUP_QUICKSTART.md](docs/GROUP_QUICKSTART.md). Set up from the
+official accepted snapshot `group-v2.zip` with
+`python scripts/team.py setup --snapshot PATH/TO/group-v2.zip --sha256 <CHECKSUM>`.
+The checksum is shared with the snapshot, and the provisional pack is superseded.
 
 AI Structural-Break Detector for Statistical Arbitrage: a reproducible research
 system comparing quantitative Model A with SEC-augmented Model B. Research v2
 uses 250 frozen issuers and 736 fixed business-peer pairs, with separate fitting,
 calibration and assessment periods.
 
-**Current delivery:** the 37,421-event feature build stopped at 4,727 preserved
-checkpoints. Recovery uses a new audited batch, `development_prefetch_v2`, with
-bounded parallel SEC preparation and one unchanged CPU FinBERT model. Saved
-launch/progress/exit receipts establish its actual running state. This count
-is the development union, not an assessment sample or a success count. Actual
-model fits, independent verification, publication and GitHub `main` promotion
-remain pending. Model B improvement has not been established. See
-[STATUS.md](docs/STATUS.md) for the current gates and operational evidence.
+**Current delivery:**
+
+- **Research v2 is accepted and on `main`** (DECISIONS 34): primary
+  `research_primary_5c01ab3d29c74e3e9154d9e3`, with all thirty models
+  independently verified.
+- **Phase 6 backtesting is accepted for development** (DECISIONS 35–42). One
+  frozen execution engine and cost policy runs Baseline 0/1 and Models A/B on
+  the 2022–2023 assessment years. Results are in
+  [P6_DEVELOPMENT_RESULTS.md](docs/P6_DEVELOPMENT_RESULTS.md): at frozen costs,
+  no strategy shows an economic effect distinguishable from noise.
+- **Exploratory follow-ups** are in
+  [P6_IMPROVEMENT_RESULTS.md](docs/P6_IMPROVEMENT_RESULTS.md) (DECISIONS
+  43–46). The pre-registered model and trading improvements did not make B
+  beat A. A promising lead then failed its walk-forward replication over
+  2010–2021 (+1.1 bps per candidate, 95 % interval [−0.5, +2.8]) and was not
+  adopted.
+- **Full System deferred** (DECISIONS 40): the multi-agent rung is reported as
+  not run.
+- **Model B improvement is not established**, and the 2024–2025 final test
+  stays locked.
+
+See [STATUS.md](docs/STATUS.md) for gates and evidence.
 
 `structural-break` is the research CLI in this checkout;
 `structural-break-research` is its compatible research alias.
 `structural-break-reference` reproduces the original experiment in a separate
-workspace. GitHub `main` remains on the earlier release until v2 acceptance.
+workspace. `structural-break-backtest` runs the Phase 6 backtests (below).
 
 ## Setup
 
@@ -116,6 +131,42 @@ Publication performs fresh source and native-model verification. The
 reports missing/incomplete outputs. Publication does not itself merge GitHub
 `main`, establish B improvement or unlock final-test outcomes.
 
+## Backtesting (Phase 6)
+
+One shared engine, governed by DECISIONS 30–45, applies the same execution
+convention to every strategy rung:
+
+- signal at the close, entry at the next open;
+- frozen beta-weighted share units;
+- convergence, adverse-stop and timeout exits;
+- the frozen costs, borrow and eligibility rules.
+
+The runbook is [BACKTEST_RUNBOOK.md](docs/BACKTEST_RUNBOOK.md). On an imported
+accepted workspace:
+
+```shell
+uv run --frozen structural-break-backtest p6-acceptance --workspace-root data/team --output-dir .acceptance/p6-official
+uv run --frozen structural-break-backtest final-test-gate --freeze-manifest FREEZE_MANIFEST
+```
+
+`p6-acceptance` does the following for h20, h10 and h30:
+
+1. runs the accepted historical experiment;
+2. replays it independently;
+3. writes the target-blind policy diagnostics;
+4. writes a freeze manifest.
+
+The official run takes about 2 hours on one thread. Results are post-hoc
+2022–2023 development results. Unknown executions are never counted as zero
+returns.
+
+`final-test-gate` refuses unless an owner-written unlock record binds the
+freeze manifest. It never fetches or runs 2024–2025 data.
+
+The exploratory improvement and walk-forward experiments live in
+`structural_break.experiments` (`p6_improvement`, `p6_walkforward`). They are
+pre-registered, and every variant is reported.
+
 ## Development and documentation
 
 ```shell
@@ -131,12 +182,16 @@ source/model acceptance is a separate gate. Release checks include Windows/Linux
 CI and independent replay of all actual evaluations.
 
 The [agent runbook](docs/PHASE5_RUNBOOK.md) runs the bounded debate and deterministic
-controller with synthetic inputs. This work stays on an isolated branch until v2
-acceptance; genuine agent integration and quality evaluation remain pending.
+controller with synthetic inputs. Genuine agent integration and quality
+evaluation are deferred (DECISIONS 40), so the Full System rung is not run in
+the backtests.
 
 - Current research: [protocol](docs/RESEARCH_V2_PROTOCOL.md),
   [runbook](docs/RESEARCH_V2_RUNBOOK.md),
   [status](docs/STATUS.md).
+- Backtesting: [runbook](docs/BACKTEST_RUNBOOK.md),
+  [development results](docs/P6_DEVELOPMENT_RESULTS.md),
+  [improvement results](docs/P6_IMPROVEMENT_RESULTS.md).
 - Governance: [decisions](docs/DECISIONS.md), [plan](docs/PLAN.md),
   [specifications](docs/specs/README.md).
 - [Archive](docs/archive/README.md): original reproduction runbooks for

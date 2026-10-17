@@ -4,12 +4,14 @@ This never changes canonical v2 paired-quarter predictive uncertainty. All
 strategies share sampled calendar months, including every pair in each month.
 """
 
+from __future__ import annotations
+
 import hashlib
 from collections.abc import Sequence
-from typing import Annotated, Any, Literal
+from typing import TYPE_CHECKING, Annotated, Any, Literal, Self
 
 import numpy as np
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from structural_break.backtest.contracts import FrozenModel, Identifier, utc
 from structural_break.backtest.ladder_contracts import (
@@ -21,18 +23,26 @@ from structural_break.backtest.ladder_contracts import (
 from structural_break.backtest.reporting import build_comparison_report
 from structural_break.backtest.simulator import sha256
 
+if TYPE_CHECKING:
+    from structural_break.backtest.historical_contracts import HistoricalSpec
+
 STATUS_COLUMNS = (
     "SELECTED_COMPLETE",
     "SELECTED_UNPRICED",
     "SELECTED_NOT_ENTERED",
     "WITHHELD",
     "UNAVAILABLE",
+    "NOT_RUN",
 )
+
+
+FROZEN_BOOTSTRAP_VERSION = "phase6-month-bootstrap-20261016"
 
 
 class EconomicBootstrapPolicy(FrozenModel):
     version: Identifier = "phase6-fixture-month-bootstrap-v1"
-    status: Literal["FIXTURE"] = "FIXTURE"
+    # Decision 36 froze these fixture parameters for accepted historical use.
+    status: Literal["FIXTURE", "FROZEN"] = "FIXTURE"
     replicates: Annotated[int, Field(ge=100, le=10000)] = 2000
     seed: Annotated[int, Field(ge=0, le=2**63 - 1)] = 5557
     minimum_populated_months_for_interval: Annotated[int, Field(ge=2, le=240)] = 12
@@ -44,6 +54,12 @@ class EconomicBootstrapPolicy(FrozenModel):
     unknown_selection_execution: Literal["UNKNOWN_NO_ZERO_IMPUTATION"] = (
         "UNKNOWN_NO_ZERO_IMPUTATION"
     )
+
+    @model_validator(mode="after")
+    def frozen_identity(self) -> Self:
+        if (self.status == "FROZEN") != (self.version == FROZEN_BOOTSTRAP_VERSION):
+            raise ValueError("Only the Decision 36 bootstrap identity is frozen")
+        return self
 
 
 def _months(rows: Sequence[LadderRow]) -> list[str]:
@@ -114,6 +130,7 @@ def paired_month_bootstrap(
     policy: LadderPolicy,
     *,
     bootstrap_policy: EconomicBootstrapPolicy | None = None,
+    historical_spec: HistoricalSpec | None = None,
 ) -> dict[str, Any]:
     """Predeclare three distinct paired economic return estimands on fresh events.
 
@@ -124,7 +141,9 @@ def paired_month_bootstrap(
     common simulator return on each side, and cannot demonstrate selection gain.
     """
     declared = bootstrap_policy or EconomicBootstrapPolicy()
-    build_comparison_report(events, rows, policy)
+    if (historical_spec is None) != (declared.status == "FIXTURE"):
+        raise ValueError("Fixture bootstrap policies are synthetic; historical use needs FROZEN")
+    build_comparison_report(events, rows, policy, historical_spec=historical_spec)
     fresh = sorted((row for row in rows if row.raw_fresh is True), key=lambda row: row.event_id)
     months = _months(fresh)
     month_index = {month: index for index, month in enumerate(months)}
@@ -280,9 +299,18 @@ def paired_month_bootstrap(
             comparison[name]["bootstrap"] = _interval(
                 [draw[field] for draw in comparison["draws"]], supported_months[name], declared
             )
+    if policy.full_system == "NOT_RUN":
+        # No accepted controller generation: the B/Full comparison is not run, never zero.
+        comparisons["MODEL_B__FULL_SYSTEM"] = {
+            "left": "MODEL_B",
+            "right": "FULL_SYSTEM",
+            "status": "NOT_RUN",
+            "reason": "CONTROLLER_GENERATION_NOT_ACCEPTED",
+        }
     return {
         "schema_version": "phase6-fixture-economic-month-bootstrap-v1",
-        "data_kind": "SYNTHETIC_FIXTURE",
+        "data_kind": "SYNTHETIC_FIXTURE" if historical_spec is None else "DEVELOPMENT_CAPTURE",
+        "post_hoc_development": historical_spec is not None,
         "genuine_economic_acceptance_passed": False,
         "final_test_read": False,
         "policy_sha256": sha256(declared),

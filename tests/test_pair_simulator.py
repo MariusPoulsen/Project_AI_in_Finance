@@ -517,13 +517,43 @@ def test_snapshot_effectiveness_uses_daylight_saving_adjusted_next_open() -> Non
     assert simulate_pair_trade(request, fixture_config()).status == "COMPLETE"
 
 
-def test_repository_production_policy_remains_explicitly_unfrozen() -> None:
+def test_repository_production_policy_is_the_frozen_decision_35_headline() -> None:
     config_path = Path(__file__).parents[1] / "configs/phase6_execution.json"
     config = ExecutionConfig.model_validate_json(config_path.read_text(encoding="utf-8"))
-    assert config.mode == "DEVELOPMENT" and config.status == "DRAFT"
-    assert config.positive_beta_limit is None and config.entry_cost_bps is None
-    assert config.exit_cost_bps is None and config.annual_borrow_rate is None
-    assert simulate_pair_trade(synthetic_trade_request(), config).reason == "POLICY_NOT_FROZEN"
+    assert (config.schema_version, config.mode, config.status) == (
+        "pair-execution-policy-v2",
+        "DEVELOPMENT",
+        "FROZEN",
+    )
+    assert (config.entry_cost_bps, config.exit_cost_bps, config.annual_borrow_rate) == (
+        5.0,
+        5.0,
+        0.01,
+    )
+    assert (config.positive_beta_limit, config.min_leg_adv20_usd) == (3.0, 5_000_000.0)
+    assert config.horizon_sessions == 20
+    # A request without signal-time leg liquidity is explicitly not entered.
+    result = simulate_pair_trade(synthetic_trade_request(), config)
+    assert (result.status, result.reason) == ("NOT_ENTERED", "MISSING_LEG_LIQUIDITY")
+
+
+def test_liquidity_floor_requires_schema_v2_and_complete_leg_liquidity() -> None:
+    with pytest.raises(ValidationError, match="schema v2"):
+        policy(min_leg_adv20_usd=1e6)
+    v2 = {"schema_version": "pair-execution-policy-v2"}
+    missing = simulate_pair_trade(synthetic_trade_request(), policy(**v2))
+    assert missing.reason == "POLICY_PARAMETERS_MISSING"
+    floor = policy(**v2, min_leg_adv20_usd=5e6)
+    unknown = changed(synthetic_trade_request(), signal_adv20_usd_a=9e6)
+    assert simulate_pair_trade(unknown, floor).reason == "MISSING_LEG_LIQUIDITY"
+    thin = changed(unknown, signal_adv20_usd_b=4e6)
+    assert simulate_pair_trade(thin, floor).reason == "ILLIQUID_LEG"
+    liquid = changed(unknown, signal_adv20_usd_b=6e6)
+    entered = simulate_pair_trade(liquid, floor)
+    assert entered.status == "COMPLETE"
+    disabled = simulate_pair_trade(thin, policy(**v2, min_leg_adv20_usd=0.0))
+    assert disabled.status == "COMPLETE"
+    assert entered.net_return == disabled.net_return
 
 
 def test_cost_scenarios_change_only_economics_not_prices_units_or_exit() -> None:

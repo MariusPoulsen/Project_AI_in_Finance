@@ -8,13 +8,15 @@ It excludes the large SEC filing archive, redundant raw market downloads and
 per-event text checkpoints. Curated development prices and the original source
 manifests are retained.
 
-**Delivery status:** the official `group-v2.zip` is exported only after the v2
-rerun is accepted and published (DECISIONS section 33). Until then the shared
-folder may hold `group-v2-provisional.zip`: an unaccepted export of the same
-trained models for exploratory work, loaded with pandas/joblib as described in
-its `README_PROVISIONAL.md`. It does not work with `scripts/team.py` or the app.
-The Phase 6 simulator in `src/structural_break/backtest/` is a fixture-tested
-foundation with DRAFT policies; these inputs alone are not a returns backtest.
+**Delivery status:**
+
+- **v2 is accepted** (DECISIONS 34), and the official `group-v2.zip` is the
+  snapshot to use. The earlier `group-v2-provisional.zip` is superseded; do
+  not use it.
+- **Phase 6 backtesting** (`src/structural_break/backtest/`,
+  `structural-break-backtest`) runs on the imported accepted workspace under
+  frozen execution policies. See [BACKTEST_RUNBOOK.md](BACKTEST_RUNBOOK.md) and
+  [P6_DEVELOPMENT_RESULTS.md](P6_DEVELOPMENT_RESULTS.md).
 
 Coding agents: give your agent [GROUP_AGENT_BRIEF.md](GROUP_AGENT_BRIEF.md) first.
 Keep per-stream notes in [docs/team/](team/README.md).
@@ -28,8 +30,7 @@ git clone https://github.com/MariusPoulsen/Project_AI_in_Finance.git
 cd Project_AI_in_Finance
 ```
 
-Use `main`. If `main` does not contain `scripts/team.py` yet, the accepted v2
-release has not been merged; use the `research-v2` branch until it is.
+Use `main`, which contains the accepted v2 release.
 
 Download `group-v2.zip` and its `.sha256` file from the shared group folder. Use
 the checksum provided with Marius's handoff:

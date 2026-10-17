@@ -5,6 +5,7 @@ import hashlib
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 from structural_break.backtest.contracts import ExecutionConfig, PairTradeRequest
 from structural_break.backtest.fixtures import synthetic_trade_request
@@ -118,12 +119,199 @@ def _analysis(arguments: list[str], *, verify: bool) -> None:
     print(json.dumps(result, indent=2))
 
 
+def _bound_sources(description: str, arguments: list[str]) -> tuple[Any, argparse.Namespace]:
+    """Shared generation binding: accepted publication or explicit unaccepted checksum."""
+    from structural_break.backtest.historical import (
+        HistoricalSources,
+        bind_accepted,
+        bind_unaccepted,
+    )
+    from structural_break.config.paths import ProjectPaths
+
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument("--workspace-root", type=Path, required=True)
+    binding = parser.add_mutually_exclusive_group(required=True)
+    binding.add_argument("--accepted", action="store_true", help="Bind the primary publication")
+    binding.add_argument("--evaluation-manifest", help="Unaccepted: workspace-relative path")
+    parser.add_argument("--evaluation-sha256", help="Unaccepted: exact manifest checksum")
+    parser.add_argument("--horizon", type=int, choices=(10, 20, 30), default=20)
+    parser.add_argument("--primary-version")
+    parser.add_argument("--output-dir", type=Path, required=True)
+    args = parser.parse_args(arguments)
+    root = args.workspace_root.resolve()
+    paths = None
+    if args.accepted:
+        if args.evaluation_sha256:
+            parser.error("--accepted derives every checksum from the primary publication")
+        paths = ProjectPaths.resolve(Path.cwd(), root)
+        bound = bind_accepted(paths, args.horizon, primary_version=args.primary_version)
+    else:
+        if not args.evaluation_sha256 or args.primary_version:
+            parser.error("An unaccepted binding needs --evaluation-sha256 and no primary version")
+        bound = bind_unaccepted(root, args.evaluation_manifest, args.evaluation_sha256)
+        if bound.horizon_sessions != args.horizon:
+            parser.error("--horizon differs from the bound evaluation generation")
+    return HistoricalSources.open(root, bound, paths=paths), args
+
+
+def _historical_inventory(arguments: list[str]) -> None:
+    """Outcome-free selection inventory; never simulates prices or reads labels."""
+    from structural_break.backtest.historical import (
+        build_historical_events,
+        default_spec,
+        inventory_summary,
+        select_inventory,
+    )
+
+    sources, args = _bound_sources("Generation-bound historical selection inventory", arguments)
+    spec = default_spec(sources)
+    events, partitions, suppressed = build_historical_events(sources, spec)
+    inventory = select_inventory(events, partitions, suppressed, spec)
+    summary = inventory_summary(inventory)
+    body = canonical_bytes(inventory)
+    # Content-addressed: an identical rerun is idempotent and never overwrites.
+    directory = args.output_dir / "inventories" / hashlib.sha256(body).hexdigest()
+    write_bytes(directory / "spec.json", canonical_bytes(spec))
+    write_bytes(directory / "inventory.json", body)
+    write_bytes(
+        directory / "summary.json",
+        (json.dumps(summary, indent=2, sort_keys=True) + "\n").encode("utf-8"),
+    )
+    print(json.dumps({**summary, "directory": str(directory)}, indent=2, sort_keys=True))
+
+
+def _policy_diagnostics(arguments: list[str]) -> None:
+    """Pre-assessment, label-free inputs for the DRAFT execution-policy proposal."""
+    from structural_break.backtest.policy_diagnostics import policy_diagnostics
+
+    sources, args = _bound_sources("Target-blind execution-policy diagnostics", arguments)
+    report = policy_diagnostics(sources)
+    body = (json.dumps(report, indent=2, sort_keys=True) + "\n").encode("utf-8")
+    directory = args.output_dir / "policy-diagnostics" / hashlib.sha256(body).hexdigest()
+    write_bytes(directory / "diagnostics.json", body)
+    print(json.dumps({**report, "directory": str(directory)}, indent=2, sort_keys=True))
+
+
+def _historical_experiment(arguments: list[str], *, verify: bool) -> None:
+    """Accepted generations only: there is no unaccepted or provisional option."""
+    from structural_break.backtest.historical import HistoricalSources, bind_accepted
+    from structural_break.backtest.historical_experiment import (
+        read_manifest,
+        run_historical_experiment,
+        verify_historical_experiment,
+    )
+    from structural_break.config.paths import ProjectPaths
+
+    parser = argparse.ArgumentParser(
+        description="Verify an accepted historical experiment"
+        if verify
+        else "Run the accepted historical ladder experiment under the frozen policy"
+    )
+    parser.add_argument("--workspace-root", type=Path, required=True)
+    parser.add_argument("--configs-dir", type=Path, default=Path("configs"))
+    if verify:
+        parser.add_argument("--manifest", type=Path, required=True)
+    else:
+        parser.add_argument("--horizon", type=int, choices=(10, 20, 30), default=20)
+        parser.add_argument("--primary-version")
+        parser.add_argument("--output-dir", type=Path, required=True)
+    args = parser.parse_args(arguments)
+    root = args.workspace_root.resolve()
+    paths = ProjectPaths.resolve(Path.cwd(), root)
+    if verify:
+        bound = read_manifest(args.manifest).identity.binding
+        binding = bind_accepted(
+            paths, bound.horizon_sessions, primary_version=bound.primary_version
+        )
+    else:
+        binding = bind_accepted(paths, args.horizon, primary_version=args.primary_version)
+    sources = HistoricalSources.open(root, binding, paths=paths)
+    if verify:
+        result = verify_historical_experiment(args.manifest, sources, args.configs_dir)
+    else:
+        manifest = run_historical_experiment(sources, args.configs_dir, args.output_dir)
+        result = {
+            "mode": "POST_HOC_DEVELOPMENT_ASSESSMENT",
+            "manifest": str(manifest),
+            "summary": str(manifest.parent / "summary.md"),
+            "full_system": "NOT_RUN",
+            "final_test_unlocked": False,
+        }
+    print(json.dumps(result, indent=2))
+
+
+def _acceptance(arguments: list[str]) -> None:
+    """Official P6 acceptance: every horizon, fresh replay, diagnostics, freeze manifest."""
+    from structural_break.backtest.freeze import run_acceptance
+    from structural_break.backtest.historical import HistoricalSources, bind_accepted
+    from structural_break.config.paths import ProjectPaths
+
+    parser = argparse.ArgumentParser(description="Accepted P6 development acceptance run")
+    parser.add_argument("--workspace-root", type=Path, required=True)
+    parser.add_argument("--configs-dir", type=Path, default=Path("configs"))
+    parser.add_argument("--primary-version")
+    parser.add_argument("--output-dir", type=Path, required=True)
+    args = parser.parse_args(arguments)
+    root = args.workspace_root.resolve()
+    paths = ProjectPaths.resolve(Path.cwd(), root)
+
+    def open_sources(horizon: int) -> HistoricalSources:
+        binding = bind_accepted(paths, horizon, primary_version=args.primary_version)
+        return HistoricalSources.open(root, binding, paths=paths)
+
+    result = run_acceptance(open_sources, args.configs_dir, args.output_dir)
+    print(json.dumps(result, indent=2, sort_keys=True))
+
+
+def _final_test_gate(arguments: list[str]) -> None:
+    """Report whether the final test may be unlocked; it never runs or fetches it."""
+    from structural_break.backtest.freeze import require_final_test_unlock
+
+    parser = argparse.ArgumentParser(description="Check the P6 final-test unlock gate")
+    parser.add_argument("--freeze-manifest", type=Path, required=True)
+    parser.add_argument("--unlock", type=Path)
+    args = parser.parse_args(arguments)
+    try:
+        manifest = require_final_test_unlock(args.freeze_manifest, args.unlock)
+    except PermissionError as error:
+        print(json.dumps({"final_test_unlocked": False, "reason": str(error)}, indent=2))
+        raise SystemExit(2) from None
+    print(
+        json.dumps(
+            {
+                "final_test_unlock_authorized": True,
+                "freeze_id": manifest.freeze_id,
+                "note": "Authorization verified; the final-test run itself is a separate step",
+            },
+            indent=2,
+        )
+    )
+
+
 def main() -> None:
     if len(sys.argv) > 1 and sys.argv[1] in {"analysis", "verify-analysis"}:
         _analysis(sys.argv[2:], verify=sys.argv[1] == "verify-analysis")
         return
     if len(sys.argv) > 1 and sys.argv[1] == "ladder":
         _ladder(sys.argv[2:])
+        return
+    if len(sys.argv) > 1 and sys.argv[1] in {
+        "historical-experiment",
+        "verify-historical-experiment",
+    }:
+        _historical_experiment(sys.argv[2:], verify=sys.argv[1] == "verify-historical-experiment")
+        return
+    if len(sys.argv) > 1 and sys.argv[1] == "p6-acceptance":
+        _acceptance(sys.argv[2:])
+        return
+    if len(sys.argv) > 1 and sys.argv[1] == "final-test-gate":
+        _final_test_gate(sys.argv[2:])
+        return
+    if len(sys.argv) > 1 and sys.argv[1] == "policy-diagnostics":
+        _policy_diagnostics(sys.argv[2:])
+        return
+    if len(sys.argv) > 1 and sys.argv[1] == "historical-inventory":
+        _historical_inventory(sys.argv[2:])
         return
     if len(sys.argv) > 1 and sys.argv[1] == "verify":
         _verify(sys.argv[2:])

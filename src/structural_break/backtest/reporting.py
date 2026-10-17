@@ -4,9 +4,11 @@ Outcome labels enter only this evaluation module, after immutable ladder selecti
 The report is not the canonical v2 forecast assessment or a portfolio backtest.
 """
 
+from __future__ import annotations
+
 from collections import Counter
-from collections.abc import Sequence
-from typing import Any
+from collections.abc import Callable, Sequence
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -23,6 +25,9 @@ from structural_break.backtest.ladder_contracts import (
 )
 from structural_break.backtest.simulator import sha256
 from structural_break.ml.model import predictive_metrics
+
+if TYPE_CHECKING:
+    from structural_break.backtest.historical_contracts import HistoricalSpec
 
 REPORT_VERSION = "phase6-descriptive-ladder-report-v1"
 
@@ -190,11 +195,33 @@ def _validate_report_inputs(
     rows: Sequence[LadderRow],
     policy: LadderPolicy,
     labels: Sequence[EvaluationLabel],
+    historical_spec: HistoricalSpec | None = None,
 ) -> tuple[dict[str, LadderEvent], dict[str, LadderRow], dict[str, EvaluationLabel]]:
-    if policy.status != "FIXTURE" or policy.candidate_threshold is None:
-        raise ValueError(
-            "Descriptive ladder reporting currently requires a complete FIXTURE policy"
-        )
+    selector: Callable[[LadderEvent], tuple[bool | None, tuple[RungSelection, ...]]]
+    if historical_spec is None:
+        if policy.status != "FIXTURE" or policy.candidate_threshold is None:
+            raise ValueError(
+                "Descriptive ladder reporting currently requires a complete FIXTURE policy"
+            )
+        data_kind = "SYNTHETIC_FIXTURE"
+
+        def selector(event: LadderEvent) -> tuple[bool | None, tuple[RungSelection, ...]]:
+            return select_ladder_event(event, policy)
+    else:
+        from structural_break.backtest.historical import select_historical_event
+
+        if (
+            historical_spec.ladder != policy
+            or policy.status != "FROZEN"
+            or historical_spec.binding.acceptance != "ACCEPTED"
+        ):
+            raise ValueError("Historical reporting requires the accepted frozen ladder policy")
+        data_kind = "DEVELOPMENT_CAPTURE"
+        spec = historical_spec
+
+        def selector(event: LadderEvent) -> tuple[bool | None, tuple[RungSelection, ...]]:
+            return select_historical_event(event, spec)
+
     event_map = {event.state.event_id: event for event in events}
     row_map = {row.event_id: row for row in rows}
     label_map = {label.event_id: label for label in labels}
@@ -206,10 +233,8 @@ def _validate_report_inputs(
         raise ValueError("Evaluation labels contain events outside the declared population")
     execution_identities: set[str] = set()
     for event_id, event in event_map.items():
-        if event.request.data_kind != "SYNTHETIC_FIXTURE":
-            raise ValueError(
-                "Genuine historical reporting remains blocked pending adapter acceptance"
-            )
+        if event.request.data_kind != data_kind:
+            raise ValueError("Reporting inputs must all share the declared data kind")
         row = row_map[event_id]
         if (
             row.pair_id != event.state.pair_id
@@ -218,13 +243,13 @@ def _validate_report_inputs(
             or row.request_sha256 != sha256(event.request)
         ):
             raise ValueError("Reporting row does not bind the exact event/request/state identity")
-        expected_fresh, expected_selections = select_ladder_event(event, policy)
+        expected_fresh, expected_selections = selector(event)
         if row.raw_fresh != expected_fresh or row.selections != expected_selections:
             raise ValueError("Reporting selections differ from the deterministic frozen policy")
         if row.execution is not None:
             execution_identities.add(row.execution.execution_config_sha256)
             if (
-                row.execution.data_kind != "SYNTHETIC_FIXTURE"
+                row.execution.data_kind != data_kind
                 or row.execution.snapshot_id != event.request.snapshot.snapshot_id
                 or row.execution.price_lineage != event.request.price_lineage
                 or row.execution.signal_z != event.request.signal_z
@@ -271,6 +296,16 @@ def _validate_report_inputs(
     if len({label.label_manifest_sha256 for label in labels}) > 1:
         raise ValueError("Evaluation labels must bind one immutable label inventory")
     return event_map, row_map, label_map
+
+
+def _not_run(population_n: int) -> dict[str, Any]:
+    """A rung without an accepted controller generation has no metrics, not zeros."""
+    return {
+        "status": "NOT_RUN",
+        "reason": "CONTROLLER_GENERATION_NOT_ACCEPTED",
+        "population_n": population_n,
+        "metrics": None,
+    }
 
 
 def _agent_report(
@@ -352,9 +387,16 @@ def build_comparison_report(
     policy: LadderPolicy,
     *,
     labels: Sequence[EvaluationLabel] = (),
+    historical_spec: HistoricalSpec | None = None,
 ) -> dict[str, Any]:
-    """Keep the full population and independent selections in descriptive comparisons."""
-    event_map, row_map, label_map = _validate_report_inputs(events, rows, policy, labels)
+    """Keep the full population and independent selections in descriptive comparisons.
+
+    With `historical_spec`, rows must be accepted-generation captured events under
+    the frozen ladder; results are post-hoc development assessment, not final test.
+    """
+    event_map, row_map, label_map = _validate_report_inputs(
+        events, rows, policy, labels, historical_spec
+    )
     aligned = [row_map[event.state.event_id] for event in events]
     event_ids = [event.state.event_id for event in events]
     forecast_ids = [row.event_id for row in aligned if row.raw_fresh is True]
@@ -373,7 +415,15 @@ def build_comparison_report(
         if scores_a[event_id] is not None and scores_b[event_id] is not None
     ]
     comparisons: dict[str, Any] = {}
+    full_run = policy.full_system == "RUN"
     for left, right in zip(RUNG_ORDER[:-1], RUNG_ORDER[1:], strict=True):
+        if (left, right) == ("MODEL_B", "FULL_SYSTEM") and not full_run:
+            comparisons[f"{left}__{right}"] = {
+                "left": left,
+                "right": right,
+                **_not_run(len(aligned)),
+            }
+            continue
         if (left, right) == ("MODEL_B", "FULL_SYSTEM"):
             common = [
                 row
@@ -413,7 +463,8 @@ def build_comparison_report(
         }
     return {
         "schema_version": REPORT_VERSION,
-        "data_kind": "SYNTHETIC_FIXTURE",
+        "data_kind": "SYNTHETIC_FIXTURE" if historical_spec is None else "DEVELOPMENT_CAPTURE",
+        "post_hoc_development": historical_spec is not None,
         "descriptive_only": True,
         "final_test_read": False,
         "genuine_economic_acceptance_passed": False,
@@ -432,7 +483,12 @@ def build_comparison_report(
         "label_coverage": _label_summary(event_ids, label_map),
         "source_coverage_counts": _counts([event.state.source_coverage for event in events]),
         "natural_rungs": {
-            rung: _rung_report(event_map, aligned, rung, label_map) for rung in RUNG_ORDER
+            rung: (
+                _rung_report(event_map, aligned, rung, label_map)
+                if full_run or rung != "FULL_SYSTEM"
+                else _not_run(len(aligned))
+            )
+            for rung in RUNG_ORDER
         },
         "adjacent_comparisons": comparisons,
         "predictive": {
@@ -458,9 +514,15 @@ def build_comparison_report(
                 "only separately supplied labels enter supervised metrics"
             ),
         },
-        "agent_controller": _agent_report(event_map, aligned, label_map),
+        "agent_controller": (
+            _agent_report(event_map, aligned, label_map) if full_run else _not_run(len(aligned))
+        ),
         "limitations": [
-            "Synthetic engineering outputs do not establish predictive or economic benefit",
+            (
+                "Synthetic engineering outputs do not establish predictive or economic benefit"
+                if historical_spec is None
+                else "Post-hoc 2022-2023 development assessment under Decision 36; not final test"
+            ),
             "Supervised mean-reversion success and positive net trade return are separate outcomes",
             "Economic statistics require COMPLETE; missing returns remain explicit",
             "No portfolio, Sharpe, significance or uncertainty/bootstrap results are produced",

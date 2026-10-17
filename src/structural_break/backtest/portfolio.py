@@ -42,17 +42,20 @@ class PortfolioProposal(FrozenModel):
 
     @model_validator(mode="after")
     def coherent(self) -> Self:
-        if self.request.data_kind != "SYNTHETIC_FIXTURE":
-            raise ValueError("Portfolio engineering currently accepts synthetic fixtures only")
         if utc(self.decision_at) != utc(self.request.signal_at):
             raise ValueError("Portfolio selection must be recorded at the signal cutoff")
         return self
 
 
+FROZEN_PORTFOLIO_VERSION = "phase6-portfolio-20261016"
+DEVELOPMENT_END = date(2023, 12, 31)
+
+
 class PortfolioPolicy(FrozenModel):
     schema_version: Literal["pair-portfolio-policy-v1"] = "pair-portfolio-policy-v1"
     version: Identifier
-    mode: Literal["FIXTURE"] = "FIXTURE"
+    # Decision 36 froze the fixture allocation rules for accepted historical use.
+    mode: Literal["FIXTURE", "DEVELOPMENT"] = "FIXTURE"
     initial_nav: Annotated[float, Field(gt=0, le=1e12)] = 1.0
     target_entry_fraction: Annotated[float, Field(gt=0, le=1)] = 0.25
     gross_entry_cap: Annotated[float, Field(gt=0, le=1)] = 1.0
@@ -63,6 +66,12 @@ class PortfolioPolicy(FrozenModel):
     unknown_nav_policy: Literal["PERMANENT_UNKNOWN_BLOCK_NEW_ENTRIES"] = (
         "PERMANENT_UNKNOWN_BLOCK_NEW_ENTRIES"
     )
+
+    @model_validator(mode="after")
+    def frozen_identity(self) -> Self:
+        if (self.mode == "DEVELOPMENT") != (self.version == FROZEN_PORTFOLIO_VERSION):
+            raise ValueError("Only the Decision 36 portfolio identity is a development policy")
+        return self
 
 
 class PortfolioTrade(FrozenModel):
@@ -109,7 +118,7 @@ class PortfolioMark(FrozenModel):
 
 class PortfolioResult(FrozenModel):
     schema_version: Literal["pair-portfolio-result-v1"] = "pair-portfolio-result-v1"
-    mode: Literal["SYNTHETIC_FIXTURE"] = "SYNTHETIC_FIXTURE"
+    mode: Literal["SYNTHETIC_FIXTURE", "DEVELOPMENT_CAPTURE"] = "SYNTHETIC_FIXTURE"
     policy_sha256: SHA256
     execution_config_sha256: SHA256
     source_sha256: SHA256
@@ -208,8 +217,17 @@ def simulate_portfolio(
                 ):
                     raise ValueError("Simultaneous ticker quotes must reconcile across pairs")
                 quote_inventory[key] = price
-    if execution_config.mode != "FIXTURE" or execution_config.status != "DRAFT":
-        raise ValueError("Portfolio accounting is currently fixture-only")
+    data_kinds = {proposal.request.data_kind for proposal in proposals}
+    if policy.mode == "FIXTURE" and (
+        data_kinds != {"SYNTHETIC_FIXTURE"}
+        or (execution_config.mode, execution_config.status) != ("FIXTURE", "DRAFT")
+    ):
+        raise ValueError("Fixture portfolio accounting accepts synthetic fixtures only")
+    if policy.mode == "DEVELOPMENT" and (
+        data_kinds != {"DEVELOPMENT_CAPTURE"}
+        or (execution_config.mode, execution_config.status) != ("DEVELOPMENT", "FROZEN")
+    ):
+        raise ValueError("Historical portfolio accounting needs captured data and frozen policy")
     if any(
         value is None
         for value in (
@@ -244,6 +262,7 @@ def simulate_portfolio(
     peak = policy.initial_nav
     drawdowns: list[float] = []
     total_trading = total_borrow = total_turnover = 0.0
+    truncated = False
 
     def base_trade(proposal: PortfolioProposal) -> dict[str, Any]:
         event = proposal.request
@@ -482,6 +501,13 @@ def simulate_portfolio(
             following = canonical_sessions(day, day + timedelta(days=14))
             if len(following) < 2:
                 raise ValueError("Incomplete position has no bounded next development session")
+            if policy.mode == "DEVELOPMENT" and following[1][0] > DEVELOPMENT_END:
+                # Accepted history ends before the locked final test: positions still
+                # open stay unresolved and no terminal NAV is claimed or constructed.
+                for position in held.values():
+                    fail(position, closing, "DEVELOPMENT_END_TRUNCATION")
+                truncated = True
+                continue
             development_date(following[1][0])
             sessions.append(following[1])
     for position in held.values():
@@ -494,10 +520,24 @@ def simulate_portfolio(
             units_a=position.a,
             units_b=position.b,
         )
-    final = marks[-1].nav
+    final = None if truncated else marks[-1].nav
     if portfolio_source_sha256() != source_identity:
         raise ValueError("Portfolio computational source changed during calculation")
+    development = policy.mode == "DEVELOPMENT"
     return PortfolioResult(
+        mode="DEVELOPMENT_CAPTURE" if development else "SYNTHETIC_FIXTURE",
+        limitations=(
+            "POST_HOC_DEVELOPMENT_ASSESSMENT_NOT_FINAL_TEST"
+            if development
+            else "SYNTHETIC_ENGINEERING_ONLY",
+            "ENTRY_GROSS_CAP_ONLY_PASSIVE_FIXED_SHARE_DRIFT_DISCLOSED",
+            "ZERO_IDLE_CASH_YIELD_NO_FINANCING_OR_INTRADAY_MARGIN_MODEL",
+            "NO_PORTFOLIO_SHARPE_FROM_EVENT_RETURN_AVERAGES",
+            "MISSING_HELD_QUOTES_PERMANENTLY_INVALIDATE_NAV",
+            "DECISION_35_FROZEN_ALLOCATION_AND_EXECUTION"
+            if development
+            else "NO_PRODUCTION_ALLOCATION_OR_EXECUTION_ASSUMPTION_FREEZE",
+        ),
         policy_sha256=sha256(policy),
         execution_config_sha256=sha256(execution_config),
         source_sha256=source_identity,

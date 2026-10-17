@@ -290,38 +290,41 @@ complete accepted-generation integration or genuine semantic evaluation.
 
 ## P6 — Backtesting framework, experiment freeze and final evaluation
 
-Status: **IN PROGRESS**, authorized on 2026-10-11 for an isolated, synthetic
-event-level slice on `phase6/shared-simulator`, in parallel with Phase 5 batch
-infrastructure. The next authorized fixture slice adds the capability ladder,
-coverage-aware event reports and immutable manifest verification. See DECISIONS
-sections 30-32 and `docs/BACKTEST_RUNBOOK.md`.
-Implementation does not run genuine historical economics, integrate unfinished
-v2 outputs or open 2024-2025 outcomes. Production execution policy remains
-DRAFT; fixture scenarios are not an execution-cost freeze.
+Status: **DEVELOPMENT ACCEPTED** 2026-10-17 (Decision 42); the final test stays
+locked pending the owner's review and explicit unlock. The synthetic engine, ladder, reporting and analysis
+slices (DECISIONS 30-32) are complete. The generation-bound historical adapters,
+the accepted historical experiment and its analyses are fixture-verified
+(Decisions 35-38). The production execution, sensitivity, threshold and analysis
+policies are frozen (Decisions 36 and 39). The acceptance run waits for the
+official accepted v2 snapshot; until then no genuine historical return exists.
+2024-2025 outcomes stay locked. Full System is deferred (Decision 40): it is
+reported as NOT_RUN and added as a new experiment only if the multi-agent layer
+is completed. See `docs/BACKTEST_RUNBOOK.md`.
 
 ### Build before final-test unlock
 
 - [x] Implement the common event execution engine on synthetic inputs.
 - [x] Verify synthetic five-rung selection, with independent A/B filters and Full as a subset of B.
-- [ ] Implement accepted historical input/prediction/controller adapters for all five variants.
+- [x] Implement accepted historical input/prediction adapters for the four Baseline/Model rungs; accepted and verified on the official snapshot (Decisions 35, 42).
+- [ ] Implement the Full System controller adapter (deferred, Decision 40: only if the multi-agent layer is completed; added as a new experiment).
 - [x] Implement beta-weighted entry construction with frozen share units until exit.
 - [x] Implement close-signal / next-open execution convention.
 - [x] Implement convergence, adverse-stop and timeout exits.
-- [x] Implement twelve predeclared fixture transaction-cost/borrow scenarios; freeze production assumptions separately.
-- [x] Implement explicit fixture turnover/borrow accounting and 10/20/30-session horizon support; production policy remains DRAFT.
+- [x] Implement twelve predeclared fixture transaction-cost/borrow scenarios; the production 4x4 grid and assumptions are frozen separately (Decision 36).
+- [x] Implement explicit fixture turnover/borrow accounting and 10/20/30-session horizon support; the production policy is frozen (Decision 36).
 - [x] Implement event-level MAE/MFE/holding/return metrics, with separate partial excursions for unpriced paths.
 - [x] Implement secondary fixture fixed-share portfolio simulation, cash/NAV/exposure/turnover accounting and missing-valuation refusal.
 - [x] Implement fixture predictive/calibration metrics on the fresh forecasting population.
 - [x] Implement fixture agent/controller metrics with scheduled coverage and explicit veto/deferral distinctions.
 - [x] Implement fixture common-data and coverage-aware adjacent-rung comparisons, separate from selected intersections.
-- [ ] Verify accepted historical predictive, controller and common-data comparison outputs.
+- [x] Verify accepted historical predictive and common-data comparison outputs (official experiments verified by fresh replay, Decision 42; controller outputs deferred with the Full System).
 - [x] Implement fixture robustness slices by year, pair, sector, divergence sign, admissible stress context, event type/materiality and cost assumptions, retaining UNKNOWN.
 - [x] Implement fixture paired-month economic bootstrap and leave-one-pair/sector-out diagnostics; intervals require twelve contributing months per estimand.
-- [ ] Verify accepted historical portfolio, robustness/cost and economic uncertainty outputs under frozen production policies.
-- [ ] Implement accepted historical experiment manifest and immutable result persistence.
+- [x] Verify accepted historical portfolio, robustness/cost and economic uncertainty outputs under frozen production policies (Decisions 38, 42).
+- [x] Implement accepted historical experiment manifest and immutable result persistence (Decision 37; official experiments verified, Decision 42).
 - [x] Verify the fixture-only ladder manifest, complete row inventory and fresh deterministic replay.
 - [x] Implement the immutable fixture analysis bundle and independent replay of all eighteen bound artifacts.
-- [ ] Freeze methodology/config/model/prompt/policy/execution assumptions.
+- [x] Freeze methodology/config/model/policy/execution assumptions: freeze manifest `2266d696…` (Decisions 36, 39, 41, 42); controller/prompt identities deferred with the Full System (Decision 40).
 
 The first slice covers the event engine and fixture artifacts. The second
 slice adds synthetic five-rung selection, labeled event reporting, common-data
@@ -345,9 +348,9 @@ all eighteen bound artifacts and repeats with the same immutable identity.
 
 ### Final-test lock gate
 
-- [ ] Generate and review a freeze manifest.
-- [ ] Confirm all validation-driven decisions are closed.
-- [ ] Require explicit user approval / unlock flag before producing headline 2024-2025 outcome metrics.
+- [-] Generate and review a freeze manifest. Generated on the official snapshot: `2266d696…` (Decision 42); awaiting the owner's review.
+- [x] Confirm all validation-driven decisions are closed: every freeze-manifest decision is CLOSED, Full System DEFERRED (Decision 42).
+- [x] Require explicit user approval / unlock flag before producing headline 2024-2025 outcome metrics: `final-test-gate` refuses without an owner unlock record bound to the freeze manifest (Decision 41); verified locked.
 
 ### Final run after explicit unlock
 
@@ -355,16 +358,16 @@ all eighteen bound artifacts and repeats with the same immutable identity.
 - [ ] Run Baseline 1.
 - [ ] Run Model A.
 - [ ] Run Model B.
-- [ ] Run Full System.
+- [ ] Run Full System (deferred, Decision 40: only if the multi-agent layer is completed and accepted).
 - [ ] Persist headline metrics, event/trade rows, matched-subset comparisons and robustness artifacts immutably.
 - [ ] Do not retune after viewing final-test results; any methodological change creates a new explicitly labelled experiment.
 
 ### Acceptance gate P6
 
-- [ ] Every reported number traces to experiment/event/trade rows and a manifest.
-- [ ] All variants share identical execution and cost assumptions except for the capability intentionally added at each rung.
-- [ ] Predictive, agent-risk-control and simulated economic claims are clearly separable.
-- [ ] Coverage/sample counts accompany metrics.
+- [x] Every reported number traces to experiment/event/trade rows and a manifest. Verified for the accepted development experiments (Decision 42); re-checked at the final run.
+- [x] All variants share identical execution and cost assumptions except for the capability intentionally added at each rung. Verified for the accepted development experiments (Decision 42); re-checked at the final run.
+- [x] Predictive, agent-risk-control and simulated economic claims are clearly separable. Verified for the accepted development experiments (Decision 42); re-checked at the final run.
+- [x] Coverage/sample counts accompany metrics. Verified for the accepted development experiments (Decision 42); re-checked at the final run.
 
 ---
 

@@ -1,0 +1,36 @@
+{
+  "schema_version": "phase6-analysis-policies-v1",
+  "version": "phase6-analysis-20261016",
+  "bootstrap": {
+    "version": "phase6-month-bootstrap-20261016",
+    "status": "FROZEN",
+    "replicates": 2000,
+    "seed": 5557,
+    "minimum_populated_months_for_interval": 12,
+    "interval_level": 0.95,
+    "block_rule": "SIGNAL_CALENDAR_MONTH_COMPLETE_RANGE",
+    "known_nonselection": "WITHHELD_ZERO_ALLOCATION",
+    "unknown_selection_execution": "UNKNOWN_NO_ZERO_IMPUTATION"
+  },
+  "portfolio": {
+    "schema_version": "pair-portfolio-policy-v1",
+    "version": "phase6-portfolio-20261016",
+    "mode": "DEVELOPMENT",
+    "initial_nav": 1.0,
+    "target_entry_fraction": 0.25,
+    "gross_entry_cap": 1.0,
+    "allocation": "EQUAL_SIMULTANEOUS_CLIPPED_FIXED_SHARES",
+    "idle_cash_yield": 0.0,
+    "unknown_nav_policy": "PERMANENT_UNKNOWN_BLOCK_NEW_ENTRIES"
+  },
+  "robustness": {
+    "version": "phase6-robustness-20261016",
+    "status": "FROZEN",
+    "context_policy_version": "phase6-feature-context-v1",
+    "tiny_population_threshold": 20,
+    "vix_elevated": 20.0,
+    "vix_high": 30.0,
+    "volatility_elevated": 0.2,
+    "volatility_high": 0.4
+  }
+}
