@@ -1582,3 +1582,26 @@ has been attempted (including the automatic retry passes).
 A passing block becomes a candidate for a separately versioned Model B with a
 new freeze proposal and replaces nothing without the owner's final-test
 unlock decision.
+
+### 50a. Recent-news vocabulary amendment (before any feature or outcome was read)
+
+Recorded 2026-10-18, after 73 of 9,209 packs and before any news feature or
+outcome was built or read. 16 % of the first answers were rejected, almost
+all by the category-term check. Their cited sentences showed that the model
+was usually right and the v2 term list was too narrow for 8-K wording: "reports
+first quarter results" or "net sales" did not count as EARNINGS, and "entry
+into a material definitive agreement", note offerings, credit-agreement
+prepayments and tender offers had no fitting category, so the model forced them
+into PRODUCT_OTHER.
+
+`gemma-leg-news-v1.1` gives the news block its own vocabulary: a FINANCING
+category (offerings, credit agreements, loans, repayments, dividends,
+buybacks, tender offers) and standard 8-K terms for each category (for example
+"results", "sales" and "per share" for EARNINGS; "agreement" for
+PRODUCT_OTHER; "president", "board" and "elect" for MANAGEMENT). Up to ten
+citations are accepted. A cited sentence must still contain a term for the
+claimed category, citations remain exact source sentences, and table
+boilerplate such as "Other comprehensive income (loss)" still fails. The v2
+catalyst schema and validator are unchanged. Re-checked offline, 10 of the 12
+rejected answers pass the new rule. FINANCING counts as corporate news in the
+features. All packs are extracted under v1.1, including the first 73.

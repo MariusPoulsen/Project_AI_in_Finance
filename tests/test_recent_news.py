@@ -179,3 +179,27 @@ def test_features_mark_mover_news_and_unknowns() -> None:
     failed = rn.news_features(_events(), windows, lambda key: {"status": "UNKNOWN"}).iloc[0]
     assert np.isnan(failed["news_a_material"]) and np.isnan(failed["news_mover_material"])
     assert failed["news_b_material"] == 0
+
+
+def test_news_vocabulary_accepts_typical_8k_wording() -> None:
+    def label(kind: str, sentence: str) -> rn.LegNews:
+        return rn.LegNews.model_validate(
+            {
+                "event_type": kind,
+                "direction": "POSITIVE",
+                "materiality": "MEDIUM",
+                "extraction_confidence": 0.8,
+                "citations": [{"chunk_id": "c", "quote": sentence}],
+            }
+        )
+
+    label("EARNINGS", "BERKLEY CORPORATION REPORTS FIRST QUARTER RESULTS")
+    label("FINANCING", "Delta completed its previously announced offering of senior secured notes")
+    label("PRODUCT_OTHER", "Entry into a Material Definitive Agreement.")
+    try:
+        label("LITIGATION", "Other comprehensive income (loss):")
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("table boilerplate must not support LITIGATION")
+    assert "FINANCING" in rn.CORPORATE and "EARNINGS" not in rn.CORPORATE
