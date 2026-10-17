@@ -150,3 +150,24 @@ These are observations, not claims.
    That is a methodology change to the Decision 36–42 freeze. It needs a new
    freeze manifest and the owner's explicit unlock, and it must not be retuned
    after viewing 2024–2025.
+
+## Walk-forward replication of the lead (DECISIONS 45–46): fails
+
+The Baseline 0 reversion-rank lead was pre-registered and then replicated on
+the twelve years in which it was not discovered (2010–2021). Each year's
+models trained only on earlier label windows, the top-20 % thresholds came from
+the prior year's out-of-sample scores, and trades used the frozen exit and
+headline costs.
+
+| Pair | B − A per candidate, pooled 2010–2021 | 95 % interval | Years B > A |
+|---|---|---|---|
+| A and B both XGBoost (primary) | +1.11 bps | [−0.49, +2.79] | 8 / 12 |
+| Logistic A, XGBoost B | +2.12 bps | [−0.26, +4.58] | 7 / 12 |
+
+**Verdict:** the lead fails the pre-registered criterion (the interval must
+lie above zero) and is not adopted.
+
+B tends to edge out A slightly, which is consistent with its better forecast
+metrics, but the economic difference is small and not significant. The
+selected trades lose money in many years for both models. Per-year rows are in
+`outputs/p6_improvement/walkforward/walk_forward.json`.

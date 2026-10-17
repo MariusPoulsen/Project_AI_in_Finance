@@ -1339,3 +1339,30 @@ on the twelve earlier years in which it was not discovered.
 final-test candidate method, with a new freeze proposal. It replaces nothing
 in the Decision 36–42 freeze without the owner's final-test unlock decision.
 **If it fails,** it is recorded and not adopted.
+
+## 46. Walk-forward replication result: the lead fails and is not adopted
+
+Recorded 2026-10-17. The Decision 45 test ran once, as pre-registered: h20,
+the frozen Decision 36 headline execution policy, and yearly rolling
+retraining with prior-year out-of-sample top-20 % thresholds.
+
+| Model pair | B − A per Baseline 0 candidate, 2010–2021 pooled | 95 % interval | Years B > A | Result |
+|---|---|---|---|---|
+| Primary: same XGBoost family for A and B | +1.11 bps | [−0.49, +2.79] | 8 of 12 | **Fails** (interval includes zero) |
+| Secondary: logistic A, XGBoost B | +2.12 bps | [−0.26, +4.58] | 7 of 12 | Fails |
+
+The primary pair pools 144 months and 18,294 candidates.
+
+B's point estimate is positive and its sign is fairly consistent, but the
+pre-registered pass criterion is not met. Under that rule, the Baseline 0
+reversion-rank lead is **not adopted**. No final-test candidate method or new
+freeze manifest is created.
+
+Mean net returns of the selected trades are negative in many years for both
+models, so the rule is not a profitable strategy on its own.
+
+The 2022 and 2023 reference rows, which played no part in the decision, are
++1.0 and +2.1 bps per candidate for the primary pair.
+
+The Decision 36–42 freeze and its manifest `2266d696…` are unchanged. The
+2024–2025 final test stays locked.
