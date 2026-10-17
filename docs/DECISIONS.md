@@ -1487,3 +1487,44 @@ about five days for the h20 packs and six for all of them, provided the
 daily request cap does not bind. The catalyst tests in Decision 47 run once
 every h20 pack has been attempted. The Decision 36–42 freeze is unchanged and
 the 2024–2025 final test stays locked.
+
+## 49. Catalyst extraction amendment v3.1 (before any catalyst evaluation)
+
+Recorded 2026-10-17, after the first 99 packs and before any catalyst feature
+or outcome was built or read. The owner asked for the remaining failures to be
+fixed and for the stronger Gemini Flash models to stay reserved for the agent
+layer, so extraction stays on `gemma-4-26b-a4b-it`.
+
+**Diagnosis of the first 99 v3 packs.** About 26 % ended UNKNOWN through
+rejected answers: mostly the category-term check (the cited sentences contain
+no term for the claimed category), plus NONE claimed where coverage is
+incomplete and BOTH claimed with one leg's sentences only. Throughput was
+about 90 packs per hour, half the token budget, because one request at a time
+waited for Gemma's answer and 27 % of calls returned an immediate HTTP 500.
+Replaying identical requests showed the 500s are random, not caused by the
+request.
+
+**Changes (`gemma-sentence-cite-v3.1`).** The evidence packs, response schema,
+`validate_response` and the feature block are unchanged.
+
+- The prompt states the validator's category-term rule with its exact term
+  list, offers NONE (and affected leg NONE) only when both legs' coverage is
+  COMPLETE, and spells out the BOTH rule.
+- Up to two retries, each with a correction specific to the error hit. A
+  retry stops when the model repeats an answer already rejected. Rejected
+  answers (category labels and sentence IDs only) are kept in the record.
+- Up to three requests per model in flight under the same 14,500-token
+  minute budget. HTTP 5xx is retried after 2, 4, 8, 16, 32 and 60 seconds and
+  does not consume the token budget.
+
+**Check on 58 packs.** Of 28 packs rejected under v3, 13 now yield a valid
+catalyst and 9 a valid model UNKNOWN; 5 are still rejected. Where traced,
+those 5 cite financial-table boilerplate (share counts, column figures) as a
+merger or lawsuit, so the validator is right to reject them and they stay
+UNKNOWN. Of 30 packs valid under v3, 27 remain valid; categories differ in
+about a fifth of them, mostly NONE becoming EARNINGS because v3.1 now cites the
+earnings sentences v3 overlooked.
+
+**Run.** Every pack is extracted under v3.1, including the 99 v3 packs, so
+the catalyst block comes from one prompt version; v3 records are kept as
+earlier attempts. The Decision 47 evaluation is unchanged.

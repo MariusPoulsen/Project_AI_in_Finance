@@ -25,8 +25,13 @@ decide, 2022–2023 reference only).
 `catalyst_v3` keeps the v2 evidence packs, response schema, validation and
 feature block, but has the model cite numbered sentences (`A1.3`) that are
 resolved locally to exact source text, sends a compact prompt, paces tokens,
-waits out quota limits and retries server errors. On test packs about 75–90 %
-of answers are valid, against none in the v2 diagnostic.
+waits out quota limits and retries server errors. Version 3.1
+([DECISIONS 49](DECISIONS.md)) also states the category-term rule, offers NONE
+only when coverage is complete, gives each retry a specific correction, runs
+three requests at a time and retries Google's frequent random HTTP 500s
+quickly. On a 58-pack check about 90 % of packs end with a valid answer (a
+catalyst, NONE, or the model's own UNKNOWN); most of the rest cite table
+boilerplate as an event and are correctly rejected.
 
 ## Running the catalyst extraction
 
@@ -36,6 +41,10 @@ From the repository root on the machine that holds the v2 workspace:
 powershell -File scripts\catalyst_start.ps1      # start or resume (detached)
 powershell -File scripts\catalyst_progress.ps1   # progress, rate, ETA, last log lines
 ```
+
+The progress report splits UNKNOWN into `UNKNOWN_ABSTAINED` (a valid model
+answer), `UNKNOWN_REJECTED` (answers failed validation) and
+`UNKNOWN_SERVER_OR_OTHER`.
 
 The job reads the v2 event checkpoints read-only and writes one record per
 distinct evidence pack under `outputs/catalyst_v3/cache/`. It can be stopped

@@ -58,7 +58,7 @@ def load_record(output: Path, key: str) -> dict[str, Any] | None:
 
 
 def needs_work(record: dict[str, Any] | None, *, retry_invalid: bool = False) -> bool:
-    if record is None:
+    if record is None or record.get("adapter_version") != cv.ADAPTER_VERSION:
         return True
     if record["status"] in FINAL_STATUSES:
         return False
@@ -129,6 +129,7 @@ def run_batch(
     say: Callable[[str], None] = print,
     client_factory: Callable[[str], cv.ModelClient] | None = None,
     wait_until: Callable[[datetime], None] | None = None,
+    in_flight: int = cv.MAX_IN_FLIGHT,
 ) -> Counter[str]:
     todo: queue.Queue[tuple[str, str]] = queue.Queue()
     queued = 0
@@ -151,8 +152,7 @@ def run_batch(
     lock = threading.Lock()
     started = time.monotonic()
 
-    def worker(model: str) -> None:
-        client = factory(model)
+    def worker(model: str, client: cv.ModelClient) -> None:
         while True:
             try:
                 key, file = todo.get_nowait()
@@ -184,9 +184,15 @@ def run_batch(
                 _write_state(output, done_this_run=done)
                 if done % 25 == 0 or done == queued:
                     rate = done / max(time.monotonic() - started, 1) * 3600
-                    say(f"{done}/{queued} packs, {dict(counts)}, {rate:.0f} per hour")
+                    codes = {m: dict(c.statuses) for m, c in clients.items()}
+                    say(f"{done}/{queued} packs, {dict(counts)}, {rate:.0f} per hour, http {codes}")
 
-    threads = [threading.Thread(target=worker, args=(model,), daemon=True) for model in models]
+    clients = {model: factory(model) for model in models}
+    threads = [
+        threading.Thread(target=worker, args=(model, clients[model]), daemon=True)
+        for model in models
+        for _ in range(in_flight)
+    ]
     for thread in threads:
         thread.start()
     for thread in threads:
@@ -205,6 +211,18 @@ def _write_state(output: Path, **fields: Any) -> None:
     state = json.loads(path.read_bytes()) if path.exists() else {}
     state.update(fields, pid=os.getpid(), updated=_now())
     _replace(path, json.dumps(state, sort_keys=True).encode())
+
+
+def _label(record: dict[str, Any]) -> str:
+    """SUCCESS / NONE, or why a pack is UNKNOWN: abstained, rejected or server."""
+    if record["status"] != "UNKNOWN":
+        return str(record["status"])
+    reasons = set(record.get("reasons", []))
+    if "PROVIDER_RETURNED_UNKNOWN" in reasons:
+        return "UNKNOWN_ABSTAINED"
+    if "INVALID_OR_UNGROUNDED_PROVIDER_RESPONSE" in reasons:
+        return "UNKNOWN_REJECTED"
+    return "UNKNOWN_SERVER_OR_OTHER"
 
 
 def status(output: Path) -> dict[str, Any]:
@@ -228,7 +246,7 @@ def status(output: Path) -> dict[str, Any]:
         if record is None or needs_work(record):
             statuses["PENDING" if record is None else "TO_RETRY"] += 1
             continue
-        statuses[record["status"]] += 1
+        statuses[_label(record)] += 1
         priority_done += bool(priority)
         reasons.update(record.get("reasons", []))
         errors.update(message[:70] for message in record.get("validation_errors", []))
@@ -244,7 +262,7 @@ def status(output: Path) -> dict[str, Any]:
     recent = [stamp for stamp in stamps if now - stamp < timedelta(days=1)]
     span = (now - min(recent)).total_seconds() if recent else 0.0
     per_day = len(recent) / max(span, 600.0) * 86_400 if recent else 0.0
-    valid = statuses["SUCCESS"] + statuses["NONE"]
+    valid = statuses["SUCCESS"] + statuses["NONE"] + statuses["UNKNOWN_ABSTAINED"]
     state_path = output / "state.json"
     state = json.loads(state_path.read_bytes()) if state_path.exists() else {}
     return {
@@ -274,7 +292,8 @@ def format_status(summary: dict[str, Any], log: Path | None = None) -> str:
         f"Catalyst extraction: {summary['packs_done']:,} / {summary['packs_total']:,} packs "
         f"({summary['percent_done']} %)",
         f"  h20 priority packs: {summary['priority_done']:,} / {summary['priority_total']:,}",
-        f"  results: {summary['status']}  valid share: {summary['valid_share']}",
+        f"  results: {summary['status']}",
+        f"  valid answers (catalyst, NONE or abstained): {summary['valid_share']}",
         f"  rate: {summary['packs_last_hour']} in the last hour, "
         f"{summary['packs_last_24h']} in the last 24 h",
         f"  ETA: priority {summary['eta_days_priority']} days, all {summary['eta_days_all']} days",

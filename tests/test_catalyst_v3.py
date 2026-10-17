@@ -117,7 +117,8 @@ def test_invalid_answer_retries_once_with_the_specific_error() -> None:
 
 def test_unknown_reference_and_prose_stay_unknown() -> None:
     record = cv.extract_view(
-        _client([_ok(json.dumps({**M_AND_A, "citations": ["A9.9"]})), _ok("Sure! {}")]), _pack()
+        _client([_ok(json.dumps({**M_AND_A, "citations": ["A9.9"]})), _ok("Sure! {}"), _ok("{}")]),
+        _pack(),
     )
     assert record["status"] == "UNKNOWN" and record["response"] is None
 
@@ -133,8 +134,14 @@ def test_none_requires_complete_coverage() -> None:
         "citations": [],
     }
     assert cv.extract_view(_client([_ok(json.dumps(none))]), _pack())["status"] == "NONE"
-    partial = cv.extract_view(_client([_ok(json.dumps(none))] * 2), _pack(complete=False))
-    assert partial["status"] == "UNKNOWN"
+    client = _client([_ok(json.dumps(none))] * 3)
+    partial = cv.extract_view(client, _pack(complete=False))
+    assert partial["status"] == "UNKNOWN" and len(partial["rejected_answers"]) == 2
+    assert "REPEATED_REJECTED_ANSWER" in partial["reasons"] and "_signatures" not in partial
+    prompts = client.transport.prompts  # type: ignore[attr-defined]
+    assert "NONE is not allowed here" in prompts[0]
+    assert "PRODUCT_OTHER|UNKNOWN" in prompts[0] and "A|B|BOTH|UNKNOWN" in prompts[0]
+    assert "NONE is not allowed because coverage is incomplete" in prompts[1]
 
 
 def test_minute_quota_waits_and_daily_quota_raises() -> None:
@@ -151,9 +158,9 @@ def test_minute_quota_waits_and_daily_quota_raises() -> None:
 
 def test_server_errors_back_off_then_leave_pack_unknown() -> None:
     sleeps: list[float] = []
-    record = cv.extract_view(_client([(500, None)] * 5, sleeps), _pack())
+    record = cv.extract_view(_client([(500, None)] * 7, sleeps), _pack())
     assert record["status"] == "UNKNOWN" and record["reasons"] == ["PROVIDER_UNAVAILABLE"]
-    assert sleeps[:4] == [15.0, 30.0, 60.0, 120.0]
+    assert sleeps == list(cv.SERVER_RETRY_SECONDS)
     recovered = cv.extract_view(_client([(503, None), _ok(json.dumps(M_AND_A))]), _pack())
     assert recovered["status"] == "SUCCESS"
 
@@ -215,6 +222,7 @@ def test_batch_runner_caches_resumes_and_pauses_for_daily_quota(tmp_path: Path) 
         say=lambda message: None,
         client_factory=lambda model: _client(replies),
         wait_until=pauses.append,
+        in_flight=1,
     )
     assert counts == {"SUCCESS": 2} and len(pauses) == 1
     assert cc.run_batch(checkpoints, output, packs, cv.MODELS, say=lambda m: None) == {}
@@ -241,7 +249,7 @@ def test_transient_failure_is_retried_and_keeps_its_audit_trail(tmp_path: Path) 
     (checkpoints / "e1.json").write_text(json.dumps({**body, "pack": pack}))
     output = tmp_path / "out"
     packs = cc.work_queue(cc.build_index(checkpoints, output, workers=1), set())
-    failing = [(500, None)] * 5
+    failing = [(500, None)] * 7
     cc.run_batch(
         checkpoints,
         output,
@@ -249,6 +257,7 @@ def test_transient_failure_is_retried_and_keeps_its_audit_trail(tmp_path: Path) 
         cv.MODELS,
         say=lambda m: None,
         client_factory=lambda model: _client(failing),
+        in_flight=1,
     )
     key = str(packs.loc[0, "pack_key"])
     assert cc.load_record(output, key)["reasons"] == ["PROVIDER_UNAVAILABLE"]
@@ -259,7 +268,70 @@ def test_transient_failure_is_retried_and_keeps_its_audit_trail(tmp_path: Path) 
         cv.MODELS,
         say=lambda m: None,
         client_factory=lambda model: _client([_ok(json.dumps(M_AND_A))]),
+        in_flight=1,
     )
     record = cc.load_record(output, key)
     assert record["status"] == "SUCCESS"
     assert record["previous_attempts"][0]["reasons"] == ["PROVIDER_UNAVAILABLE"]
+
+
+def test_prompt_states_category_terms_and_cue_retry_names_them() -> None:
+    view = cv.build_prompt(_pack())
+    assert "EARNINGS: earnings, revenue, net income" in view.prompt
+    no_cue = {**M_AND_A, "event_type": "LITIGATION", "citations": ["A1.2"]}
+    client = _client([_ok(json.dumps(no_cue)), _ok(json.dumps(M_AND_A))])
+    record = cv.extract_view(client, _pack())
+    assert record["status"] == "SUCCESS"
+    retry = client.transport.prompts[1]  # type: ignore[attr-defined]
+    assert "None of your cited sentences contains a LITIGATION term" in retry
+    assert record["validation_errors"] == [
+        "Supporting quotes lack a cue for the claimed catalyst category"
+    ]
+
+
+def test_corrections_cover_each_validation_error() -> None:
+    assert "affected_leg must match" in cv.correction(
+        "Every affected leg requires matching supporting citations", {}, True
+    )
+    assert "sentence IDs exactly" in cv.correction("Unknown sentence ID A9.9", {}, True)
+    assert "Field rules" in cv.correction(
+        "1 validation error for CatalystResponse Value error, NONE cannot invent", {}, True
+    )
+
+
+def test_concurrent_threads_share_one_token_budget() -> None:
+    import threading
+
+    client = cv.ModelClient(
+        cv.MODELS[0],
+        credential=lambda: "test-key",
+        transport=lambda *args: _ok(json.dumps(M_AND_A), tokens=5000),
+        sleep=lambda seconds: None,
+    )
+    booked: list[float] = []
+    lock = threading.Lock()
+
+    def reserve() -> None:
+        entry = client._reserve(5000)
+        with lock:
+            booked.append(sum(item[1] for item in client.window))
+        assert entry[1] == 5000
+
+    threads = [threading.Thread(target=reserve) for _ in range(2)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    assert max(booked) <= cv.TOKEN_BUDGET and client.calls == 2
+
+
+def test_records_from_an_older_adapter_are_redone() -> None:
+    assert cc.needs_work({"adapter_version": "gemma-sentence-cite-v3", "status": "SUCCESS"})
+    assert not cc.needs_work({"adapter_version": cv.ADAPTER_VERSION, "status": "SUCCESS"})
+
+
+def test_server_errors_do_not_consume_the_token_budget() -> None:
+    client = _client([(500, None), _ok(json.dumps(M_AND_A), tokens=3000)])
+    cv.extract_view(client, _pack())
+    assert sorted(entry[1] for entry in client.window) == [0.0, 3000.0]
+    assert client.statuses == {500: 1, 200: 1}
