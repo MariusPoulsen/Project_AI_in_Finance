@@ -1180,3 +1180,37 @@ development acceptance passes for the four Baseline/Model rungs.
 - the Full System, only if the multi-agent layer is completed (Decision 40).
 
 The final-test gate reports locked.
+
+## 43. Pre-registered P6 model and trading improvements (exploratory)
+
+Recorded 2026-10-17, after the Decision 42 development results were observed and
+before any variant in this section was evaluated on 2022–2023. The owner asked
+for five improvements and delegated the decisions. The full plan is
+`docs/proposals/P6_IMPROVEMENT_PLAN.md`, committed together with this section.
+
+**The five improvements:**
+
+1. **Exit rule.** Eight research-only variants (adverse stop × take-profit),
+   chosen on 2006–2019 Baseline 0 economics, with a 2020–2021 guard.
+2. **Economic target.** Positive net return of a COMPLETE trade.
+3. **Veto rule.** Drop each model's bottom 20 % or 33 % by calibration-period
+   quantile.
+4. **Features and families.** Matched-budget feature sets and families (A;
+   B_both, B_lean, B_plus), selected on four forward folds (2016–2019).
+5. **Rank rule.** Each model's top 10 %, 20 % or 33 % by calibration-period
+   quantile on a Baseline 0 or Baseline 1 gate.
+
+The gate is chosen by 2006–2021 economics. Calibration uses 2020–2021.
+
+**Primary contrast.** B − A mean net return per gated candidate under the
+top-20 % rule, with a paired calendar-month bootstrap.
+
+**Rules that hold throughout:**
+
+- All results are post-hoc exploratory and every variant is reported.
+- Nothing is re-selected after viewing 2022–2023.
+- A and B stay matched.
+- The Decision 36 frozen production policy and the Decision 42 accepted results
+  are unchanged.
+- The 2024–2025 final-test lock is unchanged; only that test can confirm an
+  improvement.
