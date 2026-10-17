@@ -66,11 +66,14 @@ def build(
 
     def one(row: dict[str, Any]) -> tuple[str, bool]:
         target = packs / f"{row['leg_key']}.json"
-        if not target.exists():
-            pack = rn.build_leg_pack(paths, filings, row["security_id"], list(row["filing_ids"]))
-            rn.write_json(target, {"pack": pack})
-            return row["leg_key"], bool(pack["chunks"])
-        return row["leg_key"], bool(json.loads(target.read_bytes())["pack"]["chunks"])
+        if target.exists():
+            try:
+                return row["leg_key"], bool(json.loads(target.read_bytes())["pack"]["chunks"])
+            except (ValueError, KeyError):
+                pass  # a pack truncated by an interrupted earlier build is rebuilt
+        pack = rn.build_leg_pack(paths, filings, row["security_id"], list(row["filing_ids"]))
+        rn.write_json(target, {"pack": pack})
+        return row["leg_key"], bool(pack["chunks"])
 
     with ThreadPoolExecutor(workers) as pool:
         built = dict(pool.map(one, legs.to_dict("records")))
