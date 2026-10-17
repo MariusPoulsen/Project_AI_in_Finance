@@ -1366,3 +1366,94 @@ The 2022 and 2023 reference rows, which played no part in the decision, are
 
 The Decision 36–42 freeze and its manifest `2266d696…` are unchanged. The
 2024–2025 final test stays locked.
+
+## 47. Pre-registered SEC timing features and full-coverage catalyst extraction (exploratory)
+
+Recorded 2026-10-17, before either walk-forward test below was run. The owner
+asked for two SEC information blocks that stay clear of the deferred
+multi-agent layer's job: narrow filing-timing features, and Gemma catalyst
+extraction for every event rather than the 500-event pilot. Both are added to
+v2's Model B. Neither changes the frozen Decision 36–42 policies, and the
+2024–2025 final test stays locked.
+
+**Why the v2 catalyst pilot produced 15 catalysts.** Diagnosed from the v2
+coverage records and live probes on 2026-10-17:
+
+1. The free tier allows **16,000 input tokens per minute per Gemma model**
+   (`GenerateContentInputTokensPerModelPerMinute-FreeTier`, read from the
+   API's own 429 response). v2 prompts were about 6,500 tokens and were sent
+   every 8 seconds, roughly 45,000 tokens per minute. The first 429 latched
+   the provider, so 455 of the 500 scheduled events were never sent.
+2. Of the responses that did arrive, about one third failed validation. A
+   diagnostic on 20 v2 packs produced no valid answer: quotations were not
+   verbatim copies, 64-character chunk IDs were mis-copied, and NONE answers
+   carried invented properties.
+3. Half of those diagnostic calls returned HTTP 500, which v2 treated as a
+   final failure. `gemma-4-31b-it` returns HTTP 500 for prompts above roughly
+   1,500–4,000 tokens, which covers almost every pack, so it is excluded.
+
+**Block 1: filing timing** (`structural_break.intelligence.timing`,
+`sec-filing-timing-v1`). Ten features from SEC metadata only, no text or LLM:
+for each leg, an 8-K in the last 1 and 3 NYSE sessions and an earnings filing
+(8-K item 2.02, 10-Q or 10-K) in the last 3 sessions; whether exactly one leg
+filed an 8-K in the last 1 and 3 sessions; and whether the leg with the larger
+absolute 1-day abnormal return filed anything in the last 1 and 3 sessions.
+A filing counts only when its conservative availability bound is at or before
+the signal close; a window opens at the actual close of the session *k*
+sessions earlier. A leg whose clock envelope straddles the cutoff, or whose
+source inventory does not cover it, is null (UNKNOWN). Disclosed prior look:
+while checking the computation I saw that, pooled over all years including
+2022–2023, events where the moving leg filed in the last session reverted
+6.4 % of the time against 8.7 % otherwise. The feature definitions were
+written before that check and are not changed by it.
+
+**Block 2: full-coverage catalysts** (`structural_break.intelligence.catalyst_v3`,
+`gemma-sentence-cite-v3`). The v2 evidence packs, the catalyst response schema,
+`validate_response` and the 31-column feature block stay unchanged. Changes:
+
+- Chunks are split into numbered sentences and the model cites sentence IDs
+  (for example `A1.3`); the citation quote is the exact source sentence,
+  filled in locally. Provenance is therefore exact by construction, and leg,
+  category-cue and NONE/UNKNOWN rules are still validated.
+- A compact plain-text prompt (about 3,900 tokens instead of about 6,500).
+  One JSON object, optionally inside a single markdown code fence, is
+  accepted; the JSON itself is never repaired. One retry quotes the specific
+  validation error.
+- Pacing keeps each model under 14,500 input tokens per minute. A per-minute
+  429 waits and retries; a daily 429 pauses that model until midnight
+  Pacific. HTTP 5xx and timeouts back off and retry up to four times, then
+  the pack stays UNKNOWN (`PROVIDER_UNAVAILABLE`) and may be retried in a
+  later pass.
+- Packs that differ only in event identity share one extraction: 33,321
+  distinct packs cover the 37,421 events. Packs are processed in a fixed
+  pseudo-random order (a hash of the pack key), h20 model-population packs
+  first. Assignment to a model depends only on that order and on timing, and
+  every record names its model.
+- Model: `gemma-4-26b-a4b-it` only. Flash models stay reserved for the agent
+  layer; adding Flash-Lite capacity would need an explicit owner amendment.
+- Paid use stays disabled. The key is read from the environment per request
+  and is never logged or stored.
+
+**Evaluation** (`structural_break.experiments.p6_sec_features`,
+`p6-sec-features-v1`). Each block is tested against v2's B itself, so the
+contrast isolates the new information. The protocol is the Decision 45
+walk-forward: for test year Y, fit on label windows that ended before Y−1,
+take the top-20 % threshold from year Y−1 scores and score year Y.
+
+- Variants: `B_timing` (B plus the ten timing features), `B_full_catalyst`
+  (B with the 31 pilot catalyst columns replaced by full-coverage ones) and
+  `B_full_catalyst_timing`.
+- Target: h20 reversion success. Primary family: logistic, C = 0.01 (v2's
+  tuned value for h20 B). Secondary: the fixed Decision 45 XGBoost.
+- **Pass criterion** (primary family only): the pooled 2010–2021 paired
+  Brier difference (variant minus B), with a calendar-month block bootstrap
+  (2,000 draws, seed 5557), has a 95 % interval entirely below zero, and the
+  variant has the lower Brier in at least 8 of the 12 years.
+- Reported but not part of the verdict: the XGBoost family, the frozen-exit
+  top-20 % trading difference per candidate, and 2022–2023 reference rows.
+- The timing test runs now. The catalyst tests run once every h20-population
+  pack has been attempted at least once; packs that still fail stay UNKNOWN.
+
+A passing block becomes a candidate for a separately versioned Model B with a
+new freeze proposal. It replaces nothing without the owner's final-test
+unlock decision. A failing block is recorded and not adopted.
