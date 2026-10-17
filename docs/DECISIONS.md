@@ -1288,3 +1288,54 @@ Every other section is byte-identical, and the first output is retained as
 `2266d696…` are unchanged. Any of these methods, including the Baseline 0
 reversion-rank lead, could become the final-test method only through a new
 pre-registration and freeze manifest and the owner's explicit unlock.
+
+## 45. Pre-registered walk-forward replication of the Baseline 0 reversion-rank lead
+
+Recorded 2026-10-17, before the test below was run. Decision 44 found a
+post-hoc lead in 2022–2023: on the Baseline 0 gate, a top-20 % rank rule on
+reversion-target B beat A. The owner asked for a proper test and for adoption
+only if the lead holds.
+
+The untouched 2024–2025 data remain locked, and opening them needs the owner's
+explicit unlock and a new data capture. This test therefore replicates the lead
+on the twelve earlier years in which it was not discovered.
+
+**Design (h20, frozen Decision 36 headline execution policy and exit):**
+
+1. **Rolling setup.** For each test year Y from 2010 to 2021:
+   - train on supervised events whose full label window ends before 1 January
+     of Y−1 (2006 onwards);
+   - set each model's rank threshold to the 80th percentile of its scores on
+     all Baseline 0 events with signals in Y−1, which are out of sample for
+     that model;
+   - trade every Baseline 0 event with a signal in Y whose score is at least
+     that threshold.
+
+   Scores rank events, so calibration does not affect selection.
+2. **Primary models.** XGBoost with the same fixed parameters for A and B (the
+   Decision 43a B reversion model: depth 3, 400 trees, learning rate 0.03,
+   min_child_weight 20, lambda 10) on the reversion label. A uses the 36
+   quantitative columns and B uses B_both. Using one family isolates B's
+   information.
+3. **Secondary models.** Logistic A (C = 0.01) against XGBoost B, the Decision
+   43a pairing.
+4. **Primary measure.** B − A mean net return per Baseline 0 candidate, pooled
+   over 2010–2021. A selected COMPLETE trade contributes its net return, a
+   withheld event contributes 0, and a selected unknown execution or a missing
+   score is excluded and counted. The interval comes from 2,000 paired
+   calendar-month bootstrap draws (seed 5557).
+5. **Pass criterion, fixed in advance.** The lead passes only if **both**
+   hold:
+   - the 95 % interval of the pooled primary measure lies above zero;
+   - B − A is positive in at least 8 of the 12 test years.
+
+   Otherwise it fails and is not adopted.
+6. **Reporting.** Every year, both model pairs, the selected counts and the
+   mean net per COMPLETE trade are reported. 2022 and 2023 are recomputed
+   under the same rolling protocol for reference only; they play no part in
+   the pass/fail decision.
+
+**If it passes,** the rule is implemented as a separately versioned
+final-test candidate method, with a new freeze proposal. It replaces nothing
+in the Decision 36–42 freeze without the owner's final-test unlock decision.
+**If it fails,** it is recorded and not adopted.
