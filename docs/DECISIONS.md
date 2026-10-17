@@ -1251,3 +1251,40 @@ is always DRAFT. The ladder and experiment paths, which require a FROZEN
 zero mean was ordered as missing in the exit and gate choosers. Recomputing
 both choices from the stored tables with the fixed code gives the same
 decisions, because no mean is exactly zero.
+
+## 44. Results of the pre-registered P6 improvements (post-hoc exploratory)
+
+Recorded 2026-10-17. The Decision 43/43a variants were evaluated on 2022–2023
+(h20, 3,558 events, 3,430 scored) under the frozen choices `000953d6…`. The
+full record is `docs/P6_IMPROVEMENT_RESULTS.md`.
+
+**Primary contrast.** B − A per gated candidate (Baseline 1 gate,
+trade-outcome target, top 20 %) is **−13.8 bps, 95 % interval [−34.9, +4.5]**.
+No pre-registered improvement makes B better.
+
+**Findings:**
+
+- **Trading-outcome target.** Unpredictable: ROC-AUC 0.528 (A) and 0.526 (B).
+- **Veto rule.** No benefit.
+- **Baseline 1 gate.** It reversed out of sample: −20.2 bps against +2.6 bps
+  for Baseline 0 when trading everything.
+- **Research exit rule.** Its 2020–2021 advantage largely disappeared.
+- **Reversion-target B (XGBoost, B_both).** ROC-AUC 0.760 against 0.736 for A,
+  PR-AUC 0.168 against 0.158, and paired-quarter Brier B − A −0.00038
+  [−0.00147, +0.00093]. It is better on every metric but not significantly,
+  and A's family differs from B's.
+- **An exploratory lead.** On the Baseline 0 gate, B − A is positive at every
+  rank cut (+2.7 to +4.4 bps per candidate) with intervals that just include
+  zero. This is a non-primary, post-hoc observation from a 20-cell grid.
+
+**Implementation correction.** The plan specified the v2-style quarter Brier
+bootstrap: 8 quarters, 2,000 draws, seed 42. The first evaluation output
+wrongly applied the economic 12-block minimum to it, which suppressed those
+intervals. After correcting that, the evaluation was re-run deterministically.
+Every other section is byte-identical, and the first output is retained as
+`evaluation-initial.json`.
+
+**Nothing adopted.** The Decision 36–42 freeze and its manifest
+`2266d696…` are unchanged. Any of these methods, including the Baseline 0
+reversion-rank lead, could become the final-test method only through a new
+pre-registration and freeze manifest and the owner's explicit unlock.

@@ -1,6 +1,6 @@
 # P6 model and trading improvements: pre-registered plan
 
-Status: **PRE-REGISTERED 2026-10-17** (DECISIONS section 43). This plan was written
+Status: **PRE-REGISTERED 2026-10-17** (DECISIONS section 43), **EVALUATED** (DECISIONS 44; results in `docs/P6_IMPROVEMENT_RESULTS.md`). This plan was written
 and committed before any variant below was evaluated on 2022–2023. Every choice
 is made with fit (2006–2019) and calibration (2020–2021) data only. Each
 pre-registered variant is evaluated once on 2022–2023, and all of them are

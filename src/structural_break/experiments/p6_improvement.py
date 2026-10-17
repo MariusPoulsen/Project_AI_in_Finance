@@ -514,8 +514,13 @@ def paired_block_bootstrap(
     *,
     draws: int = BOOTSTRAP_DRAWS,
     seed: int = BOOTSTRAP_SEED,
+    minimum_blocks: int = 12,
 ) -> dict[str, Any]:
-    """Mean of (right - left) with identical sampled blocks for both sides."""
+    """Mean of (right - left) with identical sampled blocks for both sides.
+
+    The economic month bootstrap needs 12 blocks (Decision 38). The forecast
+    quarter bootstrap follows v2: all assessment quarters, seed 42, no minimum.
+    """
     labels = sorted(set(blocks.tolist()))
     if not labels:
         return {"estimate": None, "interval_95": None, "blocks_n": 0}
@@ -530,7 +535,7 @@ def paired_block_bootstrap(
     means = totals[sizes > 0] / sizes[sizes > 0]
     interval = (
         [float(value) for value in np.quantile(means, [0.025, 0.975])]
-        if len(labels) >= 12 and len(means)
+        if len(labels) >= minimum_blocks and len(means)
         else None
     )
     return {
@@ -560,7 +565,7 @@ def _rule_mask(scores: pd.Series, cut: float) -> pd.Series:
 
 
 def _economics(net: pd.Series, status: pd.Series, selected: pd.Series) -> dict[str, Any]:
-    chosen = selected.fillna(False).astype(bool)
+    chosen = selected.astype("boolean").fillna(False).astype(bool)
     complete = chosen & status.eq("COMPLETE")
     values = net.loc[complete].astype(float)
     return {
@@ -577,7 +582,7 @@ def _allocation(net: pd.Series, status: pd.Series, selected: pd.Series) -> pd.Se
     """Selected COMPLETE -> net; withheld -> 0; selected unknown or unscored -> NaN."""
     result = pd.Series(0.0, index=net.index)
     result[selected.isna()] = np.nan
-    chosen = selected.fillna(False).astype(bool)
+    chosen = selected.astype("boolean").fillna(False).astype(bool)
     result[chosen & status.eq("COMPLETE")] = net[chosen & status.eq("COMPLETE")].astype(float)
     result[chosen & ~status.eq("COMPLETE")] = np.nan
     return result
@@ -656,7 +661,9 @@ def evaluate(
             left = (a[known].to_numpy(dtype=float) - y) ** 2
             right = (b[known].to_numpy(dtype=float) - y) ** 2
             result["paired_brier_quarter_bootstrap"][f"{target}|{b_label}-A"] = (
-                paired_block_bootstrap(left, right, quarter[known.to_numpy()])
+                paired_block_bootstrap(
+                    left, right, quarter[known.to_numpy()], seed=SEED, minimum_blocks=1
+                )
             )
     gates = {"B0": pd.Series(True, index=frame.index), "B1": frame["active"].astype(bool)}
     for cost in ("headline", "stress10"):
