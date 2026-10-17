@@ -1144,3 +1144,39 @@ that record.
 
 Implementing the gate does not authorize, capture or run the 2024–2025 final
 test. That run remains a later, separately authorized step.
+
+## 42. Phase 6 development acceptance on the accepted v2 snapshot
+
+Recorded 2026-10-17. `structural-break-backtest p6-acceptance` ran once, on one
+thread in 135 minutes, against the official snapshot. That snapshot is
+`group-v2.zip` (SHA-256 `8acc3af0…3def3f`), imported with `team.py setup`, and
+its `team.py check` passed on 11,864 files. The run used primary
+`research_primary_5c01ab3d29c74e3e9154d9e3`.
+
+**Experiments.** All three passed `VERIFIED_HISTORICAL_REPLAY`:
+
+| Horizon | Experiment | Events |
+|---|---|---|
+| h20 | `d828d7ac…69cab5` | 3,558 |
+| h10 | `bea3126d…79e11a` | 4,305 |
+| h30 | `02a2c5fa…3e82eb` | 3,179 |
+
+**Freeze manifest.** `2266d696…72bf7de` records every decision as CLOSED,
+except the Full System, which is DEFERRED (Decision 40).
+
+**Policy check.** The official diagnostics reproduced the provisional ones
+exactly: β ceiling counts, liquidity floor counts and calibration-period score
+distributions. The Decision 36 data check therefore passes, and no policy was
+changed.
+
+**Status.** These are post-hoc 2022–2023 development results, recorded in
+`docs/P6_DEVELOPMENT_RESULTS.md`; they are not final-test results. Phase 6
+development acceptance passes for the four Baseline/Model rungs.
+
+**What remains:**
+
+- the owner's review of the freeze manifest;
+- an explicit owner unlock record before any 2024–2025 capture or final run;
+- the Full System, only if the multi-agent layer is completed (Decision 40).
+
+The final-test gate reports locked.

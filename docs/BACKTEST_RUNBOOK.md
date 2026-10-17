@@ -278,9 +278,9 @@ uv run --frozen structural-break-backtest p6-acceptance --workspace-root WORKSPA
 
 For each of h20, h10 and h30 it runs the experiment, verifies it by fresh
 replay and writes the policy diagnostics. It then writes
-`freeze/<freeze_id>/freeze-manifest.json`. On a single thread, expect roughly
-10-20 minutes per horizon, most of it in the leave-one-pair-out robustness
-reports and their replay. Review the manifest's `open_decisions`.
+`freeze/<freeze_id>/freeze-manifest.json`. The official run on 2026-10-17 took
+135 minutes on one thread (h20 took about 45 minutes including its replay);
+see `docs/P6_DEVELOPMENT_RESULTS.md`. Review the manifest's `open_decisions`.
 
 The final test stays locked. Check the gate with:
 

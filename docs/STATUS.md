@@ -212,3 +212,25 @@ independently reconstructed from its frozen raw copy. Generation identity:
 No human annotations are complete; replay proves source provenance, not semantic
 accuracy or predictive success. This does not spend Google API quota or modify
 the live v2 worker. Final 2024–2025 outcomes remain locked under decision 30.
+
+## Phase 6 development acceptance (2026-10-17)
+
+`p6-acceptance` ran once on the official `group-v2.zip`, against primary
+`research_primary_5c01ab3d29c74e3e9154d9e3`. All three horizon experiments
+passed independent replay:
+
+- h20: `d828d7ac…`, 3,558 events, 25 combinations;
+- h10: `bea3126d…`, 4,305 events;
+- h30: `02a2c5fa…`, 3,179 events.
+
+The freeze manifest `2266d696…` has no open decisions (the Full System is
+DEFERRED), and `final-test-gate` reports locked. The official diagnostics
+matched the provisional ones exactly. The run took 135 minutes on one thread.
+
+The results are post-hoc 2022–2023 development results, recorded in
+`docs/P6_DEVELOPMENT_RESULTS.md`; DECISIONS 35–42 cover this work. The Phase 6
+suite passes 355 checks with sockets blocked, along with Ruff, formatting and
+strict mypy.
+
+Still to do: hosted CI on the branch, the owner's review of the freeze
+manifest, and the owner's explicit final-test unlock.
