@@ -1214,3 +1214,40 @@ top-20 % rule, with a paired calendar-month bootstrap.
   are unchanged.
 - The 2024–2025 final-test lock is unchanged; only that test can confirm an
   improvement.
+
+### 43a. Development-stage choices, frozen before the 2022–2023 evaluation
+
+Recorded 2026-10-17. The development stage of
+`structural_break.experiments.p6_improvement` used only events with signals in
+2006–2021: 22,111 fresh h20 events, simulated once under eight exit variants.
+It wrote `outputs/p6_improvement/run1/frozen_choices.json`, SHA-256
+`000953d667e5efbff560885ce31c6a40368883e4c90d91836574655129995e26`. No
+2022–2023 outcome was simulated, scored or read before this record.
+
+**Plan amendment, made before execution.** The mean-crossing take-profit
+variant became a |z| ≤ 0.25 band, because a crossing exit would change engine
+semantics. Exit variants run in the explicit `RESEARCH` execution mode, which
+is always DRAFT. The ladder and experiment paths, which require a FROZEN
+`DEVELOPMENT` policy, refuse it.
+
+**Choices:**
+
+- **Exit.** No adverse stop, with take-profit at |z| ≤ 0.25. It had the best
+  2006–2019 Baseline 0 mean net per COMPLETE trade: −5.7 bps against −13.5
+  bps for the frozen rule (n = 18,629). The 2020–2021 guard passed: +21.8 bps
+  against −8.4 bps.
+- **Gate.** Baseline 1 (ACTIVE): +20.2 bps (n = 2,035) against −1.4 bps for
+  Baseline 0 (n = 22,111) over 2006–2021.
+- **Economic-target models.** A and B both use XGBoost (depth 3, 100 trees,
+  learning rate 0.05). B's forward folds selected the B_both feature set. Mean
+  fold Brier was 0.24808 for A and 0.24780 for B.
+- **Reversion-target models.** A uses logistic regression with C = 0.01 (fold
+  Brier 0.06241). B uses XGBoost (depth 3, 400 trees, learning rate 0.03) on
+  B_both (0.06199).
+- **Thresholds.** The top-k (10/20/33 %) and veto (20/33 %) cut-offs come from
+  2020–2021 calibrated scores for each gate.
+
+**A bug fixed after this run.** After the run, a unit test found that an exactly
+zero mean was ordered as missing in the exit and gate choosers. Recomputing
+both choices from the stored tables with the fixed code gives the same
+decisions, because no mean is exactly zero.

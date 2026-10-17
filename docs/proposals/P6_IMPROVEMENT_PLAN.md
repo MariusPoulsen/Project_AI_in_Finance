@@ -55,8 +55,7 @@ evaluated only for events with signals in 2006–2021.
 The exit rule is decided first because it defines the trading outcome.
 
 - **Variants (8):** an adverse stop at |z| ∈ {3.0 (frozen), 3.5, 4.0, none}
-  crossed with a take-profit at |z| ≤ 0.5 (frozen) or mean crossing (z through
-  0). The horizon stays at 20 sessions, matching the label. Entry, costs,
+  crossed with a take-profit band of |z| ≤ 0.5 (frozen) or |z| ≤ 0.25. The horizon stays at 20 sessions, matching the label. Entry, costs,
   borrow and eligibility are unchanged.
 - **Selection.** Choose the highest mean net return per COMPLETE trade on
   Baseline 0 fit events (2006–2019) at headline costs.
@@ -64,6 +63,14 @@ The exit rule is decided first because it defines the trading outcome.
   calibration events (2020–2021).
 - **Status.** These are research-only variants. The frozen production policy
   object is unchanged, and the variants are never labelled frozen production.
+
+**Amendment before execution (2026-10-17, no results seen).** The pre-registered
+mean-crossing take-profit is replaced by the |z| ≤ 0.25 band. The frozen
+engine defines take-profit as a band, and an opposite-side overshoot outside
+the band deliberately does not count as convergence; a crossing exit would
+change engine semantics. The variants run as an explicit `RESEARCH` execution
+mode. That mode is always DRAFT and refused by the frozen ladder and experiment
+paths.
 
 ## Improvement 2: predict what we trade
 

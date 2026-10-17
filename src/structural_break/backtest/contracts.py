@@ -199,12 +199,14 @@ class ExecutionConfig(FrozenModel):
         "pair-execution-policy-v1"
     )
     version: Identifier
-    mode: Literal["FIXTURE", "DEVELOPMENT"]
+    # RESEARCH is an exploratory exit-rule variant: always DRAFT, never accepted
+    # by the frozen ladder/experiment paths (Decision 43 amendment).
+    mode: Literal["FIXTURE", "DEVELOPMENT", "RESEARCH"]
     status: Literal["DRAFT", "FROZEN"]
     horizon_sessions: Literal[10, 20, 30] = 20
     entry_threshold: Annotated[float, Field(ge=2.0, le=2.0)] = 2.0
-    convergence_band: Annotated[float, Field(ge=0.5, le=0.5)] = 0.5
-    adverse_boundary: Annotated[float, Field(ge=3.0, le=3.0)] = 3.0
+    convergence_band: Annotated[float, Field(ge=0.05, le=0.5)] = 0.5
+    adverse_boundary: Annotated[float, Field(ge=3.0, le=1e6)] = 3.0
     positive_beta_limit: Annotated[float, Field(gt=0, le=100)] | None = None
     entry_cost_bps: Annotated[float, Field(ge=0, le=100)] | None = None
     exit_cost_bps: Annotated[float, Field(ge=0, le=100)] | None = None
@@ -217,6 +219,10 @@ class ExecutionConfig(FrozenModel):
     def coherent(self) -> Self:
         if self.mode == "FIXTURE" and self.status != "DRAFT":
             raise ValueError("Synthetic fixture assumptions cannot freeze a production policy")
+        if self.mode == "RESEARCH" and self.status != "DRAFT":
+            raise ValueError("Research exit variants are exploratory and cannot be frozen")
+        if self.mode != "RESEARCH" and (self.convergence_band, self.adverse_boundary) != (0.5, 3.0):
+            raise ValueError("Only research exit variants may change the frozen exit rule")
         if self.schema_version == "pair-execution-policy-v1" and self.min_leg_adv20_usd is not None:
             raise ValueError("The liquidity floor requires execution policy schema v2")
         return self
