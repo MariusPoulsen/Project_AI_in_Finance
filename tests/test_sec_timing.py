@@ -127,3 +127,12 @@ def test_walk_forward_scores_variants_and_applies_the_pass_rule() -> None:
     assert variant["brier_difference_vs_B"]["estimate"] < 0
     assert variant["years_better"] >= 8 and result["verdicts"] == {"B_timing": True}
     assert variant["top20_allocation_difference_vs_B"]["estimate"] > 0
+
+
+def test_news_variants_add_the_news_block() -> None:
+    from structural_break.intelligence.recent_news import NEWS_FEATURE_COLUMNS
+
+    base = ("abs_z",)
+    result = variants(base, [*NEWS_FEATURE_COLUMNS, *TIMING_FEATURE_COLUMNS])
+    assert result["B_news"] == (*base, *NEWS_FEATURE_COLUMNS)
+    assert result["B_news_timing"][-len(TIMING_FEATURE_COLUMNS) :] == TIMING_FEATURE_COLUMNS

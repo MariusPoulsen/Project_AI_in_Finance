@@ -42,6 +42,7 @@ from structural_break.experiments.p6_walkforward import (
     rolling_split,
 )
 from structural_break.intelligence.event_features import EVENT_FEATURE_NAMES
+from structural_break.intelligence.recent_news import NEWS_FEATURE_COLUMNS
 from structural_break.intelligence.timing import TIMING_FEATURE_COLUMNS
 from structural_break.research.evaluation import _estimator
 from structural_break.storage.files import write_bytes
@@ -60,6 +61,10 @@ def variants(b_columns: Sequence[str], available: Sequence[str]) -> dict[str, tu
     result: dict[str, tuple[str, ...]] = {}
     if set(TIMING_FEATURE_COLUMNS).issubset(available):
         result["B_timing"] = (*base, *TIMING_FEATURE_COLUMNS)
+    if set(NEWS_FEATURE_COLUMNS).issubset(available):
+        result["B_news"] = (*base, *NEWS_FEATURE_COLUMNS)
+        if "B_timing" in result:
+            result["B_news_timing"] = (*base, *NEWS_FEATURE_COLUMNS, *TIMING_FEATURE_COLUMNS)
     full = [CATALYST_PREFIX + name for name in EVENT_FEATURE_NAMES]
     if set(full).issubset(available):
         replaced = tuple(

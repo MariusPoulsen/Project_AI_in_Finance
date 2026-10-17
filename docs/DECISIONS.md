@@ -1528,3 +1528,57 @@ earnings sentences v3 overlooked.
 **Run.** Every pack is extracted under v3.1, including the 99 v3 packs, so
 the catalyst block comes from one prompt version; v3 records are kept as
 earlier attempts. The Decision 47 evaluation is unchanged.
+
+## 50. Pre-registered recent-news catalysts per company (exploratory)
+
+Recorded 2026-10-17, before any extraction for this block was run or any of its
+features or outcomes were read. The owner approved replacing the Decision 47
+full-coverage catalyst run.
+
+**Why the Decision 47 design was dropped.** A sample of 400 v2 packs showed
+that 82 % of their chunks come from 10-Q/10-K reports with a median age of
+43–54 days at the divergence (2 % filed within three days); 8-K chunks were
+18 % with a median age of 11 days, and the keyword ranking favoured financial
+tables. The pack also gets one label for the pair, so it cannot say which
+company had news. That design does not test whether a divergence was caused
+by fresh news on one company. Its run was stopped after a few hundred packs;
+its code (`catalyst_v3`) and records stay in place, and the Decision 47
+`B_full_catalyst` test is recorded as not run.
+
+**Block** (`structural_break.intelligence.recent_news`, `sec-recent-news-v1`,
+adapter `gemma-leg-news-v1`). For each h20 model event and each company:
+
+- Window: 8-K and 8-K/A filings whose conservative availability bound is
+  after the close three NYSE sessions before the signal and at or before the
+  signal close (the Decision 47 timing window). The latest two are used.
+- Evidence: from each filing, the first chunk of the 8-K document that states
+  an Item, and the opening (headline) chunk of its first EX-99 exhibit,
+  parsed read-only from the stored SEC archive.
+- A company with known filing coverage and no 8-K in the window has no news
+  and needs no call. Unknown coverage, an unparseable filing or a rejected
+  answer leaves that company UNKNOWN.
+- One Gemma (`gemma-4-26b-a4b-it`) label per company: event type, direction,
+  materiality and confidence, with sentence-ID citations resolved to exact
+  text and the same category-term, NONE and UNKNOWN rules as v3.1. Distinct
+  company/filing sets share one extraction: 9,209 packs cover 58,142 event
+  legs (35 % of events have news on at least one company).
+
+**Features** (13): for each company, material news (a catalyst of MEDIUM or
+HIGH materiality), material negative news, material positive news, earnings or
+guidance news, and other corporate news (M&A, regulatory, litigation,
+management, product); whether exactly one company had material news; whether
+the company with the larger absolute 1-day abnormal return had material news;
+and whether that news explains the move (negative news and the stock fell, or
+positive news and it rose).
+
+**Evaluation.** Unchanged from Decision 47 (`p6-sec-features-v1`): the
+Decision 45 walk-forward, logistic C = 0.01 primary, XGBoost secondary.
+Primary variant `B_news` = v2's B plus the 13 features, tested against B.
+`B_news_timing` is reported. Pass: the pooled 2010–2021 paired Brier
+difference has a 95 % month-block interval entirely below zero and the
+variant is better in at least 8 of 12 years. The test runs once every pack
+has been attempted (including the automatic retry passes).
+
+A passing block becomes a candidate for a separately versioned Model B with a
+new freeze proposal and replaces nothing without the owner's final-test
+unlock decision.

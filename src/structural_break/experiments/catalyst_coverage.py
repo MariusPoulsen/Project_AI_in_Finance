@@ -57,8 +57,13 @@ def load_record(output: Path, key: str) -> dict[str, Any] | None:
     return json.loads(path.read_bytes()) if path.exists() else None
 
 
-def needs_work(record: dict[str, Any] | None, *, retry_invalid: bool = False) -> bool:
-    if record is None or record.get("adapter_version") != cv.ADAPTER_VERSION:
+def needs_work(
+    record: dict[str, Any] | None,
+    *,
+    retry_invalid: bool = False,
+    version: str = cv.ADAPTER_VERSION,
+) -> bool:
+    if record is None or record.get("adapter_version") != version:
         return True
     if record["status"] in FINAL_STATUSES:
         return False
@@ -136,6 +141,7 @@ def run_batch(
     send it again so a temporary outage does not leave it UNKNOWN.
     """
     say = options.get("say", print)
+    version = options.get("version", cv.ADAPTER_VERSION)
     counts = _run_pass(checkpoints, output, packs, models, **options)
     options.pop("limit", None)
     for number in range(1, extra_passes + 1):
@@ -143,8 +149,8 @@ def run_batch(
             1
             for key in packs["pack_key"].astype(str)
             if (record := load_record(output, key)) is not None
-            and record.get("adapter_version") == cv.ADAPTER_VERSION
-            and needs_work(record)
+            and record.get("adapter_version") == version
+            and needs_work(record, version=version)
         )
         if not leftover:
             break
@@ -167,13 +173,15 @@ def _run_pass(
     client_factory: Callable[[str], cv.ModelClient] | None = None,
     wait_until: Callable[[datetime], None] | None = None,
     in_flight: int = cv.MAX_IN_FLIGHT,
+    extract: Callable[[cv.ModelClient, dict[str, Any]], dict[str, Any]] = cv.extract_view,
+    version: str = cv.ADAPTER_VERSION,
 ) -> Counter[str]:
     todo: queue.Queue[tuple[str, str]] = queue.Queue()
     queued = 0
     for key, file in zip(packs["pack_key"].astype(str), packs["file"].astype(str), strict=True):
         if limit is not None and queued >= limit:
             break
-        if needs_work(load_record(output, key), retry_invalid=retry_invalid):
+        if needs_work(load_record(output, key), retry_invalid=retry_invalid, version=version):
             todo.put((key, file))
             queued += 1
     say(f"{queued} packs to extract with {', '.join(models)}")
@@ -198,7 +206,7 @@ def _run_pass(
             pack = json.loads((checkpoints / file).read_bytes())["pack"]
             while True:
                 try:
-                    record = cv.extract_view(client, pack)
+                    record = extract(client, pack)
                     break
                 except cv.DailyQuotaExhausted:
                     reset = cv.next_quota_reset()
@@ -261,7 +269,7 @@ def _label(record: dict[str, Any]) -> str:
     return "UNKNOWN_SERVER_OR_OTHER"
 
 
-def status(output: Path) -> dict[str, Any]:
+def status(output: Path, version: str = cv.ADAPTER_VERSION) -> dict[str, Any]:
     """Progress over all packs and the h20 priority packs, with rates and an ETA."""
     queue_path = output / "queue.parquet"
     packs = (
@@ -279,7 +287,7 @@ def status(output: Path) -> dict[str, Any]:
     stamps: list[datetime] = []
     for key, priority in zip(packs["pack_key"], packs["priority"], strict=True):
         record = load_record(output, str(key))
-        if record is None or needs_work(record):
+        if record is None or needs_work(record, version=version):
             statuses["PENDING" if record is None else "TO_RETRY"] += 1
             continue
         statuses[_label(record)] += 1
