@@ -1457,3 +1457,33 @@ take the top-20 % threshold from year Y−1 scores and score year Y.
 A passing block becomes a candidate for a separately versioned Model B with a
 new freeze proposal. It replaces nothing without the owner's final-test
 unlock decision. A failing block is recorded and not adopted.
+
+## 48. SEC timing result: the block fails and is not adopted; catalyst run started
+
+Recorded 2026-10-17. The Decision 47 timing test ran once, as pre-registered
+(`outputs/p6_sec_features/timing_walk_forward.json`, code `9db3f79`).
+
+| Family | B_timing − B Brier, 2010–2021 pooled | 95 % interval | Years better | Top-20 % trading difference per candidate |
+|---|---|---|---|---|
+| Logistic (primary) | +0.000036 | [−0.000072, +0.000170] | 5 of 12 | +0.63 bps [−0.21, +1.52] |
+| XGBoost (secondary) | +0.000062 | [−0.000032, +0.000155] | 6 of 12 | −0.20 bps [−0.91, +0.53] |
+
+18,558 labelled events over 144 months. The 2022–2023 reference rows, which
+played no part in the verdict, are −0.000050 (logistic) and −0.000177
+(XGBoost).
+
+The interval includes zero and the block is better in fewer than 8 years, so
+**B_timing fails and is not adopted**. The pooled descriptive difference noted
+in Decision 47 (6.4 % against 8.7 % reversion when the moving leg filed in the
+last session) does not add forecasting value once B's 30-day filing metadata
+and A's same-day abnormal returns and volume are in the model, which already
+mark most news days.
+
+The full-coverage catalyst batch started on 2026-10-17 with
+`gemma-4-26b-a4b-it` over 33,322 distinct packs (27,910 in the h20 model
+population, processed first). Its first packs return a valid answer about
+85–90 % of the time. At the 16,000 tokens per minute free quota it needs
+about five days for the h20 packs and six for all of them, provided the
+daily request cap does not bind. The catalyst tests in Decision 47 run once
+every h20 pack has been attempted. The Decision 36–42 freeze is unchanged and
+the 2024–2025 final test stays locked.

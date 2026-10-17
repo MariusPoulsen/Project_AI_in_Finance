@@ -26,6 +26,12 @@ calibration and assessment periods.
   beat A. A promising lead then failed its walk-forward replication over
   2010–2021 (+1.1 bps per candidate, 95 % interval [−0.5, +2.8]) and was not
   adopted.
+- **New SEC information blocks** are in
+  [P6_SEC_FEATURES.md](docs/P6_SEC_FEATURES.md) (DECISIONS 47–48). Narrow
+  filing-timing features failed their pre-registered walk-forward test. A
+  repaired Gemma catalyst extraction for every event (the v2 pilot covered
+  500 and yielded 15) is running; track it with
+  `powershell -File scripts\catalyst_progress.ps1`.
 - **Full System deferred** (DECISIONS 40): the multi-agent rung is reported as
   not run.
 - **Model B improvement is not established**, and the 2024–2025 final test
@@ -191,7 +197,8 @@ the backtests.
   [status](docs/STATUS.md).
 - Backtesting: [runbook](docs/BACKTEST_RUNBOOK.md),
   [development results](docs/P6_DEVELOPMENT_RESULTS.md),
-  [improvement results](docs/P6_IMPROVEMENT_RESULTS.md).
+  [improvement results](docs/P6_IMPROVEMENT_RESULTS.md),
+  [SEC timing and catalysts](docs/P6_SEC_FEATURES.md).
 - Governance: [decisions](docs/DECISIONS.md), [plan](docs/PLAN.md),
   [specifications](docs/specs/README.md).
 - [Archive](docs/archive/README.md): original reproduction runbooks for

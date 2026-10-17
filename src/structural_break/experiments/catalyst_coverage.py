@@ -240,7 +240,10 @@ def status(output: Path) -> dict[str, Any]:
     done = total - statuses["PENDING"] - statuses["TO_RETRY"]
     hour = sum(now - stamp < timedelta(hours=1) for stamp in stamps)
     day = sum(now - stamp < timedelta(days=1) for stamp in stamps)
-    per_day = day if stamps and now - min(stamps) >= timedelta(days=1) else hour * 24
+    # Rate over the last day, or over the time actually covered if shorter.
+    recent = [stamp for stamp in stamps if now - stamp < timedelta(days=1)]
+    span = (now - min(recent)).total_seconds() if recent else 0.0
+    per_day = len(recent) / max(span, 600.0) * 86_400 if recent else 0.0
     valid = statuses["SUCCESS"] + statuses["NONE"]
     state_path = output / "state.json"
     state = json.loads(state_path.read_bytes()) if state_path.exists() else {}
