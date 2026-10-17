@@ -120,11 +120,18 @@ def run(
                 y = test[TARGET]
                 ok = labelled.loc[test.index]
                 brier[name].loc[test.index[ok]] = (test_scores[ok] - y[ok].astype(float)) ** 2
-                cut = float(np.quantile(scored[: len(threshold_rows)], 1.0 - TOP_SHARE))
                 if "frozen|status" in test:
-                    alloc[name].loc[test.index] = allocation(
-                        test_scores >= cut, test["frozen|status"], test["frozen|net"]
-                    )
+                    # As in Decision 45: only simulated candidates are thresholded and priced.
+                    simulated = threshold_rows["frozen|status"].notna().to_numpy()
+                    priced = test["frozen|status"].notna()
+                    if simulated.any() and priced.any():
+                        threshold_scores = scored[: len(threshold_rows)][simulated]
+                        cut = float(np.quantile(threshold_scores, 1.0 - TOP_SHARE))
+                        alloc[name].loc[test.index[priced]] = allocation(
+                            test_scores[priced] >= cut,
+                            test.loc[priced, "frozen|status"],
+                            test.loc[priced, "frozen|net"],
+                        )
                 row[name] = {"brier": float(brier[name].loc[test.index].mean())}
             yearly[str(year)] = row
         family_result: dict[str, Any] = {"years": yearly, "variants": {}}
@@ -182,13 +189,51 @@ def load_experiment_frame(
     return frame, columns
 
 
+def build_timing_block(workspace: Path, sec_metadata: Path, output: Path) -> Path:
+    """Timing features for every event of the accepted h20 model table."""
+    from structural_break.intelligence.timing import filing_timing_features, session_closes
+    from structural_break.research.intelligence import _coverage_bounds
+
+    version = _sources(workspace).binding.evaluation.version
+    inputs = pd.read_parquet(workspace / "artifacts/research" / version / "model_inputs.parquet")
+    pairs = pd.read_parquet(workspace / "universe/source_v1/pair_universe.parquet")
+    events = inputs.loc[
+        :,
+        ["event_id", "pair_id", "event_timestamp", "abnormal_return_A_1d", "abnormal_return_B_1d"],
+    ].merge(
+        pairs.loc[:, ["pair_id", "leg_a_security_id", "leg_b_security_id"]],
+        on="pair_id",
+        validate="many_to_one",
+    )
+    filings = pd.read_parquet(sec_metadata / "filings.parquet")
+    coverage = _coverage_bounds(json.loads((sec_metadata / "coverage.json").read_bytes()), filings)
+    stamps = pd.to_datetime(events["event_timestamp"], utc=True)
+    closes = session_closes(
+        stamps.min().date().replace(day=1) - pd.Timedelta(days=31), stamps.max().date()
+    )
+    block = filing_timing_features(events, filings, coverage, closes)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    block.to_parquet(output, index=False)
+    return output
+
+
 def main(arguments: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--workspace-root", type=Path, required=True)
-    parser.add_argument("--features", type=Path, action="append", required=True)
-    parser.add_argument("--simulation", type=Path)
-    parser.add_argument("--output", type=Path, required=True)
+    sub = parser.add_subparsers(dest="command", required=True)
+    timing = sub.add_parser("timing", help="build the timing feature block")
+    timing.add_argument("--workspace-root", type=Path, required=True)
+    timing.add_argument("--sec-metadata", type=Path, required=True)
+    timing.add_argument("--output", type=Path, required=True)
+    evaluate = sub.add_parser("evaluate", help="run the pre-registered walk-forward")
+    evaluate.add_argument("--workspace-root", type=Path, required=True)
+    evaluate.add_argument("--features", type=Path, action="append", required=True)
+    evaluate.add_argument("--simulation", type=Path)
+    evaluate.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(arguments)
+    if args.command == "timing":
+        path = build_timing_block(args.workspace_root, args.sec_metadata, args.output)
+        print(json.dumps({"output": str(path)}))
+        return
     frame, columns = load_experiment_frame(args.workspace_root, args.features, args.simulation)
     result = run(frame, columns, progress=lambda m: print(m, file=sys.stderr, flush=True))
     result["inputs"] = {

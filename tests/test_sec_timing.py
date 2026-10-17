@@ -98,3 +98,32 @@ def test_variants_add_or_replace_blocks_without_touching_base() -> None:
     assert result["B_full_catalyst"][1] == "full_" + EVENT_FEATURE_NAMES[0]
     assert set(result) == {"B_timing", "B_full_catalyst", "B_full_catalyst_timing"}
     assert variants(base, list(TIMING_FEATURE_COLUMNS)).keys() == {"B_timing"}
+
+
+def test_walk_forward_scores_variants_and_applies_the_pass_rule() -> None:
+    from structural_break.experiments import p6_sec_features as sf
+
+    rng = np.random.default_rng(0)
+    rows = []
+    for year in range(2006, 2024):
+        for i in range(120):
+            signal = rng.normal()
+            informative = float(signal > 0.8)
+            rows.append(
+                {
+                    "event_date": f"{year}-{1 + i % 12:02d}-15",
+                    "horizon_end_date": f"{year}-{1 + i % 12:02d}-28",
+                    "supervised_eligible": True,
+                    "y_revert_success": float(rng.random() < 0.1 + 0.5 * informative),
+                    "noise": rng.normal(),
+                    "news": informative,
+                    "frozen|status": "COMPLETE",
+                    "frozen|net": 0.01 * informative - 0.002,
+                }
+            )
+    frame = pd.DataFrame(rows)
+    result = sf.run(frame, {"B": ("noise",), "B_timing": ("noise", "news")})
+    variant = result["families"]["logistic"]["variants"]["B_timing"]
+    assert variant["brier_difference_vs_B"]["estimate"] < 0
+    assert variant["years_better"] >= 8 and result["verdicts"] == {"B_timing": True}
+    assert variant["top20_allocation_difference_vs_B"]["estimate"] > 0
