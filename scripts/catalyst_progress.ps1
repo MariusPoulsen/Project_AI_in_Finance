@@ -20,4 +20,9 @@ if (Test-Path outputs\p6_sec_features\news_walk_forward.json) {
     Write-Output "Evaluation: watcher waiting for both jobs to finish"
 } else {
     Write-Output "Evaluation: watcher not running (restart with scripts\catalyst_start.ps1)"
-}
+}Write-Output ""
+$v2 = "$env:USERPROFILE\OneDrive\Skrivebord\Dat-Øk\Applied_AI_in_Finance\Project_AI_in_Finance"
+& .venv\Scripts\python.exe -m structural_break.experiments.headline_coverage status --sec-metadata "$v2\data\research_v2\sec_metadata\source_v3" --output outputs\headline_v1
+if (Test-Path outputs\p6_sec_explore2\choices.json) { Write-Output "Round 2 exploration: stage 1 finished (choices.json written)" }
+elseif ($shells | Where-Object { $_.CommandLine -like '*explore2_when_ready*' }) { Write-Output "Round 2 exploration: waiting for headline scoring" }
+else { Write-Output "Round 2 exploration: not running" }
