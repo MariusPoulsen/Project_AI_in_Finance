@@ -1,9 +1,23 @@
-﻿# Show progress of the recent-news catalyst extraction (DECISIONS 50).
+﻿# Show progress of the recent-news jobs (DECISIONS 50-51) and the evaluation watcher.
 # Usage:  powershell -File scripts\catalyst_progress.ps1
 $repo = Split-Path -Parent $PSScriptRoot
 Set-Location $repo
-$running = Get-CimInstance Win32_Process -Filter "name='python.exe'" |
-    Where-Object { $_.CommandLine -like '*news_coverage run*' }
-if ($running) { Write-Output "Process: running ($($running[0].ProcessId))" }
-else { Write-Output "Process: NOT running (restart with scripts\catalyst_start.ps1)" }
+$python = Get-CimInstance Win32_Process -Filter "name='python.exe'"
+$shells = Get-CimInstance Win32_Process -Filter "name='powershell.exe'"
+foreach ($job in @(@('Gemma news', '*news_coverage run*'), @('FinBERT tone', '*news_coverage tone*'))) {
+    $found = $python | Where-Object { $_.CommandLine -like $job[1] }
+    if ($found) { Write-Output "$($job[0]) process: running ($($found[0].ProcessId))" }
+    else { Write-Output "$($job[0]) process: not running (finished, or restart with scripts\catalyst_start.ps1)" }
+}
+Write-Output ""
 & .venv\Scripts\python.exe -m structural_break.experiments.news_coverage status --output outputs\news_v1
+Write-Output ""
+& .venv\Scripts\python.exe -m structural_break.experiments.news_coverage tone-status --output outputs\news_v1
+Write-Output ""
+if (Test-Path outputs\p6_sec_features\news_walk_forward.json) {
+    Write-Output "Evaluation: finished (outputs\p6_sec_features\news_walk_forward.json)"
+} elseif ($shells | Where-Object { $_.CommandLine -like '*catalyst_evaluate_when_done*' }) {
+    Write-Output "Evaluation: watcher waiting for both jobs to finish"
+} else {
+    Write-Output "Evaluation: watcher not running (restart with scripts\catalyst_start.ps1)"
+}
