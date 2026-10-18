@@ -1812,3 +1812,21 @@ filter outcome has been seen. 2022–2023 are not used here, and the 2024–2025
 final test stays locked. A passing block becomes a candidate for a separately
 versioned policy or Model B and replaces nothing without the owner's
 final-test unlock decision.
+
+### 55a. Exploration choices, fixed before confirmation
+
+Recorded 2026-10-18. Stage 1 ran once (`outputs/p6_sec_explore/exploration.json`);
+41 of the 53 variants had a positive exploration estimate, and in every block
+the skipped trades (where the moving company had fresh news) lost far more
+than the average trade. The chosen variants, written to
+`outputs/p6_sec_explore/choices.json` (SHA-256
+`89969591ce56fbd4a716231063356f43d3093253d5f897fcf37cea9a05515265`), are:
+
+| Block | Variant | Exploration estimate | t |
+|---|---|---|---|
+| Timing | T3 filter on Baseline 0: skip when the moving company filed an earnings report (8-K item 2.02, 10-Q or 10-K) in the last 3 sessions | +4.6 bps per candidate (2006–2015) | 2.37 |
+| News | M2: Model B plus the 13 news features, logistic C = 1, top-20 % rule | +1.4 bps per candidate (2010–2015) | 2.54 |
+| Tone | S5 filter on Baseline 0: skip when the moving company's recent-news FinBERT negative probability is at least 0.2 | +1.7 bps per candidate (2006–2015) | 1.99 |
+
+No 2016–2021 outcome had been read for any filter, or for these model
+variants, when this record was made.
