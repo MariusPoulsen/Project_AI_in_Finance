@@ -54,3 +54,16 @@ def test_copy_check_rejects_any_difference() -> None:
     )
     with pytest.raises(ValueError, match="differs"):
         hl.verify_copy(frame)
+
+
+def test_news_after_the_signal_exits_at_the_next_open() -> None:
+    zs = [2.0, 1.9, 1.8, 1.7, 1.6, 1.5, 1.4, 1.3, 1.2, 1.1]
+    config = policy(horizon_sessions=10)
+    request = path(zs)
+    third_close = request.sessions[3].close_at
+    news = hl.simulate_long(request, request.sessions, request.prices, config, 10, [third_close])
+    assert news["reason"] == "NEWS_EXIT" and news["holding"] == 3
+    before = hl.simulate_long(
+        request, request.sessions, request.prices, config, 10, [request.signal_at]
+    )
+    assert before["reason"] == "TIMEOUT"  # news already known at the signal is not an exit

@@ -27,7 +27,7 @@ import json
 import math
 import sys
 from collections.abc import Callable, Sequence
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -86,8 +86,14 @@ def simulate_long(
     path_prices: Sequence[PairPrices],
     config: ExecutionConfig,
     timeout: int,
+    news_exit: Sequence[datetime] = (),
 ) -> dict[str, Any]:
-    """Frozen entry, then the frozen exit loop with ``timeout`` on a longer path."""
+    """Frozen entry, then the frozen exit loop with ``timeout`` on a longer path.
+
+    ``news_exit`` (DECISIONS 59) lists availability times of qualifying news; a
+    trade still open at a session close after such news became available exits
+    at the next open, like any other close-based trigger. Empty by default.
+    """
     frozen = simulate_pair_trade(request, config)
     if frozen.status == "NOT_ENTERED" or frozen.entry is None or frozen.position is None:
         return {"status": frozen.status, "reason": frozen.reason, "net": None, "holding": None}
@@ -115,6 +121,8 @@ def simulate_long(
             reason = "CONVERGENCE"
         elif side * z >= config.adverse_boundary:
             reason = "ADVERSE_STOP"
+        elif any(request.signal_at < moment <= session.close_at for moment in news_exit):
+            reason = "NEWS_EXIT"
         elif index == timeout:
             reason = "TIMEOUT"
         else:

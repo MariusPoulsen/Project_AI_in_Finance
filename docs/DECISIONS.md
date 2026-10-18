@@ -1896,3 +1896,63 @@ strongest evidence in this project that SEC news helps identify divergences
 that are breaks rather than noise, but no pre-registered test has yet confirmed
 it at the required level, so nothing is adopted. The 2024–2025 final test, the
 only untouched data, stays locked.
+
+## 59. Pre-registered second exploration round: news exits, graded sizing, sharper entry news
+
+Recorded 2026-10-19, before any variant below was scored. The owner asked to
+build the three proposed directions and to search for further improvements.
+
+**Additional literature.** Closing pairs that have not converged within
+10 days improved risk-adjusted returns in Engelberg, Gao and Jagannathan, who
+also find that liquidity-driven divergences converge while fundamental news
+does not; earnings news tends to continue and softer news to reverse; tone
+relative to a firm's own history ("tone surprise") carries information beyond
+raw tone; abnormal news volume marks attention shocks.
+
+**New data** (`structural_break.experiments.headline_coverage`,
+`sec-8k-headline-tone-v1`): every 8-K of the frozen issuers from 2005-11 to
+2023-12 is parsed read-only from the stored archive, and the first three scored
+sentences of its press-release headline (first EX-99 chunk, else the first Item
+chunk) are scored with v2's pinned FinBERT. Availability is the conservative
+acceptance bound.
+
+**Variants** (`structural_break.experiments.p6_sec_explore2`,
+`p6-sec-explore2-v1`), each on Baseline 0 and Baseline 1. The moving company
+is the leg with the larger absolute 1-day abnormal return.
+
+- **Family E, exits during the trade** (frozen entry, band, stop, costs and
+  borrow; a qualifying item accepted after the signal close exits the trade at
+  the next open after the session close at which it is available): E1 any 8-K
+  by the moving company; E2 an earnings report by it (8-K item 2.02, 10-Q or
+  10-K); E3 an adverse-toned headline on either leg (net ≤ −0.1 on the long
+  leg, or ≥ +0.1 on the short leg); E4 a headline by the moving company with
+  negative probability ≥ 0.2; E5 a 10-session timeout. The research exit loop
+  (Decision 52 copy, extended with this trigger) must reproduce the frozen
+  simulator exactly when no news trigger is supplied.
+- **Family Z, graded sizing** (weight in [0, 1], unknown = 1): Z1
+  1 − 2 × the moving company's recent-news FinBERT negative probability
+  (Decision 51); Z3 0 for earnings or guidance news on the moving company,
+  0.5 for its material corporate news, else 1 (Decision 50 labels); Z4
+  1 − 2 × its highest headline negative probability in the last 3 sessions.
+- **Family H, sharper entry evidence** (skip when known true): H1 moving
+  company's headline negative probability ≥ 0.2 in the last session; H2 its
+  headline net tone < −0.1 in the last session; H3 its lowest headline net
+  tone in the last 3 sessions minus the mean of its headlines over the prior
+  year (at least 3) < −0.2; H4 at least two 8-Ks by it in the last 5
+  sessions; H5 headline negative probability ≥ 0.2 in the last 3 sessions.
+
+That is 26 variants. Contrasts are paired per-candidate net-return differences
+(variant minus the frozen rule) with the Decision 55 bootstrap.
+
+**Stage 1** scores all variants on 2006–2015 (exits are simulated for those
+years only) and picks, per family, the variant with the largest bootstrap t
+among positive estimates (largest t overall if none). **Stage 2** evaluates
+only the three choices on 2016–2021. A family passes with a positive estimate,
+a Holm-corrected one-sided p below 0.05 across the three families, and at least
+4 of 6 positive years.
+
+**Disclosed prior information.** Z1, Z4, H5 and E4 are relatives of the
+Decision 51/55 negative-tone filter, whose outcomes have been seen in every
+period (Decisions 55–58), so their exploration results may look optimistic;
+the 2016–2021 confirmation is the check. No outcome of any listed variant has
+been read. 2022–2023 are not used, and 2024–2025 stay locked.
