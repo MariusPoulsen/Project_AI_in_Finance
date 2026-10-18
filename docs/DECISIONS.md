@@ -1692,3 +1692,31 @@ rule) over events both rules price.
 A passing rule becomes a candidate for a separately versioned execution policy
 with a new freeze proposal, and replaces nothing without the owner's
 final-test unlock decision. A failing rule is recorded and not adopted.
+
+## 53. Half-life timeout result: the rule fails and is not adopted
+
+Recorded 2026-10-18. The Decision 52 test ran once, as pre-registered
+(`outputs/p6_halflife_exit/halflife_exit.json`, code `43abeec`). The research
+copy reproduced the frozen simulator exactly at 20 sessions for all 29,071
+events (no status or net differences).
+
+| Population, 2010–2021 | Frozen 20 sessions | Half-life timeout | Difference per trade | 95 % interval | Years better |
+|---|---|---|---|---|---|
+| Baseline 0 (primary), 16,569 trades | −15.9 bps | −24.7 bps | −8.8 bps | [−20.6, +3.0] | 4 of 12 |
+| Baseline 1, 1,499 trades | −11.0 bps | −8.9 bps | +2.1 bps | [−6.2, +10.3] | 7 of 12 |
+
+Net return per 20 holding sessions was less negative under the half-life
+rule (Baseline 0 −12.6 against −19.5 bps), only because the same losses are
+spread over 39.1 instead of 16.4 sessions on average. Per trade, the interval
+includes zero and fewer than 8 years improve, so **the rule fails and is not
+adopted**.
+
+Under the longer timeout, 8,265 of the 16,569 Baseline 0 trades ended at the
+|z| = 3 adverse stop, 3,651 converged and 4,653 timed out. Extra time mostly
+let diverging spreads reach the stop rather than letting reversions finish,
+consistent with many divergences being structural breaks rather than slow
+mean reversion. The 2022–2023 reference rows favoured the rule (Baseline 0
++6.8 bps, n = 3,003), as the earlier 30-session sensitivity had; the twelve
+decision years do not, which is why that sensitivity was not treated as
+evidence. The Decision 36–42 freeze is unchanged and the 2024–2025 final test
+stays locked.

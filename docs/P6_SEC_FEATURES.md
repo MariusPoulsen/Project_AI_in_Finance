@@ -84,3 +84,10 @@ answer), `UNKNOWN_REJECTED` (answers failed validation) and
 The verdicts for `B_news` (Decision 50) and `B_news_tone` (Decision 51)
 follow the Decision 47 pass rule; `B_news_text` and `B_news_timing` are
 reported.
+
+## Related trading test: half-life timeout (Decisions 52–53)
+
+Replacing the frozen 20-session timeout with two half-lives (1–120 sessions)
+**fails**: over 2010–2021 it changes net return per trade by −8.8 bps, 95 %
+[−20.6, +3.0], better in 4 of 12 years. Half of the longer-held trades ended
+at the adverse stop. Module: `structural_break.experiments.p6_halflife_exit`.
