@@ -1747,3 +1747,68 @@ news on the moving company does not improve the reversion forecast beyond
 v2's Model B, which already holds the same-day abnormal returns and volume
 spikes through which such news reaches prices. The Decision 36–42 freeze, the
 accepted v2 snapshot and the 2024–2025 lock are unchanged.
+
+## 55. Pre-registered explore-then-confirm search over the three SEC blocks
+
+Recorded 2026-10-18, before any variant below was scored. The owner asked for
+filing timing, recent news and recent-news tone each to be explored in many
+ways, informed by the literature. To keep a positive finding interpretable
+after many tries, exploration and confirmation use separate years and the
+final selection is fixed before confirmation.
+
+**Literature basis.** Pairs that diverge on value-relevant firm-specific news
+are less profitable than those diverging on common or no news (Engelberg, Gao
+and Jagannathan; Jacobs and Weber); large moves without news partly reverse
+while bad news drifts (Chan 2003); a structured-news overlay that skips trades
+whose divergence comes with negative sentiment and abnormal news volume
+halved non-converging pairs (FactSet summary); 8-K text predicts returns
+mostly over the next one to five days. The earlier tests (Decisions 47–54)
+only added the blocks to a heavily regularised forecasting model; here they
+are also tried as trade filters.
+
+**Variants** (`structural_break.experiments.p6_sec_explore`, `p6-sec-explore-v1`).
+The moving company is the leg with the larger absolute 1-day abnormal return;
+a filter skips an event only when its condition is known to hold.
+
+- Timing filters: T1 moving company filed an 8-K in the last session; T2
+  filed anything in the last 3 sessions; T3 earnings filing in the last 3; T4
+  one-sided 8-K in the last session; T5 either company had an earnings
+  filing in the last 3; T6 T1 and the moving company fell.
+- News filters: N1 moving company had material news; N2 that news explains
+  its move; N3 material negative news; N4 N3 and it fell; N5 one-sided
+  material news; N6 corporate (non-earnings) news; N7 earnings or guidance
+  news; N8 material news on the moving company but not the other (common
+  news kept).
+- Tone filters (thresholds fixed from the feature distribution, no outcomes):
+  S1 moving company's net tone below −0.1; S2 tone aligned with its move at
+  least 0.2; S3 S1 and it fell; S4 absolute tone contrast at least 0.3; S5
+  negative tone probability at least 0.2.
+- Each filter on Baseline 0 (all events) and Baseline 1 (valid pairs).
+- Model variants per block, Decision 45 walk-forward, top-20 % rule against
+  the same specification without the block: M1 logistic C = 0.1; M2 logistic
+  C = 1; M3 logistic C = 0.01 with each block feature split by whether the
+  moving company fell or rose; M4 XGBoost; M5 Model A plus the block
+  (against A).
+
+That is 38 filter and 15 model variants. Every contrast is the paired
+per-candidate difference in net return under the frozen Decision 36 policy
+(a skipped trade earns zero), with a calendar-month block bootstrap (2,000
+draws, seed 5557).
+
+**Stage 1, explore.** Filters are scored on 2006–2015 and models on 2010–2015.
+Per block, the chosen variant is the one with the largest bootstrap t-statistic
+among variants with a positive estimate (the largest t overall if none is
+positive). The choices are written to `choices.json` and recorded with their
+checksum before stage 2.
+
+**Stage 2, confirm.** Only the three chosen variants are evaluated on
+2016–2021. A block passes when its estimate is positive, its one-sided
+bootstrap p-value after a Holm correction across the three blocks is below
+0.05, and it is positive in at least 4 of the 6 years.
+
+**Disclosed prior information.** The pooled 2010–2021 model results and
+per-year Brier differences of the Decision 47–54 variants have been seen; no
+filter outcome has been seen. 2022–2023 are not used here, and the 2024–2025
+final test stays locked. A passing block becomes a candidate for a separately
+versioned policy or Model B and replaces nothing without the owner's
+final-test unlock decision.
