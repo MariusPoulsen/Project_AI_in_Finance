@@ -1642,3 +1642,53 @@ test runs once all packs are scored.
 with the v2 workspace's environment, which was installed from the same
 lockfile (identical pandas, numpy, scikit-learn and pydantic versions), with
 this branch's code first on `PYTHONPATH`.
+
+## 52. Pre-registered half-life timeout test (exploratory)
+
+Recorded 2026-10-18, before this test was simulated or any of its outcomes
+read. The owner asked for a trading test whose timeout depends on each pair's
+half-life, between 1 and 120 sessions.
+
+**Rationale.** The strategy trades mean reversion: a divergence is bet to close,
+and a structural break is the case where it does not. The frozen Decision 36
+policy times every trade out after 20 sessions, but the median event's
+formation-window half-life is 30.4 sessions (10th–90th percentile 14–94). A
+gap from |z| = 2 reaches the 0.5 exit band after a 75 % reduction, about two
+half-lives, so most trades time out before reversion is expected; a divergence
+still open after two half-lives is itself evidence of a break. Disclosed prior
+information: the half-life distribution, and the accepted 2022–2023 horizon
+sensitivity (Baseline 0 mean net −3.6 bps at 20 sessions, +11.4 bps at 30).
+
+**Rule** (`structural_break.experiments.p6_halflife_exit`,
+`p6-halflife-exit-v1`). Timeout = ceil(2 × half-life), bounded to 1–120
+sessions, using the event's point-in-time half-life from the accepted h20
+model table (20 sessions when unknown). The median timeout is 61 sessions; 20 %
+of events reach the 120 cap. Entry, the 0.5 convergence band, the |z| = 3
+adverse stop, 5 bps per side and 1 % annual borrow are the frozen headline
+values.
+
+**Implementation.** The frozen simulator and contracts are untouched: their
+source hash binds the accepted backtests and the contract caps holding at 30
+sessions. A research copy reuses the frozen simulator's own entry and runs the
+identical exit loop on a longer path built by the frozen session builder from
+the same price capture. Before any result is written, the copy must reproduce
+the frozen simulator exactly at 20 sessions for every event, or the run stops.
+No session after 2023-12-31 is built, so the locked final-test years are never
+read; trades still open then are UNPRICED and counted.
+
+**Evaluation.** Fresh h20 events. Primary population Baseline 0 (all priced
+events); Baseline 1 (econometrically valid pairs) is secondary. The contrast is
+the paired difference in net return per trade (half-life rule minus frozen
+rule) over events both rules price.
+
+- **Pass** (Baseline 0): the pooled 2010–2021 difference has a 95 %
+  calendar-month block-bootstrap interval (2,000 draws, seed 5557) entirely
+  above zero, the rule is better in at least 8 of the 12 years, **and** its net
+  return per 20 holding sessions is not below the frozen rule's, so a gain
+  that comes only from tying up capital longer does not pass.
+- Reported: Baseline 1, exit reasons, mean holding, unpriced counts and
+  2022–2023 reference rows.
+
+A passing rule becomes a candidate for a separately versioned execution policy
+with a new freeze proposal, and replaces nothing without the owner's
+final-test unlock decision. A failing rule is recorded and not adopted.
