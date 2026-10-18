@@ -1852,3 +1852,26 @@ The news-model variant, chosen narrowly over the news filters, did not
 replicate. This is suggestive, not confirmatory, evidence that skipping
 divergences where the moving company has fresh news helps. The Decision 36–42
 freeze and the 2024–2025 lock are unchanged.
+
+## 57. Pre-registered replication of a combined fresh-news filter on 2022–2023
+
+Recorded 2026-10-18, before the test was run. The owner asked to keep
+exploring. Decision 56 showed that the two filter blocks replicated in
+direction on 2016–2021 but missed the Holm threshold. They express one idea:
+do not bet on reversion when the moving company has just had value-relevant
+news. This combined rule was chosen **after** seeing the Decision 56
+confirmation, so it needs data on which no filter outcome has been read:
+2022–2023 (other experiments used those years, but no filter was evaluated
+there).
+
+**Rule R1** (`p6_sec_explore replicate`): skip the event when the moving
+company (larger absolute 1-day abnormal return) filed an earnings report
+(8-K item 2.02, 10-Q or 10-K) in the last 3 sessions, **or** its recent-news
+FinBERT negative probability is at least 0.2. Unknown conditions never skip.
+
+**Test.** Baseline 0, all priced fresh h20 events signalled in 2022–2023,
+paired per-candidate net-return difference against trading every event,
+calendar-month block bootstrap (2,000 draws, seed 5557). **Pass:** a positive
+estimate with a one-sided bootstrap p-value below 0.05; it is a single test,
+so no further correction. T3 and S5 alone are reported alongside. With 24
+months the test has limited power; an inconclusive result is reported as such.

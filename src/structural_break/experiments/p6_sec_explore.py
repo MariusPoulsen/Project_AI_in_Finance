@@ -124,6 +124,14 @@ FILTERS: dict[str, tuple[str, Callable[[pd.DataFrame], pd.Series]]] = {
     "S4_tone_contrast_0.3": ("tone", lambda f: f["news_tone_contrast"].abs().ge(0.3)),
     "S5_mover_negative_prob_0.2": ("tone", lambda f: f["mover_tone_negative"].ge(0.2)),
 }
+# DECISIONS 57: one combined filter, chosen after the Decision 56 confirmation,
+# tested once on 2022-2023 (no filter outcome from those years had been read).
+FILTERS["R1_fresh_news_filter"] = (
+    "combined",
+    lambda f: _is(f["mover_earnings_3s"]) | f["mover_tone_negative"].ge(0.2),
+)
+REPLICATE = (2022, 2023)
+REPLICATION_FILTER = "R1_fresh_news_filter"
 POPULATIONS = ("B0", "B1")
 MODELS: dict[str, dict[str, Any]] = {
     "M1_logistic_C0.1": {"family": "logistic", "params": {"C": 0.1}, "base": "B"},
@@ -301,10 +309,11 @@ def load(
 
 
 def variant_list() -> list[tuple[str, str, str]]:
-    """(block, kind, name) for every pre-listed variant."""
+    """(block, kind, name) for every Decision 55 variant (the R1 filter is separate)."""
     rows = [
         (block, f"filter_{pop}", name)
         for name, (block, _) in FILTERS.items()
+        if block != "combined"
         for pop in POPULATIONS
     ]
     rows += [(block, "model", name) for block in BLOCKS for name in MODELS]
@@ -379,7 +388,7 @@ def confirm(
 
 def main(arguments: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("stage", choices=("explore", "confirm"))
+    parser.add_argument("stage", choices=("explore", "confirm", "replicate"))
     parser.add_argument("--workspace-root", type=Path, required=True)
     parser.add_argument("--features", type=Path, action="append", required=True)
     parser.add_argument("--simulation", type=Path, required=True)
@@ -402,6 +411,25 @@ def main(arguments: Sequence[str] | None = None) -> None:
                 }
             )
         )
+        return
+    if args.stage == "replicate":
+        rows = {
+            name: filter_contrast(frame, name, "B0", REPLICATE)
+            for name in (REPLICATION_FILTER, "T3_mover_earnings_3s", "S5_mover_negative_prob_0.2")
+        }
+        main_row = rows[REPLICATION_FILTER]
+        verdict = bool(main_row["estimate"] > 0 and main_row["p_one_sided"] < ALPHA)
+        result = {
+            "plan_version": PLAN_VERSION,
+            "years": REPLICATE,
+            "filters": rows,
+            "passes": verdict,
+            "run_date": date.today().isoformat(),
+        }
+        text = json.dumps(result, indent=2, sort_keys=True, default=str) + "\n"
+        write_bytes(out / "replication.json", text.encode())
+        summary = {"passes": verdict, "estimate_bps": main_row["estimate_bps"]}
+        print(json.dumps(summary | {"p": main_row["p_one_sided"]}))
         return
     choices_raw = (out / "choices.json").read_bytes()
     result = confirm(frame, columns, json.loads(choices_raw)) | {

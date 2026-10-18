@@ -54,5 +54,6 @@ def test_bootstrap_reports_interval_se_and_one_sided_p() -> None:
 
 def test_variant_list_covers_every_block_both_populations_and_models() -> None:
     variants = ex.variant_list()
-    assert len(variants) == 2 * len(ex.FILTERS) + 3 * len(ex.MODELS)
+    filters = [name for name, (block, _) in ex.FILTERS.items() if block != "combined"]
+    assert len(variants) == 2 * len(filters) + 3 * len(ex.MODELS) == 53
     assert {block for block, _, _ in variants} == set(ex.BLOCKS)
