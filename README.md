@@ -27,11 +27,11 @@ calibration and assessment periods.
   2010–2021 (+1.1 bps per candidate, 95 % interval [−0.5, +2.8]) and was not
   adopted.
 - **New SEC information blocks** are in
-  [P6_SEC_FEATURES.md](docs/P6_SEC_FEATURES.md) (DECISIONS 47–50). Narrow
-  filing-timing features failed their pre-registered walk-forward test. Gemma
-  labels of each company's 8-K news from the three sessions before each
-  divergence are being extracted; track them with
-  `powershell -File scripts\catalyst_progress.ps1`.
+  [P6_SEC_FEATURES.md](docs/P6_SEC_FEATURES.md) (DECISIONS 47–54). Narrow
+  filing-timing features, Gemma labels of each company's 8-K news from the
+  three sessions before each divergence, and FinBERT tone of that news all
+  failed their pre-registered walk-forward tests against Model B, as did a
+  half-life-based trade timeout.
 - **Full System deferred** (DECISIONS 40): the multi-agent rung is reported as
   not run.
 - **Model B improvement is not established**, and the 2024–2025 final test

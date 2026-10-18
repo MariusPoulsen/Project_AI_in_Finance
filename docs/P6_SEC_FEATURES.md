@@ -2,7 +2,7 @@
 
 Exploratory work pre-registered in [DECISIONS 47](DECISIONS.md),
 [DECISIONS 50](DECISIONS.md) and [DECISIONS 51](DECISIONS.md); results in
-DECISIONS 48. Each block is added to
+DECISIONS 48, 53 and 54. Each block is added to
 v2's Model B and tested against B with the Decision 45 walk-forward (fit before
 year Y−1, threshold on Y−1, score Y; 2010–2021 decide, 2022–2023 reference).
 Nothing here changes the accepted v2 snapshot, its models or the frozen
@@ -14,8 +14,8 @@ Phase 6 policies.
 |---|---|---|
 | Filing timing (10 metadata features) | **Fails**, not adopted | +0.000036, 95 % [−0.000072, +0.000170], better in 5 of 12 years |
 | Full-coverage v2 catalysts (Decision 47) | Not run: design replaced (Decision 50) | — |
-| Recent-news catalysts per company (13 features) | Pending: extraction running | — |
-| FinBERT tone of the same recent news (7 features) | Pending: scoring running | — |
+| Recent-news catalysts per company (13 features) | **Fails**, not adopted (Decision 54) | +0.000010, 95 % [−0.000075, +0.000092], better in 7 of 12 years |
+| FinBERT tone of the same recent news (7 features) | **Fails**, not adopted (Decision 54) | +0.000078, 95 % [−0.000005, +0.000168], better in 6 of 12 years |
 
 ## How the recent-news extractor works
 

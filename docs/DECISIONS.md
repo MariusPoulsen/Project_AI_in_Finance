@@ -1720,3 +1720,30 @@ mean reversion. The 2022–2023 reference rows favoured the rule (Baseline 0
 decision years do not, which is why that sensitivity was not treated as
 evidence. The Decision 36–42 freeze is unchanged and the 2024–2025 final test
 stays locked.
+
+## 54. Recent-news and tone results: both blocks fail and are not adopted
+
+Recorded 2026-10-18. The Decision 50 extraction finished: 9,209 packs, 8,641
+catalysts, 260 NONE, 24 model UNKNOWN, 281 rejected and 3 server failures
+after the automatic retry passes. The Decision 51 FinBERT scoring finished for
+all 9,209 packs. The evaluation watcher then ran the pre-registered walk-forward
+once (`outputs/p6_sec_features/news_walk_forward.json`).
+
+Coverage: each company's recent-news status is known for 91–93 % of event
+legs. In 22 % of events the company with the larger 1-day abnormal return had
+material news in the three sessions before the signal; in 10 % that news
+matched the direction of its move.
+
+| Variant (logistic, primary) | Brier vs B, 2010–2021 pooled | 95 % interval | Years better | Top-20 % trading difference per candidate |
+|---|---|---|---|---|
+| `B_news` (Decision 50 primary) | +0.000010 | [−0.000075, +0.000092] | 7 of 12 | +0.04 bps [−0.86, +0.93] |
+| `B_news_tone` (Decision 51 primary) | +0.000078 | [−0.000005, +0.000168] | 6 of 12 | +0.53 bps [−0.18, +1.28] |
+| `B_news_text` | +0.000051 | [−0.000058, +0.000154] | 5 of 12 | +0.19 bps [−0.65, +1.05] |
+| `B_news_timing` | +0.000027 | [−0.000079, +0.000128] | 5 of 12 | +0.11 bps [−0.73, +0.98] |
+
+The XGBoost family agrees (Brier differences +0.000006 to +0.000048, none with
+an interval below zero). **Both blocks fail and are not adopted.** Fresh 8-K
+news on the moving company does not improve the reversion forecast beyond
+v2's Model B, which already holds the same-day abnormal returns and volume
+spikes through which such news reaches prices. The Decision 36–42 freeze, the
+accepted v2 snapshot and the 2024–2025 lock are unchanged.
