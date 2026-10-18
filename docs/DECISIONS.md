@@ -1605,3 +1605,40 @@ boilerplate such as "Other comprehensive income (loss)" still fails. The v2
 catalyst schema and validator are unchanged. Re-checked offline, 10 of the 12
 rejected answers pass the new rule. FINANCING counts as corporate news in the
 features. All packs are extracted under v1.1, including the first 73.
+
+## 51. Pre-registered FinBERT tone of recent 8-K news (exploratory)
+
+Recorded 2026-10-18, before any tone was scored for this block or any of its
+features or outcomes were read. The owner asked for FinBERT to be tried on the
+recent-news evidence as well; v2's FinBERT block itself is unchanged and stays
+inside Model B.
+
+**Why.** v2's FinBERT features score the same evidence packs as the v2
+catalysts, mostly quarterly-report text about two months old (Decision 50).
+
+**Block** (`structural_break.intelligence.recent_tone`,
+`sec-recent-news-tone-v1`). The pinned v2 model and settings
+(`ProsusAI/finbert` at `4556d130…`, `sec-sentence-quality-wordpiece-v2`
+preprocessing, up to 64 windows per chunk, local CPU, asset hashes checked)
+score the Decision 50 recent-news packs: each company's 8-K Item chunk and
+press-release headline from the three sessions before the signal. A company's
+tone is the token-weighted mean of the positive, negative and neutral
+probabilities over its scored windows.
+
+**Features** (7): each company's net tone (positive minus negative) and
+negative tone; the net-tone contrast (A minus B); the moving company's net
+tone (larger absolute 1-day abnormal return); and that tone times the sign of
+its move (positive when the tone agrees with the direction of the move). A
+company with known coverage and no recent 8-K is coded zero; unknown coverage
+or text with no scorable window is null.
+
+**Evaluation.** As Decision 47: the Decision 45 walk-forward, logistic
+C = 0.01 primary, XGBoost secondary, pass rule unchanged. Primary variant
+`B_news_tone` = B plus the 7 tone features, tested against B. `B_news_text`
+(B plus the 13 Gemma news features and the 7 tone features) is reported. The
+test runs once all packs are scored.
+
+**Runtime note.** This checkout's environment has no `torch`; the job runs
+with the v2 workspace's environment, which was installed from the same
+lockfile (identical pandas, numpy, scikit-learn and pydantic versions), with
+this branch's code first on `PYTHONPATH`.
