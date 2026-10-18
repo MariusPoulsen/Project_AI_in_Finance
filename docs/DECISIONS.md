@@ -1875,3 +1875,24 @@ calendar-month block bootstrap (2,000 draws, seed 5557). **Pass:** a positive
 estimate with a one-sided bootstrap p-value below 0.05; it is a single test,
 so no further correction. T3 and S5 alone are reported alongside. With 24
 months the test has limited power; an inconclusive result is reported as such.
+
+## 58. Combined fresh-news filter replication: positive but inconclusive
+
+Recorded 2026-10-18. The Decision 57 test ran once on 2022–2023
+(`outputs/p6_sec_explore/replication.json`).
+
+| Filter | 2022–2023 per-candidate difference | 95 % interval | One-sided p | Skipped share | Skipped / kept mean net |
+|---|---|---|---|---|---|
+| R1 combined (pre-registered test) | +1.41 bps | [−5.28, +9.07] | 0.347 | 17.5 % | −8.0 / −2.6 bps |
+| S5 negative tone (reported) | +2.03 bps | [−1.22, +5.32] | 0.110 | 5.4 % | −37.9 / −1.6 bps |
+| T3 earnings filing (reported) | +1.84 bps | [−4.51, +9.51] | 0.305 | 16.7 % | −11.0 / −2.1 bps |
+
+R1 is positive in both years but **does not pass** (p = 0.35); with 24 months
+the test is underpowered. Across the three disjoint periods the negative-tone
+filter has behaved the same way each time: the trades it skips lost 34.7 bps
+(2006–2015), 41.7 bps (2016–2021) and 37.9 bps (2022–2023) on average,
+against −1.6 to −10.5 bps for the trades kept. That consistency is the
+strongest evidence in this project that SEC news helps identify divergences
+that are breaks rather than noise, but no pre-registered test has yet confirmed
+it at the required level, so nothing is adopted. The 2024–2025 final test, the
+only untouched data, stays locked.
