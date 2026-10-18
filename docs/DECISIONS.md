@@ -1830,3 +1830,25 @@ than the average trade. The chosen variants, written to
 
 No 2016–2021 outcome had been read for any filter, or for these model
 variants, when this record was made.
+
+## 56. Explore-then-confirm result: two news filters replicate but miss the corrected threshold
+
+Recorded 2026-10-18. Stage 2 ran once on 2016–2021
+(`outputs/p6_sec_explore/confirmation.json`, choices `89969591…`).
+
+| Block | Variant | 2016–2021 per-candidate difference | 95 % interval | One-sided p | Holm p | Years positive | Result |
+|---|---|---|---|---|---|---|---|
+| Timing | T3 earnings-filing filter | +3.76 bps | [−0.59, +7.58] | 0.043 | 0.086 | 5 of 6 | Fails (Holm) |
+| Tone | S5 negative-tone filter | +2.23 bps | [−0.02, +4.61] | 0.027 | 0.080 | 4 of 6 | Fails (Holm) |
+| News | M2 logistic C = 1 | −0.92 bps | [−2.43, +0.46] | 0.898 | 0.898 | 3 of 6 | Fails |
+
+**No block passes the pre-registered rule, so none is adopted.** The two filters
+did replicate in direction and size: in 2016–2021 the trades T3 skips (15.8 %
+of events) lost 23.7 bps each and those S5 skips (5.3 %) lost 41.7 bps, against
+about −10 bps for the trades kept, matching the exploration years and the
+literature on news-driven divergences. Their uncorrected one-sided p-values are
+below 0.05, but the Holm correction for three blocks puts both at about 0.08.
+The news-model variant, chosen narrowly over the news filters, did not
+replicate. This is suggestive, not confirmatory, evidence that skipping
+divergences where the moving company has fresh news helps. The Decision 36–42
+freeze and the 2024–2025 lock are unchanged.
