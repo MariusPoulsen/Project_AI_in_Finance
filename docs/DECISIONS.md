@@ -1969,3 +1969,18 @@ record precedes the confirmation run. Stage 1 explored 26 variants on 2006–201
 | exit | E3_adverse_tone_either_leg | B0 | +4.86 bps per candidate | 2.51 |
 | sizing | Z1_recent_tone_weight | B0 | +1.43 bps per candidate | 2.11 |
 | entry | H2_mover_net_headline_1s | B0 | +1.61 bps per candidate | 2.92 |
+
+## 60. Round-2 confirmation result
+
+Recorded 2026-10-19 automatically by `scripts/round2_watcher.ps1`
+after the one-time Decision 59 stage 2 on 2016–2021
+(`outputs/p6_sec_explore2/confirmation.json`, choices `30549267…`).
+
+| Family | Variant | Population | 2016–2021 difference | 95 % interval | One-sided p | Holm p | Years positive | Result |
+|---|---|---|---|---|---|---|---|---|
+| exit | E3_adverse_tone_either_leg | B0 | +6.11 bps | [+1.38, +11.25] | 0.004 | 0.012 | 6 of 6 | **Passes** |
+| sizing | Z1_recent_tone_weight | B0 | +1.55 bps | [-0.20, +3.29] | 0.042 | 0.084 | 4 of 6 | Fails |
+| entry | H2_mover_net_headline_1s | B0 | +1.01 bps | [-0.29, +2.28] | 0.059 | 0.084 | 4 of 6 | Fails |
+
+**Passing:** exit. A passing family becomes a candidate for a separately versioned policy with a new freeze proposal and replaces nothing without the owner's final-test unlock decision.
+The Decision 36–42 freeze and the 2024–2025 lock are unchanged.
