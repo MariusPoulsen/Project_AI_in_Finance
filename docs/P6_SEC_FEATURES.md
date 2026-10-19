@@ -2,7 +2,7 @@
 
 Exploratory work pre-registered in [DECISIONS 47](DECISIONS.md),
 [DECISIONS 50](DECISIONS.md) and [DECISIONS 51](DECISIONS.md); results in
-DECISIONS 48, 53, 54, 56, 58, 60 and 62. Each block is added to
+DECISIONS 48, 53, 54, 56, 58, 60, 62 and 64. Each block is added to
 v2's Model B and tested against B with the Decision 45 walk-forward (fit before
 year Y−1, threshold on Y−1, score Y; 2010–2021 decide, 2022–2023 reference).
 Nothing here changes the accepted v2 snapshot, its models or the frozen
@@ -19,6 +19,8 @@ Phase 6 policies.
 | Fresh-news entry filters (Decisions 55–58) | Replicate in direction, miss the corrected threshold | earnings filter +3.8 bps, negative-tone filter +2.2 bps per candidate (Holm p ≈ 0.08) |
 | **Adverse-tone news exit E3 (Decisions 59–62)** | **Passes confirmation; candidate policy** | +6.1 bps per trade, 95 % [+1.4, +11.3], Holm p = 0.012, 6 of 6 years (2016–2021); 2022–2023 +2.2 bps, p = 0.24 |
 | Graded sizing / sharper entry news (Decision 60) | Fails (Holm p = 0.084) | Z1 +1.6 bps, H2 +1.0 bps |
+| News exit + entry filter (Decisions 63–64, post-hoc) | Chosen combination just misses (p = 0.070); all 12 positive | +2.4 bps over E3 alone, +7.6 bps vs frozen (2016–2023) |
+| News exit on model trades (Decision 64, post-hoc) | Positive for all four models | XGBoost B +8.3 → +12.0 bps per trade (2010–2023) |
 
 ## How the recent-news extractor works
 

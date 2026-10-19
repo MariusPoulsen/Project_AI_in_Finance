@@ -2077,3 +2077,40 @@ FinBERT negative probability is at least 0.2): +4.24 bps over E3, t = 2.19,
 `outputs/p6_sec_explore3/choices.json` SHA-256
 `a9a3a31ea88a7fef9ee25d58b2be8fcdb838e2faaddf3fb401e52751b870e74d`. No
 2016–2023 combination outcome had been read when this was recorded.
+
+## 64. Round-3 results (post-hoc): entry rules add to the news exit; it also helps model trades
+
+Recorded 2026-10-19 (`outputs/p6_sec_explore3/combine_evaluation.json`,
+`models.json`). As stated in Decision 63, these results use data whose
+components were already seen and are supporting evidence, not confirmation.
+
+**Part 1, combinations, 2016–2023.** The pre-chosen C3 (E3 plus the R1 filter)
+gained **+2.44 bps per candidate over E3 alone, 95 % [−0.74, +5.58], one-sided
+p = 0.070, positive in 7 of 8 years**, so it misses the pre-registered rule. It
+gained +7.58 bps against the frozen policy (95 % [+2.02, +13.44], p = 0.004).
+All 12 combinations were positive over E3 in 2016–2023, from +0.63 to
++3.10 bps; the largest were C7 abnormal 8-K volume (+3.10, p < 0.001), C12 T3
+and H2 (+2.54), C2 T3 (+2.41) and C3 (+2.44). These were reported, not chosen
+in advance, so they are not corrected for twelve looks.
+
+**Part 2, model trades, 2010–2023.** Decision 45 walk-forward top-20 %
+selections priced under the frozen exit and under E3:
+
+| Model | Selected trades | Mean net per trade, frozen → E3 | Gain per candidate | 95 % interval | One-sided p | 2010–15 / 2016–21 / 2022–23 |
+|---|---|---|---|---|---|---|
+| Logistic A | 4,710 | −3.0 → +0.2 bps | +0.77 bps | [−0.24, +1.92] | 0.077 | +1.10 / +1.16 / −1.16 |
+| Logistic B | 4,594 | −4.9 → 0.0 bps | +1.14 bps | [−0.01, +2.50] | 0.027 | +1.25 / +1.88 / −1.35 |
+| XGBoost A | 4,604 | +2.6 → +4.5 bps | +0.42 bps | [−0.48, +1.38] | 0.187 | +1.21 / +0.44 / −1.38 |
+| XGBoost B | 4,532 | +8.3 → +12.0 bps | +0.85 bps | [−0.25, +2.04] | 0.067 | +1.67 / +1.23 / −2.16 |
+
+The news exit raises net return per selected trade for every model, and the
+XGBoost Model B selection with the news exit (+12.0 bps per trade over
+2010–2023) is the strongest combination observed in this project. The gain is
+positive in 2010–2015 and 2016–2021 for every model but negative in 2022–2023,
+where E3's Baseline 0 replication was also weaker.
+
+**Implication for the final test** (still locked; for the owner's decision): a
+candidate methodology is the frozen entry with the E3 news exit, optionally
+with an R1- or H4-style entry filter, evaluated on Baseline 0 and on the Model B
+selection. Choosing among these is a design decision to fix before the final
+test, not something further 2006–2023 testing can settle.
