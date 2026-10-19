@@ -381,6 +381,7 @@ all eighteen bound artifacts and repeats with the same immutable identity.
 - [ ] Add evidence timeline, source provenance and expandable cited chunks.
 - [ ] Add agent cases, validation state, break-risk and controller reason codes.
 - [ ] Complete Strategy Lab with five-rung comparison, equity/drawdown curves, predictive diagnostics, rejected-trade analysis and robustness controls.
+- [ ] Add the Strategy Lab **Research experiments** sublayer (spec 05, Section 19.2): export step for experiment summaries, `ResearchExperimentsService`, registry, effect-size, per-year, explore-confirm, filter/exit diagnostics and extraction-quality panels.
 - [ ] Complete Model & Data Monitor with data/source health, model versions, coverage, feature distribution/time-slice diagnostics, agent failure and abstention rates.
 - [ ] Complete Methodology / Model Card page.
 - [ ] Implement presentation/service caching keyed by scientific version identifiers.
