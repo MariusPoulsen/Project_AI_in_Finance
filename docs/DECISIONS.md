@@ -2187,3 +2187,51 @@ decision.
 
 Module: `structural_break.experiments.p6_boosting`, output
 `outputs/p6_boosting/`.
+
+## 66. Boosting tuning result: no variant beats the fixed XGBoost
+
+Recorded 2026-10-19 (`outputs/p6_boosting/evaluation.json`, SHA-256
+`742ef541…`). The Decision 65 run finished as pre-registered: 168 tasks,
+38 CPU-hours. R0 reproduced the Decision 45 selections.
+
+**Model B, 2010–2021 pooled, against R0 (fixed Decision 45 XGBoost):**
+
+| Variant | Brier gain (×10⁻⁴), 95 % | Years better | Return gain per candidate, 95 % | Years better | Mean net per selected trade |
+|---|---|---|---|---|---|
+| R0 fixed XGBoost | — | — | — | — | +3.2 bps |
+| V1 XGBoost, forward CV | +0.20 [−2.44, +2.80] | 5/12 | −1.60 bps [−3.53, +0.18] | 2/12 | −4.4 bps |
+| V2 XGBoost, purged K-fold | +1.16 [−1.05, +3.30] | 8/12 | −1.06 bps [−3.23, +0.91] | 6/12 | −1.9 bps |
+| V3 LightGBM | −2.22 [−4.86, +0.29] | 3/12 | −0.85 bps [−2.63, +0.76] | 4/12 | −0.8 bps |
+| V4 CatBoost | −3.04 [−8.78, +1.58] | 6/12 | −1.69 bps [−3.69, +0.15] | 4/12 | −4.9 bps |
+| V5 ensemble | +0.90 [−1.68, +3.33] | 8/12 | −1.98 bps [−3.62, −0.43] | 3/12 | −6.2 bps |
+| V6 XGBoost tuned for top-20 % precision | −1.48 [−5.48, +2.36] | 4/12 | −2.59 bps [−4.34, −0.88] | 3/12 | −8.9 bps |
+
+All Holm-adjusted p-values are at least 0.86, so **no variant passes either
+primary measure** and none is adopted. ROC-AUC is 0.749–0.758 for every
+variant against 0.757 for R0. The 2022–2023 reference rows agree: R0's
+selected trades average +38.3 bps, and every tuned variant is lower
+(+21.5 to +37.5 bps).
+
+**Secondary results.**
+- Model A: nothing passes. The ensemble has the best Brier gain,
+  +2.38 × 10⁻⁴ [+0.20, +4.53] in 10 of 12 years, but its Holm p is 0.093.
+  Return gains range from −0.40 to +0.30 bps.
+- The E3 news exit raises every variant's per-trade return, but R0 with E3
+  (+9.3 bps per trade) stays the best.
+
+**Interpretation.**
+- The fixed shallow, heavily regularised XGBoost (depth 3, min_child_weight 20,
+  lambda 10, 400 trees at 0.03) is already about as good as the inner
+  cross-validation can find.
+- The tuned settings jump between years: for example, CatBoost B uses depth 4
+  in 2010, 8 in 2016 and 4 in 2021, and the 2010 XGBoost uses 26 trees at a
+  0.17 learning rate. This shows that hyperparameter selection mostly fits
+  noise in the inner folds at this signal level (base rate about 8 %,
+  AUC about 0.75).
+- Tuning on the economic objective (V6) did worst on returns, which supports
+  training and tuning on the reversion label with proper scoring rules.
+- Purged K-fold (V2) was the most stable search scheme: best Brier gain for
+  Model B and 10 of 12 years for Model A. It is not significant.
+
+The Decision 36–42 freeze is unchanged, and the 2024–2025 final test stays
+locked.
