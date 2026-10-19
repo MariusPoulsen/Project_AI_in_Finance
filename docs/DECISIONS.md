@@ -2422,3 +2422,41 @@ more often, but they do not improve the best forecasting model or turn the
 kept trades into reliable profits. A v3 rebuild of the events with a new
 spread definition is not justified by this evidence. The features remain
 available as W4 in Decision 68.
+
+## 70. Boosting round 2 result: R0 with the news exit stays the best model
+
+Recorded 2026-10-20 (`outputs/p6_boosting2/evaluation.json`, SHA-256
+`88665657…`). Decision 68 ran as pre-registered.
+
+**E3 exit, 2010–2021 pooled.**
+
+| Variant | Mean net per selected trade | Per candidate | Sharpe (monthly, annualised) | Gain over R0, 95 % | Years better |
+|---|---|---|---|---|---|
+| R0 fixed XGBoost B | +9.3 bps | +2.16 bps | 0.31 | — | — |
+| W1 seed bagging | +6.3 bps | +1.47 bps | 0.22 | −0.69 [−1.72, +0.28] | 5/12 |
+| W2 linear start | +8.6 bps | +1.97 bps | 0.28 | −0.19 [−1.85, +1.45] | 6/12 |
+| W3 return weighting | +5.2 bps | +1.25 bps | 0.16 | −0.91 [−2.87, +0.90] | 4/12 |
+| W4 cointegration features | +6.2 bps | +1.44 bps | 0.21 | −0.72 [−1.97, +0.54] | 3/12 |
+| W5 all four | +4.6 bps | +1.12 bps | 0.23 | −1.05 [−3.18, +0.98] | 4/12 |
+
+**No variant passes** (every Holm p = 1.0).
+
+- **Frozen exit:** the gains are negative as well.
+- **2022–2023:** R0 averages +28.0 bps per trade under E3 (Sharpe 0.88).
+  W4 is the only variant that is not worse there (+0.31 bps per candidate).
+- **Calibration:** seed bagging and the cointegration block improve the raw
+  Brier score slightly (+0.75 and +0.80 × 10⁻⁴). Return weighting distorts
+  it heavily (−74 × 10⁻⁴), as expected for weighted training.
+
+**Conclusion for workstream 1.** Across Decisions 65–70, sixteen pre-registered
+model changes have been tested against the fixed Decision 45 XGBoost Model B:
+- re-tuning in four libraries and two cross-validation schemes;
+- an ensemble;
+- a returns-oriented tuning objective;
+- seed bagging, a linear start and return weighting;
+- 21 cointegration features.
+
+None improved its returns or its forecasts significantly. The best
+candidate model for the final-test design remains R0 (the Decision 45
+XGBoost Model B) with the E3 news exit. Choosing it is the owner's decision;
+the 2024–2025 final test stays locked.
