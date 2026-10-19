@@ -2307,3 +2307,32 @@ event only if:
 **Adoption.** A pass would justify a separately pre-registered redefinition
 of the spread or of the pair-validity rule (a v3 event rebuild). It would not
 be adopted directly.
+
+### 67a. Gate choice, fixed before 2016–2021 was scored
+
+Recorded 2026-10-19 after the 2006–2015 gate scoring
+(`outputs/p6_coint/gate_exploration.json`). Trading every Baseline 0 event
+lost money in 2006–2015, so every gate gained by withholding trades. The
+table shows each gate's gain per candidate, the share of events kept, and
+the mean net per trade of kept and withheld events.
+
+| Gate | Gain | Kept | Kept trades | Withheld trades |
+|---|---|---|---|---|
+| G2 | +13.1 bps, t 3.37 | 8 % | +1.2 bps | −14.2 bps |
+| G1 | +11.4 bps | 17 % | −9.6 bps | −13.7 bps |
+| G6 | +10.4 bps | 36 % | −7.5 bps | −16.1 bps |
+| G4 | +8.0 bps | 49 % | — | — |
+| G3 | +7.3 bps | 28 % | — | — |
+| G5 | +3.8 bps | 85 % | — | — |
+| Existing B1 gate (reference) | +13.1 bps | 10 % | — | — |
+
+Every gate raises the reversion rate of kept events; G2 keeps 15.4 %
+against 7.4 % withheld.
+
+**Choice: G2, Engle-Granger significant in both directions**
+(`outputs/p6_coint/gate_choice.json`, SHA-256
+`8d0060c46a0774715ace59e772af8a91ffc2359c2c14106f7537834b2aeebf9a`).
+
+It is nearly a subset of the existing B1 gate, whose 2022–2023 result
+reversed (Decision 44), so its confirmation is the informative test. No
+2016–2023 gate outcome had been computed when this was recorded.
