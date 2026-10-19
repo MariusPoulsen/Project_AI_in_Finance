@@ -2336,3 +2336,47 @@ against 7.4 % withheld.
 It is nearly a subset of the existing B1 gate, whose 2022–2023 result
 reversed (Decision 44), so its confirmation is the informative test. No
 2016–2023 gate outcome had been computed when this was recorded.
+
+## 68. Pre-registered boosting round 2: return-aware improvements on the best model
+
+Recorded 2026-10-19, before the Decision 67 model-feature result was read
+and before any run below. The owner asked for a version built on the best
+model so far that aims at long-run returns, with R0 kept as the comparison.
+
+**Base.** The fixed Decision 45 XGBoost Model B (R0), traded with the E3
+news exit (Decision 60). This was the best combination in Decision 64:
++12.0 bps per trade over 2010–2023.
+
+**Why not re-tune.** Decision 66 showed that hyperparameter search mostly
+fits noise here, and that tuning directly on the trading objective did worst
+(V6). These variants keep the reversion label and R0's parameters, and change
+how the model learns instead:
+
+| Variant | Change |
+|---|---|
+| W1 seed bagging | R0 with 80 % row and column subsampling, averaged over 10 seeds (variance reduction) |
+| W2 linear start | Boosting starts from the logistic Model B logit (C = 0.01), so the trees model what the linear model misses (the "linear start" used in the owner's earlier CatBoost project) |
+| W3 return weighting | Each training event is weighted by the absolute frozen-policy net return of its trade (clipped at the 1st/99th percentiles, mean 1; unpriced events get the median). This is the return-attribution weighting of López de Prado (2018, ch. 4): events that matter more for P&L count more |
+| W4 cointegration block | The 21 Decision 67 features added |
+| W5 all four | W1–W4 together |
+
+**Protocol.** Decision 45 walk-forward (2010–2021 decide, 2022–2023
+reference) with the top-20 % rule on Y−1 scores.
+
+**Primary measure.** Net return per Baseline 0 candidate under the E3 exit,
+variant minus R0. It uses events priced under both the frozen and E3 exits,
+with 2,000 calendar-month block bootstrap draws (seed 5557) and Holm across
+the five variants.
+
+**Pass rule.** Positive gain, Holm p < 0.05 and better in at least 8 of
+12 years.
+
+**Reported without a pass rule:**
+- the same contrast under the frozen exit;
+- mean net per selected trade;
+- the annualised Sharpe of monthly per-candidate returns;
+- the raw-probability Brier gain;
+- 2022–2023.
+
+Module: `structural_break.experiments.p6_boosting2`, output
+`outputs/p6_boosting2/`.
