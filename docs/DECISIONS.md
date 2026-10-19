@@ -2235,3 +2235,75 @@ selected trades average +38.3 bps, and every tuned variant is lower
 
 The Decision 36–42 freeze is unchanged, and the 2024–2025 final test stays
 locked.
+
+## 67. Pre-registered alternative cointegration features and gates
+
+Recorded 2026-10-19, before any outcome below was computed. The owner asked
+whether a better cointegration test or hedge ratio than Engle-Granger with OLS
+would help. Redefining the spread would change every event, so this first
+step keeps the events and asks whether the alternatives carry information.
+The 2024–2025 final test stays locked.
+
+**Features (21, `structural_break.experiments.p6_coint`).** For each event,
+the formation window is rebuilt from the frozen prices: the last 504 sessions
+with valid prices for both legs before the relationship became available.
+OLS on the rebuilt windows reproduces the stored alpha and beta to within
+1e-13 (checked on two pairs before registration; `build_check.json` records
+every event). On that window:
+
+- **Tests:** Engle-Granger t in the reverse direction and the larger of the
+  two directional p-values; Johansen trace and max-eigenvalue statistics
+  divided by their 5 % critical values; KPSS; Hurst exponent (lags 2–20);
+  20-session variance ratio.
+- **Alternative hedge ratios:**
+  - Johansen;
+  - total least squares;
+  - minimum ADF t (fixed lag 1; data-snooped by design, so used as a feature
+    with no critical value);
+  - minimum half-life (positive ratios, grid plus refinement).
+
+  For each ratio the features are its gap to the OLS beta, divided by
+  max(|beta|, 0.1) and clipped to ±3. TLS also gets its ADF t, minimum-ADF
+  its t, and minimum half-life its half-life.
+- **Robustness of the divergence:** the event-day z-score of the spread under
+  each alternative ratio, using that window's mean and standard deviation and
+  aligned with the signal direction. Their minimum is also a feature.
+- **Kalman filter:** a random-walk alpha and beta (delta 1e-4, observation
+  variance 1e-3) run forward over the pair's prices. Its event-day beta gap
+  and the event-day prediction error divided by the standard deviation of the
+  previous 60 errors (aligned) are features. The filter uses past prices only.
+
+**Test 1, model features (Decision 45 walk-forward).**
+- **Comparison:** base model against base plus the 21 features, for
+  logistic (C = 0.01) and the fixed XGBoost, Models B and A.
+- **Primary:** Model B Brier gain (base minus with-features squared error),
+  pooled 2010–2021, with 2,000 calendar-month block bootstrap draws
+  (seed 5557) and Holm across the two families.
+- **Pass rule:** positive gain, Holm p < 0.05, better in at least 8 of
+  12 years.
+- **Reported, no pass rule:** Model A, top-20 % returns and 2022–2023.
+
+**Test 2, validity gates on Baseline 0 (frozen exit).** Each gate keeps an
+event only if:
+
+| Gate | Keep the event if |
+|---|---|
+| G1 | Johansen rejects no cointegration (trace ratio ≥ 1) |
+| G2 | Engle-Granger rejects in both directions (larger p < 0.05) |
+| G3 | KPSS does not reject stationarity (< 0.463) |
+| G4 | the divergence holds under every alternative ratio (minimum aligned z ≥ 1.5) |
+| G5 | Hurst < 0.5 |
+| G6 | minimum half-life ≤ 20 sessions |
+
+- **Measure:** gated minus trade-all per candidate, where a withheld trade
+  earns 0.
+- **Steps:** score all six on 2006–2015 and fix the best positive gate by t
+  in `gate_choice.json`, recorded before 2016–2021 is scored. That gate
+  passes if its 2016–2021 gain is positive with one-sided p < 0.05 and it is
+  positive in at least 4 of 6 years.
+- **Reported:** every gate's 2016–2021 and 2022–2023 results, plus the
+  existing Engle-Granger gate (Baseline 1) for reference.
+
+**Adoption.** A pass would justify a separately pre-registered redefinition
+of the spread or of the pair-validity rule (a v3 event rebuild). It would not
+be adopted directly.
