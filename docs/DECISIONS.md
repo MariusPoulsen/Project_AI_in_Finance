@@ -1956,3 +1956,16 @@ Decision 51/55 negative-tone filter, whose outcomes have been seen in every
 period (Decisions 55–58), so their exploration results may look optimistic;
 the 2016–2021 confirmation is the check. No outcome of any listed variant has
 been read. 2022–2023 are not used, and 2024–2025 stay locked.
+
+### 59a. Round-2 exploration choices, fixed before confirmation
+
+Recorded 2026-10-19 automatically by `scripts/round2_watcher.ps1`
+immediately after stage 1 and before stage 2 ran; the commit containing this
+record precedes the confirmation run. Stage 1 explored 26 variants on 2006–2015, 25 with a positive estimate.
+`outputs/p6_sec_explore2/choices.json` SHA-256 `3054926796749cfa5e9231b5928358930c5ec3a43ac4799105f6c4722b8710b5`.
+
+| Family | Variant | Population | Exploration estimate | t |
+|---|---|---|---|---|
+| exit | E3_adverse_tone_either_leg | B0 | +4.86 bps per candidate | 2.51 |
+| sizing | Z1_recent_tone_weight | B0 | +1.43 bps per candidate | 2.11 |
+| entry | H2_mover_net_headline_1s | B0 | +1.61 bps per candidate | 2.92 |
