@@ -1984,3 +1984,22 @@ after the one-time Decision 59 stage 2 on 2016–2021
 
 **Passing:** exit. A passing family becomes a candidate for a separately versioned policy with a new freeze proposal and replaces nothing without the owner's final-test unlock decision.
 The Decision 36–42 freeze and the 2024–2025 lock are unchanged.
+
+## 61. Pre-registered 2022–2023 replication of the adverse-tone news exit
+
+Recorded 2026-10-19, after Decision 60 and before this test was run. The E3
+exit rule passed its 2016–2021 confirmation. 2022–2023 are fresh for exit
+rules: no exit-variant outcome has been read for those years (the
+Decision 52–53 half-life rows for 2022–2023 concern a different exit and were
+reference rows). The owner asked to keep exploring; a second, independent
+period is the strongest check available before the locked final test.
+
+**Rule:** E3 exactly as fixed in Decision 59 (exit at the next open after an
+8-K headline with net tone ≤ −0.1 on the long leg, or ≥ +0.1 on the short
+leg, becomes available during the trade; frozen entry, band, stop, costs and
+borrow). **Test:** Baseline 0, events signalled in 2022–2023, paired per-trade
+net-return difference against the frozen exit over trades both price,
+calendar-month block bootstrap (2,000 draws, seed 5557). **Pass:** a positive
+estimate with a one-sided p below 0.05; a single test, so no correction. With
+24 months the test has limited power, and an inconclusive result is reported
+as such.

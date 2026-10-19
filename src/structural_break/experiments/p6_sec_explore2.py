@@ -49,6 +49,7 @@ from structural_break.storage.files import write_bytes
 
 PLAN_VERSION = "p6-sec-explore2-v1"
 EXPLORE, CONFIRM = (2006, 2015), (2016, 2021)
+REPLICATE = (2022, 2023)  # DECISIONS 61: one test of the confirmed exit rule
 FAMILIES = ("exit", "sizing", "entry")
 EXITS = (
     "E1_mover_8k",
@@ -496,7 +497,9 @@ def record_results(output: Path, decisions: Path) -> bool:
 
 def main(arguments: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("stage", choices=("explore", "confirm", "record-choices", "record-results"))
+    parser.add_argument(
+        "stage", choices=("explore", "confirm", "replicate", "record-choices", "record-results")
+    )
     parser.add_argument("--workspace-root", type=Path, required=True)
     parser.add_argument("--configs-dir", type=Path, default=Path("configs"))
     parser.add_argument("--features", type=Path, action="append", required=True)
@@ -560,6 +563,25 @@ def main(arguments: Sequence[str] | None = None) -> None:
         raw = (json.dumps(choices, indent=2, sort_keys=True) + "\n").encode()
         write_bytes(out / "choices.json", raw)
         print(json.dumps({"choices": choices, "choices_sha256": hashlib.sha256(raw).hexdigest()}))
+        return
+    if args.stage == "replicate":
+        exits = simulate_exits(
+            sources, args.configs_dir, frame, pairs, index, periodic, REPLICATE, say
+        )
+        exits.to_parquet(out / "exits_replicate.parquet", index=False)
+        name = "E3_adverse_tone_either_leg"
+        stats = exit_contrast(exits, frame, name, "B0", REPLICATE)
+        both = exits["frozen_status"].eq("COMPLETE") & exits[f"{name}|status"].eq("COMPLETE")
+        stats |= {
+            "frozen_mean_net_bps": float(exits.loc[both, "frozen_net"].mean() * 1e4),
+            "rule_mean_net_bps": float(exits.loc[both, f"{name}|net"].mean() * 1e4),
+            "passes": bool(stats["estimate"] > 0 and stats["p_one_sided"] < ex.ALPHA),
+            "years": REPLICATE,
+            "run_date": date.today().isoformat(),
+        }
+        text = json.dumps(stats, indent=2, sort_keys=True, default=str) + chr(10)
+        write_bytes(out / "replication.json", text.encode())
+        print(json.dumps({k: stats[k] for k in ("passes", "estimate_bps", "p_one_sided")}))
         return
     raw = (out / "choices.json").read_bytes()
     choices = json.loads(raw)
