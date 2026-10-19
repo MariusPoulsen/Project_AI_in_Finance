@@ -2029,3 +2029,38 @@ owner explicitly decides on the methodology and authorises that run. The
 improvement is per trade; Baseline 0's mean net return stays negative, so the
 rule reduces losses rather than making the unfiltered strategy profitable on
 its own.
+
+## 63. Pre-registered round 3: news exit plus entry rules, and the news exit on model trades
+
+Recorded 2026-10-19, before any part of this round was scored. The owner asked
+to (1) combine the confirmed E3 news exit with the entry rules that were
+positive but inconclusive (including the Z sizing and H headline rules), then
+(2) check the news exit on model-selected trades, while the final test stays
+locked.
+
+**This round is post-hoc.** Every period through 2023 has already been used
+for at least one component (E3 was confirmed on 2016–2021 and replicated on
+2022–2023; the entry rules' outcomes were seen in rounds 1–2). Its results are
+supporting evidence for the eventual final-test design, not independent
+confirmation, and are reported as such.
+
+**Part 1, combinations** (`structural_break.experiments.p6_sec_explore3`,
+`p6-sec-explore3-v1`). Baseline 0, trades priced under both the frozen exit
+and E3. Each combination applies one entry rule on top of E3; the contrast is
+its gain over E3 alone (a skipped trade earns 0, a down-weighted trade earns
+weight × its E3 net), also reported against the frozen policy. Entry rules:
+C1 S5 negative recent-news tone; C2 T3 earnings filing; C3 R1 (T3 or S5); C4
+N2 news explains the move; C5 H1 negative headline in the last session; C6 H2
+net headline tone in the last session; C7 H4 abnormal 8-K volume; C8 Z1
+recent-tone weight; C9 Z3 news-type weight; C10 Z4 headline-tone weight; C11
+H2 and Z1; C12 T3 and H2. The combination with the largest bootstrap t among
+positive gains on 2006–2015 is written to
+`outputs/p6_sec_explore3/choices.json` and recorded before it is evaluated on
+2016–2023. Rule: a positive gain over E3 with one-sided p below 0.05 and at
+least 5 of 8 positive years; every combination's 2016–2023 result is reported.
+
+**Part 2, model trades.** For Models A and B (logistic C = 0.01 and the
+Decision 45 XGBoost), the Decision 45 walk-forward top-20 % selections for
+2010–2023 are priced under the frozen exit and under E3; the paired
+per-candidate difference is reported pooled and for 2010–2015, 2016–2021 and
+2022–2023. This is a consistency check with no pass rule.
