@@ -2003,3 +2003,29 @@ calendar-month block bootstrap (2,000 draws, seed 5557). **Pass:** a positive
 estimate with a one-sided p below 0.05; a single test, so no correction. With
 24 months the test has limited power, and an inconclusive result is reported
 as such.
+
+## 62. News-exit replication and status: confirmed once, positive in every period
+
+Recorded 2026-10-19. The Decision 61 test ran once
+(`outputs/p6_sec_explore2/replication.json`): on 2022–2023 the E3
+adverse-tone news exit changed Baseline 0 net return per trade by **+2.20 bps,
+95 % [−3.75, +8.52], one-sided p = 0.243** (3,153 trades, 24 months; 2022
++4.8, 2023 −1.3 bps), moving the mean from −3.6 to −1.4 bps. It does not pass
+on its own; with two years the test is underpowered.
+
+**Status of E3.** It is the first rule in this project to pass a
+pre-registered, multiplicity-corrected confirmation (Decision 60: +6.11 bps
+per trade, 95 % [+1.38, +11.25], Holm p = 0.012, positive in all six years
+2016–2021), and its estimate is positive in all three disjoint periods
+(2006–2015 exploration +4.86, 2016–2021 +6.11, 2022–2023 +2.20 bps). It closes
+about a quarter of trades early, when an 8-K headline contradicts the position:
+bad news on the stock held long or good news on the stock held short — the
+case where the divergence is a fundamental break rather than noise.
+
+Per Decision 59, E3 is now a **candidate** for a separately versioned
+execution policy with its own freeze proposal. It is not adopted into the
+Decision 36–42 freeze, and the 2024–2025 final test stays locked until the
+owner explicitly decides on the methodology and authorises that run. The
+improvement is per trade; Baseline 0's mean net return stays negative, so the
+rule reduces losses rather than making the unfiltered strategy profitable on
+its own.

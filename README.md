@@ -31,7 +31,10 @@ calibration and assessment periods.
   filing-timing features, Gemma labels of each company's 8-K news from the
   three sessions before each divergence, and FinBERT tone of that news all
   failed their pre-registered walk-forward tests against Model B, as did a
-  half-life-based trade timeout.
+  half-life-based trade timeout. Used to **exit** trades instead, SEC news
+  helps: closing a trade when an 8-K headline contradicts the position passed
+  a pre-registered confirmation (+6.1 bps per trade, 2016–2021) and is a
+  candidate policy for the locked final test (DECISIONS 59–62).
 - **Full System deferred** (DECISIONS 40): the multi-agent rung is reported as
   not run.
 - **Model B improvement is not established**, and the 2024–2025 final test
