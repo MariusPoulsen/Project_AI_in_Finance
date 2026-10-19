@@ -2064,3 +2064,16 @@ Decision 45 XGBoost), the Decision 45 walk-forward top-20 % selections for
 2010–2023 are priced under the frozen exit and under E3; the paired
 per-candidate difference is reported pooled and for 2010–2015, 2016–2021 and
 2022–2023. This is a consistency check with no pass rule.
+
+### 63a. Round-3 combination choice, fixed before evaluation
+
+Recorded 2026-10-19 after the 2006–2015 combination scoring
+(`outputs/p6_sec_explore3/combine_exploration.json`). All 12 combinations
+improved on E3 alone there (+0.67 to +4.24 bps per candidate). The chosen
+combination is **C3: E3 plus the R1 entry filter** (skip when the moving
+company filed an earnings report in the last 3 sessions or its recent-news
+FinBERT negative probability is at least 0.2): +4.24 bps over E3, t = 2.19,
++9.10 bps against the frozen policy; 16.4 % of trades skipped.
+`outputs/p6_sec_explore3/choices.json` SHA-256
+`a9a3a31ea88a7fef9ee25d58b2be8fcdb838e2faaddf3fb401e52751b870e74d`. No
+2016–2023 combination outcome had been read when this was recorded.
