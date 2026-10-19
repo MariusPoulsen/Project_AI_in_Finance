@@ -2380,3 +2380,45 @@ the five variants.
 
 Module: `structural_break.experiments.p6_boosting2`, output
 `outputs/p6_boosting2/`.
+
+## 69. Alternative cointegration result: informative about reversion, not adopted
+
+Recorded 2026-10-19 (`outputs/p6_coint/models.json`,
+`gate_confirmation.json`). Both Decision 67 tests ran as pre-registered.
+
+**Test 1, model features, 2010–2021.**
+
+| Model | Brier gain (×10⁻⁴), 95 % | Years better | Return gain per candidate, 95 % | Years better |
+|---|---|---|---|---|
+| B logistic | +0.73 [−1.56, +2.98], Holm p 0.46 | 8/12 | +1.89 bps [+0.33, +3.43], p 0.009 | 10/12 |
+| B XGBoost | +0.80 [−1.47, +3.05], Holm p 0.46 | 8/12 | −0.55 bps [−1.77, +0.70] | 4/12 |
+| A logistic | +0.97 [−1.30, +3.20] | 8/12 | +2.05 bps [+0.69, +3.39], p < 0.001 | 8/12 |
+| A XGBoost | +1.16 [−0.59, +2.94] | 6/12 | +1.06 bps [−0.32, +2.37] | 9/12 |
+
+**The primary Brier test fails.** Secondary returns:
+- **Logistic models:** the block improves their returns (with an
+  unadjusted p below 0.01).
+- **XGBoost Model B:** no improvement for the best model.
+- **2022–2023:** the Brier gains turn negative (−0.6 to −4.3 × 10⁻⁴) and
+  return gains are between −0.95 and +0.82 bps.
+
+**Test 2, gates.** The pre-chosen G2 gate (Engle-Granger significant in
+both directions):
+- **2016–2021:** +12.6 bps per candidate, 95 % [−6.4, +29.0], one-sided
+  p = 0.085, positive in 5 of 6 years. **It fails.**
+- **2022–2023:** +2.2 bps.
+
+Johansen (G1) was positive in all three periods (+11.4, +12.3 and +4.2 bps)
+and the existing Engle-Granger gate in 2016–2021 was +11.8 bps; neither was
+pre-chosen.
+
+Every gate roughly doubles the reversion rate of the events it keeps (G2:
+19.6 % against 8.1 % in 2016–2021). The kept trades still earn little:
++5.3 bps in 2016–2021 and −19.0 bps in 2022–2023. Most of the gain comes
+from withholding the losing majority.
+
+**Conclusion.** Better cointegration diagnostics identify pairs that revert
+more often, but they do not improve the best forecasting model or turn the
+kept trades into reliable profits. A v3 rebuild of the events with a new
+spread definition is not justified by this evidence. The features remain
+available as W4 in Decision 68.
