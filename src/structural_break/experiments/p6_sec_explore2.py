@@ -410,9 +410,93 @@ def _evaluate(
     return entry_contrast(frame, name, population, span)
 
 
+CHOICES_MARKER = "### 59a. "
+RESULTS_MARKER = "## 60. "
+
+
+def record_choices(output: Path, decisions: Path) -> bool:
+    """Append the fixed stage-1 choices to DECISIONS (once), before stage 2 runs."""
+    text = decisions.read_text(encoding="utf-8")
+    if CHOICES_MARKER in text:
+        return False
+    raw = (output / "choices.json").read_bytes()
+    choices = json.loads(raw)
+    explored = json.loads((output / "exploration.json").read_bytes())["variants"]
+    positive = sum(1 for row in explored if (row.get("estimate") or 0) > 0)
+    lines = [
+        "",
+        f"{CHOICES_MARKER}Round-2 exploration choices, fixed before confirmation",
+        "",
+        f"Recorded {date.today().isoformat()} automatically by `scripts/round2_watcher.ps1`",
+        "immediately after stage 1 and before stage 2 ran; the commit containing this",
+        "record precedes the confirmation run. Stage 1 explored "
+        f"{len(explored)} variants on 2006–2015, {positive} with a positive estimate.",
+        f"`outputs/p6_sec_explore2/choices.json` SHA-256 `{hashlib.sha256(raw).hexdigest()}`.",
+        "",
+        "| Family | Variant | Population | Exploration estimate | t |",
+        "|---|---|---|---|---|",
+    ]
+    for family in FAMILIES:
+        choice = choices[family]
+        lines.append(
+            f"| {family} | {choice['name']} | {choice['population']} | "
+            f"{choice['explore_estimate_bps']:+.2f} bps per candidate | {choice['explore_t']:.2f} |"
+        )
+    _append(decisions, text, lines)
+    return True
+
+
+def _append(decisions: Path, text: str, lines: list[str]) -> None:
+    newline = chr(10)
+    decisions.write_text(
+        text.rstrip(newline) + newline + newline.join(lines) + newline, encoding="utf-8"
+    )
+
+
+def record_results(output: Path, decisions: Path) -> bool:
+    """Append the factual stage-2 results to DECISIONS (once)."""
+    text = decisions.read_text(encoding="utf-8")
+    if RESULTS_MARKER in text:
+        return False
+    result = json.loads((output / "confirmation.json").read_bytes())
+    rows = result["families"]
+    passed = [family for family, row in rows.items() if row["passes"]]
+    lines = [
+        "",
+        f"{RESULTS_MARKER}Round-2 confirmation result",
+        "",
+        f"Recorded {date.today().isoformat()} automatically by `scripts/round2_watcher.ps1`",
+        "after the one-time Decision 59 stage 2 on 2016–2021",
+        "(`outputs/p6_sec_explore2/confirmation.json`, choices "
+        f"`{result['choices_sha256'][:8]}…`).",
+        "",
+        "| Family | Variant | Population | 2016–2021 difference | 95 % interval "
+        "| One-sided p | Holm p | Years positive | Result |",
+        "|---|---|---|---|---|---|---|---|---|",
+    ]
+    for family in FAMILIES:
+        row = rows[family]
+        low, high = row["interval_95_bps"]
+        lines.append(
+            f"| {family} | {row['name']} | {row['population']} | {row['estimate_bps']:+.2f} bps | "
+            f"[{low:+.2f}, {high:+.2f}] | {row['p_one_sided']:.3f} | {row['p_holm']:.3f} | "
+            f"{row['years_positive']} of 6 | {'**Passes**' if row['passes'] else 'Fails'} |"
+        )
+    verdict = (
+        f"**Passing:** {', '.join(passed)}. A passing family becomes a candidate for a "
+        "separately versioned policy with a new freeze proposal and replaces nothing "
+        "without the owner's final-test unlock decision."
+        if passed
+        else "**No family passes the pre-registered rule; none is adopted.**"
+    )
+    lines += ["", verdict, "The Decision 36–42 freeze and the 2024–2025 lock are unchanged."]
+    _append(decisions, text, lines)
+    return True
+
+
 def main(arguments: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("stage", choices=("explore", "confirm"))
+    parser.add_argument("stage", choices=("explore", "confirm", "record-choices", "record-results"))
     parser.add_argument("--workspace-root", type=Path, required=True)
     parser.add_argument("--configs-dir", type=Path, default=Path("configs"))
     parser.add_argument("--features", type=Path, action="append", required=True)
@@ -420,7 +504,14 @@ def main(arguments: Sequence[str] | None = None) -> None:
     parser.add_argument("--headlines", type=Path, required=True)
     parser.add_argument("--sec-metadata", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--decisions", type=Path, default=Path("docs/DECISIONS.md"))
     args = parser.parse_args(arguments)
+    if args.stage == "record-choices":
+        print(json.dumps({"recorded": record_choices(args.output_dir, args.decisions)}))
+        return
+    if args.stage == "record-results":
+        print(json.dumps({"recorded": record_results(args.output_dir, args.decisions)}))
+        return
 
     def say(message: str) -> None:
         print(message, file=sys.stderr, flush=True)

@@ -57,3 +57,38 @@ def test_news_times_are_after_the_signal_and_within_the_horizon() -> None:
     times = e2._times(rows, signal, rows["negative"].ge(0.2))
     assert times == [datetime(2015, 6, 2, 12, tzinfo=UTC)]
     assert e2._times(e2.EMPTY, signal) == []
+
+
+def test_record_commands_append_once(tmp_path) -> None:
+    import json
+
+    out = tmp_path / "out"
+    out.mkdir()
+    choice = {
+        "name": "E5_timeout_10",
+        "population": "B0",
+        "explore_t": 2.1,
+        "explore_estimate_bps": 3.0,
+    }
+    (out / "choices.json").write_text(json.dumps({f: choice for f in e2.FAMILIES}))
+    (out / "exploration.json").write_text(
+        json.dumps({"variants": [{"estimate": 0.001}, {"estimate": -1}]})
+    )
+    decisions = tmp_path / "DECISIONS.md"
+    decisions.write_text("# Decisions\n")
+    assert e2.record_choices(out, decisions) and not e2.record_choices(out, decisions)
+    row = choice | {
+        "estimate_bps": 2.0,
+        "interval_95_bps": [-1.0, 5.0],
+        "p_one_sided": 0.1,
+        "p_holm": 0.3,
+        "years_positive": 4,
+        "passes": False,
+    }
+    (out / "confirmation.json").write_text(
+        json.dumps({"families": {f: row for f in e2.FAMILIES}, "choices_sha256": "a" * 64})
+    )
+    assert e2.record_results(out, decisions) and not e2.record_results(out, decisions)
+    text = decisions.read_text()
+    assert "### 59a. " in text and "## 60. " in text and "none is adopted" in text
+    assert text.count("E5_timeout_10") == 6

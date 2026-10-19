@@ -23,6 +23,6 @@ if (Test-Path outputs\p6_sec_features\news_walk_forward.json) {
 }Write-Output ""
 $v2 = "$env:USERPROFILE\OneDrive\Skrivebord\Dat-Øk\Applied_AI_in_Finance\Project_AI_in_Finance"
 & .venv\Scripts\python.exe -m structural_break.experiments.headline_coverage status --sec-metadata "$v2\data\research_v2\sec_metadata\source_v3" --output outputs\headline_v1
-if (Test-Path outputs\p6_sec_explore2\choices.json) { Write-Output "Round 2 exploration: stage 1 finished (choices.json written)" }
-elseif ($shells | Where-Object { $_.CommandLine -like '*explore2_when_ready*' }) { Write-Output "Round 2 exploration: waiting for headline scoring" }
-else { Write-Output "Round 2 exploration: not running" }
+if (Test-Path outputs\p6_sec_explore2\DONE) { Write-Output "Round 2: finished - results in docs\DECISIONS.md (Decision 60)" }
+elseif ($shells | Where-Object { $_.CommandLine -like '*round2_watcher*' }) { Write-Output "Round 2: watcher running (log: outputs\p6_sec_explore2\watcher.log)" }
+else { Write-Output "Round 2: watcher NOT running (restart: powershell -File scripts\round2_watcher.ps1)" }
