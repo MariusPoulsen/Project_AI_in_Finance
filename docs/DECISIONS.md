@@ -2114,3 +2114,76 @@ candidate methodology is the frozen entry with the E3 news exit, optionally
 with an R1- or H4-style entry filter, evaluated on Baseline 0 and on the Model B
 selection. Choosing among these is a design decision to fix before the final
 test, not something further 2006–2023 testing can settle.
+
+## 65. Pre-registered boosting tuning, model families and cross-validation (workstream 1)
+
+Recorded 2026-10-19 on branch `p6/boosting-tuning`, before any run below. The
+owner asked whether tuning XGBoost, other boosting libraries or better
+cross-validation could improve the forecasts and the returns. The 2024–2025
+final test stays locked; nothing here changes the frozen Decision 36–42
+policies or the accepted v2 snapshot.
+
+**Reference (R0).** The Decision 45 walk-forward with its fixed XGBoost
+(depth 3, 400 trees, learning rate 0.03, min_child_weight 20, lambda 10,
+seed 42) on the reversion label, for Model B (B_both columns, primary) and
+Model A (36 quantitative columns, secondary). R0 was checked to reproduce the
+Decision 45 B selections exactly (2010: 90 trades, −45.4 bps; 2016: 304
+trades, +5.7 bps).
+
+**Variants.** For every test year Y (2010–2023) each variant is tuned only on
+the Decision 45 training window (label windows ending before 1 January Y−1):
+
+| Variant | Library | Inner cross-validation | Tuning objective |
+|---|---|---|---|
+| V1 | XGBoost | forward-chaining | log loss |
+| V2 | XGBoost | purged K-fold with embargo | log loss |
+| V3 | LightGBM | forward-chaining | log loss |
+| V4 | CatBoost | forward-chaining | log loss |
+| V5 | Equal-weight mean of the calibrated V1, V3 and V4 probabilities | — | — |
+| V6 | XGBoost | forward-chaining | top-20 % precision |
+
+- **Forward-chaining folds:** each of the last 4 signal years in the window
+  (fewer when the window is short) is validated on a model fit to events
+  whose label windows ended before that year, so the label horizon purges the
+  boundary.
+- **Purged K-fold:** 5 contiguous blocks in time; fit rows whose label window
+  overlaps the validation block are removed, plus a 30-day embargo after it
+  (López de Prado 2018).
+- **Search:** Optuna TPE, 30 trials (10 random start-up), sampler seed 5557,
+  fixed spaces in `p6_boosting.suggest` (learning rate 0.02–0.2, depth or
+  leaves, child weight, row and column subsampling, L1/L2 penalties, and
+  CatBoost's random strength and bagging temperature). Each fold uses early
+  stopping (up to 1,500 trees, patience 100) on its validation log loss. The
+  refit uses the mean best tree count. Fits are single-threaded with seed 42.
+- **Scoring:** the refit model scores the Y−1 and Y events. Probabilities are
+  recalibrated with the project's monotone Platt sigmoid fitted on Y−1 events
+  whose label window ended before 1 January Y. Selection is the Decision 45
+  top-20 % rule: a Y event is traded if its score is at least the 80th
+  percentile of the Y−1 scores (V5 ranks by its mean calibrated probability).
+  Every trade is priced with the frozen Decision 36 policy.
+
+**Primary measures (Model B, pooled 2010–2021, paired against R0).**
+
+1. **Forecast:** Brier score gain, R0 − variant squared error per labelled
+   test event.
+2. **Return:** net return per Baseline 0 candidate, variant − R0 (selected
+   COMPLETE trade = its net return, withheld = 0, selected unknown execution
+   excluded).
+
+Intervals and one-sided p-values come from 2,000 calendar-month block
+bootstrap draws (seed 5557). Within each measure, Holm's correction is applied
+across the six variants. A variant **passes** a measure only if its gain is
+positive, Holm-adjusted p < 0.05, and the gain is positive in at least 8 of
+the 12 years.
+
+**Reported without a pass rule:** log loss, ROC-AUC and PR-AUC; mean net per
+selected trade; the same contrasts for Model A; the return contrast with the
+E3 news exit (Decision 60) on events priced under both exits; 2022–2023
+reference rows; the tuned parameters and inner-fold scores for every year.
+
+**Adoption.** A passing variant becomes a candidate model for the final-test
+design. Adopting it needs a separate freeze proposal and the owner's
+decision.
+
+Module: `structural_break.experiments.p6_boosting`, output
+`outputs/p6_boosting/`.
