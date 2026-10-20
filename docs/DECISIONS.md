@@ -3593,3 +3593,16 @@ Recorded 2026-10-20, 2011–2017, bag5:
 
 I-0 has the lowest log loss, so nothing changes, and 2018–2023 was not
 opened for this stage.
+
+### 88a. Stage G choice: the cointegration block is added
+
+Recorded 2026-10-21, 2010–2017, bag5:
+
+| Spec | ROC-AUC | PR-AUC | Log loss | Brier |
+|---|---|---|---|---|
+| B+rule+ou | 0.743 | 0.141 | 0.19802 | 0.0510 |
+| B+rule+ou+track | 0.745 | 0.142 | 0.19815 | 0.0511 |
+| **B+rule+ou+coint** | **0.746** | **0.148** | **0.19741** | **0.0509** |
+
+Only coint lowers log loss, so **B+rule+ou+coint (bag5)** is the Stage G
+choice, and no combined spec is needed. 2018–2023 is opened once.
