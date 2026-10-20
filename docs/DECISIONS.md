@@ -3505,3 +3505,18 @@ strongest earlier signal were:
 **Rule:** a block is added if its spec lowers the 2010–2017 log loss
 below bag5's (0.19802). If both do, the combined spec is run and kept only
 if it beats both. 2018–2023 is opened once.
+
+## 89. Pre-registered Stage H: structural-break filters on the current design
+
+Recorded 2026-10-20, before any result below. These are filters on the G-a
+design (R-a top 20 %, R1 events excluded, adopted exit) that skip pairs
+whose relationship shows signs of a break:
+
+| Filter | Skip the event if |
+|---|---|
+| H-a | The pair's most recent earlier event, resolved before the signal date, was STOPPED (hit the adverse z of 3) within the last 60 calendar days |
+| H-b | The spread has not crossed its mean for more than 120 sessions (`state_days_since_zero_cross` > 120) |
+
+**Rule:** the filter with the higher 2010–2017 monthly Sharpe of
+per-candidate returns is adopted if that Sharpe exceeds G-a's (0.71).
+2018–2023 and the portfolio follow once.
