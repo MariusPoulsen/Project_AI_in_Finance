@@ -3709,3 +3709,18 @@ design.
 
 **Rule:** K-a is adopted if its 2010–2017 monthly Sharpe of per-candidate
 returns exceeds H-b's (0.73). 2018–2023 and the portfolio follow once.
+
+### 93a. Stage K result: the sector track-record filter is not adopted
+
+Recorded 2026-10-21, 2010–2017:
+
+| Design | Trades | Per trade | Monthly Sharpe |
+|---|---|---|---|
+| **H-b** | 1,537 | +20.5 bps | **0.73** |
+| K-a | 1,314 | +20.4 bps | 0.66 |
+
+K-a skipped 1,056 of 4,291 selected events over 2010–2023, spread across
+sectors and years. Sector-level strategy performance does not persist well
+enough to filter on, so the Financials weakness of 2010–2017 was not
+predictable point-in-time. **The design is unchanged**, and 2018–2023 was
+not opened for this stage.

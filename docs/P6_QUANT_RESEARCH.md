@@ -1,7 +1,7 @@
 # Quant research programme (workstream 1)
 
 Branch `p6/quant-research`. Pre-registrations and results:
-[DECISIONS 75–91](DECISIONS.md). The 2024–2025 final test stays locked, and
+[DECISIONS 75–93](DECISIONS.md). The 2024–2025 final test stays locked, and
 nothing here changes the frozen Decision 36–42 policies or the accepted v2
 snapshot.
 
@@ -9,10 +9,12 @@ snapshot.
 - **Choices:** every choice was made on the 2010–2017 walk-forward test years.
 - **Confirmation:** 2018–2023 was opened once per stage, only after the
   choice was committed.
-- **Rejections:** four choices that looked good on 2010–2017 did **not**
-  hold out and were rejected: the extra feature block, a wider take profit,
-  the cointegration block on the final model, and a recalibration scheme
-  that never got past selection.
+- **Rejected after the holdout:** three choices that looked good on
+  2010–2017 did **not** hold out: the extra feature block, a wider take
+  profit, and the cointegration block on the final model.
+- **Rejected on selection years:** LightGBM, an XGBoost–LightGBM blend,
+  recalibration on recent predictions, seven alternative trade selections,
+  and a sector track-record filter (Decisions 86–93).
 - **Holdout reuse:** the holdout has been opened in about ten stages, so its
   later results are less clean than its first. The 2024–2025 final test is
   the clean test.
