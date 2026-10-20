@@ -3433,3 +3433,29 @@ Because the fit needs a year of history, the comparison runs on 2011–2017.
 **Rule.** The highest 2011–2017 monthly Sharpe of per-candidate returns
 wins; it replaces G-a only if higher. Then 2018–2023 once, and the
 portfolio.
+
+### 87a. Stage F result: the expected-value ranking does not beat the current design
+
+Recorded 2026-10-20. 2011–2017, adopted exit, R1 events excluded.
+
+| Candidate | Trades | Per trade | Monthly Sharpe |
+|---|---|---|---|
+| **G-a, current design** | 1,520 | **+20.0 bps** | **0.80** |
+| F-b, EV with original Model B probability | 1,774 | +8.0 bps | 0.51 |
+| F-a, EV with B+rule+ou probability | 1,859 | +6.6 bps | 0.35 |
+
+**The mapping is stable:** a ≈ −0.055 and b ≈ +0.5 in every year, so
+trades pay only when p is above about 0.11, and scale magnifies both
+outcomes.
+
+**G-a is kept.** Seven alternative selections have now failed to beat it
+on the selection years (Decisions 79a, 85a, 86 Goal 2 and 87a):
+- R-b, ranking by B+rule;
+- R-c, the return regression;
+- G-b, ranking by OU expected value;
+- G-c, the OU take-profit filter;
+- G-d, ranking by B+rule+ou;
+- F-a and F-b, the expected-value rankings.
+
+For trade selection, the simple original-Model-B top 20 % is the most
+robust signal found.
