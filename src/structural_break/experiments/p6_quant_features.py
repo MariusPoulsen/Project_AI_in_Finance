@@ -404,3 +404,62 @@ def extra_features(events: pd.DataFrame, state: pd.DataFrame, prices: pd.DataFra
 
 
 BLOCKS["extra"] = EXTRA
+
+
+# --------------------------------------------------------------------------- #
+# Stage L block (DECISIONS 94): overnight versus intraday decomposition
+# --------------------------------------------------------------------------- #
+
+INTRADAY = (
+    "intra_a_overnight",
+    "intra_b_overnight",
+    "intra_a_intraday",
+    "intra_b_intraday",
+    "intra_mover_gap_share",
+    "intra_a_range_rel",
+    "intra_b_range_rel",
+    "intra_a_close_location",
+    "intra_b_close_location",
+)
+
+
+def intraday_features(events: pd.DataFrame, prices: pd.DataFrame) -> pd.DataFrame:
+    """Signal-day overnight gap and intraday move per leg (split-adjusted), aligned."""
+    px = prices.loc[prices["close"].gt(0) & prices["adj_close"].gt(0)].copy()
+    px["trading_date"] = pd.to_datetime(px["trading_date"])
+    px = px.sort_values(["ticker", "trading_date"])
+    factor = px["adj_close"] / px["close"]
+    open_adj, high_adj, low_adj = px["open"] * factor, px["high"] * factor, px["low"] * factor
+    previous = px.groupby("ticker")["adj_close"].shift(1)
+    px["overnight"] = np.log(open_adj / previous)
+    px["intraday"] = np.log(px["adj_close"] / open_adj)
+    span = (high_adj - low_adj) / px["adj_close"]
+    px["range_rel"] = span / span.groupby(px["ticker"]).transform(
+        lambda s: s.shift(1).rolling(20, min_periods=10).mean()
+    )
+    px["close_location"] = ((px["adj_close"] - low_adj) / (high_adj - low_adj)).where(
+        high_adj > low_adj
+    )
+    keyed = px.set_index(["ticker", "trading_date"])
+    date = pd.to_datetime(events["event_date"])
+    sign = np.sign(events["entry_z"].astype(float).to_numpy())
+    out = pd.DataFrame(index=events.index)
+    for leg, direction in (("a", sign), ("b", -sign)):
+        row = keyed.reindex(pd.MultiIndex.from_arrays([events[f"leg_{leg}"], date]))
+        out[f"intra_{leg}_overnight"] = direction * row["overnight"].to_numpy()
+        out[f"intra_{leg}_intraday"] = direction * row["intraday"].to_numpy()
+        out[f"intra_{leg}_range_rel"] = row["range_rel"].to_numpy()
+        # Aligned close location: 1 = rich leg closed at its high, cheap leg at its low.
+        location = row["close_location"].to_numpy()
+        out[f"intra_{leg}_close_location"] = np.where(direction > 0, location, 1 - location)
+    mover_a = events["abnormal_return_A_1d"].abs() >= events["abnormal_return_B_1d"].abs()
+    gap = np.where(mover_a, out["intra_a_overnight"], out["intra_b_overnight"])
+    move = np.where(mover_a, out["intra_a_intraday"], out["intra_b_intraday"])
+    total = np.abs(gap) + np.abs(move)
+    out["intra_mover_gap_share"] = np.where(
+        total > 0, np.abs(gap) / np.where(total > 0, total, 1), np.nan
+    )
+    return out
+
+
+BLOCKS["intraday"] = INTRADAY

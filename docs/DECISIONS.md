@@ -3724,3 +3724,29 @@ sectors and years. Sector-level strategy performance does not persist well
 enough to filter on, so the Financials weakness of 2010–2017 was not
 predictable point-in-time. **The design is unchanged**, and 2018–2023 was
 not opened for this stage.
+
+## 94. Pre-registered Stage L: overnight versus intraday decomposition
+
+Recorded 2026-10-21, before any result below.
+
+**Rationale.** News arrives mostly overnight and shows up as an opening
+gap, while intraday moves carry more liquidity and demand pressure. Lou,
+Polk & Skouras (2019) document a persistent overnight–intraday tug of war
+with cross-period reversal. A divergence made of a gap should therefore
+persist more than one built up intraday.
+
+**Block `intraday`** (signal day, split-adjusted with each day's
+adj_close/close factor), using only the signal day's open, high, low and
+close:
+- each leg's overnight log return and intraday log return, aligned with the
+  divergence;
+- the mover's gap share, |overnight| / (|overnight| + |intraday|);
+- each leg's high–low range relative to its previous 20-day average;
+- each leg's close location in the day's range, aligned.
+
+**Goal 1 rule:** B+rule+ou+intraday (bag5) replaces bag5 if it has a lower
+2010–2017 log loss (0.19802). 2018–2023 is opened once.
+
+**Goal 2 rule:** a filter on H-b that skips events whose mover gap share
+is ≥ 0.7 (a news-gap divergence) is adopted if its 2010–2017 monthly Sharpe
+exceeds H-b's (0.73). 2018–2023 and the portfolio follow once.

@@ -70,6 +70,8 @@ def feature_sets(
             sets["B+all+ou"] = (*b, *every, *OU)
             # Decision 88 (Stage G)
             sets["B+rule+ou+track"] = (*sets["B+rule+ou"], *blocks.get("track", ()))
+            if "intraday" in blocks:  # Decision 94 (Stage L)
+                sets["B+rule+ou+intraday"] = (*sets["B+rule+ou"], *blocks["intraday"])
             if set(COINT) <= set(available):
                 sets["B+rule+ou+coint"] = (*sets["B+rule+ou"], *COINT)
                 sets["B+rule+ou+track+coint"] = (*sets["B+rule+ou+track"], *COINT)
