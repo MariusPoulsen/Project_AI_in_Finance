@@ -3520,3 +3520,16 @@ whose relationship shows signs of a break:
 **Rule:** the filter with the higher 2010–2017 monthly Sharpe of
 per-candidate returns is adopted if that Sharpe exceeds G-a's (0.71).
 2018–2023 and the portfolio follow once.
+
+### 89a. Stage H choice: H-b, by a small margin
+
+Recorded 2026-10-20, 2010–2017:
+
+| Design | Trades | Per trade | Monthly Sharpe |
+|---|---|---|---|
+| G-a | 1,583 | +19.2 bps | 0.71 |
+| H-a | 1,393 | +17.5 bps | 0.62 |
+| **H-b** | 1,537 | **+20.5 bps** | **0.73** |
+
+H-b exceeds G-a and is chosen by the rule. The margin is small and within
+noise. The 2018–2023 result and the portfolio decide whether it is kept.
