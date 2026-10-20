@@ -77,6 +77,36 @@ def feature_sets(
     return sets
 
 
+# Decision 86 (Stage E): model-capacity variants for the larger feature set.
+PARAMS: dict[str, dict[str, Any]] = {
+    "base": XGB,
+    "col05": {**XGB, "colsample_bytree": 0.5},
+    "slow": {**XGB, "n_estimators": 800, "learning_rate": 0.015},
+    "bag5": {**XGB, "colsample_bytree": 0.5, "subsample": 0.8, "seeds": 5},
+}
+
+
+class _Bag:
+    """Average of XGBoost fits that differ only in their random seed."""
+
+    def __init__(self, params: dict[str, Any], seeds: int) -> None:
+        self.models = [_model(params, pb.MODEL_SEED + i) for i in range(seeds)]
+
+    def fit(self, x: Any, y: Any) -> _Bag:
+        for model in self.models:
+            model.fit(x, y)
+        return self
+
+    def predict_proba(self, x: Any) -> np.ndarray[Any, Any]:
+        return np.asarray(np.mean([m.predict_proba(x) for m in self.models], axis=0))
+
+
+def _estimator(params: dict[str, Any]) -> Any:
+    params = dict(params)
+    seeds = int(params.pop("seeds", 1))
+    return _Bag(params, seeds) if seeds > 1 else _model(params)
+
+
 def _model(params: dict[str, Any], seed: int = pb.MODEL_SEED) -> Any:
     from xgboost import XGBClassifier
 
@@ -106,7 +136,7 @@ def oof_scores(train: pd.DataFrame, columns: tuple[str, ...], params: dict[str, 
     data = train.reset_index()
     scores = pd.Series(np.nan, index=data.index)
     for fit, valid in pb.purged_kfold(data, OOF_FOLDS):
-        model = _model(params)
+        model = _estimator(params)
         model.fit(data.loc[fit, list(columns)].astype(float), data.loc[fit, TARGET].astype(int))
         scores.iloc[valid] = model.predict_proba(data.loc[valid, list(columns)].astype(float))[:, 1]
     scores.index = data["index"]
@@ -124,7 +154,7 @@ def run_spec(
     for year in YEARS:
         train, previous, test = split(frame, year, scheme)
         oof = oof_scores(train, columns, params)
-        model = _model(params)
+        model = _estimator(params)
         model.fit(train.loc[:, list(columns)].astype(float), train[TARGET].astype(int))
         test_raw = model.predict_proba(test.loc[:, list(columns)].astype(float))[:, 1]
         # Previous-year scores that no model fitted on them produced.
@@ -250,8 +280,9 @@ def _init(arguments: list[str]) -> None:
 
 def _job(job: tuple[str, str, tuple[str, ...], str]) -> str:
     name, scheme, columns, folder = job
-    scored = run_spec(_STATE["frame"], columns, scheme)
-    path = Path(folder) / f"scores__{name}__{scheme}.parquet"
+    variant = scheme.split(":")[1] if ":" in scheme else "base"
+    scored = run_spec(_STATE["frame"], columns, scheme.split(":")[0], PARAMS[variant])
+    path = Path(folder) / f"scores__{name}__{scheme.replace(':', '-')}.parquet"
     scored.to_parquet(path, index=False)
     return str(path)
 
@@ -287,7 +318,7 @@ def main(arguments: Sequence[str] | None = None) -> None:
             (name, scheme, sets[name], str(args.output))
             for name in (args.specs or list(sets))
             for scheme in args.schemes
-            if not (args.output / f"scores__{name}__{scheme}.parquet").exists()
+            if not (args.output / f"scores__{name}__{scheme.replace(':', '-')}.parquet").exists()
         ]
         print(f"{pb._now()} {len(jobs)} specs to run", flush=True)
         with ProcessPoolExecutor(args.workers, initializer=_init, initargs=(raw,)) as pool:

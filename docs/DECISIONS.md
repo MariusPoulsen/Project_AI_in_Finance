@@ -3371,3 +3371,25 @@ in both blocks; the extra step is positive but not significant on its own.
 OU alone was competitive in 2010–2017 but weaker in 2018–2023. The
 structural prior is useful as an input to the ML model rather than as a
 forecaster on its own.
+
+## 86. Pre-registered Stage E: model capacity for the larger feature set, and ranking
+
+Recorded 2026-10-20, before any result below. B+rule+ou has about 170
+inputs. Decision 66 found that re-tuning did not help with Model B's 99, but
+feature subsampling and seed bagging are standard remedies for wide inputs.
+
+**Goal 1 variants of B+rule+ou** (`recent` scheme; base = the Decision 45
+XGBoost):
+
+| Variant | Change from base |
+|---|---|
+| col05 | Columns subsampled to 50 % per tree |
+| slow | 800 trees at learning rate 0.015 |
+| bag5 | col05 plus 80 % row subsampling, averaged over 5 seeds |
+
+**Goal 1 rule:** a variant replaces the base if it has a lower 2010–2017
+log loss (the lowest wins). 2018–2023 is opened once.
+
+**Goal 2 rule:** the top 20 % of B+rule+ou (or of the winning variant),
+excluding R1 events, under the adopted exit, is compared with the current
+design (G-a) on 2010–2017 monthly Sharpe. It replaces G-a only if higher.

@@ -99,7 +99,7 @@ def build(events: pd.DataFrame, workspace: Path) -> pd.DataFrame:
         chunk = index[start : start + 1000]
         result = simulate(z0[chunk], rho[chunk], sig[chunk], shocks)
         for name, values in result.items():
-            out.iloc[chunk, out.columns.get_loc(name)] = values
+            out.loc[out.index[chunk], name] = values
     out["ou_rho"] = rho
     out["ou_sigma"] = sig
     scale = events["spread_std"].astype(float) / (1 + events["beta"].astype(float).abs())
