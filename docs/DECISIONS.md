@@ -3750,3 +3750,19 @@ close:
 **Goal 2 rule:** a filter on H-b that skips events whose mover gap share
 is ≥ 0.7 (a news-gap divergence) is adopted if its 2010–2017 monthly Sharpe
 exceeds H-b's (0.73). 2018–2023 and the portfolio follow once.
+
+### 94a. Stage L result: neither the intraday block nor the gap filter is adopted
+
+Recorded 2026-10-21, 2010–2017:
+
+| Rule | Candidate | Comparator |
+|---|---|---|
+| Goal 1 | B+rule+ou+intraday (bag5): log loss 0.19804, AUC 0.742 | bag5: 0.19802, AUC 0.743 |
+| Goal 2 | News-gap filter on H-b: Sharpe 0.59, +17.4 bps per trade | H-b: Sharpe 0.73, +20.5 bps per trade |
+
+- **Gap-driven divergences:** among the model's selections they are not
+  worse trades.
+- **Signal-day decomposition:** it adds no forecasting information beyond
+  the existing 1-day abnormal returns and volume shocks.
+
+Nothing changes, and 2018–2023 was not opened for this stage.
