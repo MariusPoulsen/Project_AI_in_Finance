@@ -83,3 +83,27 @@ def test_split_schemes() -> None:
     recent, previous, test = pq.split(frame, 2010, "recent")
     assert len(d45) == 1 and len(recent) == 2
     assert len(previous) == 1 and len(test) == 1
+
+
+def test_ou_simulation_behaves_sensibly() -> None:
+    from structural_break.experiments import p6_quant_ou as ou
+
+    shocks = np.random.default_rng(0).standard_normal((4000, ou.STEPS))
+    z0 = np.array([2.0, 2.0, -2.0, 2.0])
+    rho = np.array([0.80, 0.99, 0.80, 0.80])
+    sigma = np.array([0.2, 0.2, 0.2, 1.0])
+    out = ou.simulate(z0, rho, sigma, shocks)
+    # Fast reversion beats slow reversion, and the sign of the divergence does not matter.
+    assert out["ou_p_label"][0] > out["ou_p_label"][1]
+    assert np.isclose(out["ou_p_label"][0], out["ou_p_label"][2])
+    assert np.isclose(out["ou_zgain"][0], out["ou_zgain"][2])
+    # A take profit at |z| 1.0 is reached at least as often as the 0.5 label.
+    assert (out["ou_p_tp"] >= out["ou_p_label"]).all()
+    assert out["ou_zgain"][0] > 0
+
+
+def test_quant_param_variants_build_estimators() -> None:
+    est = pq._estimator(pq.PARAMS["bag5"])
+    assert isinstance(est, pq._Bag) and len(est.models) == 5
+    lgbm = pq._estimator({**pq.PARAMS["lgbm5"], "seeds": 1})
+    assert type(lgbm).__name__ == "LGBMClassifier"
