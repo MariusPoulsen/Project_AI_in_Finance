@@ -3679,3 +3679,16 @@ diversity may help log loss.
 
 **Rule:** the spec with the lowest 2010–2017 log loss replaces bag5 if it
 beats it (0.19802). 2018–2023 is opened once.
+
+### 92a. Stage J result: bag5 is kept
+
+Recorded 2026-10-21, 2010–2017:
+
+| Spec | Log loss | ROC-AUC |
+|---|---|---|
+| **bag5 (XGBoost)** | **0.19802** | 0.743 |
+| blend | 0.19837 | 0.742 |
+| lgbm5 | 0.19887 | 0.741 |
+
+Neither beats bag5, so nothing changes and 2018–2023 was not opened for
+this stage. As in Decision 66, the library is not the lever.
