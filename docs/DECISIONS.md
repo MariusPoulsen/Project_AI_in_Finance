@@ -2460,3 +2460,54 @@ None improved its returns or its forecasts significantly. The best
 candidate model for the final-test design remains R0 (the Decision 45
 XGBoost Model B) with the E3 news exit. Choosing it is the owner's decision;
 the 2024–2025 final test stays locked.
+
+## 71. Pre-registered literature entry filters and volatility sizing
+
+Recorded 2026-10-20, before any run below. The owner asked for entry
+filters, and for ways to use volatility instead of tuning on returns.
+
+**Population.** The best combination so far: the R0 walk-forward top-20 %
+selections of Model B (Decision 45 XGBoost), traded with the E3 news exit.
+Events must be priced under both the frozen and E3 exits. Baseline 0 (every
+event, E3 exit) is reported alongside.
+
+Every threshold is point-in-time: an event is compared with quantiles of
+all events signalled in the previous calendar year. A skipped trade earns 0.
+
+**Entry filters, from the literature (skip when):**
+
+| Filter | Skip when | Source |
+|---|---|---|
+| F1 | The moving stock's volume shock is ≥ 2 SD and the other's < 1 SD (single-stock information) | Engelberg, Gao & Jagannathan; volume proxy |
+| F2 | Both the absolute market and sector 1-day returns are below the prior-year median (no common news) | Engelberg et al.: common-news divergences converge |
+| F3 | The moving stock rose (positive residual shocks reverse slowly) | Baldi-Lanfranchi, Collin-Dufresne & Daniel, "Asymmetric Reversals" |
+| F4 | The day's number of divergence signals is below the prior-year median (little market-wide distraction) | Jacobs & Weber |
+| F5 | The 1-day adverse z velocity is below the prior-year median (slow drift, more likely information) | — |
+| F6 | The 20/60-day spread volatility ratio is ≥ 1.5 (volatility regime change) | — |
+| F7 | VIX is below its prior-year 33rd percentile (liquidity provision pays less in calm markets) | Nagel (2012) |
+
+**Volatility sizing** (weight per trade, clipped to [0.25, 4], divided by
+the previous year's mean weight):
+
+| Rule | Weight | Source |
+|---|---|---|
+| Z1v | Prior-year median spread volatility / the event's 20-day spread volatility (equal risk per trade) | — |
+| Z2v | Prior-year median / the event's 20-day market realised volatility | Moreira & Muir (2017), volatility-managed portfolios |
+| Z3v | The event's VIX / prior-year median (more exposure when liquidity provision pays) | Nagel |
+
+Z2v and Z3v make opposite predictions for a reversal strategy, so they are
+tested against each other.
+
+**Protocol.**
+- **Explore (2010–2015, model population):** choose the filter and the
+  sizing rule with the highest t among those with positive gains. The two
+  choices are written to `outputs/p6_entry_vol/choices.json` and recorded
+  before 2016–2021 is scored.
+- **Confirm (2016–2021):** each chosen rule passes if its gain per candidate
+  is positive, its Holm-adjusted (over the two rules) one-sided p < 0.05
+  from 2,000 calendar-month block draws (seed 5557), and it is positive in
+  at least 4 of 6 years.
+- **Reported:** 2022–2023, every rule's results, Baseline 0, and the Sharpe
+  of monthly returns.
+
+Module: `structural_break.experiments.p6_entry_vol`.
