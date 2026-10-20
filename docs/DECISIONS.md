@@ -3138,3 +3138,19 @@ entry.
 - **Entry and costs:** frozen.
 - **Exits:** take profit at |z| ≤ 1.0, E3 adverse-tone news exit, disaster
   stop at |z| ≥ 5, 20-session time stop.
+
+## 83. Pre-registered Stage B2: extending the take-profit grid past its edge
+
+Recorded 2026-10-20, before any result below. The adopted take profit
+(|z| ≤ 1.0) was the edge of the Decision 76 grid, so a wider level may be
+better.
+
+On the current design's events (the R-a top 20 % without R1 events), the
+exit loop is re-run from the cached requests with the E3 news exit and a
+20-session time stop:
+- take profit at |z| ≤ 1.0, 1.25 or 1.5;
+- disaster stop at |z| ≥ 5 or none.
+
+**Choice rule.** Pick the variant with the highest 2010–2017 monthly Sharpe
+of per-candidate returns. It replaces the current exit (1.0, stop 5) only
+if its Sharpe is higher. 2018–2023 is opened once afterwards.
