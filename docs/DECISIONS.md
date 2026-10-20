@@ -2572,8 +2572,17 @@ ran as pre-registered.
   with Nagel (2012).** Taking more exposure when VIX is high helped
   (liquidity provision earns more in turbulent markets). Moreira–Muir style
   de-risking hurt this reversal strategy, and so did equal risk per trade.
-- **Z3v is post-hoc.** It was not the pre-registered choice, and part of its
-  gain is leverage in high-VIX years; its Sharpe also rose.
+- **Z3v is post-hoc, and its per-candidate gain is mostly leverage.** It
+  was not the pre-registered choice. Its mean weight on the model's trades
+  was 1.43 in 2010–2015, 2.13 in 2016–2021 and 1.83 in 2022–2023, because
+  the selections concentrate on high-VIX days and VIX rose. The fair measure
+  is the Sharpe ratio:
+  - 2010–2015: 0.45 → 0.43;
+  - 2016–2021: 0.25 → 0.40;
+  - 2022–2023: 0.47 → 0.93.
+
+  Yearly gains swing widely (2020 +47.6 bps, 2021 −50.9 bps). The risk-adjusted
+  improvement is therefore real in 2016–2023 but absent in 2010–2015.
 - **Testing it further:** the only untouched data are the locked 2024–2025
   final test, so Z3v can only be tested there. It is a candidate for the
   final-test design, alongside R0 with the E3 exit, for the owner to decide
