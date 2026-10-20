@@ -1,0 +1,85 @@
+from __future__ import annotations
+
+import numpy as np
+import pandas as pd
+
+from structural_break.experiments import p6_quant as pq
+from structural_break.experiments import p6_quant_features as qf
+
+
+def _state() -> pd.DataFrame:
+    day = pd.Timestamp("2015-03-02")
+    rows = [
+        ("X__Y", 2.5),  # event pair: X rich vs Y
+        ("X__Z", 2.2),  # X also rich vs Z
+        ("W__X", -2.4),  # X rich vs W (X is leg B, negative z)
+        ("Y__Z", 0.1),
+    ]
+    state = pd.DataFrame(
+        {
+            "pair_id": [r[0] for r in rows],
+            "trading_date": day,
+            "z_score": [r[1] for r in rows],
+            "fresh_threshold_crossing": [True, False, False, False],
+        }
+    )
+    legs = state["pair_id"].str.split("__", expand=True)
+    state["leg_a"], state["leg_b"] = legs[0], legs[1]
+    return state
+
+
+def test_peer_features_measure_each_leg_against_its_other_peers() -> None:
+    events = pd.DataFrame(
+        {
+            "pair_id": ["X__Y"],
+            "event_date": ["2015-03-02"],
+            "entry_z": [2.5],
+            "leg_a": ["X"],
+            "leg_b": ["Y"],
+        }
+    )
+    out = qf.peer_features(events, _state())
+    # X's other pairs: +2.2 (vs Z) and +2.4 (vs W): rich against everyone.
+    assert np.isclose(out["peer_a_aligned_z"].iloc[0], 2.3)
+    assert out["peer_a_share_diverged"].iloc[0] == 1.0
+    # Y's other pair: Y vs Z at +0.1 means Y slightly rich; aligned for the cheap leg is -0.1.
+    assert np.isclose(out["peer_b_aligned_z"].iloc[0], -0.1)
+    assert out["market_share_diverged"].iloc[0] == 0.75
+
+
+def test_track_record_uses_only_resolved_labels() -> None:
+    events = pd.DataFrame(
+        {
+            "event_id": ["e1", "e2", "e3"],
+            "pair_id": ["X__Y"] * 3,
+            "leg_a": ["X"] * 3,
+            "leg_b": ["Y"] * 3,
+            "event_date": pd.to_datetime(["2015-01-02", "2015-01-20", "2015-01-21"]),
+        }
+    )
+    targets = pd.DataFrame(
+        {
+            "event_id": ["e1", "e2", "e3"],
+            "y_revert_success": [1.0, 0.0, 1.0],
+            "outcome_type": ["CONVERGED", "STOPPED", "CONVERGED"],
+            "resolution_date": ["2015-01-21", "2015-02-10", "2015-02-11"],
+        }
+    )
+    out = qf.track_features(events, targets)
+    # e1 resolved on 2015-01-21: not known on that same date, so e3 still sees no history.
+    assert out["track_pair_n"].tolist() == [0, 0, 0]
+
+
+def test_split_schemes() -> None:
+    frame = pd.DataFrame(
+        {
+            "event_date": pd.to_datetime(["2008-06-01", "2009-06-01", "2010-03-01"]),
+            "horizon_end_date": pd.to_datetime(["2008-07-01", "2009-07-01", "2010-04-01"]),
+            "supervised_eligible": True,
+            pq.TARGET: [0.0, 1.0, 0.0],
+        }
+    )
+    d45, _, _ = pq.split(frame, 2010, "d45")
+    recent, previous, test = pq.split(frame, 2010, "recent")
+    assert len(d45) == 1 and len(recent) == 2
+    assert len(previous) == 1 and len(test) == 1

@@ -2703,3 +2703,67 @@ after which its new entries were blocked.
 **Implication for Goal 2.** The final-test candidate stays as fixed in
 Decision 73 unless the owner changes it before the unlock. The main lever
 for returns is per-trade edge after costs, not sizing.
+
+## 75. Pre-registered quant research programme: forecasting and portfolio (workstream 1)
+
+Recorded 2026-10-20 on branch `p6/quant-research`, before any result below.
+The owner is away for two days and asked for autonomous research as a
+quantitative trader. The aims are the best reversion forecast (ROC-AUC, log
+loss, Brier) and the best long-run portfolio. New event definitions are
+allowed, plausible non-significant improvements are acceptable, and
+overfitting must be controlled. The 2024–2025 final test stays locked, and
+nothing is merged without the owner.
+
+**Overfitting control.** Every year 2010–2023 has been looked at in earlier
+decisions, but none of the new features or designs here has been evaluated
+on any year. The walk-forward test years are therefore split:
+- **2010–2017 (selection):** every choice in this programme is made here.
+- **2018–2023 (holdout):** opened once per stage, after the stage's choice
+  is recorded. The harness only reports 2018–2023 when explicitly asked to
+  (`--holdout`).
+
+**Stage A: forecasting.**
+- **New point-in-time feature blocks** (`p6_quant_features`):
+
+  | Block | Contents | Source |
+  |---|---|---|
+  | peer | Each leg's mean z against its other peers, aligned with the divergence; the share of its other pairs diverging the same way; market-wide divergence breadth and fresh crossings | Chen, Chen, Chen & Li 2019; Avellaneda & Lee 2010 |
+  | state | Zero crossings over 252 days, days since the last crossing, AR(1) rho, error-correction speed, relationship age | Daily pair state |
+  | track | Each pair's and each stock's reversion rate on earlier events resolved before the signal date (shrunk with weight 10 towards the running base rate), the pair's stop rate, last outcome and days since it | — |
+  | earnings | Days since each leg's last Item 2.02 8-K, estimated days to its next (median of its last four gaps), and whether it falls inside the holding window | — |
+  | momentum | Each leg's 20- and 120-session return aligned with the divergence, and distance to its 252-session high | — |
+
+- **Specs:** Model B alone and with each block; Model B with all blocks;
+  all blocks plus the Decision 67 cointegration block; and Model A. All use
+  the fixed Decision 45 XGBoost, which re-tuning did not beat (Decision 66).
+- **Training schemes:**
+  - `d45` (labels ending before Y−1);
+  - `recent` (labels ending before Y; previous-year cutoff scores
+    out-of-fold from a purged 5-fold or out-of-sample).
+
+  Probabilities are Platt-calibrated on out-of-fold training scores from the
+  last three years.
+- **Metrics on 2010–2017:** ROC-AUC, PR-AUC, log loss, Brier; top-20 % and
+  top-10 % selections under the frozen and E3 exits (per trade, per
+  candidate, monthly Sharpe).
+- **Choice rule:**
+  1. Pick the scheme with the lower 2010–2017 log loss for Model B.
+  2. Under that scheme, add each block whose own addition lowers Model B's
+     2010–2017 log loss.
+  3. If the combined set does not beat the best single addition, keep the
+     best single addition.
+
+  The chosen spec and Model B are then compared once on 2018–2023.
+
+**Stage B: events and trading.** Once Stage A's choice is confirmed or
+rejected, new event definitions and trading rules are explored with the same
+selection/holdout split. Examples: entry on confirmed reversal, persistence-
+dependent entry thresholds, selectivity, a shorter time stop with the news
+exit, probability-scaled sizing. Each stage is recorded before its holdout
+is opened.
+
+**Stage C: portfolio.** The best Stage A/B design is run through the
+verified research portfolio (Decision 73) for 2010–2023 and compared with
+the Decision 73 candidates.
+
+Modules: `p6_quant_features`, `p6_quant`; outputs in `outputs/p6_quant/`.
