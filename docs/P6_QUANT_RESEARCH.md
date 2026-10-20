@@ -55,6 +55,9 @@ row):
 | Pre-registered Goal 1 model | +0.0053 | — | 0.002 | +0.017 | — |
 | B+rule step | +0.0034 | [+0.0005, +0.0062] | 0.007 | +0.012 | 0.002 |
 
+![ROC curves, holdout](figures/quant/goal1_roc_holdout.png)
+![Calibration, holdout](figures/quant/goal1_calibration_holdout.png)
+
 **Findings for the report.**
 1. **New information is what helps.** Peer displacement, the earnings
    calendar, momentum and the structural OU prior improve the forecast.
@@ -97,6 +100,13 @@ per entry, gross ≤ 100 % of NAV, frozen costs and borrow):
 | Programme design without the broken-relationship filter | +2.25 % | 5.8 % | 0.41 | −13.8 % | +36 % |
 | **Programme design** | **+2.31 %** | 5.8 % | **0.42** | **−13.2 %** | **+37 %** |
 | Programme design, 10 % per entry | +2.2 % | 4.4 % | 0.52 | −11.3 % | — |
+
+![Portfolio value](figures/quant/goal2_equity_curves.png)
+
+**Uncertainty.**
+- **Sharpe:** the programme design's monthly Sharpe over 2010–2023 is 0.46,
+  95 % [−0.06, 1.00] from 5,000 month resamples; P(Sharpe ≤ 0) = 0.048.
+- **Months:** 57 % of its 168 months are positive.
 
 **Sensitivities** (the design without the second filter, 25 % per entry,
 2010–2023; reported, not used for any choice):
