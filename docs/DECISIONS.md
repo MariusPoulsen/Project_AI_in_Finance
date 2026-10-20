@@ -2908,3 +2908,44 @@ against +0.8 bps for B+rule. Selection for trading is revisited in Stage C
 with the new exit.
 
 No 2018–2023 Stage A result had been read.
+
+## 78. Stage A holdout result: the new features significantly improve the reversion forecast
+
+Recorded 2026-10-20 (`outputs/p6_quant/summary_holdout.json`). Compared
+with the original Model B (Decision 45 XGBoost, `d45` scheme) on the same
+labelled test events.
+
+**Forecast metrics:**
+
+| Spec | Period | ROC-AUC | PR-AUC | Log loss | Brier |
+|---|---|---|---|---|---|
+| Original Model B (`d45`) | 2010–2017 | 0.692 | 0.107 | 0.2111 | 0.0529 |
+| **B+rule (`recent`)** | 2010–2017 | **0.716** | **0.122** | **0.2032** | **0.0517** |
+| Original Model B (`d45`) | **2018–2023 holdout** | 0.718 | 0.207 | 0.2832 | 0.0790 |
+| **B+rule (`recent`)** | **2018–2023 holdout** | **0.730** | **0.214** | **0.2799** | **0.0785** |
+| B + all blocks (`recent`) | 2018–2023 holdout | 0.733 | 0.219 | 0.2783 | 0.0781 |
+| Model B (`recent`) | 2018–2023 holdout | 0.717 | 0.206 | 0.2829 | 0.0790 |
+
+**Paired gains over the original Model B** (log loss: month-block
+bootstrap, 2,000 draws; AUC: 500 month-block draws):
+
+| Spec | Period | Log-loss gain (×10⁻⁴), 95 %, p | AUC gain, 95 %, p |
+|---|---|---|---|
+| **B+rule** | 2018–2023 | **+33.6 [+5.3, +62.3], p 0.007** | **+0.012 [+0.003, +0.021], p 0.002** |
+| B + all | 2018–2023 | +49.9 [+17.6, +81.5], p 0.001 | +0.015 [+0.005, +0.026], p 0.002 |
+| Model B (`recent`) | 2018–2023 | +3.4 [−14.1, +21.6], p 0.36 | −0.001 |
+| B+rule | 2010–2017 | +78.4 [+46.6, +109.0] | +0.025 |
+
+**Reading.** This is the first significant out-of-sample improvement in the
+reversion forecast in the project (Goal 1).
+- **The gain comes from the new information:** peer displacement, the
+  earnings calendar, leg momentum and relationship state. The training
+  scheme alone does not help in 2018–2023.
+- **The pre-registered spec is B+rule;** B + all blocks, not chosen by the
+  rule, does slightly better.
+- **Holdout trading, top 20 % under E3:** B+rule earns +15.0 bps per trade
+  (Sharpe 0.55), against +16.1 bps (0.52) for the original Model B. Better
+  forecasts do not by themselves change the trading result.
+
+**Adopted** as the programme's forecasting model for Goal 1. The final test
+stays locked.
