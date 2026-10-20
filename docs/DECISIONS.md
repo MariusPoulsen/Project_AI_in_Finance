@@ -3154,3 +3154,23 @@ exit loop is re-run from the cached requests with the E3 news exit and a
 **Choice rule.** Pick the variant with the highest 2010–2017 monthly Sharpe
 of per-candidate returns. It replaces the current exit (1.0, stop 5) only
 if its Sharpe is higher. 2018–2023 is opened once afterwards.
+
+### 83a. Take-profit choice, fixed before 2018–2023 was opened
+
+Recorded 2026-10-20 (`outputs/p6_quant/tp_extend.parquet`). On 2010–2017,
+current design's events:
+
+| Take profit | Disaster stop | Monthly Sharpe | Per trade |
+|---|---|---|---|
+| 1.0 (current) | 5 | 0.71 | +19.2 bps |
+| 1.0 | none | 0.74 | — |
+| 1.25 | 5 | 0.75 | — |
+| 1.25 | none | 0.78 | — |
+| 1.5 | 5 | 0.86 | — |
+| **1.5** | **none** | **0.89** | **+21.3 bps** |
+
+**Choice: take profit at |z| ≤ 1.5 with no disaster stop.**
+- **Edge of the range:** the optimum is again at the boundary. This is not
+  extended further, because each extension reuses the same selection years.
+- **Risk overlay:** the disaster-stop version (1.5, stop 5) is also carried
+  into the portfolio as a risk overlay.
