@@ -3007,3 +3007,35 @@ On 2010–2017, top 20 % under the adopted exit:
 
 **Choice: R-a.** Direct return prediction is again noise (as in Decision
 44), and the better reversion forecaster does not select better trades.
+
+### 79b. Ranking holdout (2018–2023)
+
+| Ranking | Trades | Per trade | Monthly Sharpe |
+|---|---|---|---|
+| **R-a (chosen)** | 2,698 | **+45.9 bps** | **0.66** |
+| R-b | 2,873 | +39.7 bps | 0.59 |
+| R-c | 1,750 | +51.3 bps | 0.87 |
+
+R-c swings from −0.51 in 2010–2017 to +0.87 here, the instability that made
+it untrustworthy. R-a stays the trading ranking.
+
+## 80. Pre-registered Stage C portfolio evaluation of the programme design
+
+Recorded 2026-10-20, before any portfolio below was computed. The verified
+research portfolio (Decision 73: frozen portfolio policy, 25 % of NAV per
+entry, 10 % sensitivity, gross capped at 100 %) runs 2010–2023 on:
+
+| Design | Ranking | Exit | Role |
+|---|---|---|---|
+| D73 | R-a, top 20 % | E3 | Reference: the Decision 73 primary candidate |
+| **D80** | R-a, top 20 % | Take profit \|z\| 1.0, no stop, 20 sessions, news exit (Decision 77) | **Programme design** |
+| D80-risk | Same as D80 | Same plus a disaster stop at \|z\| ≥ 5 | Risk overlay against the no-stop tail found in Decision 77 |
+| D80-B+rule | B+rule (the Goal 1 forecaster), top 20 % | As D80 | Reported |
+
+**Reported for 2010–2023 and each sub-period:** CAGR, volatility, Sharpe,
+maximum drawdown and Calmar. The holdout split stays visible: 2010–2017
+picked every component, 2018–2023 confirmed them.
+
+There is no pass rule; the 2024–2025 final test remains the test. D80-risk
+is adopted over D80 if its 2010–2017 Sharpe is at least D80's or its
+2010–2017 maximum drawdown is at least one third smaller.
