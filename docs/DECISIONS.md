@@ -3200,3 +3200,16 @@ holdout prefers the current exit, and the portfolios are indistinguishable.
 **The Decision 82a programme design is kept unchanged** (take profit
 |z| 1.0, disaster stop 5). This is the selection/holdout discipline working
 as intended.
+
+### 81a. Stage A2 choice: the extra block is adopted
+
+Recorded 2026-10-20, 2010–2017 only.
+
+| Spec | Log loss | ROC-AUC | PR-AUC |
+|---|---|---|---|
+| B+rule | 0.20322 | 0.716 | 0.122 |
+| **B+rule+extra** | **0.20261** | **0.721** | 0.122 |
+| B+all+extra | 0.20265 | 0.726 | 0.124 |
+
+B+rule+extra lowers log loss, so the extra block is adopted into the Goal 1
+forecaster. No 2018–2023 Stage A2 result had been read.
