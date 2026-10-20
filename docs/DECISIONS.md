@@ -2828,3 +2828,42 @@ order consistently:
 
 The neighbours are close to the chosen variant, so it is not an isolated
 peak. No 2018–2023 exit result had been read.
+
+## 77. Exit holdout result: take profit at |z| 1.0, no stop, with the news exit
+
+Recorded 2026-10-20 (`outputs/p6_quant/exit_holdout.csv`). R0 top-20 %
+selections, events priced under every variant.
+
+| Period | Exit | Per trade | Per candidate | Monthly Sharpe | Median trade | Hit rate |
+|---|---|---|---|---|---|---|
+| 2010–2017 (selection) | Chosen | +13.1 bps | +2.45 bps | 0.50 | +14 bps | 52.7 % |
+| 2010–2017 (selection) | E3 | +6.0 bps | +1.13 bps | 0.26 | −16 bps | 47.4 % |
+| **2018–2023 (holdout)** | **Chosen** | **+45.9 bps** | **+12.5 bps** | **0.67** | **+50 bps** | **55.8 %** |
+| 2018–2023 (holdout) | E3 | +16.1 bps | +4.4 bps | 0.53 | −28 bps | 47.4 % |
+| 2018–2023 (holdout) | Frozen | +15.3 bps | +4.2 bps | 0.47 | — | — |
+
+**Consistency.** The chosen exit beats E3 in 2018–2021 (Sharpe 0.56 against
+0.39) and in 2022–2023 (1.30 against 0.90).
+
+**Gain per trade over E3** (paired month-block bootstrap):
+
+| Period | Gain | 95 % | One-sided p |
+|---|---|---|---|
+| 2010–2017 | +7.0 bps | [−4.2, +18.8] | 0.12 |
+| 2018–2023 | +29.8 bps | [−13.8, +77.8] | 0.14 |
+
+**Not outlier-driven.** Means trimmed by 1 % on each side are about the
+same (+14.1 and +49.3 bps).
+
+**Reading.** The improvement is consistent in direction, economically
+plausible, and confirmed on the holdout, but not statistically significant:
+trade returns are noisy, with a per-trade standard deviation of 3–5 %.
+- **Why it works:** taking profit at |z| 1.0 locks in partial reversion
+  early. Removing the stop avoids selling at the worst point, which the
+  literature reports as the main cost of stops.
+- **The cost is tail risk:** the worst holdout trade lost about 40 % of
+  gross exposure, against about 9 % at the 1st percentile under E3.
+
+Exit adopted for the programme (per Decision 75, plausible improvements are
+acceptable). Its drawdown must be checked at the portfolio stage, where a
+disaster stop is a risk overlay to evaluate.
