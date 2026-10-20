@@ -2867,3 +2867,44 @@ trade returns are noisy, with a per-trade standard deviation of 3–5 %.
 Exit adopted for the programme (per Decision 75, plausible improvements are
 acceptable). Its drawdown must be checked at the portfolio stage, where a
 disaster stop is a risk overlay to evaluate.
+
+### 75a. Stage A choice, fixed before 2018–2023 was opened
+
+Recorded 2026-10-20 (`outputs/p6_quant/summary_select.json`, 2010–2017 test
+years only).
+
+**Step 1, scheme: `recent` wins clearly.**
+
+| Spec | Scheme | Log loss | ROC-AUC |
+|---|---|---|---|
+| Model B | `recent` | 0.20600 | 0.700 |
+| Model B | `d45` | 0.21105 | 0.692 |
+| B + all blocks | `recent` | 0.20296 | 0.722 |
+| B + all blocks | `d45` | 0.20701 | 0.716 |
+
+**Step 2, single blocks** added to Model B under `recent` (Model B alone:
+log loss 0.20600, AUC 0.700, PR-AUC 0.115):
+
+| Block | Log loss | ROC-AUC | Lowers log loss? |
+|---|---|---|---|
+| earnings | 0.20463 | 0.711 | yes |
+| peer | 0.20529 | 0.702 | yes |
+| momentum | 0.20573 | 0.703 | yes |
+| state | 0.20598 | 0.700 | yes |
+| track | 0.20624 | 0.709 | no (AUC up, log loss worse) |
+
+**Step 3, combined:** B + peer + state + earnings + momentum ("B+rule") has
+log loss 0.20322, AUC 0.716, PR-AUC 0.122. That beats the best single block,
+so **B+rule under `recent` is the chosen spec.**
+
+Not chosen by the rule, reported only:
+- B + all blocks: log loss 0.20296, AUC 0.722;
+- B + all + cointegration: log loss 0.20253, AUC 0.725, PR-AUC 0.129;
+- Model A: log loss 0.20850, AUC 0.684.
+
+**Trading caution.** Better forecasts did not mean better top-20 % trades
+in 2010–2017. Under E3, Model B's selections earned +8.9 bps per trade,
+against +0.8 bps for B+rule. Selection for trading is revisited in Stage C
+with the new exit.
+
+No 2018–2023 Stage A result had been read.

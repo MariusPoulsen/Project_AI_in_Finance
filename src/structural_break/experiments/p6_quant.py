@@ -58,6 +58,10 @@ def feature_sets(
     for name, cols in blocks.items():
         sets[f"B+{name}"] = (*b, *cols)
     every = tuple(c for cols in blocks.values() for c in cols)
+    # Decision 75a: the blocks that each lowered Model B's 2010-2017 log loss.
+    rule = ("peer", "state", "earnings", "momentum")
+    if all(name in blocks for name in rule):
+        sets["B+rule"] = (*b, *(c for name in rule for c in blocks[name]))
     sets["B+all"] = (*b, *every)
     if set(COINT) <= set(available):
         sets["B+all+coint"] = (*b, *every, *COINT)
