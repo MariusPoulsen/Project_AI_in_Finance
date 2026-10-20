@@ -57,11 +57,15 @@ def feature_sets(
     sets = {"B": b, "A": base["A"]}
     for name, cols in blocks.items():
         sets[f"B+{name}"] = (*b, *cols)
-    every = tuple(c for cols in blocks.values() for c in cols)
+    stage_a = ("peer", "state", "track", "earnings", "momentum")
+    every = tuple(c for name in stage_a if name in blocks for c in blocks[name])
     # Decision 75a: the blocks that each lowered Model B's 2010-2017 log loss.
     rule = ("peer", "state", "earnings", "momentum")
     if all(name in blocks for name in rule):
         sets["B+rule"] = (*b, *(c for name in rule for c in blocks[name]))
+        if "extra" in blocks:  # Decision 81 (Stage A2)
+            sets["B+rule+extra"] = (*sets["B+rule"], *blocks["extra"])
+            sets["B+all+extra"] = (*b, *every, *blocks["extra"])
     sets["B+all"] = (*b, *every)
     if set(COINT) <= set(available):
         sets["B+all+coint"] = (*b, *every, *COINT)
@@ -303,3 +307,60 @@ def main(arguments: Sequence[str] | None = None) -> None:
 
 if __name__ == "__main__":
     main()
+
+
+# --------------------------------------------------------------------------- #
+# Decision 79: ranking by predicted trade return under the adopted exit
+# --------------------------------------------------------------------------- #
+
+ADOPTED_EXIT = "b1_snone_t20_news"
+
+
+def _regressor(params: dict[str, Any]) -> Any:
+    from xgboost import XGBRegressor
+
+    return XGBRegressor(
+        objective="reg:squarederror",
+        tree_method="hist",
+        n_jobs=2,
+        random_state=pb.MODEL_SEED,
+        **params,
+    )
+
+
+def run_return_spec(
+    frame: pd.DataFrame, columns: tuple[str, ...], target: str, params: dict[str, Any] | None = None
+) -> pd.DataFrame:
+    """Walk-forward regression on realised net return; selections as in ``run_spec``."""
+    params = params or XGB
+    parts = []
+    signal_year = pd.to_datetime(frame["event_date"]).dt.year
+    window_end = pd.to_datetime(frame["horizon_end_date"])
+    known = frame[target].notna()
+    for year in YEARS:
+        train = frame.loc[known & window_end.lt(pd.Timestamp(year, 1, 1))].reset_index(drop=True)
+        low, high = train[target].quantile([0.01, 0.99])
+        y = train[target].clip(low, high)
+        oof = pd.Series(np.nan, index=train.index)
+        for fit, valid in pb.purged_kfold(train, OOF_FOLDS):
+            model = _regressor(params)
+            model.fit(train.loc[fit, list(columns)].astype(float), y.iloc[fit])
+            oof.iloc[valid] = model.predict(train.loc[valid, list(columns)].astype(float))
+        model = _regressor(params)
+        model.fit(train.loc[:, list(columns)].astype(float), y)
+        previous = frame.loc[signal_year.eq(year - 1)]
+        test = frame.loc[signal_year.eq(year)]
+        in_train = train.loc[train["event_id"].isin(previous["event_id"])]
+        outside = previous.loc[~previous["event_id"].isin(train["event_id"])]
+        prior = np.concatenate(
+            [
+                oof.loc[in_train.index].to_numpy(),
+                model.predict(outside.loc[:, list(columns)].astype(float)) if len(outside) else [],
+            ]
+        )
+        raw = model.predict(test.loc[:, list(columns)].astype(float))
+        part = pd.DataFrame({"event_id": test["event_id"].to_numpy(), "year": year, "raw": raw})
+        for share in SHARES:
+            part[f"top{int(share * 100)}"] = raw >= float(np.quantile(prior, 1 - share))
+        parts.append(part)
+    return pd.concat(parts, ignore_index=True)

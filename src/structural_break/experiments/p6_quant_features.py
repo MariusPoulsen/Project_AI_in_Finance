@@ -339,3 +339,68 @@ def build_all(
         momentum_features(events, prices),
     ]
     return pd.concat([events[["event_id"]], *parts], axis=1)
+
+
+# --------------------------------------------------------------------------- #
+# Stage A2 block (DECISIONS 81)
+# --------------------------------------------------------------------------- #
+
+EXTRA = (
+    "extra_sector_share_diverged",
+    "extra_a_disp_change5",
+    "extra_b_disp_change5",
+    "extra_a_vol60",
+    "extra_b_vol60",
+    "extra_vol_ratio",
+)
+
+
+def extra_features(events: pd.DataFrame, state: pd.DataFrame, prices: pd.DataFrame) -> pd.DataFrame:
+    """Sector divergence breadth, 5-session change in each leg's displacement, leg volatility."""
+    out = pd.DataFrame(index=events.index)
+    date = pd.to_datetime(events["event_date"])
+    sector_of = events.drop_duplicates("pair_id").set_index("pair_id")["sector"]
+    z = state.loc[
+        state["z_score"].notna(), ["pair_id", "trading_date", "leg_a", "leg_b", "z_score"]
+    ]
+    z = z.assign(sector=z["pair_id"].map(sector_of))
+    breadth = (
+        z.assign(div=z["z_score"].abs().ge(2.0).astype(float))
+        .groupby(["sector", "trading_date"])["div"]
+        .mean()
+    )
+    out["extra_sector_share_diverged"] = breadth.reindex(
+        pd.MultiIndex.from_arrays([events["sector"], date])
+    ).to_numpy()
+    long = pd.concat(
+        [
+            z.assign(stock=z["leg_a"], sz=z["z_score"]),
+            z.assign(stock=z["leg_b"], sz=-z["z_score"]),
+        ],
+        ignore_index=True,
+    )
+    disp = long.groupby(["stock", "trading_date"])["sz"].mean().rename("disp").reset_index()
+    disp = disp.sort_values(["stock", "trading_date"])
+    disp["change5"] = disp["disp"] - disp.groupby("stock")["disp"].shift(5)
+    keyed = disp.set_index(["stock", "trading_date"])["change5"]
+    sign = np.sign(events["entry_z"].astype(float).to_numpy())
+    for leg, direction in (("a", sign), ("b", -sign)):
+        values = keyed.reindex(pd.MultiIndex.from_arrays([events[f"leg_{leg}"], date])).to_numpy()
+        out[f"extra_{leg}_disp_change5"] = direction * values
+    px = prices.loc[prices["adj_close"].gt(0), ["ticker", "trading_date", "adj_close"]].copy()
+    px["trading_date"] = pd.to_datetime(px["trading_date"])
+    px = px.sort_values(["ticker", "trading_date"])
+    returns = np.log(px["adj_close"]).groupby(px["ticker"]).diff()
+    px["vol60"] = returns.groupby(px["ticker"]).transform(
+        lambda s: s.rolling(60, min_periods=40).std()
+    )
+    vol = px.set_index(["ticker", "trading_date"])["vol60"]
+    for leg in ("a", "b"):
+        out[f"extra_{leg}_vol60"] = vol.reindex(
+            pd.MultiIndex.from_arrays([events[f"leg_{leg}"], date])
+        ).to_numpy()
+    out["extra_vol_ratio"] = out["extra_a_vol60"] / out["extra_b_vol60"]
+    return out
+
+
+BLOCKS["extra"] = EXTRA

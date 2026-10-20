@@ -1,6 +1,6 @@
 """Quant programme Stage B: exit-rule grid on the frozen entries (DECISIONS 76).
 
-Every 2010-2023 Baseline 0 event is entered exactly as the frozen Decision 36
+Every 2006-2023 Baseline 0 event is entered exactly as the frozen Decision 36
 policy enters it. Only the exit changes: the convergence band (take profit),
 the adverse stop, the time stop and the E3 news exit. ``exit_loop`` is the
 verified research exit loop of ``p6_halflife_exit.simulate_long`` with those
@@ -122,7 +122,7 @@ def build(workspace: Path, configs: Path, outputs: Path, output: Path) -> Path:
     index = headline_index(pd.read_parquet(outputs / "headline_v1/headline_tone.parquet"))
     rows: list[dict[str, Any]] = []
     cache: dict[str, Any] = {}
-    for start, end in _chunks(pd.Timestamp(2010, 1, 1).date(), pd.Timestamp(2023, 12, 31).date()):
+    for start, end in _chunks(pd.Timestamp(2006, 1, 1).date(), pd.Timestamp(2023, 12, 31).date()):
         events, _, _ = build_historical_events(sources, _spec(sources, start, end))
         print(f"{pb._now()} pricing {len(events)} events {start}..{end}", flush=True)
         for event in events:

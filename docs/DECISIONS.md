@@ -2990,3 +2990,20 @@ purged out-of-fold predictions.
 **Choice rule.** Pick the ranking with the highest 2010–2017 monthly Sharpe
 of per-candidate net returns under the adopted exit. Then open 2018–2023
 once.
+
+### 79a. Ranking choice, fixed before 2018–2023 was opened
+
+Recorded 2026-10-20. The exit grid was extended to 2006–2023 so the return
+model has a training history; the 2010–2023 rows equal the earlier grid
+exactly.
+
+On 2010–2017, top 20 % under the adopted exit:
+
+| Ranking | Trades | Per trade | Median trade | Per candidate | Monthly Sharpe |
+|---|---|---|---|---|---|
+| **R-a, original Model B (`d45`)** | 1,834 | **+13.1 bps** | +14.5 bps | +2.45 bps | **0.50** |
+| R-b, B+rule probability | 1,574 | +7.0 bps | — | — | 0.36 |
+| R-c, return regression | 2,252 | −11.8 bps | — | — | −0.51 |
+
+**Choice: R-a.** Direct return prediction is again noise (as in Decision
+44), and the better reversion forecaster does not select better trades.
