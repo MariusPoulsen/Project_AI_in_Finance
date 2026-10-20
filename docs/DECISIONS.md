@@ -3393,3 +3393,43 @@ log loss (the lowest wins). 2018–2023 is opened once.
 **Goal 2 rule:** the top 20 % of B+rule+ou (or of the winning variant),
 excluding R1 events, under the adopted exit, is compared with the current
 design (G-a) on 2010–2017 monthly Sharpe. It replaces G-a only if higher.
+
+## 87. Pre-registered Stage F: expected-value ranking from the best forecaster
+
+Recorded 2026-10-20, before any result below.
+
+**Diagnosis (2010–2017, adopted exit).** Net profit rises with predicted
+reversion probability for both models, but differently at the top decile:
+
+| Model, top decile | Reversion rate | Median spread scale, std / (1 + \|beta\|) | Net per trade |
+|---|---|---|---|
+| B+rule+ou | 16.3 % | 235 bps | +7.5 bps |
+| Original Model B | 12.3 % | 296 bps | +9.7 bps |
+
+The better forecaster concentrates on tight spreads, whose reversions are
+small relative to fixed costs. Profit is roughly probability × payoff scale
+minus costs.
+
+**Ranking.** For test year Y, every 2010…Y−1 event priced under the
+adopted exit (take profit |z| 1.0, E3 news exit, disaster stop |z| 5,
+20 sessions) gives:
+- its walk-forward out-of-sample probability p;
+- its scale, spread std / (1 + |beta|);
+- its realised net return.
+
+1. Fit OLS of net / scale (winsorised at 1 %/99 %) on p, giving two
+   coefficients a and b.
+2. Score each event as EV = scale × (a + b × p).
+3. Trade the top 20 % by EV, using the previous year's EV distribution as
+   the cutoff, excluding R1 events.
+
+**Candidates:**
+- F-a: EV with p from B+rule+ou (the Goal 1 forecaster);
+- F-b: EV with p from the original Model B;
+- G-a: the current design.
+
+Because the fit needs a year of history, the comparison runs on 2011–2017.
+
+**Rule.** The highest 2011–2017 monthly Sharpe of per-candidate returns
+wins; it replaces G-a only if higher. Then 2018–2023 once, and the
+portfolio.
