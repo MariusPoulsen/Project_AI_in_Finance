@@ -3459,3 +3459,21 @@ on the selection years (Decisions 79a, 85a, 86 Goal 2 and 87a):
 
 For trade selection, the simple original-Model-B top 20 % is the most
 robust signal found.
+
+### 86a. Stage E choices, fixed before 2018–2023 was opened
+
+Recorded 2026-10-20, 2010–2017 only.
+
+**Goal 1, B+rule+ou variants:**
+
+| Variant | ROC-AUC | PR-AUC | Log loss | Brier |
+|---|---|---|---|---|
+| base | 0.735 | 0.134 | 0.19989 | 0.0513 |
+| slow | 0.736 | — | 0.19965 | — |
+| col05 | 0.740 | — | 0.19865 | — |
+| **bag5** | **0.743** | **0.141** | **0.19802** | **0.0510** |
+
+**bag5 is the chosen Goal 1 variant.**
+
+**Goal 2:** the bag5 top 20 % without R1 events reaches Sharpe 0.47
+(+9.5 bps per trade), against 0.71 (+19.2 bps) for G-a. **G-a is kept.**
