@@ -2535,3 +2535,46 @@ its VIX, volume and return features.
 **Choices:** filter **F6** (skip when spread volatility is expanding) and
 sizing **Z2v** (inverse market volatility). Both are weak in exploration.
 No 2016–2023 outcome of this design had been computed.
+
+## 72. Entry filter and volatility sizing result: both choices fail; VIX sizing is a post-hoc lead
+
+Recorded 2026-10-20 (`outputs/p6_entry_vol/confirmation.json`). Decision 71
+ran as pre-registered.
+
+**Pre-chosen rules, model population (R0 top 20 % with the E3 exit),
+2016–2021, 2,398 trades:**
+- **F6 (skip expanding spread volatility):** −7.97 bps per candidate,
+  95 % [−18.5, +0.3], positive in 2 of 6 years. **It fails.**
+- **Z2v (inverse market volatility):** −8.23 bps, 95 % [−28.0, +11.1],
+  positive in 2 of 6 years. **It fails.** In 2022–2023 it lost −36.0 bps.
+
+**Reported, not pre-chosen.**
+
+| Rule | Population | 2016–2021 gain per candidate | One-sided p | Years positive | Monthly Sharpe | 2022–2023 |
+|---|---|---|---|---|---|---|
+| Z3v VIX-proportional sizing | Model | +35.5 bps [−6.8, +80.4] | 0.055 | 3/6 | 0.25 → 0.40 | +38.7 bps (p 0.033), Sharpe 0.47 → 0.93 |
+| F2 quiet common market | Baseline 0 | +7.5 bps [+2.0, +13.6] | 0.003 | 6/6 | −0.41 → +0.12 | — |
+| F7 low VIX | Baseline 0 | +6.7 bps | 0.014 | 4/6 | — | — |
+| F4 few same-day signals | Baseline 0 | +7.2 bps | 0.029 | — | — | — |
+| F1 one-sided volume shock | Baseline 0 | +4.2 bps | 0.026 | — | — | — |
+| F3 mover rose | Baseline 0 | +7.2 bps | 0.049 | — | — | +13.1 bps (p 0.023) |
+
+- **Z3v in 2010–2015** was only +1.6 bps (t 0.25), so the lead comes from
+  the later years.
+- **The literature filters work on Baseline 0 but add nothing to the model's
+  selections.** On Baseline 0 they skip divergences without common news,
+  in calm markets, or where the mover rose. On the model selections they
+  were negative or insignificant in 2016–2021, consistent with the XGBoost
+  model already using VIX, volume and return features.
+
+**Interpretation.**
+- **The two volatility rules point in opposite directions, consistently
+  with Nagel (2012).** Taking more exposure when VIX is high helped
+  (liquidity provision earns more in turbulent markets). Moreira–Muir style
+  de-risking hurt this reversal strategy, and so did equal risk per trade.
+- **Z3v is post-hoc.** It was not the pre-registered choice, and part of its
+  gain is leverage in high-VIX years; its Sharpe also rose.
+- **Testing it further:** the only untouched data are the locked 2024–2025
+  final test, so Z3v can only be tested there. It is a candidate for the
+  final-test design, alongside R0 with the E3 exit, for the owner to decide
+  on before the unlock.
