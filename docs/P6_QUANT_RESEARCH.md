@@ -70,7 +70,20 @@ The programme design's Sharpe is +0.32 in 2010–2015, +0.55 in 2016–2021 and
 +0.24 in 2022–2023. It is positive in 11 of 14 years; the worst year is
 2015 at −6.1 %.
 
+**Cost and borrow sensitivity** (programme design, 25 % per entry,
+2010–2023):
+
+| Scenario | CAGR | Sharpe | Max drawdown |
+|---|---|---|---|
+| Costs 2.5 bps per side | +3.0 % | 0.54 | −12.5 % |
+| Frozen (5 bps per side, 1 % borrow) | +2.25 % | 0.41 | −13.8 % |
+| Costs 10 bps per side | +0.8 % | 0.16 | −16.3 % |
+| Borrow 2 % | +1.8 % | 0.34 | −14.5 % |
+
 **Caveats.**
+- **Costs:** the edge is thin relative to costs. At double the frozen costs
+  the design is only marginally positive, and execution quality would
+  decide whether it pays.
 - **Unlevered returns are modest** because the frozen policy caps gross
   exposure at 100 %. At Sharpe 0.4–0.5, leverage scales return and drawdown
   together.

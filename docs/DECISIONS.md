@@ -3263,3 +3263,15 @@ On 2010–2023 this design has CAGR +2.25 %, Sharpe 0.41 and maximum drawdown
 policy**, so adopting them needs a new freeze manifest. The 2024–2025 final
 test stays locked until the owner decides and unlocks it. Full write-up:
 `docs/P6_QUANT_RESEARCH.md`.
+
+**Cost sensitivity of the proposed design** (2010–2023, 25 % per entry;
+reported, not used for any choice):
+
+| Scenario | CAGR | Sharpe |
+|---|---|---|
+| Costs 2.5 bps per side | +3.0 % | 0.54 |
+| Frozen | +2.25 % | 0.41 |
+| Costs 10 bps per side | +0.8 % | 0.16 |
+| Borrow 2 % | +1.8 % | 0.34 |
+
+The edge is thin relative to trading costs.
