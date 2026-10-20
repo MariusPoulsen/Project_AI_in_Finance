@@ -2653,3 +2653,53 @@ There is **no pass rule**: every year here has been used before, so this
 describes the candidates rather than testing them. The test of the fixed
 design is the locked 2024–2025 final test, which needs the owner's
 explicit unlock.
+
+## 74. Portfolio evaluation result: the candidate designs are close to break-even
+
+Recorded 2026-10-20 (`outputs/p6_portfolio/portfolios.json`, SHA-256
+`2f9e92ba…`). Decision 73 ran as pre-registered.
+
+**Checks passed.** Every frozen and E3 trade return equals the stored
+simulation exactly (maximum difference 0). The research portfolio reproduces
+the frozen portfolio NAV on the 2016–2017 model trades (396 proposals,
+524 sessions, maximum difference 4 × 10⁻¹⁵).
+
+**Results, frozen policy (25 % of NAV per entry), 2010-01-04 to the last
+known close:**
+
+| Design | CAGR | Volatility | Sharpe | Max drawdown | Final known NAV | Trades | 2010–15 / 2016–21 / 2022–23 Sharpe |
+|---|---|---|---|---|---|---|---|
+| P0 Baseline 0, frozen exit | −3.56 % | 4.1 % | −0.86 | −20.0 % | 0.835 (NAV unknown after 2014-12-31) | 4,941 | −0.86 / — / — |
+| P1 R0, frozen exit | −0.90 % | 5.3 % | −0.14 | −28.4 % | 0.882 | 3,885 | −0.73 / +0.19 / +0.61 |
+| **P2 R0 + E3 (primary)** | −0.45 % | 5.4 % | −0.06 | −18.7 % | 0.939 | 4,006 | −0.32 / +0.12 / +0.19 |
+| **P3 P2 + VIX sizing (secondary)** | −0.69 % | 5.0 % | −0.11 | −20.9 % | 0.908 | 4,037 | −0.39 / −0.12 / +0.90 |
+| P4 P2 skipping R1 events | **+0.90 %** | 5.7 % | **+0.19** | **−9.8 %** | **1.133** | 3,467 | +0.08 / +0.24 / +0.33 |
+
+**10 % of NAV per entry (sensitivity), Sharpe:**
+- P1: +0.09;
+- P2: +0.07, with a −11.1 % maximum drawdown;
+- P3: −0.02;
+- P4: +0.31 (CAGR +1.24 %, maximum drawdown −9.2 %, final NAV 1.186).
+
+The model portfolios lose NAV knowledge after 2023-12-08, when a held quote
+is missing under the frozen rule. P0's NAV became unknown on 2014-12-31,
+after which its new entries were blocked.
+
+**Reading.**
+1. **Selecting with the model is a large improvement on trading every
+   divergence** (CAGR −3.6 % → about 0 %).
+2. **The candidate designs are close to break-even after costs.**
+   - P2's +9.3 bps per trade, at about 13 open positions and 0.8 gross,
+     amounts to roughly +0.2 % a year. It is also negative in 2010–2015.
+   - Per-trade edges of this size do not make a meaningful portfolio
+     return; leverage would scale risk and return together.
+3. **VIX sizing does not help at the portfolio level.** Its Sharpe is lower
+   than P2's in 2010–2021 and higher only in 2022–2023. The Decision 72 lead
+   does not survive capacity limits and compounding.
+4. **The R1 entry filter is the best design here.** It is positive in all
+   three periods and halves the drawdown, but it is not the pre-registered
+   candidate, and these years have been used before.
+
+**Implication for Goal 2.** The final-test candidate stays as fixed in
+Decision 73 unless the owner changes it before the unlock. The main lever
+for returns is per-trade edge after costs, not sizing.
