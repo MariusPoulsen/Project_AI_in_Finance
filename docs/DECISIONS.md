@@ -2587,3 +2587,69 @@ ran as pre-registered.
   final test, so Z3v can only be tested there. It is a candidate for the
   final-test design, alongside R0 with the E3 exit, for the owner to decide
   on before the unlock.
+
+## 73. Candidate final-test design fixed; pre-registered 2010–2023 portfolio evaluation
+
+Recorded 2026-10-20, before any portfolio below was computed. The owner
+framed the project's two goals and asked to fix the trading design (step 2)
+and evaluate it as a portfolio (step 3).
+
+**The two goals.**
+- **Goal 1, forecasting mean reversion:** compare the methods by forecast
+  quality. Decisions 44–70 settle this on development data: the fixed
+  Decision 45 XGBoost Model B is the best forecaster found.
+- **Goal 2, long-run portfolio returns:** use that forecaster with the best
+  trading layer, judged as a portfolio.
+
+**Step 2: the candidate design, fixed now.**
+- **Primary candidate:** R0 (the fixed Decision 45 XGBoost Model B, retrained
+  yearly) selects the top 20 % of divergences, using the 80th-percentile
+  cutoff from the previous year's scores. Trades use the frozen Decision 36
+  entry and costs with the **E3 adverse-tone news exit** (Decision 60, the
+  only rule that passed confirmation).
+- **Secondary candidate:** the same with **VIX-proportional sizing** (the
+  Decision 72 post-hoc lead).
+- **Not a candidate:** the entry filters. They added nothing on the model's
+  selections (Decision 72), so none is included; R1 is reported as P4 only.
+
+**Step 3: portfolio evaluation.**
+- **Setup:** each design runs as one continuous portfolio from 2010 to the
+  last development session (2023-12-29) under the frozen Decision 36
+  portfolio policy:
+  - start NAV 1;
+  - 25 % of NAV per entry, gross capped at 100 % of NAV;
+  - one position per pair, fixed shares;
+  - frozen costs and borrow, no idle-cash yield.
+
+  A 10 % target is a reported sensitivity.
+- **Simulator:** `p6_portfolio.research_portfolio` copies the frozen
+  `simulate_portfolio` with two additions: supplied trade results (for E3)
+  and per-entry weights (VIX sizing). Before any result is used, the run
+  checks that:
+  - with frozen results and unit weights it reproduces the frozen portfolio
+    NAV (on 2016–2017 model trades and on the synthetic fixture);
+  - every frozen and E3 trade return equals the stored Decision 59–62
+    simulation.
+
+**Designs:**
+
+| Design | Population | Exit | Sizing / filter |
+|---|---|---|---|
+| P0 | Baseline 0 (every divergence) | Frozen | — (the original strategy) |
+| P1 | R0 selections | Frozen | — |
+| **P2** | R0 selections | E3 | — (**primary candidate**) |
+| **P3** | R0 selections | E3 | VIX-proportional sizing, normalised by the previous year's mean weight (**secondary candidate**) |
+| P4 | R0 selections | E3 | Skip R1 events |
+
+**Reported for 2010–2023 and for 2010–2015, 2016–2021 and 2022–2023:**
+- total return, CAGR and annualised volatility;
+- Sharpe ratio (daily, zero risk-free rate);
+- maximum drawdown and Calmar ratio;
+- mean gross exposure and open positions;
+- trade counts by status;
+- yearly returns.
+
+There is **no pass rule**: every year here has been used before, so this
+describes the candidates rather than testing them. The test of the fixed
+design is the locked 2024–2025 final test, which needs the owner's
+explicit unlock.
