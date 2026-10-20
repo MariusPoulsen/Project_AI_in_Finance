@@ -3213,3 +3213,21 @@ Recorded 2026-10-20, 2010–2017 only.
 
 B+rule+extra lowers log loss, so the extra block is adopted into the Goal 1
 forecaster. No 2018–2023 Stage A2 result had been read.
+
+### 81b. Stage A2 does not hold out; B+rule stays the Goal 1 forecaster
+
+Recorded 2026-10-20. 2018–2023, against the original Model B
+(AUC 0.718):
+
+| Spec | ROC-AUC | PR-AUC | Log loss | Brier | Log-loss gain (×10⁻⁴), p | AUC gain, p |
+|---|---|---|---|---|---|---|
+| **B+rule** | **0.730** | 0.214 | **0.2799** | 0.0785 | +33.6, p 0.007 | +0.012, p 0.002 |
+| B+rule+extra | 0.727 | 0.210 | 0.2805 | 0.0787 | +26.9, p 0.043 | +0.010, p 0.042 |
+| B+all+extra | 0.732 | 0.215 | 0.2786 | 0.0782 | — | — |
+| B+all | 0.733 | 0.219 | 0.2783 | 0.0781 | +49.9, p 0.001 | +0.015, p 0.002 |
+
+The extra block helped in 2010–2017 but is slightly worse than B+rule out
+of sample, so it is **not adopted**. **B+rule (Decision 78) remains the
+pre-registered Goal 1 forecaster.** B+all, which adds the track-record
+block, is the best spec on the holdout but was never chosen by a rule. It
+is reported as the strongest observed forecaster.
