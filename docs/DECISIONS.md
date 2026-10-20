@@ -3558,3 +3558,25 @@ At 10 % per entry: Sharpe 0.52 against 0.48.
 H-b is kept as part of the design: it is economically plausible (it skips
 broken relationships) and confirmed per candidate in both blocks. Its
 portfolio effect is small, worse in 2010–2017 and better in 2018–2023.
+
+## 90. Pre-registered Stage I: recalibration on the previous year's out-of-sample predictions
+
+Recorded 2026-10-20, before any result below.
+
+**Motivation.** Log loss depends on calibration, and the label base rate
+drifts (about 5.6 % in 2010–2017, about 10 % in 2018–2023).
+
+**Variants,** applied to the Goal 1 forecaster's raw scores (bag5, or the
+Stage G winner):
+
+| Variant | Calibration |
+|---|---|
+| I-0 (current) | Platt on out-of-fold training scores from the last 3 years |
+| I-1 | Platt on the previous year's walk-forward test predictions whose labels resolved before 1 January of the test year |
+| I-2 | Platt on the previous two years' walk-forward test predictions, under the same condition |
+
+Raw scores, and hence ranking and AUC, are unchanged. Only log loss and
+Brier are affected.
+
+**Rule.** A variant replaces I-0 if it has the lowest 2011–2017 log loss
+(2010 has no previous-year predictions). 2018–2023 is opened once.
