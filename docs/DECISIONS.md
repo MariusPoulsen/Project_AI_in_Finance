@@ -2511,3 +2511,27 @@ tested against each other.
   of monthly returns.
 
 Module: `structural_break.experiments.p6_entry_vol`.
+
+### 71a. Entry-filter and sizing choices, fixed before 2016–2021 was scored
+
+Recorded 2026-10-20 (`outputs/p6_entry_vol/exploration.json`;
+`choices.json` SHA-256
+`9bc00632c2f85c8388fac4ae9fbd1e5037fdd21f07c7e50ba0eb69a1e2e210c6`).
+
+**Model population, 2010–2015.** Only F1 (+0.7 bps), F6 (+1.2 bps, t 1.07),
+Z2v (+1.5 bps, t 0.36) and Z3v (+1.6 bps, t 0.25) were positive. The other
+filters lost 0.9–3.4 bps, and Z1v lost 5.9 bps.
+
+**Baseline 0 is the opposite.** The same filters gained strongly there:
+- F7 low VIX: +10.9 bps;
+- F3 mover rose: +9.1 bps;
+- F4 few signals: +7.5 bps;
+- F5 slow drift: +7.1 bps;
+- F1: +4.7 bps.
+
+This suggests the XGBoost selection already captures these effects through
+its VIX, volume and return features.
+
+**Choices:** filter **F6** (skip when spread volatility is expanding) and
+sizing **Z2v** (inverse market volatility). Both are weak in exploration.
+No 2016–2023 outcome of this design had been computed.
