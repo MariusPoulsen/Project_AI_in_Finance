@@ -3092,3 +3092,19 @@ top 20 %, frozen entry, with these exits:
 - the E3 news exit;
 - a disaster stop at |z| ≥ 5;
 - a 20-session time stop.
+
+## 82. Pre-registered Stage C2: selection refinements on the programme design
+
+Recorded 2026-10-20, before any result below. Each candidate keeps the
+D80-risk exit (take profit at |z| 1.0, E3 news exit, disaster stop at
+|z| 5, 20 sessions) and changes which events are traded:
+
+| Candidate | Trades |
+|---|---|
+| C2-a | The R-a top 20 %, skipping R1 events (the moving company filed earnings in the last 3 sessions, or its recent-news negative tone is ≥ 0.2). This was the best design in Decision 74. |
+| C2-b | Events in both the R-a and the B+rule top 20 % (higher conviction) |
+| C2-c | Events in either top 20 % (more trades, more diversification) |
+
+**Choice rule.** Pick the candidate with the highest 2010–2017 portfolio
+Sharpe at 25 % of NAV per entry. It is adopted only if that Sharpe exceeds
+D80-risk's (−0.02). 2018–2023 and the full period are reported.
