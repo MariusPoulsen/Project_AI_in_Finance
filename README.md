@@ -27,12 +27,13 @@ calibration and assessment periods.
   2010–2021 (+1.1 bps per candidate, 95 % interval [−0.5, +2.8]) and was not
   adopted.
 - **Quant research programme** ([P6_QUANT_RESEARCH.md](docs/P6_QUANT_RESEARCH.md),
-  DECISIONS 75–84). Peer, earnings-calendar, momentum and relationship-state
-  features significantly improve the reversion forecast on the 2018–2023
-  holdout (ROC-AUC 0.718 → 0.730). A redesigned trading layer (take profit at
-  |z| 1.0, disaster stop at 5, news exit, R1 entry filter) turns the model
-  portfolio from break-even into Sharpe 0.41, +2.25 % CAGR over 2010–2023.
-  This is proposed for the final test; the owner decides.
+  DECISIONS 75–91). Peer, earnings-calendar, momentum, relationship-state and
+  structural Ornstein–Uhlenbeck features, with seed bagging, significantly
+  improve the reversion forecast on the 2018–2023 holdout (ROC-AUC
+  0.718 → 0.735). A redesigned trading layer (take profit at |z| 1.0,
+  disaster stop at 5, news exit, two entry filters) turns the model portfolio
+  from break-even into Sharpe 0.42, +2.3 % CAGR over 2010–2023. This is
+  proposed for the final test; the owner decides.
 - **New SEC information blocks** are in
   [P6_SEC_FEATURES.md](docs/P6_SEC_FEATURES.md) (DECISIONS 47–54). Narrow
   filing-timing features, Gemma labels of each company's 8-K news from the

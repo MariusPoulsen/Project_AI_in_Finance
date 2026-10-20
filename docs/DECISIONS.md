@@ -3631,3 +3631,35 @@ rate, so the selection years understate them.
 (holdout AUC 0.739 against 0.718 for the original Model B, log-loss gain
 +67.4 × 10⁻⁴, p 0.001). It is post-hoc, so choosing it for the final test
 is the owner's decision.
+
+## 91. Updated final-test proposal (supersedes Decision 84; owner to decide)
+
+Recorded 2026-10-21 after Stages D–I (Decisions 85–90).
+
+**Goal 1, forecasting.** Pre-registered model: B+rule+ou with 50 % column
+and 80 % row subsampling, averaged over 5 seeds (the `recent` scheme).
+- **On 2018–2023:** ROC-AUC 0.735 and log loss 0.2780, against 0.718 and
+  0.2832 for the original Model B (log-loss gain p = 0.002).
+- **Best observed (post-hoc):** adding the track block gives AUC 0.739 and
+  log loss 0.2765.
+
+The proposal is to report both against the original Model B on the final
+test.
+
+**Goal 2, portfolio.**
+- **Selection:** original Model B, top 20 %.
+- **Entry filters:** skip R1 events, and skip pairs whose spread has not
+  crossed its mean for more than 120 sessions.
+- **Entry and costs:** frozen.
+- **Exits:** take profit at |z| ≤ 1.0, E3 news exit, disaster stop at
+  |z| ≥ 5, 20-session time stop.
+- **Portfolio policy:** frozen.
+
+On 2010–2023 this design has CAGR +2.31 %, Sharpe 0.42 and maximum
+drawdown −13.2 %.
+
+**Adoption.** The exit and filter changes alter the frozen Decision 36
+execution policy, so adopting them needs a new freeze manifest and the
+owner's explicit unlock of the 2024–2025 final test. Full write-up:
+`docs/P6_QUANT_RESEARCH.md`; the method comparison is in
+`outputs/p6_quant/goal1_table.csv`.
