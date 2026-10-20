@@ -3692,3 +3692,20 @@ Recorded 2026-10-21, 2010–2017:
 
 Neither beats bag5, so nothing changes and 2018–2023 was not opened for
 this stage. As in Decision 66, the library is not the lever.
+
+## 93. Pre-registered Stage K: point-in-time sector track-record filter
+
+Recorded 2026-10-21, before any result below.
+
+**Motivation.** A 2010–2017 diagnostic of the H-b design's trades showed
+Financials losing −26 bps per trade (301 trades). Excluding a sector chosen
+from that table would be hindsight, so the rule is point-in-time instead.
+
+**K-a.** Skip an event if the trades selected by the design in its sector,
+with outcomes resolved within the previous 3 years and before the signal
+date, have a negative mean net return under the adopted exit. The rule is
+active only with at least 20 such trades. Everything else is the H-b
+design.
+
+**Rule:** K-a is adopted if its 2010–2017 monthly Sharpe of per-candidate
+returns exceeds H-b's (0.73). 2018–2023 and the portfolio follow once.
