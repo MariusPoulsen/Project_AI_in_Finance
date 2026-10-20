@@ -3580,3 +3580,16 @@ Brier are affected.
 
 **Rule.** A variant replaces I-0 if it has the lowest 2011–2017 log loss
 (2010 has no previous-year predictions). 2018–2023 is opened once.
+
+### 90a. Stage I result: the current calibration is kept
+
+Recorded 2026-10-20, 2011–2017, bag5:
+
+| Variant | Log loss | Brier |
+|---|---|---|
+| **I-0 (current)** | **0.20406** | 0.05300 |
+| I-2 | 0.20430 | 0.05294 |
+| I-1 | 0.20473 | 0.05295 |
+
+I-0 has the lowest log loss, so nothing changes, and 2018–2023 was not
+opened for this stage.
