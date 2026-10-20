@@ -3351,3 +3351,23 @@ Recorded 2026-10-20, 2010–2017 only.
 **G-a is kept.** The OU expected value is largest for wide, loosely tied
 spreads, which are the ones that break down (as in the Decision 76
 diagnostics).
+
+### 85b. Stage D holdout: the OU block improves the forecast further
+
+Recorded 2026-10-20 (2018–2023, opened for the eighth time, see the
+Decision 85 caveat).
+
+| Spec | ROC-AUC | PR-AUC | Log loss | Brier | Log-loss gain over the original Model B | Gain over B+rule |
+|---|---|---|---|---|---|---|
+| Original Model B | 0.718 | 0.207 | 0.2832 | 0.0790 | — | — |
+| B+rule | 0.730 | 0.214 | 0.2799 | 0.0785 | +33.6 × 10⁻⁴, p 0.007 | — |
+| **B+rule+ou** | **0.733** | **0.216** | **0.2784** | **0.0782** | **+48.5 × 10⁻⁴, p 0.007** | +14.8 × 10⁻⁴, p 0.14 |
+| B+all+ou | 0.734 | 0.218 | 0.2778 | 0.0780 | +54.8 × 10⁻⁴ | — |
+| OU alone | 0.700 | 0.176 | 0.2875 | 0.0802 | — | — |
+
+**B+rule+ou is adopted as the Goal 1 forecaster.** It improves on B+rule
+in both blocks; the extra step is positive but not significant on its own.
+
+OU alone was competitive in 2010–2017 but weaker in 2018–2023. The
+structural prior is useful as an input to the ML model rather than as a
+forecaster on its own.
