@@ -3231,3 +3231,35 @@ of sample, so it is **not adopted**. **B+rule (Decision 78) remains the
 pre-registered Goal 1 forecaster.** B+all, which adds the track-record
 block, is the best spec on the holdout but was never chosen by a rule. It
 is reported as the strongest observed forecaster.
+
+## 84. Proposed final-test design from the quant programme (owner to decide)
+
+Recorded 2026-10-20. This summarises Decisions 75–83 into a proposal. It is
+not adopted: changing the final-test design requires the owner's decision
+before the unlock.
+
+**Goal 1, forecasting.**
+- **Proposal:** report B+rule (the original Model B features plus the peer,
+  state, earnings and momentum blocks, `recent` training scheme) against
+  the original Model B on the final-test events.
+- **Development evidence:** on the 2018–2023 holdout it improves ROC-AUC
+  from 0.718 to 0.730 and log loss from 0.2832 to 0.2799 (both p < 0.01).
+
+**Goal 2, portfolio.** The proposal replaces the Decision 73 primary
+candidate with the programme design:
+
+| Component | Setting |
+|---|---|
+| Selection | Original Model B top 20 % |
+| Entry filter | R1 |
+| Entry and costs | Frozen |
+| Exits | Take profit at \|z\| ≤ 1.0, E3 news exit, disaster stop at \|z\| ≥ 5, 20-session time stop |
+| Portfolio policy | Frozen (25 % of NAV per entry) |
+
+On 2010–2023 this design has CAGR +2.25 %, Sharpe 0.41 and maximum drawdown
+−13.8 %, against −0.45 %, −0.06 and −18.7 % for the Decision 73 candidate.
+
+**The exit and filter changes alter the frozen Decision 36 execution
+policy**, so adopting them needs a new freeze manifest. The 2024–2025 final
+test stays locked until the owner decides and unlocks it. Full write-up:
+`docs/P6_QUANT_RESEARCH.md`.

@@ -26,6 +26,13 @@ calibration and assessment periods.
   beat A. A promising lead then failed its walk-forward replication over
   2010–2021 (+1.1 bps per candidate, 95 % interval [−0.5, +2.8]) and was not
   adopted.
+- **Quant research programme** ([P6_QUANT_RESEARCH.md](docs/P6_QUANT_RESEARCH.md),
+  DECISIONS 75–84). Peer, earnings-calendar, momentum and relationship-state
+  features significantly improve the reversion forecast on the 2018–2023
+  holdout (ROC-AUC 0.718 → 0.730). A redesigned trading layer (take profit at
+  |z| 1.0, disaster stop at 5, news exit, R1 entry filter) turns the model
+  portfolio from break-even into Sharpe 0.41, +2.25 % CAGR over 2010–2023.
+  This is proposed for the final test; the owner decides.
 - **New SEC information blocks** are in
   [P6_SEC_FEATURES.md](docs/P6_SEC_FEATURES.md) (DECISIONS 47–54). Narrow
   filing-timing features, Gemma labels of each company's 8-K news from the
@@ -201,7 +208,9 @@ the backtests.
 - Backtesting: [runbook](docs/BACKTEST_RUNBOOK.md),
   [development results](docs/P6_DEVELOPMENT_RESULTS.md),
   [improvement results](docs/P6_IMPROVEMENT_RESULTS.md),
-  [SEC timing and catalysts](docs/P6_SEC_FEATURES.md).
+  [SEC timing and catalysts](docs/P6_SEC_FEATURES.md),
+  [boosting and cointegration](docs/P6_BOOSTING.md),
+  [quant research programme](docs/P6_QUANT_RESEARCH.md).
 - Governance: [decisions](docs/DECISIONS.md), [plan](docs/PLAN.md),
   [specifications](docs/specs/README.md).
 - [Archive](docs/archive/README.md): original reproduction runbooks for
