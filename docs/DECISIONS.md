@@ -3039,3 +3039,21 @@ picked every component, 2018–2023 confirmed them.
 There is no pass rule; the 2024–2025 final test remains the test. D80-risk
 is adopted over D80 if its 2010–2017 Sharpe is at least D80's or its
 2010–2017 maximum drawdown is at least one third smaller.
+
+## 81. Pre-registered Stage A2: a second forecasting feature block
+
+Recorded 2026-10-20, before any Stage A2 result.
+
+**Block `extra`** (`p6_quant_features.extra_features`):
+- the share of the pair's sector diverging that day (sector rotation versus
+  a stock-specific move);
+- each leg's 5-session change in its mean displacement across all its pairs,
+  aligned with the divergence (a sudden jump versus a gradual build-up);
+- each leg's 60-session return volatility and their ratio.
+
+**Specs** (`recent` scheme): B+rule+extra and B+all+extra.
+
+**Choice rule.** Extra is adopted into the Goal 1 forecaster if
+B+rule+extra has a lower 2010–2017 log loss than B+rule. 2018–2023 is then
+opened once for B+rule, B+rule+extra and B+all+extra against the original
+Model B.
