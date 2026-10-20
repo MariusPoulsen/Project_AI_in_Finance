@@ -3174,3 +3174,29 @@ current design's events:
   extended further, because each extension reuses the same selection years.
 - **Risk overlay:** the disaster-stop version (1.5, stop 5) is also carried
   into the portfolio as a risk overlay.
+
+### 83b. Take-profit extension does not hold out; the current exit is kept
+
+Recorded 2026-10-20. On 2018–2023 the ordering reverses:
+
+| Take profit | Stop | 2018–2023 Sharpe | Per trade | 2018–2021 Sharpe | 2022–2023 Sharpe |
+|---|---|---|---|---|---|
+| **1.0** | **5** | **0.78** | +38.8 bps | 0.67 | 1.17 |
+| 1.0 | none | 0.69 | +48.8 bps | — | — |
+| 1.25 | 5 | 0.67 | — | — | — |
+| 1.5 | 5 | 0.61 | — | — | — |
+| 1.5 | none | 0.55 | +33.0 bps | 0.42 | 1.12 |
+
+**Portfolios over 2010–2023:**
+
+| Design | CAGR | Sharpe | Max drawdown |
+|---|---|---|---|
+| Take profit 1.5, no stop | +2.32 % | 0.42 | −13.7 % |
+| Take profit 1.5, stop 5 | +2.25 % | 0.41 | −12.9 % |
+| C2-a (take profit 1.0, stop 5) | +2.25 % | 0.41 | −13.8 % |
+
+The Decision 83a choice was an edge-of-grid artefact of 2010–2017. The
+holdout prefers the current exit, and the portfolios are indistinguishable.
+**The Decision 82a programme design is kept unchanged** (take profit
+|z| 1.0, disaster stop 5). This is the selection/holdout discipline working
+as intended.
