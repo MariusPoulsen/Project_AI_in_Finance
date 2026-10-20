@@ -3057,3 +3057,38 @@ Recorded 2026-10-20, before any Stage A2 result.
 B+rule+extra has a lower 2010–2017 log loss than B+rule. 2018–2023 is then
 opened once for B+rule, B+rule+extra and B+all+extra against the original
 Model B.
+
+### 80a. Stage C portfolio result: the adopted exit makes the portfolio positive; disaster stop adopted
+
+Recorded 2026-10-20 (`outputs/p6_quant/portfolio/summary.json`).
+
+**Results, 25 % of NAV per entry:**
+
+| Design | 2010–2023 CAGR | Sharpe | Max drawdown | 2010–2017: Sharpe, CAGR, drawdown | 2018–2023: Sharpe, CAGR, drawdown |
+|---|---|---|---|---|---|
+| D73 (R-a + E3) | −0.45 % | −0.06 | −18.7 % | −0.33, −1.8 %, −18.2 % | +0.27, +1.4 %, −9.8 % |
+| D80 (R-a + adopted exit) | +1.27 % | 0.25 | −15.5 % | −0.04, −0.3 %, −15.5 % | +0.56, +3.5 %, −14.0 % |
+| **D80-risk (+ stop at \|z\| 5)** | **+1.58 %** | **0.30** | **−14.7 %** | −0.02, −0.2 %, −14.7 % | **+0.66, +4.1 %, −12.8 %** |
+| D80-B+rule | +0.64 % | 0.15 | — | +0.12, +0.5 % | NAV unknown after 2018-06-07 (missing held quote) |
+
+The 10 % sensitivity ranks the designs the same way (D80-risk Sharpe 0.25,
+maximum drawdown −10.1 %).
+
+**Disaster stop: adopted.** D80-risk's 2010–2017 Sharpe (−0.02) is at
+least D80's (−0.04), meeting the Decision 80 rule.
+
+**Reading.**
+- The adopted exit improves on the Decision 73 candidate in every period
+  (Sharpe −0.06 → 0.30).
+- The edge is concentrated in 2018–2023, and the 2010–2017 portfolio is
+  flat.
+- Unlevered returns are small (CAGR 1.6 %) because the frozen policy holds
+  at most 100 % gross. At this Sharpe, leverage scales return and drawdown
+  together.
+
+**The programme design for Goal 2:** R-a (the Decision 45 XGBoost Model B)
+top 20 %, frozen entry, with these exits:
+- take profit at |z| ≤ 1.0;
+- the E3 news exit;
+- a disaster stop at |z| ≥ 5;
+- a 20-session time stop.
