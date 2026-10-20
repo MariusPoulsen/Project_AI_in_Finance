@@ -3477,3 +3477,31 @@ Recorded 2026-10-20, 2010–2017 only.
 
 **Goal 2:** the bag5 top 20 % without R1 events reaches Sharpe 0.47
 (+9.5 bps per trade), against 0.71 (+19.2 bps) for G-a. **G-a is kept.**
+
+### 86b. Stage E holdout: seed bagging adopted
+
+Recorded 2026-10-20. 2018–2023 (opened for the ninth time):
+
+| Variant | ROC-AUC | PR-AUC | Log loss | Brier | Gain over the original Model B | Gain over base |
+|---|---|---|---|---|---|---|
+| base | 0.733 | 0.216 | 0.27839 | 0.0782 | +48.5 × 10⁻⁴ | — |
+| col05 | 0.736 | 0.220 | 0.27785 | 0.0780 | +53.9 × 10⁻⁴ | +5.4, p 0.065 |
+| slow | 0.734 | — | 0.27820 | — | — | +1.9, p 0.079 |
+| **bag5** | **0.735** | 0.217 | **0.27797** | 0.0781 | **+52.6 × 10⁻⁴, p 0.002** | +4.1, p 0.110 |
+
+**bag5 (B+rule+ou, 50 % columns, 80 % rows, 5 seeds) is adopted as the
+Goal 1 forecaster.** It improves on base in both blocks.
+
+## 88. Pre-registered Stage G: track-record and cointegration blocks on the bagged model
+
+Recorded 2026-10-20, before any result below. The two unused blocks with the
+strongest earlier signal were:
+- `track`: B+all beat B+rule on the 2018–2023 holdout;
+- the Decision 67 cointegration block: B+all+coint had the best 2010–2017
+  log loss in Stage A.
+
+**Specs** (bag5): B+rule+ou+track and B+rule+ou+coint.
+
+**Rule:** a block is added if its spec lowers the 2010–2017 log loss
+below bag5's (0.19802). If both do, the combined spec is run and kept only
+if it beats both. 2018–2023 is opened once.

@@ -68,6 +68,11 @@ def feature_sets(
         if set(OU) <= set(available):  # Decision 85 (Stage D)
             sets["B+rule+ou"] = (*sets["B+rule"], *OU)
             sets["B+all+ou"] = (*b, *every, *OU)
+            # Decision 88 (Stage G)
+            sets["B+rule+ou+track"] = (*sets["B+rule+ou"], *blocks.get("track", ()))
+            if set(COINT) <= set(available):
+                sets["B+rule+ou+coint"] = (*sets["B+rule+ou"], *COINT)
+                sets["B+rule+ou+track+coint"] = (*sets["B+rule+ou+track"], *COINT)
         if "extra" in blocks:  # Decision 81 (Stage A2)
             sets["B+rule+extra"] = (*sets["B+rule"], *blocks["extra"])
             sets["B+all+extra"] = (*b, *every, *blocks["extra"])
