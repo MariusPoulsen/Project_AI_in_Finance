@@ -3275,3 +3275,48 @@ reported, not used for any choice):
 | Borrow 2 % | +1.8 % | 0.34 |
 
 The edge is thin relative to trading costs.
+
+## 85. Pre-registered Stage D: structural Ornstein–Uhlenbeck features and ranking
+
+Recorded 2026-10-20, before any model or trading result below. The owner
+asked the programme to continue.
+
+**Holdout reuse.** The 2018–2023 holdout has now been opened in seven
+stages (Decisions 77, 78, 79b, 80a, 81b, 82a, 83b). Each further opening
+weakens it, so Stage D results there are reported with that caveat.
+
+**Features** (`p6_quant_ou`):
+- **Model:** each event's z is simulated as an AR(1)/OU process. Persistence
+  rho is the formation-window AR(1) coefficient. sigma is the realised
+  standard deviation of daily z changes over the previous 60 sessions.
+- **Simulation:** 2,000 paths with common random numbers (seed 5557),
+  20 steps.
+- **Six features** (`ou_` block):
+  - the probability of the research label (|z| ≤ 0.5 before z ≥ 3);
+  - the probability of the adopted take profit (|z| ≤ 1.0 before z ≥ 5);
+  - the expected z captured under the adopted exit;
+  - the implied expected net return, expected z captured × spread std /
+    (1 + |beta|) − 10 bps;
+  - rho and sigma.
+- **Feature-construction check (2010–2017 only):** the untrained OU label
+  probability alone has ROC-AUC 0.718, but it is over-optimistic (mean
+  0.21 against a 0.056 base rate).
+
+**Goal 1.**
+- **Specs** (`recent` scheme): B+rule+ou, B+all+ou, and "OU alone" (a
+  logistic calibration of logit(ou_p_label), fitted on each training window,
+  as a pure econometric forecaster).
+- **Rule:** the `ou` block is adopted if B+rule+ou has a lower 2010–2017
+  log loss than B+rule. 2018–2023 is opened once.
+
+**Goal 2.** Candidate selections, all under the D80-risk/C2-a exit and
+excluding R1 events:
+
+| Candidate | Selection |
+|---|---|
+| G-a | The current design (R-a top 20 %) |
+| G-b | The top 20 % by OU expected net return (previous-year cutoff; no machine learning) |
+| G-c | The current design, keeping only events whose OU take-profit probability is at least the previous year's median |
+
+**Rule:** pick the candidate with the highest 2010–2017 monthly Sharpe of
+per-candidate returns, then confirm once on 2018–2023 and in the portfolio.
