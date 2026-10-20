@@ -3606,3 +3606,28 @@ Recorded 2026-10-21, 2010–2017, bag5:
 
 Only coint lowers log loss, so **B+rule+ou+coint (bag5)** is the Stage G
 choice, and no combined spec is needed. 2018–2023 is opened once.
+
+### 88b. Stage G holdout: coint does not hold out; track is the best observed model (post-hoc)
+
+Recorded 2026-10-21. 2018–2023, bag5:
+
+| Spec | ROC-AUC | PR-AUC | Log loss | Brier | Gain over bag5 |
+|---|---|---|---|---|---|
+| B+rule+ou | 0.735 | 0.217 | 0.27797 | 0.0781 | — |
+| B+rule+ou+coint (rule choice) | 0.735 | 0.220 | 0.27794 | 0.0780 | +0.3 × 10⁻⁴, p 0.47 |
+| B+rule+ou+track (rejected by the rule) | **0.739** | **0.222** | **0.27649** | **0.0777** | **+14.8 × 10⁻⁴, p 0.001** |
+
+**Coint:** the rule's choice adds nothing out of sample, so it is **not
+added**. The simpler B+rule+ou (bag5) stays the pre-registered Goal 1
+forecaster.
+
+**Track** has now beaten its comparator on the holdout twice (Decision 81b:
+B+all over B+rule; here over bag5), while failing the selection-year rule
+both times. A plausible reason is that track-record features need years of
+resolved history: in 2010–2017 they are shrunk heavily towards the base
+rate, so the selection years understate them.
+
+**B+rule+ou+track (bag5) is reported as the best observed forecaster**
+(holdout AUC 0.739 against 0.718 for the original Model B, log-loss gain
++67.4 × 10⁻⁴, p 0.001). It is post-hoc, so choosing it for the final test
+is the owner's decision.
