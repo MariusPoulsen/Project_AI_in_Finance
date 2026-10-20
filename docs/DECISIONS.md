@@ -3320,3 +3320,34 @@ excluding R1 events:
 
 **Rule:** pick the candidate with the highest 2010–2017 monthly Sharpe of
 per-candidate returns, then confirm once on 2018–2023 and in the portfolio.
+
+### 85a. Stage D choices, fixed before 2018–2023 was opened
+
+Recorded 2026-10-20, 2010–2017 only.
+
+**Goal 1:**
+
+| Spec | ROC-AUC | PR-AUC | Log loss | Brier |
+|---|---|---|---|---|
+| Original Model B (`d45`) | 0.692 | 0.107 | 0.21105 | — |
+| OU alone (calibrated) | 0.716 | 0.112 | 0.20596 | — |
+| B+rule | 0.716 | 0.122 | 0.20322 | — |
+| **B+rule+ou** | **0.735** | **0.134** | **0.19989** | 0.0513 |
+| B+all+ou | 0.738 | 0.136 | 0.19991 | — |
+
+- **Adopted:** the `ou` block. **B+rule+ou is the new Goal 1 candidate.**
+- **OU alone:** with only a yearly logistic calibration, the econometric
+  model matches Model B under the same scheme (log loss 0.20596 against
+  0.20600) and beats the original Model B.
+
+**Goal 2** (adopted exit, R1 events excluded):
+
+| Candidate | Monthly Sharpe | Per trade |
+|---|---|---|
+| **G-a, current design** | **0.71** | **+19.2 bps** |
+| G-b, OU expected-value ranking | −0.87 | −42.5 bps |
+| G-c, OU take-profit filter | 0.64 | +13.7 bps |
+
+**G-a is kept.** The OU expected value is largest for wide, loosely tied
+spreads, which are the ones that break down (as in the Decision 76
+diagnostics).

@@ -63,6 +63,11 @@ def feature_sets(
     rule = ("peer", "state", "earnings", "momentum")
     if all(name in blocks for name in rule):
         sets["B+rule"] = (*b, *(c for name in rule for c in blocks[name]))
+        from structural_break.experiments.p6_quant_ou import OU
+
+        if set(OU) <= set(available):  # Decision 85 (Stage D)
+            sets["B+rule+ou"] = (*sets["B+rule"], *OU)
+            sets["B+all+ou"] = (*b, *every, *OU)
         if "extra" in blocks:  # Decision 81 (Stage A2)
             sets["B+rule+extra"] = (*sets["B+rule"], *blocks["extra"])
             sets["B+all+extra"] = (*b, *every, *blocks["extra"])
@@ -220,6 +225,11 @@ def load(args: argparse.Namespace) -> tuple[pd.DataFrame, dict[str, tuple[str, .
     frame = frame.merge(
         pd.read_parquet(args.features), on="event_id", how="left", validate="one_to_one"
     )
+    ou_path = args.features.parent / "ou_features.parquet"
+    if ou_path.exists():
+        frame = frame.merge(
+            pd.read_parquet(ou_path), on="event_id", how="left", validate="one_to_one"
+        )
     if args.coint.exists():
         frame = frame.merge(
             pd.read_parquet(args.coint), on="event_id", how="left", validate="one_to_one"
