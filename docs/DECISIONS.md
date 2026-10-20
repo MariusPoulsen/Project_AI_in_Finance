@@ -2949,3 +2949,44 @@ reversion forecast in the project (Goal 1).
 
 **Adopted** as the programme's forecasting model for Goal 1. The final test
 stays locked.
+
+### 76b. Selectivity choice: top 20 %
+
+Recorded 2026-10-20. On 2010–2017, under the chosen exit, top 20 % beats
+top 10 % for every model.
+
+| Model | Top 20 %: Sharpe, per trade | Top 10 %: Sharpe, per trade |
+|---|---|---|
+| Original Model B | 0.50, +13.1 bps | 0.32, +9.6 bps |
+| B+rule | 0.36, +7.0 bps | 0.07, −4.1 bps |
+| B + all | 0.38 | 0.00 |
+
+Top 20 % is kept. The most confident reversion forecasts are not the most
+profitable trades, and the original Model B's selections trade better than
+B+rule's in 2010–2017.
+
+## 79. Pre-registered Stage C ranking: reversion probability against predicted trade return
+
+Recorded 2026-10-20, before any result below. Decision 78 showed that the
+best reversion forecaster is not the best trade selector. For Goal 2 the
+ranking should target the trade's net return under the adopted exit
+(take profit at |z| 1.0, no stop, 20 sessions, E3 news exit), not the
+reversion label.
+
+**Rankings compared** (top 20 %, previous-year cutoff, `recent` scheme
+unless noted):
+
+| Ranking | Model | Target |
+|---|---|---|
+| R-a | Original Model B (`d45`) | Reversion probability (reference, the Decision 73 candidate) |
+| R-b | B+rule | Reversion probability (Decision 78) |
+| R-c | XGBoost regressor, Decision 45 parameters, B+rule features | Realised net return under the adopted exit |
+
+For R-c, the target is winsorised at the training window's 1st and 99th
+percentiles, and training uses only trades whose 20-session window ended
+before 1 January of the test year. The previous-year cutoff comes from
+purged out-of-fold predictions.
+
+**Choice rule.** Pick the ranking with the highest 2010–2017 monthly Sharpe
+of per-candidate net returns under the adopted exit. Then open 2018–2023
+once.
