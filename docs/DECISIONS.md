@@ -3533,3 +3533,28 @@ Recorded 2026-10-20, 2010–2017:
 
 H-b exceeds G-a and is chosen by the rule. The margin is small and within
 noise. The 2018–2023 result and the portfolio decide whether it is kept.
+
+### 89b. Stage H holdout and portfolio: H-b kept, with a small effect
+
+Recorded 2026-10-20.
+
+**Per candidate, 2018–2023:**
+
+| Design | Monthly Sharpe | Per trade |
+|---|---|---|
+| **H-b** | **0.93** | **+43.0 bps** |
+| G-a | 0.78 | +38.8 bps |
+| H-a | 0.70 | — |
+
+**Portfolio, 25 % per entry:**
+
+| Design | 2010–2023 CAGR | Sharpe | Max drawdown | 2010–2017 Sharpe | 2018–2023 Sharpe |
+|---|---|---|---|---|---|
+| **H-b** | **+2.31 %** | **0.42** | **−13.2 %** | 0.18 | **0.70** |
+| C2-a | +2.25 % | 0.41 | −13.8 % | 0.25 | 0.60 |
+
+At 10 % per entry: Sharpe 0.52 against 0.48.
+
+H-b is kept as part of the design: it is economically plausible (it skips
+broken relationships) and confirmed per candidate in both blocks. Its
+portfolio effect is small, worse in 2010–2017 and better in 2018–2023.
