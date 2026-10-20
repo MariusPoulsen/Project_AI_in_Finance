@@ -2767,3 +2767,40 @@ verified research portfolio (Decision 73) for 2010–2023 and compared with
 the Decision 73 candidates.
 
 Modules: `p6_quant_features`, `p6_quant`; outputs in `outputs/p6_quant/`.
+
+## 76. Pre-registered Stage B: exit-rule grid and selectivity
+
+Recorded 2026-10-20, before any exit-grid result was read (the grid was
+still being computed).
+
+**Exit grid** (`p6_quant_trading`): each 2010–2023 Baseline 0 event is
+entered by the frozen policy and exited under 36 variants:
+- take profit at |z| ≤ 0.5 (frozen), 0.75 or 1.0;
+- adverse stop at 3 (frozen), 3.5 or none;
+- time stop at 20 (frozen) or 10 sessions;
+- E3 news exit off or on.
+
+The exit loop is the verified `simulate_long` loop with these four settings
+as arguments. The build stops unless every event reproduces both the frozen
+simulator and the stored E3 result.
+
+**Rationale.**
+- Pairs-trading profits decay within days (Engelberg, Gao & Jagannathan;
+  Jacobs & Weber), so earlier profit-taking and shorter holds may help.
+- Fixed stops often reduce pairs-trading profits.
+
+**Choice rule.**
+- **Population:** the R0 top-20 % walk-forward selections (Decision 45
+  XGBoost Model B), 2010–2017, events priced under every variant.
+- **Pick:** the variant with the highest annualised monthly Sharpe of
+  per-candidate net returns (withheld events earn 0). Its per-candidate
+  mean must be at least that of E3 (take profit 0.5, stop 3, time 20, news
+  on); otherwise E3 is kept.
+- **Also reported:** the chosen variant's neighbours (each setting changed
+  by one step), as a stability check.
+- **Holdout:** 2018–2023 is opened once to compare the chosen variant with
+  E3 and the frozen exit.
+
+**Selectivity.** Top 20 % versus top 10 % of the previous year's scores,
+chosen by 2010–2017 monthly Sharpe under the chosen exit and the Stage A
+model.
