@@ -2804,3 +2804,27 @@ simulator and the stored E3 result.
 **Selectivity.** Top 20 % versus top 10 % of the previous year's scores,
 chosen by 2010–2017 monthly Sharpe under the chosen exit and the Stage A
 model.
+
+### 76a. Exit choice, fixed before 2018–2023 was opened
+
+Recorded 2026-10-20 (`outputs/p6_quant/exit_exploration.csv`,
+`exit_choice.json`). The build passed its checks on all 22,450 events.
+
+On the R0 top-20 % selections, 2010–2017 (1,834 trades), the 36 variants
+order consistently:
+- the news exit helps in every comparison;
+- taking profit at |z| ≤ 1.0 beats 0.75, which beats 0.5;
+- no adverse stop beats 3.5, which beats 3;
+- a 20-session time stop beats 10.
+
+| Variant | Monthly Sharpe | Per trade | Per candidate |
+|---|---|---|---|
+| **Chosen: take profit 1.0, no stop, 20 sessions, news exit** | **0.50** | **+13.1 bps** | +2.45 bps |
+| Neighbour: stop 3.5 | 0.46 | — | — |
+| Neighbour: take profit 0.75 | 0.44 | — | — |
+| Neighbour: stop 3 | 0.42 | — | — |
+| E3 (Decision 60) | 0.26 | +6.0 bps | +1.13 bps |
+| Frozen exit | −0.04 | −1.9 bps | — |
+
+The neighbours are close to the chosen variant, so it is not an isolated
+peak. No 2018–2023 exit result had been read.

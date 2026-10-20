@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import itertools
+import json
 import math
 import pickle
 from collections.abc import Sequence
@@ -20,6 +21,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from structural_break.backtest.contracts import ExecutionConfig, PairTradeRequest, PairTradeResult
@@ -175,15 +177,86 @@ def build(workspace: Path, configs: Path, outputs: Path, output: Path) -> Path:
     return path
 
 
+SELECT, HOLDOUT = (2010, 2017), (2018, 2023)
+
+
+def r0_selections(outputs: Path, share: float = 0.20) -> pd.DataFrame:
+    """The Decision 45 R0 top-share test selections (event_id, year, selected)."""
+    scores = pd.read_parquet(outputs / "p6_boosting2/scores.parquet")
+    scores = scores.loc[scores["variant"].eq("R0_xgb_fixed")].copy()
+    chosen = pd.Series(False, index=scores.index)
+    for _, group in scores.groupby("year"):
+        cut = float(np.quantile(group.loc[group["role"].eq("threshold"), "score"], 1 - share))
+        test = group["role"].eq("test")
+        chosen.loc[group.index[test]] = group.loc[test, "score"].to_numpy() >= cut
+    scores["selected"] = chosen
+    return scores.loc[scores["role"].eq("test"), ["event_id", "year", "selected"]]
+
+
+def exit_table(
+    grid: pd.DataFrame, selections: pd.DataFrame, years: tuple[int, int]
+) -> pd.DataFrame:
+    """Per variant: per-candidate mean, monthly Sharpe and per-trade mean on priced events."""
+    data = selections.merge(grid, on="event_id", how="inner")
+    data = data.loc[data["year"].between(*years)]
+    priced = np.ones(len(data), dtype=bool)
+    for name in VARIANTS:
+        priced &= data[f"{name}|status"].eq("COMPLETE").to_numpy()
+    data = data.loc[priced]
+    months = data["month"]
+    rows = []
+    for name in VARIANTS:
+        net = data[f"{name}|net"].astype(float)
+        alloc = net.where(data["selected"], 0.0)
+        monthly = alloc.groupby(months).mean()
+        sd = float(monthly.std(ddof=1))
+        chosen = net[data["selected"]]
+        rows.append(
+            {
+                "variant": name,
+                "per_candidate_bps": float(alloc.mean() * 1e4),
+                "monthly_sharpe": float(monthly.mean() / sd * math.sqrt(12))
+                if sd > 0
+                else math.nan,
+                "per_trade_bps": float(chosen.mean() * 1e4),
+                "hit_rate": float((chosen > 0).mean()),
+                "mean_hold": float(data.loc[data["selected"], f"{name}|hold"].astype(float).mean()),
+                "trades": int(data["selected"].sum()),
+            }
+        )
+    return pd.DataFrame(rows).set_index("variant")
+
+
 def main(arguments: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("build",))
+    parser.add_argument("command", choices=("build", "explore-exits"))
     parser.add_argument("--workspace-root", type=Path, default=Path("data/team"))
     parser.add_argument("--configs", type=Path, default=Path("configs"))
     parser.add_argument("--outputs", type=Path, default=Path("outputs"))
     parser.add_argument("--output", type=Path, default=Path("outputs/p6_quant"))
     args = parser.parse_args(arguments)
-    build(args.workspace_root, args.configs, args.outputs, args.output)
+    if args.command == "build":
+        build(args.workspace_root, args.configs, args.outputs, args.output)
+        return
+    grid = pd.read_parquet(args.output / "exit_grid.parquet")
+    frame, _ = pb.load_data(
+        args.workspace_root,
+        args.outputs / "p6_improvement/walkforward/simulation_frozen_exit.parquet",
+    )
+    months = frame.set_index("event_id")["event_date"].map(lambda d: str(d)[:7])
+    selections = r0_selections(args.outputs)
+    selections["month"] = selections["event_id"].map(months)
+    table = exit_table(grid, selections, SELECT).sort_values("monthly_sharpe", ascending=False)
+    e3 = variant_name(0.5, 3.0, 20, True)
+    best = str(table.index[0])
+    per_candidate = table["per_candidate_bps"].astype(float)
+    if per_candidate[best] < per_candidate[e3]:
+        best = e3
+    table.to_csv(args.output / "exit_exploration.csv")
+    choice = {"exit": best, "years": list(SELECT), "plan_version": PLAN_VERSION}
+    (args.output / "exit_choice.json").write_text(json.dumps(choice, indent=2) + chr(10))
+    print(table.round(3).to_string())
+    print(json.dumps(choice))
 
 
 if __name__ == "__main__":
