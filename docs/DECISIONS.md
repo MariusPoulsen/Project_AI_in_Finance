@@ -3108,3 +3108,33 @@ D80-risk exit (take profit at |z| 1.0, E3 news exit, disaster stop at
 **Choice rule.** Pick the candidate with the highest 2010–2017 portfolio
 Sharpe at 25 % of NAV per entry. It is adopted only if that Sharpe exceeds
 D80-risk's (−0.02). 2018–2023 and the full period are reported.
+
+### 82a. Stage C2 result: the R1 entry filter is adopted
+
+Recorded 2026-10-20 (`outputs/p6_quant/portfolio_c2/`). 25 % of NAV per
+entry.
+
+| Candidate | Trades | 2010–2017 Sharpe, CAGR, drawdown | 2018–2023 Sharpe, CAGR, drawdown | 2010–2023 CAGR, Sharpe, drawdown |
+|---|---|---|---|---|
+| D80-risk (reference) | — | −0.02, −0.2 %, −14.7 % | +0.66, +4.1 %, −12.8 % | +1.6 %, 0.30, −14.7 % |
+| **C2-a, R1 filter** | 4,430 | **+0.25, +1.2 %, −13.8 %** | +0.60, +3.7 %, −10.8 % | **+2.25 %, 0.41, −13.8 %** |
+| C2-b, both models | 3,931 | −0.11 | +0.50 | — |
+| C2-c, either model | 6,162 | −0.02 | NAV unknown after 2018-06-07 | — |
+
+- **C2-a has the highest 2010–2017 Sharpe**, above D80-risk's, so it is
+  adopted.
+- **It is positive in every sub-period:** Sharpe +0.32 (2010–2015),
+  +0.55 (2016–2021) and +0.24 (2022–2023).
+- **At 10 % of NAV per entry:** Sharpe 0.48, CAGR +2.0 %, maximum
+  drawdown −11.3 %.
+- **Holdout:** it is slightly below D80-risk in 2018–2023 (0.60 against
+  0.66), with a smaller drawdown.
+
+**Programme design (Goal 2):**
+- **Selection:** Decision 45 XGBoost Model B, retrained yearly; top 20 % of
+  divergences by the previous year's cutoff.
+- **Entry filter:** skip events where the moving company filed earnings in
+  the last 3 sessions or has negative recent-news tone.
+- **Entry and costs:** frozen.
+- **Exits:** take profit at |z| ≤ 1.0, E3 adverse-tone news exit, disaster
+  stop at |z| ≥ 5, 20-session time stop.
