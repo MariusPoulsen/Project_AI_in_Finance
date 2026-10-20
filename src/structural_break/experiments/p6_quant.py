@@ -88,6 +88,19 @@ PARAMS: dict[str, dict[str, Any]] = {
     "col05": {**XGB, "colsample_bytree": 0.5},
     "slow": {**XGB, "n_estimators": 800, "learning_rate": 0.015},
     "bag5": {**XGB, "colsample_bytree": 0.5, "subsample": 0.8, "seeds": 5},
+    # Decision 92 (Stage J): LightGBM with comparable regularisation, 5 seeds.
+    "lgbm5": {
+        "library": "lightgbm",
+        "n_estimators": 400,
+        "learning_rate": 0.03,
+        "num_leaves": 8,
+        "min_child_samples": 100,
+        "reg_lambda": 10.0,
+        "colsample_bytree": 0.5,
+        "subsample": 0.8,
+        "subsample_freq": 1,
+        "seeds": 5,
+    },
 }
 
 
@@ -113,6 +126,11 @@ def _estimator(params: dict[str, Any]) -> Any:
 
 
 def _model(params: dict[str, Any], seed: int = pb.MODEL_SEED) -> Any:
+    params = dict(params)
+    if params.pop("library", "xgboost") == "lightgbm":
+        from lightgbm import LGBMClassifier
+
+        return LGBMClassifier(n_jobs=2, random_state=seed, verbose=-1, **params)
     from xgboost import XGBClassifier
 
     return XGBClassifier(

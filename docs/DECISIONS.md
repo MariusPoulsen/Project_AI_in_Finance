@@ -3663,3 +3663,19 @@ execution policy, so adopting them needs a new freeze manifest and the
 owner's explicit unlock of the 2024–2025 final test. Full write-up:
 `docs/P6_QUANT_RESEARCH.md`; the method comparison is in
 `outputs/p6_quant/goal1_table.csv`.
+
+## 92. Pre-registered Stage J: LightGBM and an XGBoost–LightGBM blend on the wide feature set
+
+Recorded 2026-10-21, before any result below. Decision 66 found no library
+gain on Model B's narrower inputs. On the ~170 B+rule+ou inputs, model
+diversity may help log loss.
+
+**Specs on B+rule+ou** (`recent` scheme):
+
+| Spec | Model |
+|---|---|
+| lgbm5 | LightGBM, 400 trees, learning rate 0.03, 8 leaves, min 100 per leaf, lambda 10, 50 % columns, 80 % rows, 5 seeds |
+| blend | Equal-weight mean of the bag5 (XGBoost) and lgbm5 calibrated probabilities; the raw score is the mean of the two raw scores |
+
+**Rule:** the spec with the lowest 2010–2017 log loss replaces bag5 if it
+beats it (0.19802). 2018–2023 is opened once.
