@@ -4205,3 +4205,39 @@ which earns close to the T-bill rate. From Stage Q on, results are also
 reported with NAV earning the 13-week T-bill yield (Yahoo ^IRX, previous
 close) minus 0.25 % a year, floored at zero. Sharpe ratios stay computed
 without it (that is, in excess of cash), so no choice depends on it.
+
+### 101a. Stage Q result: the sleeve as specified loses money after costs
+
+Recorded 2026-10-21, 2010–2017 only (2018–2023 not opened):
+
+| Variant | Sharpe before costs | Sharpe after costs | CAGR | Turnover | Cost |
+|---|---|---|---|---|---|
+| ETF, bands | +0.40 | −0.90 | −2.6 % | 51× a year | 3.8 % a year |
+| ETF, continuous | +0.64 | −0.98 | −2.6 % | 67× | 4.3 % |
+| PCA, bands | +0.66 | −0.91 | −2.4 % | 56× | 4.1 % |
+| PCA, continuous | +0.74 | −1.35 | −2.9 % | 75× | 4.5 % |
+
+No variant has a positive net Sharpe, so the sleeve **is rejected as
+specified**, and Stage R is not run with it. The signal is real before costs
+(as in Avellaneda & Lee), but daily trading of a 100 %-gross book costs more
+than it earns on these large caps. The holdout stays closed.
+
+## 104. Stage Q2 pre-registration: a slower residual sleeve
+
+Recorded 2026-10-21 after 101a and before any Q2 result. The
+Gârleanu–Pedersen result is to trade only part of the way to the target
+each day, and the residual-reversal evidence that survives costs (Blitz
+et al.) rebalances monthly. PCA residuals had the higher before-cost Sharpe
+under both rules on 2010–2017, so Q2 uses them.
+
+| Control | Rule |
+|---|---|
+| W5 | Trade to target only every 5th session |
+| W21 | Trade to target only every 21st session |
+| S10 | Trade 10 % of each gap beyond the band every session |
+
+Each control is applied to PCA-bands and PCA-continuous (6 variants).
+Exits to a zero target are always traded in full. Everything else is as
+in Decision 101. **Choice:** the highest 2010–2017 net Sharpe; useful if
+positive, in which case Stage R (Decision 102) runs with it. 2018–2023 is
+opened once.

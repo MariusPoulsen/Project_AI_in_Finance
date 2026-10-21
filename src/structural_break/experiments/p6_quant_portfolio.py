@@ -165,7 +165,13 @@ def run_design(
         str(k): int(v) for k, v in pd.Series(out["status"]).value_counts().items()
     }
     stats["proposals"] = len(proposals)
-    return {"stats": stats, "marks": out["marks"]}
+    return {
+        "stats": stats,
+        "marks": out["marks"],
+        "status": out["status"],
+        "allocations": out["allocations"],
+        "results": results,
+    }
 
 
 def load_cache(path: Path) -> dict[str, Any]:

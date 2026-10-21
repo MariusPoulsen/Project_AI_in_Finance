@@ -150,6 +150,7 @@ def research_portfolio(
     pending: dict[date, list[PortfolioProposal]] = {}
     status: dict[str, str] = {}
     held: dict[str, dict[str, Any]] = {}
+    allocations: dict[str, float] = {}
     cash = policy.initial_nav
     unknown_at: datetime | None = None
     rows: list[dict[str, Any]] = []
@@ -292,6 +293,7 @@ def research_portfolio(
                 cash -= allocation * (rates or {}).get(event_id, config.entry_cost_bps) / 10000.0
                 held[proposal.request.pair_id] = position
                 status[event_id] = "ENTERED"
+                allocations[event_id] = allocation / nav
         gross, net = values(day, "CLOSE", closing)
         for position in held.values():
             if position["unresolved"]:
@@ -315,7 +317,7 @@ def research_portfolio(
             else:
                 for position in held.values():
                     fail(position, closing)
-    return {"marks": pd.DataFrame(rows), "status": status}
+    return {"marks": pd.DataFrame(rows), "status": status, "allocations": allocations}
 
 
 # --------------------------------------------------------------------------- #
