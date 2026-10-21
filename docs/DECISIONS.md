@@ -4389,3 +4389,25 @@ $10m:
 Every stage here reused 2018–2023 and added trials, so the deflated Sharpe
 (Decision 97a) does not improve; the 2024–2025 final test remains the
 judge.
+
+## 108. Stage U pre-registration: a hard gross cap and closing-auction checks
+
+Recorded 2026-10-21, before any Stage U result. The owner asked for the two
+practical fixes to the Decision 107 book; the design freeze (step 2) and
+the final test (step 3) wait. Base: the Decision 107 book (pairs + PCA
+residual sleeve at 0.25, VT60, close execution, $10m, realistic costs).
+
+- **Gross cap (risk rule, adopted regardless of Sharpe):** projected gross
+  is held at or below 200 % of NAV. When new pair entries plus the
+  residual target would breach it, both are shrunk by the same factor;
+  open pair legs are never forced out.
+- **Closing-auction checks (reported, they change nothing):**
+  - cost scan on the capped book with +0.5, +1.0 and +1.5 bps per side,
+    alongside Decision 107's +2 bps, to locate the break-even premium
+    against next-open execution;
+  - a split book that executes half of every trade at the signal close
+    and half at the next open (the average of the two capped books' daily
+    returns), which halves the reliance on trading at the exact signal
+    price.
+- 2010–2017 is printed first; 2018–2023 and 2010–2023 are opened once
+  together, as in Stages S and T.

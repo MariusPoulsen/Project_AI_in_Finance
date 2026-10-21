@@ -81,3 +81,14 @@ def test_vol_target_scales_new_entries_within_clip() -> None:
     # Returns are almost constant, so realised volatility is tiny and the scale hits its cap.
     assert book.iloc[1]["scale"] == 1.0 and book.iloc[30]["scale"] == 2.0
     assert math.isclose(book.iloc[30]["gross"], 0.20, rel_tol=0.01)
+
+
+def test_gross_cap_shrinks_new_entries_but_keeps_open_legs() -> None:
+    panels = _panels(days=8)
+    d = panels.dates
+    legs = [pr.Leg("A", d[1], d[6], 1.5), pr.Leg("B", d[2], d[6], -1.0)]
+    book = pr.run_book(panels, None, legs, d[0], d[-1], capital=1e6, max_gross=2.0)
+    # Day 2 already holds about 1.5 of NAV in A, so B only gets about half its size.
+    assert book.iloc[1]["room"] == 1.0
+    assert 0.45 < book.iloc[2]["room"] < 0.55
+    assert math.isclose(book.iloc[2]["gross"], 2.0, rel_tol=1e-9)

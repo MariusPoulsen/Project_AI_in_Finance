@@ -249,6 +249,7 @@ def run_book(
     scale_clip: tuple[float, float] = (0.5, 2.0),
     timing: str = "open",
     extra_bps: float = 0.0,
+    max_gross: float | None = None,
 ) -> pd.DataFrame:
     """Daily open-to-open book; returns one row per session with NAV and diagnostics.
 
@@ -264,6 +265,9 @@ def run_book(
     ``timing="close"`` trades at the signal session's close instead of the
     next open: targets[t] trade at close t and holdings earn close-to-close
     returns. ``extra_bps`` adds a flat cost per side (a stress test).
+    ``max_gross`` (multiple of NAV) shrinks new pair entries and the residual
+    target together so the projected gross stays within the cap; open pair
+    legs are never forced out.
     """
     index = {d: i for i, d in enumerate(panels.dates)}
     n = len(panels.tickers)
@@ -294,15 +298,24 @@ def run_book(
         for k in exits.get(t, ()):
             if k in leg_value:
                 d_pairs[col[legs[k].ticker]] -= leg_value.pop(k)
+        signal_day = t if at_close else t - 1
+        has_resid = resid_targets is not None and signal_day >= 0
+        room = 1.0
+        if max_gross is not None:
+            held = sum(abs(v) for v in leg_value.values())
+            new = sum(abs(leg.fraction) for leg in entries.get(t, ())) * scale * nav
+            if has_resid:
+                new += float(np.abs(resid_targets[signal_day]).sum()) * scale * nav
+            if held + new > max_gross * nav and new > 0:
+                room = max(0.0, (max_gross * nav - held) / new)
         for leg in entries.get(t, ()):
             k = leg_key[id(leg)]
-            value = leg.fraction * scale * nav
+            value = leg.fraction * scale * room * nav
             leg_value[k] = value
             d_pairs[col[leg.ticker]] += value
         d_resid = np.zeros(n)
-        signal_day = t if at_close else t - 1
-        if resid_targets is not None and signal_day >= 0:
-            want = resid_targets[signal_day] * scale * nav
+        if has_resid:
+            want = resid_targets[signal_day] * scale * room * nav
             gap = want - resid
             close = (want == 0) & (resid != 0)
             if step % every == 0:
@@ -350,6 +363,7 @@ def run_book(
                 "net_exposure": float(hold.sum()) / before,
                 "names": int((np.abs(hold) > 1e-9).sum()),
                 "scale": scale,
+                "room": room,
             }
         )
     return pd.DataFrame(rows)
