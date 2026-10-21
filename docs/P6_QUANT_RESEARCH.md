@@ -1,7 +1,7 @@
 # Quant research programme (workstream 1)
 
 Branch `p6/quant-research`. Pre-registrations and results:
-[DECISIONS 75–94](DECISIONS.md). The 2024–2025 final test stays locked, and
+[DECISIONS 75–97](DECISIONS.md). The 2024–2025 final test stays locked, and
 nothing here changes the frozen Decision 36–42 policies or the accepted v2
 snapshot.
 
@@ -136,6 +136,38 @@ per entry, gross ≤ 100 % of NAV, frozen costs and borrow):
   the portfolio, 2010–2017 is only mildly positive.
 - **Reuse of years:** every year here has been used during development.
   The 2024–2025 final test is the test.
+
+## Realistic costs, portfolio construction and the overfitting audit (Decisions 95–97)
+
+**Costs.**
+- **Model:** per stock, a half spread tiered by liquidity (1–8 bps), plus
+  square-root market impact (Y = 0.7), plus a 0.5 bps commission.
+- **Levels:** at $10m of capital and 25 % of NAV per entry, the median cost
+  is 12.7 bps per side against the flat 5 bps.
+- **Effect:** under these costs the design's edge mostly disappears.
+  Skipping the most expensive fifth of trades (M-1) recovers part of it:
+  2018–2023 Sharpe 0.68 against 0.37.
+
+**Portfolio construction.** Smaller positions cut impact.
+
+| Capital | 5 % per entry: Sharpe | CAGR | Max drawdown | 25 % per entry: Sharpe |
+|---|---|---|---|---|
+| $1m | 0.66 | +2.1 % | — | 0.43 |
+| $10m | **0.52** | +1.7 % | −8.4 % | 0.12 |
+| $100m | 0.11 | — | — | −0.81 |
+
+The sector cap never binds. The portfolio holds only about 10 positions at
+a time because signals, not capital, are scarce, so breadth (a larger
+universe) is the remaining lever.
+
+**Overfitting audit.**
+- **PBO 0.02:** the design choices are stable across splits of the data.
+- **Deflated Sharpe ratio** (about 150 trials):
+  - 0.72 for the per-candidate design at flat costs;
+  - 0.43 for the realistic $10m portfolio.
+
+  Neither reaches 0.95, so the edge is not established beyond the search
+  that found it. The final test decides.
 
 ## Running
 

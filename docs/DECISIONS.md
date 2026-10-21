@@ -3960,3 +3960,29 @@ units with T = 168 months:
   - the H-b design's monthly per-candidate returns (flat costs);
   - the Stage N portfolio N-5 at $10m with per-stock costs (monthly
     portfolio returns).
+
+### 97a. Overfitting audit result
+
+Recorded 2026-10-21 (`scripts/quant_research/audit.py`). The trial matrix
+has 55 variants over 167 months.
+
+**PBO = 0.023** (median out-of-sample logit +1.79). The best in-sample
+variant almost always ranks above the out-of-sample median, so the
+choices among these related variants (news exit, take profit at |z| 1.0, no
+tight stop) are stable rather than noise-fitted. Because the variants are
+strongly correlated, this measure is favourable by construction.
+
+**Deflated Sharpe ratio** (trial Sharpe standard deviation 0.073 monthly;
+the best trial reaches 0.87 annualised):
+
+| Strategy | Annualised Sharpe | Skewness, kurtosis | DSR at N = 50 / 150 / 300 |
+|---|---|---|---|
+| H-b per candidate (flat costs) | 0.82 | 0.68, 7.0 | 0.83 / **0.72** / 0.64 |
+| N-5 portfolio at $10m (per-stock costs) | 0.63 | 0.18, 4.9 | 0.58 / **0.43** / 0.35 |
+
+**Reading.** After deflating for the number of variants tried, neither
+reaches the conventional 0.95. The realistic-cost portfolio is close to a
+coin flip on whether its true Sharpe is positive. The programme's choices
+are stable, but its edge is too small, relative to the noise and to the
+search that found it, to count as established. The 2024–2025 final test
+remains the decisive evidence.
