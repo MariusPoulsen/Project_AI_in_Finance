@@ -1,7 +1,7 @@
 # Quant research programme (workstream 1)
 
 Branch `p6/quant-research`. Pre-registrations and results:
-[DECISIONS 75–97](DECISIONS.md). The 2024–2025 final test stays locked, and
+[DECISIONS 75–100](DECISIONS.md). The 2024–2025 final test stays locked, and
 nothing here changes the frozen Decision 36–42 policies or the accepted v2
 snapshot.
 
@@ -159,6 +159,15 @@ per entry, gross ≤ 100 % of NAV, frozen costs and borrow):
 The sector cap never binds. The portfolio holds only about 10 positions at
 a time because signals, not capital, are scarce, so breadth (a larger
 universe) is the remaining lever.
+
+**Selection share and position size (Decisions 98–99).** Under the full
+design with realistic costs at $10m:
+
+| Choice | Result |
+|---|---|
+| Selection share | **Top 20 %** beats 10, 15, 30, 40 and 50 % in both blocks. Narrower shares leave capital idle, and wider shares add trades that do not cover their costs. |
+| Position size | 2.5–7.5 % per entry is a plateau (2010–2023 Sharpe 0.51–0.52). **7.5 %** gives the most return there (CAGR +1.9 %, maximum drawdown −8.7 %); 10 % is worse. |
+| Liquidity-scaled sizing | Smaller positions in volatile or illiquid pairs is **worse** (Sharpe 0.22–0.37), because those pairs carry the strongest reversals |
 
 **Overfitting audit.**
 - **PBO 0.02:** the design choices are stable across splits of the data.

@@ -4086,3 +4086,50 @@ Sharpe**.
 liquid pairs, which carry the strongest reversals, consistent with
 Medhat & Novy-Marx: more volatile stocks reverse faster and more strongly.
 Their edge more than pays their higher impact at these sizes.
+
+### 99b. Stage P holdout: 5–7.5 % is a plateau; 7.5 % kept, liquidity scaling rejected
+
+Recorded 2026-10-21.
+
+| Design | 2018–2023 Sharpe | 2018–2023 CAGR | 2010–2023 Sharpe | 2010–2023 CAGR | Max drawdown |
+|---|---|---|---|---|---|
+| P-2.5 | 0.60 | +1.8 % | 0.51 | +1.13 % | −6.6 % |
+| P-5 | 0.61 | +2.4 % | 0.52 | +1.68 % | −8.4 % |
+| **P-7.5** | 0.56 | +2.5 % | **0.52** | **+1.88 %** | −8.7 % |
+| P-10 | 0.64 | +3.1 % | 0.46 | +1.81 % | −9.4 % |
+| P-L3 | 0.39 | — | 0.22 | — | — |
+| P-L5 | 0.42 | — | 0.37 | — | — |
+
+- **Plateau:** sizes from 2.5 % to 7.5 % have nearly the same full-period
+  Sharpe. 7.5 % earns the most at that Sharpe, so it is kept, as the rule
+  chose.
+- **Liquidity-scaled sizing is rejected:** it is worse in both blocks.
+
+## 100. Updated final-test proposal (supersedes Decision 91; owner to decide)
+
+Recorded 2026-10-21 after Decisions 95–99.
+
+**Goal 1** is unchanged from Decision 91: B+rule+ou, bagged, with the
+track-record variant reported alongside.
+
+**Goal 2** (Decisions 82–99):
+
+| Component | Setting |
+|---|---|
+| Selection | Original Model B, top 20 % (confirmed against 10–50 %) |
+| Entry filters | Skip R1 events; skip spreads without a mean crossing in more than 120 sessions; skip the most expensive fifth of trades under the per-stock cost model |
+| Exits | Take profit at \|z\| ≤ 1.0, E3 news exit, disaster stop at \|z\| ≥ 5, 20 sessions |
+| Sizing | 7.5 % of NAV per entry, gross ≤ 100 % |
+| Costs | Priced with per-stock costs at $10m |
+
+**Result, 2010–2023:** Sharpe 0.52, CAGR +1.9 %, maximum drawdown −8.7 %.
+The flat-cost design was 0.42 Sharpe at 25 % per entry.
+
+**Caveats.**
+- **Capacity:** the strategy is limited to small capital (Sharpe 0.11 at
+  $100m with 5 % positions).
+- **Deflated Sharpe:** about 0.4–0.5 at realistic costs (Decision 97a), so
+  the edge is not established.
+
+The exit, filter and sizing changes require a new freeze manifest before
+the owner unlocks the 2024–2025 final test.
