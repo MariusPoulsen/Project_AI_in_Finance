@@ -43,7 +43,8 @@ from structural_break.intelligence import catalyst_v3 as cv
 from structural_break.intelligence.extraction import ProviderFailure
 
 GRAPH_VERSION = "pairs-debate-v2"
-PROMPT_VERSION = "pairs-debate-prompts-v2.1"
+PROMPT_VERSION = "pairs-debate-prompts-v2.2"
+CONTEXT_FILING = "analyst-context"  # Decision 109b: citable per-company context, not SEC text
 ADVOCATE_MODEL = "gemma-4-26b-a4b-it"
 SYNTHESIS_MODEL = "gemini-3.1-flash-lite"
 VALIDATION_MODEL = "gemini-3.5-flash-lite"
@@ -147,14 +148,23 @@ class Case:
     event: AgentInput
     context: Mapping[str, Any]
 
+    def labelled(self) -> list[tuple[str, Any]]:
+        """(label, chunk): analyst context is A0/B0, SEC excerpts A1, A2, ... per leg."""
+        counters = {"A": 0, "B": 0}
+        out = []
+        for chunk in self.event.evidence:
+            if chunk.filing_id == CONTEXT_FILING:
+                out.append((f"{chunk.leg}0", chunk))
+                continue
+            counters[chunk.leg] += 1
+            out.append((f"{chunk.leg}{counters[chunk.leg]}", chunk))
+        return out
+
     @property
     def sentences(self) -> dict[str, tuple[str, str, str]]:
-        """ref -> (chunk_id, leg, exact sentence), numbered per leg in evidence order."""
+        """ref -> (chunk_id, leg, exact sentence)."""
         refs: dict[str, tuple[str, str, str]] = {}
-        counters = {"A": 0, "B": 0}
-        for chunk in self.event.evidence:
-            counters[chunk.leg] += 1
-            label = f"{chunk.leg}{counters[chunk.leg]}"
+        for label, chunk in self.labelled():
             for number, (_, sentence) in enumerate(cv._sentences(chunk.text), start=1):
                 refs[f"{label}.{number}"] = (chunk.chunk_id, chunk.leg, sentence)
         return refs
@@ -201,29 +211,23 @@ def render_case(case: Case) -> str:
         f"- beta_drift = {_number(quant.beta_drift)}: relative drift of the hedge ratio.",
         f"- cointegration_pvalue = {_number(quant.cointegration_pvalue)}: lower is a "
         "stronger historical relationship.",
-        "CONTEXT (not citable; use only to orient yourself):",
     ]
-    for leg in ("A", "B"):
-        info = context["legs"][leg]
-        lines.append(
-            f"- Company {leg}: 1-day abnormal return {info['abnormal_return']}; "
-            f"recent 8-K news: {info['news']}; FinBERT net tone of its excerpts: {info['tone']}."
-        )
     lines.append(
-        f"Source coverage of recent 8-K filings: {event.gates.source_coverage}. Company news "
-        "labels come from a separate extraction model and may be wrong."
+        f"Source coverage of recent 8-K filings: {event.gates.source_coverage}. Each company's "
+        "analyst context (A0, B0) is computed at the signal and is citable; its news label comes "
+        "from a separate extraction model and may be wrong."
     )
     blocks = []
-    counters = {"A": 0, "B": 0}
-    for chunk in event.evidence:
-        counters[chunk.leg] += 1
-        label = f"{chunk.leg}{counters[chunk.leg]}"
-        header = (
-            f"[{label}] Company {chunk.leg} | {context['chunks'].get(chunk.chunk_id, 'filing')} "
-            f"| accepted {chunk.source_timestamp.date().isoformat()}"
-        )
+    for label, chunk in case.labelled():
+        if chunk.filing_id == CONTEXT_FILING:
+            header = f"[{label}] Company {chunk.leg} | analyst context at the signal (not an SEC filing)"
+        else:
+            header = (
+                f"[{label}] Company {chunk.leg} | {context['chunks'].get(chunk.chunk_id, 'filing')} "
+                f"| accepted {chunk.source_timestamp.date().isoformat()}"
+            )
         body = [
-            f"({label}.{number}) {sentence}"
+            f"({label}.{number}) {sentence}"  # same numbering as Case.sentences
             for number, (_, sentence) in enumerate(cv._sentences(chunk.text), start=1)
         ]
         blocks.append("\n".join([header, *body]))
@@ -254,9 +258,9 @@ _CLAIM_RULES = (
     "Claim rules: every claim needs at least one sentence ID in \"cites\" (IDs exactly as shown "
     "in parentheses, such as A1.3) or one field name in \"quant\" (" + ", ".join(QUANT_FIELDS) + "). "
     "Sentence IDs go only in \"cites\" and field names only in \"quant\". Never quote text; cite "
-    "IDs. A statement you cannot cite, such as missing news, missing coverage or an open "
-    "question, is not a claim: put it in \"uncertainties\" (plain strings) instead. At most 6 "
-    "claims per list."
+    "IDs. Analyst-context lines (A0.x, B0.x) are cited the same way. A statement you cannot "
+    "cite, such as an open question, is not a claim: put it in \"uncertainties\" (plain "
+    "strings) instead. At most 6 claims per list."
 )
 _MANDATES = {
     "mean_reversion_opening": (

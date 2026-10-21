@@ -4639,3 +4639,29 @@ controller, guardrails and the evaluation are unchanged.
 - **Pilot again:** the same first 20 events are re-run under v2.1 with the
   same 70 % bar. Results from older prompt versions are never mixed into
   the evaluation.
+
+### 109b. Second pilot: still 50 %; the analyst context becomes citable (v2.2)
+
+Recorded 2026-10-21, labels still unread. Under v2.1 the same 20 events gave
+10 complete (all 10 validations PASS with MEDIUM risk) and 10 Gemma
+opening failures (ABSTAIN 10, NO TRADE 6, REVIEW 4; results kept in
+`results_v2.1_pilot`).
+- **Remaining cause:** nearly every rejected claim now cites the prompt's
+  context block (a company's news label, FinBERT tone or abnormal return),
+  which v2.1 marked as not citable. The advocates reason from it, so
+  forbidding citations to it fights the task.
+- **The six NO TRADE vetoes** rest on substantive one-sided events in their
+  validators' cited claims: a Chapter 11 filing, a merger becoming
+  effective, an acquisition, a guidance raise, a large earnings beat. One
+  is arguable: a utility rate-case settlement with no change in revenue.
+
+**Amendment `pairs-debate-prompts-v2.2`.**
+- **Context entry per company:** each company's context becomes one
+  numbered entry (A0, B0), labelled "analyst context at the signal (not an
+  SEC filing)". It holds the 1-day abnormal return, the recent 8-K news
+  label and the FinBERT tone, and can be cited like a sentence.
+- **Contracts unchanged:** the v1 contracts check it as a source chunk with
+  the event timestamp, so citing it is grounded by construction.
+- **Rebuild:** cases are rebuilt with the same 715 events and the same run
+  order.
+- **Pilot again:** the first 20 events, same 70 % bar.

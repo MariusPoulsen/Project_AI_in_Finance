@@ -184,7 +184,7 @@ def build(workspace: Path, output: Path = OUTPUT) -> dict[str, Any]:
                 )
                 label = chunk.get("section_label") or ""
                 described[chunk["chunk_id"]] = f"{chunk['document_type']} {label}".strip()
-        while sum(len(c.text) for c in evidence) > 32_000:
+        while sum(len(c.text) for c in evidence) > 31_000:  # room for the two context entries
             evidence.pop()
             complete = False
 
@@ -193,6 +193,48 @@ def build(workspace: Path, output: Path = OUTPUT) -> dict[str, Any]:
                 return None
             return float(value)
 
+        def pct(value: Any) -> str:
+            return f"{100 * value:+.1f} %" if value is not None and np.isfinite(value) else "unknown"
+
+        def tone(leg: str) -> str:
+            t = tones.get(leg)
+            if leg not in with_text:
+                return "not available (no excerpts)"
+            if not t or t.get("status") != "OK":
+                return "not scored"
+            return f"{t['positive'] - t['negative']:+.2f}"
+
+        legs_context = {
+            leg: {
+                "abnormal_return": pct(row[f"abnormal_return_{leg}_1d"]),
+                "news": _describe_news(True, legs[leg]["leg_key"], records.get(leg), packs.get(leg)),
+                "tone": tone(leg),
+            }
+            for leg in ("A", "B")
+        }
+        for leg in ("B", "A"):  # context entries first, A before B
+            info = legs_context[leg]
+            text = "\n".join(
+                [
+                    f"Company {leg}'s 1-day abnormal return at the signal was {info['abnormal_return']}.",
+                    f"Company {leg}'s recent 8-K news was {info['news'].replace(';', ',')}.",
+                    f"FinBERT net tone of Company {leg}'s 8-K excerpts was {info['tone']}.",
+                ]
+            )
+            evidence.insert(
+                0,
+                SourceChunk(
+                    chunk_id=f"context:{event_id}:{leg}",
+                    leg=leg,  # type: ignore[arg-type]
+                    security_id=securities[leg],
+                    filing_id=dv.CONTEXT_FILING,
+                    document_sha256=hashlib.sha256(text.encode()).hexdigest(),
+                    start_offset=0,
+                    end_offset=len(text),
+                    source_timestamp=stamp,
+                    text=text,
+                ),
+            )
         manifest = hashlib.sha256(
             json.dumps(sorted(c.document_sha256 for c in evidence)).encode()
         ).hexdigest()
@@ -230,26 +272,10 @@ def build(workspace: Path, output: Path = OUTPUT) -> dict[str, Any]:
             evidence=tuple(evidence),
         )
 
-        def pct(value: Any) -> str:
-            return f"{100 * value:+.1f} %" if value is not None and np.isfinite(value) else "unknown"
-
-        def tone(leg: str) -> str:
-            t = tones.get(leg)
-            if not t or t.get("status") != "OK":
-                return "not scored"
-            return f"{t['positive'] - t['negative']:+.2f}"
-
         context = {
             "sub_industry": dv.mask_text(str(pair["sub_industry"]), companies),
             "rationale": dv.mask_text(str(pair["economic_rationale"]), companies),
-            "legs": {
-                leg: {
-                    "abnormal_return": pct(row[f"abnormal_return_{leg}_1d"]),
-                    "news": _describe_news(True, legs[leg]["leg_key"], records.get(leg), packs.get(leg)),
-                    "tone": tone(leg) if leg in with_text else "no excerpts",
-                }
-                for leg in ("A", "B")
-            },
+            "legs": legs_context,
             "chunks": described,
         }
         case = dv.Case(event, context)

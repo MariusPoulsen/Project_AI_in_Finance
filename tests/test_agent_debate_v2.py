@@ -154,6 +154,27 @@ def test_resolve_maps_sentence_ids_to_exact_quotes_and_rejects_bad_refs() -> Non
         dv.resolve("structural_break_opening", bad | {"claims": [_claim(cites=())]}, case)
 
 
+def test_analyst_context_is_labelled_zero_and_citable() -> None:
+    base = _case()
+    text = "Company A's 1-day abnormal return at the signal was -6.9 %.\nCompany A's recent 8-K news was M&A."
+    context = SourceChunk(
+        chunk_id="context:evt_1:A",
+        leg="A",
+        security_id="US:AX",
+        filing_id=dv.CONTEXT_FILING,
+        document_sha256=hashlib.sha256(text.encode()).hexdigest(),
+        start_offset=0,
+        end_offset=len(text),
+        source_timestamp=base.event.event_timestamp,
+        text=text,
+    )
+    case = dv.Case(base.event.model_copy(update={"evidence": (context, *base.event.evidence)}), base.context)
+    prompt = dv.build_prompt("mean_reversion_opening", case, {})
+    assert "[A0] Company A | analyst context" in prompt and "(A1.1) Company A entered" in prompt
+    report = dv.resolve("structural_break_opening", _answer("structural_break_opening", "LOW") | {"claims": [_claim(cites=("A0.1",))]}, case)
+    assert report.claims[0].citations[0].quote.endswith("-6.9 %.")
+
+
 def test_prompt_shows_numbered_sentences_and_no_outcomes() -> None:
     prompt = dv.build_prompt("mean_reversion_opening", _case(), {})
     assert "(A1.1) Company A entered into a merger agreement" in prompt
