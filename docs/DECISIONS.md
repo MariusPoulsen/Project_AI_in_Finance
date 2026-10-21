@@ -3855,3 +3855,21 @@ recovers part of it.
 
 The main cost driver is the position size relative to ADV, which is the
 subject of the next stage (portfolio construction).
+
+### 95c. Stage M holdout: M-1 helps under realistic costs; capacity is limited
+
+Recorded 2026-10-21. 2018–2023, per candidate:
+
+| Costs | H-b Sharpe | **M-1 Sharpe** | H-b per trade | M-1 per trade |
+|---|---|---|---|---|
+| Flat 5 bps | 0.93 | **1.04** | +43.0 bps | +30.0 bps |
+| Per-stock at $1m | 0.88 | **1.07** | +39.1 bps | +30.9 bps |
+| Per-stock at $10m | 0.37 | **0.68** | +17.8 bps | +19.0 bps |
+| Per-stock at $100m | −1.50 | −0.65 | −45.4 bps | −18.7 bps |
+
+**M-1 is adopted:** it confirms on the holdout under every cost
+assumption.
+
+**Capacity.** With 25 % of NAV per entry, impact makes the strategy
+unprofitable at $100m and roughly halves its Sharpe at $10m. Position size
+relative to liquidity is the binding constraint.
