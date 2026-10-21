@@ -38,11 +38,12 @@ def variant_result(
     stop: float,
     timeout: int,
     news: bool,
+    cost_bps: float | None = None,
 ) -> PairTradeResult:
     if frozen.entry is None or frozen.position is None:
         return frozen
     status, net, holding, reason = qt.exit_loop(
-        request, frozen, config, band, stop, timeout, moments if news else ()
+        request, frozen, config, band, stop, timeout, moments if news else (), cost_bps
     )
     if status != "COMPLETE" or net is None or holding is None:
         return frozen.model_copy(update={"status": "UNPRICED", "net_return": None, "exit": None})
@@ -117,14 +118,27 @@ def run_design(
     configs: Path,
     target: float,
     sectors: dict[str, str],
+    cost_table: dict[Any, Any] | None = None,
+    capital: float = 1e7,
+    sector_cap: float | None = None,
 ) -> dict[str, Any]:
+    """``cost_table`` (Decision 96) prices each trade with per-stock costs at ``capital``."""
+    from structural_break.experiments import p6_quant_costs as qc
+
     headline = load_headline(configs)
     policy = load_analysis_policies(configs).portfolio
     results: dict[str, PairTradeResult] = {}
     proposals: list[PortfolioProposal] = []
+    rates: dict[str, float] = {}
     for event_id in selected:
         request, frozen, moments = cache[event_id]
-        results[event_id] = variant_result(request, frozen, moments, headline, *exit_settings)
+        rate = None
+        if cost_table is not None:
+            rate = qc.trade_rate_bps(cost_table, request, frozen, capital, target)
+            if rate is None:
+                continue
+            rates[event_id] = rate
+        results[event_id] = variant_result(request, frozen, moments, headline, *exit_settings, rate)
         proposals.append(
             PortfolioProposal(
                 request=request,
@@ -134,7 +148,9 @@ def run_design(
                 sector_b=sectors.get(request.leg_b, "UNKNOWN"),
             )
         )
-    out = pp.research_portfolio(proposals, results, {}, policy, headline, target)
+    out = pp.research_portfolio(
+        proposals, results, {}, policy, headline, target, rates or None, sector_cap
+    )
     stats = pp.metrics(out["marks"])
     stats["trade_status"] = {
         str(k): int(v) for k, v in pd.Series(out["status"]).value_counts().items()

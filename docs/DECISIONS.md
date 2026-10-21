@@ -3873,3 +3873,24 @@ assumption.
 **Capacity.** With 25 % of NAV per entry, impact makes the strategy
 unprofitable at $100m and roughly halves its Sharpe at $10m. Position size
 relative to liquidity is the binding constraint.
+
+## 96. Pre-registered Stage N: portfolio construction under realistic costs
+
+Recorded 2026-10-21, before any result below. The selection is M-1 (H-b
+without the most expensive fifth). Every trade is priced with per-stock
+costs at $10m of capital, where impact is recomputed for each design's
+position size, so smaller positions cost less.
+
+**Designs** (gross capped at 100 % of NAV, frozen exits and policy
+otherwise):
+
+| Design | Per entry | Sector cap |
+|---|---|---|
+| N-25 | 25 % of NAV | — |
+| N-10 | 10 % | — |
+| N-5 | 5 % | — |
+| N-10s | 10 % | Each sector's gross at entry ≤ 30 % of NAV |
+| N-5s | 5 % | Each sector's gross at entry ≤ 30 % of NAV |
+
+**Rule:** the highest 2010–2017 daily-return portfolio Sharpe wins, then
+2018–2023 once. The winner is also reported at $1m and $100m of capital.

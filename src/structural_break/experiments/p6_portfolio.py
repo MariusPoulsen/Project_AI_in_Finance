@@ -126,6 +126,8 @@ def research_portfolio(
     policy: PortfolioPolicy,
     config: ExecutionConfig,
     target: float,
+    rates: dict[str, float] | None = None,
+    sector_cap: float | None = None,
 ) -> dict[str, Any]:
     """``simulate_portfolio`` accounting with supplied results and per-entry weights.
 
@@ -133,7 +135,10 @@ def research_portfolio(
     simulator call; each eligible entry wants ``target * NAV * weight`` and,
     when the wanted total exceeds the available gross capacity, every entry is
     scaled by the same factor (with unit weights this is the frozen equal clip).
-    Marks are returned as plain rows.
+    Marks are returned as plain rows. Decision 96 adds two optional controls:
+    ``rates`` gives a per-event cost rate (bps per side) in place of the flat
+    entry and exit rates, and ``sector_cap`` limits each sector's gross
+    exposure to that fraction of NAV at entry.
     """
     assert config.entry_cost_bps is not None and config.exit_cost_bps is not None
     assert config.annual_borrow_rate is not None
@@ -281,11 +286,13 @@ def research_portfolio(
                     "entry_day": result.entry.session_date,
                     "entry_short": allocation * result.position.short_entry_notional,
                     "borrow": 0.0,
-                    "trading": allocation * entry_rate,
+                    "trading": allocation
+                    * (rates or {}).get(event_id, config.entry_cost_bps)
+                    / 10000.0,
                     "unresolved": False,
                 }
                 cash -= position["a"] * result.entry.price_a + position["b"] * result.entry.price_b
-                cash -= allocation * entry_rate
+                cash -= allocation * (rates or {}).get(event_id, config.entry_cost_bps) / 10000.0
                 held[proposal.request.pair_id] = position
                 status[event_id] = "ENTERED"
         gross, net = values(day, "CLOSE", closing)

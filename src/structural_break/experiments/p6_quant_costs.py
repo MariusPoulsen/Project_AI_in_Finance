@@ -77,6 +77,7 @@ def trade_rate_bps(
     request: Any,
     frozen: Any,
     capital: float,
+    entry_fraction: float = ENTRY_FRACTION,
 ) -> float | None:
     """Per-side cost rate of one trade (bps of gross), or None when inputs are missing."""
     if frozen.entry is None or frozen.position is None:
@@ -95,7 +96,7 @@ def trade_rate_bps(
             return None
         half = tier_half_spread_bps(adv)
         share = gross / total
-        notional = ENTRY_FRACTION * capital * share
+        notional = entry_fraction * capital * share
         impact = IMPACT_Y * vol * math.sqrt(notional / adv) * 1e4
         rate += share * min(half + impact + COMMISSION_BPS, CAP_BPS)
     return rate
