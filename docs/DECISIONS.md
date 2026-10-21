@@ -4031,3 +4031,37 @@ add trades whose edge does not cover their costs.
 **Truncation:** the 30–50 % portfolios lose NAV knowledge on 2018-06-07
 (a missing held quote under the frozen rule). Their 2010–2017 numbers are
 complete; their trade counts and later periods are truncated.
+
+### 98b. Stage O holdout: top 20 % confirmed
+
+2018–2023 portfolio Sharpe by share:
+
+| Share | 2018–2023 Sharpe | 2010–2023 Sharpe |
+|---|---|---|
+| 10 % | 0.44 | 0.36 |
+| 15 % | 0.49 | 0.40 |
+| **20 %** | **0.61** | **0.52** |
+
+The 30–50 % portfolios are truncated after 2018-06-07. Top 20 % stays.
+
+## 99. Pre-registered Stage P: position sizing (uniform and liquidity-scaled)
+
+Recorded 2026-10-21, before any result below. The owner asked whether 5 %
+per entry is optimal, whether smaller is better, and whether size should
+vary by stock.
+
+**Designs** (Decision 98 selection and exits, per-stock costs at $10m,
+impact recomputed for each trade's own size):
+
+| Design | Size per entry |
+|---|---|
+| P-2.5, P-5 (current), P-7.5, P-10 | 2.5 %, 5 %, 7.5 % or 10 % of NAV |
+| P-L3 | Liquidity-scaled: the largest fraction, capped at 10 %, at which each leg's estimated impact Y × σ × sqrt(Q / V) stays ≤ 3 bps per side (the smaller of the two legs' limits) |
+| P-L5 | Liquidity-scaled with a 5 bps impact budget |
+
+Liquid pairs get larger positions, illiquid or volatile ones smaller.
+
+**Rule.** Smaller positions mechanically raise Sharpe and lower returns, so
+the choice is the highest 2010–2017 portfolio Sharpe among designs whose
+2010–2017 CAGR is at least P-5's (+1.13 %). If none qualifies, P-5 is kept.
+2018–2023 is opened once.
