@@ -4455,3 +4455,141 @@ costs, $10m.
 cap. 2010–2023 daily Sharpe 0.565, CAGR +2.1 % (+2.9 % with cash) and
 maximum drawdown −8.2 %. The freeze manifest and the 2024–2025 final test
 wait for the owner.
+
+## 109. Pre-registered multi-agent layer v2: bounded debate on the book's news-driven candidates
+
+Recorded 2026-10-21 on branch `p6/agent-layer` (from `p6/quant-research`),
+before any v2 agent call. The owner asked for the complete multi-agent layer
+from the Phase 5 plan (Decision 28, `docs/specs/04_MULTI_AGENT_PIPELINE.md`),
+aimed at both goals, within the free API tier and with heavy guardrails. This
+record keeps the plan's topology and roles. It changes the evidence, the
+citation format and the provider client, for the reasons below. The
+2024–2025 final test stays locked, and the agent contracts still reject any
+event from 2024 or later.
+
+**What is kept from Decision 28.**
+- **Topology:**
+  - two independent openings, run in parallel (mean reversion and
+    structural break);
+  - exactly one rebuttal each, seeing both openings but not the other
+    rebuttal;
+  - a separate synthesis that proposes a categorical break risk;
+  - a separate semantic validation.
+- **Controller:** the deterministic Python controller
+  (`decision/agent_policy.decide`) with its fixed statuses and reason codes.
+  No LLM decides a trade.
+- **Contracts:** the v1 Pydantic contracts and mechanical checks
+  (`agents/contracts.py`): grounded claims, exact citations, no outcome
+  fields, nothing from 2024 or later.
+
+**What changes, and why.**
+1. **Citations by sentence ID.** Decision 47 showed that Gemma cannot copy
+   quotations or 64-character chunk IDs verbatim. The agents therefore cite
+   numbered sentences (`A1.3`) and quantitative field names. Python resolves
+   each ID to its exact sentence and stored value before the unchanged v1
+   contracts check it, so provenance is exact by construction. Semantic
+   support is still judged by the validator and by humans.
+2. **Fresh-news evidence.** Decision 50 found the v2 packs mostly hold
+   two-month-old quarterly tables. The evidence is therefore each company's
+   recent-news pack (Decision 50: 8-K Item and press-release headline
+   chunks from the three sessions before the signal, up to two filings).
+   Analyst context for each company:
+   - its Gemma news label (Decision 50);
+   - its FinBERT net tone (Decision 51);
+   - the pair's sub-industry and economic rationale.
+3. **Masking.** Company names and tickers are masked as "Company A/B" in
+   everything the agents read. This reduces, but cannot remove, the risk
+   that a model recalls what later happened to a named company.
+4. **Provider client.** The paced, quota-aware client that completed the
+   9,209-pack news run (Decision 49 `ModelClient`) replaces the v1 provider,
+   which stopped a model after its first 429.
+   - **Pacing:** each model is paced by input tokens per minute.
+   - **Errors:** HTTP 5xx is retried with back-off, and a per-minute 429
+     waits.
+   - **Daily limit:** a daily 429, or the durable daily cap, pauses that
+     model until midnight Pacific.
+   - **Corrections:** one correction retry per role quotes the specific
+     contract error, as in Decision 49. Answers are never repaired.
+
+**Population.** The Decision 100 design candidates, 2010–2023: R0 top 20 %
+of each test year, after the r1, zero-cross and cost filters (3,291 events).
+- **Debated:** candidates where both companies have known 8-K coverage and
+  at least one has a parsed recent-news pack (about 700 events; the exact
+  count is recorded before the first call).
+- **Not debated, kept in the denominator with a reason:**
+  - no recent news on either company: `NO_RECENT_NEWS`;
+  - unknown coverage: the controller's `UNKNOWN_SOURCE_COVERAGE` ABSTAIN.
+- **Order:** debated events run in a fixed pseudo-random order (a hash of
+  the event ID). Any partial run is therefore a target-blind subsample.
+
+**Models (free tier, verified available 2026-10-21; `gemini-2.5-flash-lite`
+is retired for new users).**
+- **Advocates, all four calls:** `gemma-4-26b-a4b-it`, paced to 14,500
+  input tokens a minute (the measured limit is 16,000).
+- **Synthesis:** `gemini-3.1-flash-lite`.
+- **Validation:** `gemini-3.5-flash-lite`, the newer Flash-Lite as the
+  independent judge.
+- Each Flash-Lite model has its own daily quota. They are paced to at most
+  one request every 5 seconds; measured free limits are reported at about
+  15 a minute and about 500 a day.
+- `gemini-3.5-flash` and the other Flash models stay reserved and unused.
+- Settings: temperature 0, seed 42, minimal thinking, no model fallback.
+
+**Guardrails.**
+- **Durable caps** (`agents/budgets.DurableAttemptJournal`), charged before
+  every HTTP attempt including retries:
+
+  | Model | Daily cap | Total cap |
+  |---|---|---|
+  | Gemma | 9,000 | 6,000 |
+  | Each Flash-Lite | 450 | 1,600 |
+
+- **Key handling:** paid use is off. The key is read from the v2 `.env`
+  into the process only, and is never printed or stored.
+- **No outcomes in prompts:** labels and returns never enter a prompt, and
+  the prompt builder rejects outcome-named fields.
+- **Pilot first:** the first 20 events in run order are a pilot. If fewer
+  than 70 % reach a controller status from six valid roles, the run stops
+  and a dated amendment is recorded before it continues.
+
+**Evaluation (pre-registered).** The labels are read only after the run
+ends.
+- **Goal 1 (forecasting), on debated events:**
+  - h20 reversion rate and trade win rate by validated break risk and
+    controller status, with bootstrap intervals.
+  - Walk-forward comparison: for each test year, fit on earlier years'
+    debated events only. Compare logistic(logit R0 score) with the same
+    model plus MEDIUM and HIGH dummies, on AUC-ROC, log loss and Brier.
+  - The agent block passes if the pooled paired Brier difference has a 95 %
+    calendar-month block bootstrap interval entirely below zero (2,000
+    draws, seed 5557, as in Decision 47).
+- **Goal 2 (book), on the Decision 108 book:**
+  - **Rebuild:** the pairs design is re-run without the vetoed events, so
+    freed capacity is reused.
+  - **Variants:**
+    - **V0:** no agents.
+    - **V1:** skip controller NO TRADE (validated HIGH break risk or a
+      HIGH-materiality one-sided catalyst).
+    - **V2:** V1, and also skip REVIEW with `MEDIUM_BREAK_RISK`.
+    - **V3:** V1, and half size on MEDIUM.
+  - **Fail-open:** ABSTAIN, not debated and agent failures trade as in V0,
+    and their counts are reported.
+  - **Adoption (Decision 105):** the highest 2010–2017 Sharpe is adopted.
+    2018–2023 is opened once.
+- **Human quality check (Decision 28):** a blind sample of 50 debated
+  events (fixed seed) is exported for group annotation. Until it is
+  annotated, no claim about the agents' semantic accuracy is made.
+
+**Build, before the first call** (`python -m structural_break.experiments.p6_agents build`,
+`outputs/p6_agents/inventory.parquet`). Of the 3,291 candidates:
+
+| Group | Events |
+|---|---|
+| Debated | 715 (all with complete coverage) |
+| No recent news on either company | 2,216 |
+| Unknown coverage | 360 |
+
+- **Prompt size:** the median opening prompt is about 5,800 characters.
+- **Evidence:** the median company excerpt is about 2,200 characters; 3 %
+  are under 400 characters, mostly Item stubs such as "See Item 8.01".
+  The pre-registered packs are used unchanged.
