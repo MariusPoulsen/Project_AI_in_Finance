@@ -466,6 +466,202 @@ def status(output: Path = OUTPUT) -> str:
     return "\n".join(lines)
 
 
+# --------------------------------------------------------------------------- #
+# Evaluation (DECISIONS 109; labels and returns are read only here)
+# --------------------------------------------------------------------------- #
+
+
+def decisions(output: Path = OUTPUT) -> pd.DataFrame:
+    """One row per candidate: inventory reason, controller status and validated risk."""
+    inventory = pd.read_parquet(output / "inventory.parquet")
+    rows = []
+    for record in inventory.to_dict("records"):
+        result = load_result(output, record["event_id"]) if record["status"] == "DEBATE" else None
+        decision = result["decision"] if result else {}
+        rows.append(
+            {
+                "event_id": record["event_id"],
+                "year": record["year"],
+                "group": record["status"],
+                "status": decision.get("status", "NOT_DEBATED" if record["status"] != "DEBATE" else "PENDING"),
+                "break_risk": decision.get("break_risk"),
+                "reasons": ",".join(decision.get("reason_codes", [])),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def design_book(
+    workspace: Path, exclude: frozenset[str] = frozenset(), half: frozenset[str] = frozenset()
+) -> tuple[list[Any], dict[str, Any]]:
+    """Close-timing legs of the Decision 100 design re-run without ``exclude`` (pairs_legs.py)."""
+    from structural_break.experiments import p6_quant_costs as qc
+    from structural_break.experiments import p6_quant_portfolio as qp
+    from structural_break.experiments import p6_resid as pr
+
+    chosen = [e for e in design_candidates(workspace) if e not in exclude]
+    cache = qp.load_cache(Path("outputs/p6_quant/requests.pkl"))
+    sectors = _sources(workspace).security_sectors()
+    prices = pd.read_parquet(
+        workspace / "market/source_v1/prices.parquet",
+        columns=["ticker", "trading_date", "open", "high", "low", "close", "adj_close", "volume"],
+    )
+    fractions = {e: 0.075 * 0.5 for e in half}
+    design = qp.run_design(
+        cache, chosen, (1.0, 5.0, 20, True), Path("configs"), 0.075, sectors,
+        qc.lookup(qc.stock_inputs(prices)), 1e7, fractions=fractions or None,
+    )
+    legs = []
+    for event_id, fraction in design["allocations"].items():
+        result = design["results"][event_id]
+        if result.exit is None:
+            continue
+        request = cache[event_id][0]
+        days = [x.session_date for x in request.sessions]
+        trigger = days[days.index(result.exit.session_date) - 1]
+        for ticker, units, price in (
+            (request.leg_a, result.position.units_a, result.entry.price_a),
+            (request.leg_b, result.position.units_b, result.entry.price_b),
+        ):
+            legs.append(
+                pr.Leg(str(ticker), pd.Timestamp(days[0]), pd.Timestamp(trigger), fraction * units * price)
+            )
+    return legs, design["results"]
+
+
+def _walk_forward(table: pd.DataFrame, with_agents: bool) -> pd.Series:
+    from sklearn.linear_model import LogisticRegression
+
+    score = np.clip(table["score"].to_numpy(float), 1e-6, 1 - 1e-6)
+    x = [np.log(score / (1 - score))]
+    if with_agents:
+        x += [table["break_risk"].eq(level).to_numpy(float) for level in ("MEDIUM", "HIGH")]
+        x.append(table["status"].eq("ABSTAIN").to_numpy(float))
+    features = np.column_stack(x)
+    y = table["y"].to_numpy(int)
+    predictions = pd.Series(np.nan, index=table.index)
+    for year in sorted(table.year.unique()):
+        train = (table.year < year).to_numpy()
+        if train.sum() < 30 or len(set(y[train])) < 2:
+            continue
+        test = (table.year == year).to_numpy()
+        model = LogisticRegression(C=1.0, max_iter=1000).fit(features[train], y[train])
+        predictions[test] = model.predict_proba(features[test])[:, 1]
+    return predictions
+
+
+def evaluate(workspace: Path = Path("data/team"), output: Path = OUTPUT, holdout: bool = False) -> dict[str, Any]:
+    from sklearn.metrics import brier_score_loss, log_loss, roc_auc_score
+
+    from structural_break.experiments import p6_resid as pr
+
+    table = decisions(output)
+    debated = table[table.group.eq("DEBATE")].copy()
+    if debated.status.eq("PENDING").any():
+        raise SystemExit(f"{debated.status.eq('PENDING').sum()} debated events are still pending")
+    version = _sources(workspace).binding.evaluation.version
+    inputs = pd.read_parquet(workspace / "artifacts/research" / version / "model_inputs.parquet").set_index("event_id")
+    scores = pd.read_parquet(SCORES)
+    scores = scores[scores.variant.eq("R0_xgb_fixed") & scores.role.eq("test")].set_index("event_id")
+    _, base_results = design_book(workspace)
+    debated["score"] = scores.loc[debated.event_id, "score"].to_numpy()
+    debated["y"] = inputs.loc[debated.event_id, "y_revert_success"].to_numpy()
+    debated["net"] = [getattr(base_results.get(e), "net_return", None) for e in debated.event_id]
+    debated["month"] = pd.to_datetime(inputs.loc[debated.event_id, "event_date"]).dt.to_period("M").astype(str).to_numpy()
+    rng = np.random.default_rng(5557)
+    report: dict[str, Any] = {"counts": table.groupby(["group", "status"]).size().to_dict()}
+    groups = {}
+    for key, part in debated.groupby(debated.break_risk.fillna("FAILED")):
+        boots = [part.y.sample(frac=1, replace=True, random_state=int(s)).mean() for s in rng.integers(0, 2**31, 500)]
+        groups[key] = {
+            "n": int(len(part)),
+            "reversion_rate": float(part.y.mean()),
+            "reversion_95": [float(np.quantile(boots, 0.025)), float(np.quantile(boots, 0.975))],
+            "trade_win_rate": float((part.net.dropna() > 0).mean()) if part.net.notna().any() else None,
+            "mean_net_bps": float(part.net.dropna().mean() * 1e4) if part.net.notna().any() else None,
+        }
+    report["by_break_risk"] = groups
+    labelled = debated.dropna(subset=["y"]).copy()
+    labelled["y"] = labelled.y.astype(int)
+    base, agents = _walk_forward(labelled, False), _walk_forward(labelled, True)
+    scored = labelled.assign(base=base, agents=agents).dropna(subset=["base", "agents"])
+    metrics = {}
+    for name in ("base", "agents"):
+        metrics[name] = {
+            "auc": float(roc_auc_score(scored.y, scored[name])),
+            "log_loss": float(log_loss(scored.y, scored[name])),
+            "brier": float(brier_score_loss(scored.y, scored[name])),
+        }
+    diff = (scored.agents - scored.y) ** 2 - (scored.base - scored.y) ** 2
+    months = scored.month.to_numpy()
+    unique = np.unique(months)
+    by_month = {m: diff.to_numpy()[months == m] for m in unique}
+    draws = []
+    for _ in range(2000):
+        pick = rng.choice(unique, len(unique), replace=True)
+        values = np.concatenate([by_month[m] for m in pick])
+        draws.append(values.mean())
+    report["forecast"] = metrics | {
+        "events": int(len(scored)),
+        "brier_difference": float(diff.mean()),
+        "brier_difference_95": [float(np.quantile(draws, 0.025)), float(np.quantile(draws, 0.975))],
+        "passes": bool(np.quantile(draws, 0.975) < 0),
+    }
+    no_trade = frozenset(debated.loc[debated.status.eq("NO TRADE"), "event_id"])
+    medium = frozenset(debated.loc[debated.status.eq("REVIEW") & debated.reasons.str.contains("MEDIUM_BREAK_RISK"), "event_id"])
+    variants = {"V0": (frozenset(), frozenset()), "V1": (no_trade, frozenset()), "V2": (no_trade | medium, frozenset()), "V3": (no_trade, medium)}
+    sectors = _sources(workspace).security_sectors()
+    prices = pd.read_parquet(
+        workspace / "market/source_v1/prices.parquet",
+        columns=["ticker", "trading_date", "open", "high", "low", "close", "adj_close", "volume"],
+    )
+    panels = pr.load_panels(prices, sectors)
+    rf = pr.tbill(Path("data/external/irx_13w_tbill.csv"))
+    w = np.load("outputs/p6_quant/stage_q/targets_pca_continuous.npy") * 0.25
+    blocks = [(2010, 2017)] + ([(2018, 2023), (2010, 2023)] if holdout else [])
+    books = {}
+    for name, (exclude, half) in variants.items():
+        legs, _ = design_book(workspace, exclude, half)
+        book = pr.run_book(
+            panels, w, legs, pd.Timestamp("2010-01-01"), pd.Timestamp("2023-12-31"),
+            capital=1e7, rf=rf, speed=0.10, vol_target=0.04, vol_window=60, timing="close", max_gross=2.0,
+        )
+        book.to_parquet(output / f"book_{name}.parquet", index=False)
+        books[name] = {
+            "vetoed": len(exclude),
+            "half_size": len(half),
+            **{f"{a}-{b}": pr.stats(book, a, b) for a, b in blocks},
+        }
+    report["books"] = books
+    dv.cv_write(output / ("evaluation_holdout.json" if holdout else "evaluation.json"), report)
+    return report
+
+
+def review_export(output: Path = OUTPUT, size: int = 50, seed: int = 5558) -> Path:
+    """Blind sample for group annotation: masked evidence and agent claims, no scores or outcomes."""
+    table = decisions(output)
+    pool = table[table.group.eq("DEBATE") & table.status.ne("PENDING")]
+    sample = pool.sample(n=min(size, len(pool)), random_state=seed).event_id
+    lines = ["# Agent review sample (blind)", "", "For each event: read the excerpts, then mark whether each agent claim is supported (Y/N/partly) and give your own break risk (LOW/MEDIUM/HIGH/UNKNOWN).", ""]
+    for number, event_id in enumerate(sample, start=1):
+        case = dv.Case.from_json(json.loads((output / "cases" / f"{event_id}.json").read_bytes()))
+        result = load_result(output, event_id) or {}
+        lines += [f"## {number}. {event_id}", "", "```", dv.render_case(case), "```", ""]
+        for stage in result.get("stages", []):
+            if stage.get("status") != "VALID":
+                lines.append(f"- **{stage['role']}**: {stage['status']} ({stage.get('error')})")
+                continue
+            raw = stage["raw"]
+            head = raw.get("thesis") or raw.get("summary") or f"validated risk {raw.get('break_risk')}"
+            lines.append(f"- **{stage['role']}**: {head}")
+            for claim in raw.get("claims", []) + raw.get("counterevidence", []):
+                lines.append(f"  - [ ] {claim.get('text')} — cites {claim.get('cites', [])} {claim.get('quant', [])}")
+        lines += ["", "Your break risk: ____  Notes: ____", ""]
+    path = output / "review_sample.md"
+    path.write_text("\n".join(lines), encoding="utf-8")
+    return path
+
+
 def main(arguments: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -476,6 +672,9 @@ def main(arguments: Sequence[str] | None = None) -> None:
     r.add_argument("--limit", type=int)
     r.add_argument("--workers", type=int, default=3)
     sub.add_parser("status")
+    e = sub.add_parser("evaluate")
+    e.add_argument("--holdout", action="store_true")
+    sub.add_parser("review-export")
     args = parser.parse_args(arguments)
 
     def say(message: str) -> None:
@@ -488,6 +687,10 @@ def main(arguments: Sequence[str] | None = None) -> None:
         if not cc._credential():
             sys.exit("No API key in the environment")
         say(f"finished: {dict(run(limit=args.limit, workers=args.workers, say=say))}")
+    elif args.command == "evaluate":
+        print(json.dumps(evaluate(holdout=args.holdout), indent=1, default=str))
+    elif args.command == "review-export":
+        print(review_export())
     else:
         print(status())
 

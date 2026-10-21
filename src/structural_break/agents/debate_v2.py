@@ -643,7 +643,8 @@ def run_role(
 
 
 def cv_write(path: Path, value: Mapping[str, Any]) -> None:
-    temporary = path.with_suffix(".tmp")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(f".{threading.get_ident()}.tmp")
     temporary.write_bytes(json.dumps(value, sort_keys=True).encode())
     temporary.replace(path)
 

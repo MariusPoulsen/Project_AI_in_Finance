@@ -249,6 +249,24 @@ def test_daily_cap_in_journal_pauses(tmp_path: Path) -> None:
             dv.run_debate(_case(), _clients(Script(), journal), tmp_path / "roles")
 
 
+def test_batch_runner_writes_results_and_resumes(tmp_path: Path) -> None:
+    import pandas as pd
+
+    from structural_break.experiments import p6_agents as pa
+
+    case = _case()
+    dv.cv_write(tmp_path / "cases" / "evt_1.json", case.to_json())
+    pd.DataFrame(
+        [{"event_id": "evt_1", "year": 2015, "status": "DEBATE"}, {"event_id": "evt_2", "year": 2015, "status": "NO_RECENT_NEWS"}]
+    ).to_parquet(tmp_path / "inventory.parquet")
+    counts = pa.run(tmp_path, clients=_clients(Script("HIGH")), say=lambda m: None, passes=0)
+    assert counts == {"NO TRADE": 1}
+    assert pa.load_result(tmp_path, "evt_1")["decision"]["status"] == "NO TRADE"
+    assert pa.run(tmp_path, clients=_clients(Script()), say=lambda m: None, passes=0) == {}
+    table = pa.decisions(tmp_path)
+    assert dict(zip(table.event_id, table.status)) == {"evt_1": "NO TRADE", "evt_2": "NOT_DEBATED"}
+
+
 def test_policy_is_frozen_and_admits_selected_candidates() -> None:
     assert dv.POLICY.status == "FROZEN"
     assert cv.processing_order("evt_1") == cv.processing_order("evt_1")
