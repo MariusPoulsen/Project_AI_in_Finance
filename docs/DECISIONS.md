@@ -4344,3 +4344,48 @@ Recorded 2026-10-21, before any Stage T result. Base: the Stage S choice.
   +2 bps per side on every trade is reported alongside.
 - **Choice:** C-close is adopted if its 2010–2017 Sharpe exceeds the base
   (any gain). 2018–2023 is opened once.
+
+### 106a. Stage S result: VT60 adopted by the rule; the holdout does not confirm it
+
+Recorded 2026-10-21.
+
+| Variant | 2010–2017 Sharpe | 2018–2023 Sharpe | 2010–2023 Sharpe | 2010–2023 CAGR | Max drawdown | Gross mean / max |
+|---|---|---|---|---|---|---|
+| Base (Decision 105) | 0.489 | 0.537 | 0.506 | +1.8 % | −9.7 % | 0.65 / 1.16 |
+| **VT60** | **0.491** | 0.496 | 0.493 | +1.8 % | −8.4 % | 0.76 / 2.01 |
+| VT20 | 0.361 | 0.459 | 0.404 | +1.6 % | −8.9 % | 0.81 / 2.30 |
+
+VT60 has the highest 2010–2017 Sharpe and is adopted under Decision 105.
+Its gain is tiny there (+0.002), and **2018–2023 goes the other way**
+(−0.04). What it does reliably is cut the maximum drawdown (−6.5 % against
+−7.4 % on 2010–2017, −8.4 % against −9.7 % over 2010–2023). It reaches 201 %
+gross once, so a live version needs a hard 200 % cap.
+
+### 107a. Stage T result: close execution adopted; the gain is worth about 2 bps per side
+
+Recorded 2026-10-21.
+
+| Variant | 2010–2017 Sharpe | 2018–2023 Sharpe | 2010–2023 Sharpe | 2010–2023 CAGR (+ cash) | Max drawdown |
+|---|---|---|---|---|---|
+| Next open (Stage S) | 0.491 | 0.496 | 0.493 | +1.8 % (+2.6 %) | −8.4 % |
+| **C-close** | **0.613** | **0.522** | **0.568** | **+2.1 % (+2.9 %)** | −8.0 % |
+| C-close, +2 bps per side | 0.475 | 0.419 | 0.448 | +1.7 % (+2.5 %) | −8.3 % |
+
+C-close is adopted and holds up in 2018–2023. **Caveats:**
+- **Cost sensitivity:** the gain disappears if trading at the close costs
+  2 bps per side more than at the open.
+- **Look-ahead:** the backtest trades at the exact closing price that
+  produced the signal.
+
+The gain is plausible (it avoids the overnight gap and acts sooner on a
+reverting spread) but not robust.
+
+**The book after Decisions 105–107**, 2010–2023 with realistic costs at
+$10m:
+- **Return:** Sharpe 0.57, CAGR +2.1 % (+2.9 % with interest on cash).
+- **Risk:** maximum drawdown −8.0 %.
+- **Against Decision 100:** 0.52 Sharpe, +1.9 % CAGR and −8.7 % drawdown.
+
+Every stage here reused 2018–2023 and added trials, so the deflated Sharpe
+(Decision 97a) does not improve; the 2024–2025 final test remains the
+judge.

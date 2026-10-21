@@ -211,6 +211,25 @@ design's 2010–2023 CAGR from +1.8 % to +2.6 %, about US inflation (≈ 2.5 %
 a year). Sharpe ratios are unchanged because they are measured in excess
 of cash.
 
+**Owner decision: keep every 2010–2017 Sharpe gain (Decisions 105–107).**
+Below the pre-registered +0.05 margin, the changes are still kept if they
+raised the 2010–2017 Sharpe.
+
+| Step | 2010–2017 Sharpe | 2018–2023 Sharpe | 2010–2023 Sharpe | 2010–2023 CAGR (+ cash) | Max drawdown |
+|---|---|---|---|---|---|
+| Pairs design (engine) | 0.482 | 0.53 | 0.50 | +1.8 % (+2.6 %) | −9.2 % |
+| + residual sleeve, lambda 0.25 | 0.489 | 0.54 | 0.51 | +1.8 % (+2.6 %) | −9.7 % |
+| + constant-risk targeting (4 %, 60 days) | 0.491 | 0.50 | 0.49 | +1.8 % (+2.6 %) | −8.4 % |
+| **+ trading at the signal close** | **0.613** | **0.52** | **0.57** | **+2.1 % (+2.9 %)** | **−8.0 %** |
+
+- **Risk targeting** mainly lowers drawdowns; its Sharpe gain did not hold
+  on 2018–2023.
+- **Close execution** is the largest gain and held on 2018–2023, but it is
+  worth only about 2 bps per side. The backtest also trades at the closing
+  price that produced the signal.
+- **Against inflation:** with cash interest the final book earns about
+  2.9 % a year against inflation of about 2.5 %.
+
 **Lesson for the report.** The industry's advantages are breadth and cheap
 execution. Without a larger universe, these methods do not add a
 measurable edge here. The decisive cost lever was trading speed:
