@@ -4010,3 +4010,24 @@ year-Y model's scores on year Y−1 events.
 **Rule:** the share with the highest 2010–2017 daily portfolio Sharpe is
 chosen. The script prints only 2010–2017 until the choice is recorded, and
 2018–2023 is then opened once.
+
+### 98a. Stage O choice: top 20 % confirmed as the best share
+
+Recorded 2026-10-21, 2010–2017 portfolio (5 % per entry, per-stock costs at
+$10m):
+
+| Share | Completed trades (2010–2023) | Mean gross | Mean open positions | 2010–2017 Sharpe | 2010–2017 CAGR |
+|---|---|---|---|---|---|
+| 10 % | 1,565 | 0.27 | 5.9 | 0.28 | +0.5 % |
+| 15 % | 2,162 | 0.36 | 8.3 | 0.31 | +0.7 % |
+| **20 %** | 2,713 | 0.44 | 10.5 | **0.46** | **+1.1 %** |
+| 30 % | 2,042 | 0.56 | 13.5 | 0.14 | +0.3 % |
+| 40 % | 2,631 | 0.70 | 17.6 | −0.11 | −0.4 % |
+| 50 % | 3,187 | 0.79 | 21.6 | −0.21 | −0.7 % |
+
+**Top 20 % is kept.** Narrower shares leave capital idle, and wider shares
+add trades whose edge does not cover their costs.
+
+**Truncation:** the 30–50 % portfolios lose NAV knowledge on 2018-06-07
+(a missing held quote under the frozen rule). Their 2010–2017 numbers are
+complete; their trade counts and later periods are truncated.
