@@ -3927,3 +3927,36 @@ The 30 % sector cap never binds at these sizes.
 $10m. The portfolio then holds only about 10.5 positions at 44 % gross on
 average, which is limited by the number of signals, not by capital. The
 remaining lever is breadth: a larger universe.
+
+## 97. Pre-registered overfitting audit: deflated Sharpe ratio and probability of backtest overfitting
+
+Recorded 2026-10-21, before any result below. This is a diagnostic; no
+design choice depends on it. The final test stays locked.
+
+**Trial matrix.** Monthly per-candidate returns, 2010–2023, for every
+trading variant evaluated on the same events in the quant programme:
+- the 36 exit-grid variants on the R-a selections;
+- the 6 take-profit extension variants;
+- the selection variants under the adopted exit (C2-a, H-a, H-b, K-a,
+  L-a, G-b, G-c, G-d, G-e, F-a, F-b, M-1, M-2).
+
+**Probability of backtest overfitting** (Bailey, Borwein, López de Prado
+& Zhu): combinatorially symmetric cross-validation with 14 blocks of 12
+months, giving all 3,432 splits into 7 in-sample and 7 out-of-sample
+blocks.
+- In each split, the best in-sample variant's out-of-sample rank is
+  recorded.
+- PBO is the share of splits where that rank is below the median.
+
+**Deflated Sharpe ratio** (Bailey & López de Prado 2014), in monthly
+units with T = 168 months:
+- **Number of trials:** N = 150, a conservative count of every trading
+  variant tried across the project (Decisions 55–96). Sensitivities: N = 50
+  and N = 300.
+- **Trial variance:** V[SR] from the trial matrix.
+- **Return shape:** skewness and kurtosis of the evaluated strategy's
+  monthly returns.
+- **Strategies:**
+  - the H-b design's monthly per-candidate returns (flat costs);
+  - the Stage N portfolio N-5 at $10m with per-stock costs (monthly
+    portfolio returns).
