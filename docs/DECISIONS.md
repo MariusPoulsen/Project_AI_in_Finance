@@ -4411,3 +4411,47 @@ residual sleeve at 0.25, VT60, close execution, $10m, realistic costs).
     price.
 - 2010–2017 is printed first; 2018–2023 and 2010–2023 are opened once
   together, as in Stages S and T.
+
+### 108a. Stage U result: the 200 % cap is adopted at almost no cost; close execution breaks even at about 1.8 bps
+
+Recorded 2026-10-21 (`scripts/quant_research/stage_u.py`,
+`outputs/p6_quant/stage_u/`). Daily Sharpe in excess of cash, realistic
+costs, $10m.
+
+| Variant | 2010–2017 | 2018–2023 | 2010–2023 | 2010–2023 CAGR (+ cash) | Max drawdown | Max gross |
+|---|---|---|---|---|---|---|
+| Decision 107 book | 0.613 | 0.522 | 0.568 | +2.1 % (+2.9 %) | −8.0 % | 2.15 |
+| **+ 200 % cap (adopted)** | **0.612** | **0.515** | **0.565** | **+2.1 % (+2.9 %)** | **−8.2 %** | **2.01** |
+| Capped, next-open execution | 0.491 | 0.491 | 0.490 | +1.8 % (+2.6 %) | −8.6 % | 1.95 |
+| Capped, +0.5 bps per side | 0.578 | 0.489 | 0.534 | +2.0 % (+2.8 %) | −8.3 % | 2.01 |
+| Capped, +1.0 bps | 0.544 | 0.464 | 0.505 | +1.9 % (+2.7 %) | −8.4 % | 2.01 |
+| Capped, +1.5 bps | 0.509 | 0.438 | 0.474 | +1.8 % (+2.6 %) | −8.5 % | 2.01 |
+| Capped, +2.0 bps | 0.475 | 0.412 | 0.444 | +1.6 % (+2.4 %) | −8.5 % | 2.01 |
+
+- **Cap:** it binds on 14 of about 3,500 sessions and costs 0.003 Sharpe.
+  The 2.01 maximum comes from price drift on open legs, which the cap
+  never forces out.
+- **Break-even:** close execution stays ahead of next-open execution up to
+  about 1.5–1.8 bps of extra cost per side over 2010–2023. Published
+  closing-auction studies generally find auction costs at or below
+  continuous-session costs, so this margin is plausible but thin.
+- **Split execution, a measurement caveat:** half at the close and half at
+  the next open shows a daily Sharpe of 0.72 (2010–2017) and 0.67
+  (2010–2023). That is an artefact: the two halves are marked at different
+  times of day, so averaging same-date returns understates volatility. On
+  monthly returns, where marking times do not matter, the split lies
+  between its halves:
+
+  | Monthly Sharpe | 2010–2017 | 2018–2023 | 2010–2023 |
+  |---|---|---|---|
+  | Capped, close | 0.69 | 0.60 | 0.65 |
+  | Capped, next open | 0.56 | 0.54 | 0.55 |
+  | Split 50/50 | 0.65 | 0.59 | 0.62 |
+
+  Split execution is therefore a risk hedge against the look-ahead
+  assumption, not a free gain, and is not adopted.
+
+**Book after Decision 108:** the Decision 107 book with the hard 200 %
+cap. 2010–2023 daily Sharpe 0.565, CAGR +2.1 % (+2.9 % with cash) and
+maximum drawdown −8.2 %. The freeze manifest and the 2024–2025 final test
+wait for the owner.

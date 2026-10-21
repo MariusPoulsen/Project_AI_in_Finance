@@ -220,13 +220,19 @@ raised the 2010–2017 Sharpe.
 | Pairs design (engine) | 0.482 | 0.53 | 0.50 | +1.8 % (+2.6 %) | −9.2 % |
 | + residual sleeve, lambda 0.25 | 0.489 | 0.54 | 0.51 | +1.8 % (+2.6 %) | −9.7 % |
 | + constant-risk targeting (4 %, 60 days) | 0.491 | 0.50 | 0.49 | +1.8 % (+2.6 %) | −8.4 % |
-| **+ trading at the signal close** | **0.613** | **0.52** | **0.57** | **+2.1 % (+2.9 %)** | **−8.0 %** |
+| + trading at the signal close | 0.613 | 0.52 | 0.57 | +2.1 % (+2.9 %) | −8.0 % |
+| **+ hard 200 % gross cap (Decision 108)** | **0.612** | **0.52** | **0.565** | **+2.1 % (+2.9 %)** | **−8.2 %** |
 
 - **Risk targeting** mainly lowers drawdowns; its Sharpe gain did not hold
   on 2018–2023.
-- **Close execution** is the largest gain and held on 2018–2023, but it is
-  worth only about 2 bps per side. The backtest also trades at the closing
-  price that produced the signal.
+- **Close execution** is the largest gain and held on 2018–2023, but it
+  breaks even against next-open trading at about 1.5–1.8 bps of extra cost
+  per side. The backtest also trades at the closing price that produced the
+  signal.
+- **The gross cap** is a risk rule: it binds on 14 sessions and costs
+  0.003 Sharpe. A half-close, half-open split hedges the look-ahead
+  assumption, but on monthly returns it lands between its two halves (0.62
+  against 0.65 and 0.55), so it is not adopted.
 - **Against inflation:** with cash interest the final book earns about
   2.9 % a year against inflation of about 2.5 %.
 
