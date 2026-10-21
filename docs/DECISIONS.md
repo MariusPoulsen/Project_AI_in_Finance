@@ -4133,3 +4133,75 @@ The flat-cost design was 0.42 Sharpe at 25 % per entry.
 
 The exit, filter and sizing changes require a new freeze manifest before
 the owner unlocks the 2024–2025 final test.
+
+## 101. Stage Q pre-registration: a residual-reversal sleeve
+
+Recorded 2026-10-21, before any Stage Q result was computed. Professional
+stat-arb desks trade each stock's residual against factors rather than
+fixed pairs (Avellaneda & Lee 2010; Blitz et al. 2013), which gives far
+more simultaneous bets than our roughly 10 open pairs.
+
+**Universe.** The 250 roster issuers (sector ETFs and SPY are used only as
+factors). A stock is eligible at a close when it has 252 sessions of
+returns and a positive 20-session dollar ADV. Every roster issuer still
+trades in December 2023, so the universe is survivor-biased; this applies
+to the pairs book as well and is reported as a caveat.
+
+**Residual models** (60-session estimation, re-estimated every session):
+
+| Model | Factors |
+|---|---|
+| ETF | The stock's sector SPDR (SPY for Communication Services) |
+| PCA | 15 eigenportfolios from the 252-session correlation matrix of eligible stocks |
+
+**Signal.** The Avellaneda–Lee s-score: the cumulative 60-session
+residual is fitted as an AR(1); kappa = -ln(b) * 252 must exceed 252/30
+(reversion within half the window), and s = -(m - mean m) / sigma_eq.
+
+**Sizing rules.**
+
+| Rule | Raw weight |
+|---|---|
+| Bands | Avellaneda–Lee: open long below -1.25, short above 1.25; close a long above -0.50 and a short below 0.75; equal raw weight per open name |
+| Continuous | -clip(s, -3, 3) for every stock passing the kappa filter |
+
+Raw weights are made neutral to sector dummies and 60-session SPY beta by
+projection (this nets the factor hedges into stock positions), then scaled
+to a gross of 100 % of NAV. A stock is traded only when its target differs
+from its drifted holding by more than 0.15 % of NAV.
+
+**Execution and costs.** Signals at the close, trades at the next open,
+profit measured open to open. Costs per stock on the traded amount: the
+Decision 95a tiered half spread, square-root impact 0.7 * vol20 *
+sqrt(trade / ADV20) with $10m of starting capital scaled by NAV, a 0.5 bps
+commission, capped at 200 bps; borrow 1 % a year on shorts (the frozen
+rate). Inputs are from the previous close.
+
+**Choice.** The model × rule with the highest 2010–2017 net Sharpe. The
+sleeve counts as useful if that Sharpe is positive. 2018–2023 is opened
+once, after the choice.
+
+## 102. Stage R pre-registration: one netted book
+
+Recorded 2026-10-21, before any Stage R result.
+
+- **Pairs sleeve:** the Decision 100 design (P-7.5) with the trades,
+  allocations and entry and exit sessions its research portfolio accepts,
+  turned into stock legs that drift with prices.
+- **Residual sleeve:** the Stage Q choice at gross lambda × NAV, lambda in
+  {0.25, 0.5, 1.0}.
+- **Netting:** each stock's trades from both sleeves are summed and costs
+  are charged on the net trade. The same book with costs charged per
+  sleeve is reported to show the saving.
+- **Engine check:** with lambda = 0 the engine must reproduce the P-7.5
+  portfolio within 0.05 Sharpe in 2010–2017 and 2010–2023.
+- **Choice:** the lambda with the highest 2010–2017 Sharpe, adopted only if
+  it beats lambda = 0 by at least 0.05. 2018–2023 is opened once.
+
+## 103. Cash interest in the accounts
+
+Recorded 2026-10-21. A market-neutral book holds its NAV as collateral,
+which earns close to the T-bill rate. From Stage Q on, results are also
+reported with NAV earning the 13-week T-bill yield (Yahoo ^IRX, previous
+close) minus 0.25 % a year, floored at zero. Sharpe ratios stay computed
+without it (that is, in excess of cash), so no choice depends on it.
