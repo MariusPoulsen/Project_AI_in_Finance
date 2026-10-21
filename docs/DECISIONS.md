@@ -4665,3 +4665,28 @@ opening failures (ABSTAIN 10, NO TRADE 6, REVIEW 4; results kept in
 - **Rebuild:** cases are rebuilt with the same 715 events and the same run
   order.
 - **Pilot again:** the first 20 events, same 70 % bar.
+
+### 109c. Third pilot passes (95 %); the full run starts under v2.2
+
+Recorded 2026-10-21, labels still unread. 19 of the 20 pilot events reached
+the controller from six valid roles:
+
+| Status | Events |
+|---|---|
+| NO TRADE | 9 |
+| REVIEW | 9 |
+| CANDIDATE | 1 |
+| ABSTAIN | 1 |
+
+- **Validator risk:** MEDIUM on 18 events, LOW on 1.
+- **Vetoes:** all 9 NO TRADE come from the validator's one-sided-catalyst
+  flag, not from a HIGH break risk. The flag is set liberally:
+  - mostly earnings beats or guidance raises, mergers and acquisitions, and
+    one bankruptcy;
+  - also a share-capital authorization and a rate-case settlement.
+- **No further amendment:** the pre-registered V1–V3 comparison tests
+  whether these vetoes help.
+- **Pilot results stay in:** they are part of the run under the same
+  version, and the remaining 695 events follow in run order.
+- **Pilot cost:** 310 Gemma and about 80 Flash-Lite calls across the three
+  pilots, all inside the durable caps.
