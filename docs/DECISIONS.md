@@ -3986,3 +3986,27 @@ coin flip on whether its true Sharpe is positive. The programme's choices
 are stable, but its edge is too small, relative to the noise and to the
 search that found it, to count as established. The 2024–2025 final test
 remains the decisive evidence.
+
+## 98. Pre-registered Stage O: selection share under the full current design
+
+Recorded 2026-10-21, before any result below. The top-20 % share was only
+compared with 10 %, under flat costs and 25 % positions (Decision 76b).
+With 5 % positions the portfolio uses about 44 % gross and holds about 10
+trades, so more trades could add breadth if their edge survives costs.
+
+**Shares tested:** 10, 15, 20, 30, 40 and 50 % of the previous year's
+Model B scores (R0, Decision 45). The cutoff is that quantile of the
+year-Y model's scores on year Y−1 events.
+
+**Everything else is the current design:**
+- skip R1 events;
+- skip spreads without a mean crossing in more than 120 sessions (H-b);
+- skip the most expensive fifth by the previous year's cost distribution
+  (M-1);
+- exits: take profit at |z| ≤ 1.0, E3 news exit, stop at |z| ≥ 5,
+  20 sessions;
+- 5 % of NAV per entry, per-stock costs at $10m.
+
+**Rule:** the share with the highest 2010–2017 daily portfolio Sharpe is
+chosen. The script prints only 2010–2017 until the choice is recorded, and
+2018–2023 is then opened once.
