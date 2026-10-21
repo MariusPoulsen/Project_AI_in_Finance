@@ -121,8 +121,13 @@ def run_design(
     cost_table: dict[Any, Any] | None = None,
     capital: float = 1e7,
     sector_cap: float | None = None,
+    fractions: dict[str, float] | None = None,
 ) -> dict[str, Any]:
-    """``cost_table`` (Decision 96) prices each trade with per-stock costs at ``capital``."""
+    """``cost_table`` (Decision 96) prices each trade with per-stock costs at ``capital``.
+
+    ``fractions`` (Decision 99) gives each trade its own NAV fraction; the
+    portfolio then wants ``fraction`` per entry and costs use that size.
+    """
     from structural_break.experiments import p6_quant_costs as qc
 
     headline = load_headline(configs)
@@ -134,7 +139,8 @@ def run_design(
         request, frozen, moments = cache[event_id]
         rate = None
         if cost_table is not None:
-            rate = qc.trade_rate_bps(cost_table, request, frozen, capital, target)
+            size = target if fractions is None else fractions.get(event_id, target)
+            rate = qc.trade_rate_bps(cost_table, request, frozen, capital, size)
             if rate is None:
                 continue
             rates[event_id] = rate
@@ -148,8 +154,11 @@ def run_design(
                 sector_b=sectors.get(request.leg_b, "UNKNOWN"),
             )
         )
+    weights = (
+        {e: fractions.get(e, target) / target for e in results} if fractions is not None else {}
+    )
     out = pp.research_portfolio(
-        proposals, results, {}, policy, headline, target, rates or None, sector_cap
+        proposals, results, weights, policy, headline, target, rates or None, sector_cap
     )
     stats = pp.metrics(out["marks"])
     stats["trade_status"] = {

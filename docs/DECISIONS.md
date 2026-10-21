@@ -4065,3 +4065,24 @@ Liquid pairs get larger positions, illiquid or volatile ones smaller.
 the choice is the highest 2010–2017 portfolio Sharpe among designs whose
 2010–2017 CAGR is at least P-5's (+1.13 %). If none qualifies, P-5 is kept.
 2018–2023 is opened once.
+
+### 99a. Stage P choice: 7.5 % per entry
+
+Recorded 2026-10-21, 2010–2017:
+
+| Design | Mean size | Mean gross | Sharpe | CAGR | Max drawdown |
+|---|---|---|---|---|---|
+| P-2.5 | 2.5 % | 0.26 | 0.45 | +0.67 % | −3.9 % |
+| P-5 | 5 % | 0.44 | 0.46 | +1.13 % | −6.7 % |
+| **P-7.5** | 7.5 % | 0.54 | **0.50** | **+1.46 %** | −7.0 % |
+| P-10 | 10 % | 0.60 | 0.27 | +0.85 % | −8.9 % |
+| P-L3 | 3.2 % | 0.32 | 0.03 | +0.04 % | — |
+| P-L5 | 6.3 % | 0.49 | 0.33 | +0.89 % | — |
+
+P-5 and P-7.5 meet the CAGR condition, and **P-7.5 has the higher
+Sharpe**.
+
+**Liquidity-scaled sizing is worse.** It shrinks the volatile and less
+liquid pairs, which carry the strongest reversals, consistent with
+Medhat & Novy-Marx: more volatile stocks reverse faster and more strongly.
+Their edge more than pays their higher impact at these sizes.
