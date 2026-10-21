@@ -3766,3 +3766,38 @@ Recorded 2026-10-21, 2010–2017:
   the existing 1-day abnormal returns and volume shocks.
 
 Nothing changes, and 2018–2023 was not opened for this stage.
+
+## 95. Pre-registered Stage M: per-stock trading costs and cost-aware selection
+
+Recorded 2026-10-21, before any result below. The owner asked to lower
+trading costs. The frozen policy charges a flat 5 bps per side.
+
+**Cost model** (`p6_quant_costs`, point-in-time at the signal date), per
+leg and per side:
+
+| Component | Definition | Source |
+|---|---|---|
+| Half spread | Half of the Abdi–Ranaldo (2017) estimate, sqrt(max(4 × mean[(c_t − η_t)(c_t − η_{t+1})], 0)), with c the log close and η the mean of the log high and low, averaged over the previous 60 sessions | Abdi & Ranaldo (2017) |
+| Impact | Y × σ × sqrt(Q / V), with Y = 0.7 (middle of the 0.5–1.0 range for large-cap equities), σ the 20-session return volatility, V the 20-session average dollar volume, and Q the leg's notional at an assumed $10m of capital and 25 % of NAV per entry | Square-root law |
+| Commission | 0.5 bps | — |
+
+- **Cap:** per-side costs are capped at 200 bps.
+- **Per-trade rate:** each trade's cost rate is the leg-gross-weighted
+  average, applied at entry and exit.
+- **Sensitivities:** $1m and $100m of capital.
+
+**Pricing.** Every event is re-priced under the adopted exit with these
+costs, using the verified exit loop with the per-trade rates in place of
+the flat 5 bps.
+
+**Stage M selections:**
+
+| Candidate | Selection |
+|---|---|
+| M-0 | The H-b design, priced with per-stock costs (reference) |
+| M-1 | M-0, skipping events whose estimated round-trip cost is at least the previous year's 80th percentile over all events (avoid expensive names) |
+| M-2 | M-0, skipping events whose estimated round-trip cost exceeds 20 bps |
+
+**Rule:** M-1 or M-2 is adopted if its 2010–2017 monthly Sharpe of
+per-candidate returns under per-stock costs is the highest and above
+M-0's. 2018–2023 and the portfolio (with per-trade costs) follow once.
