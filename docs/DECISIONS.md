@@ -3801,3 +3801,37 @@ the flat 5 bps.
 **Rule:** M-1 or M-2 is adopted if its 2010–2017 monthly Sharpe of
 per-candidate returns under per-stock costs is the highest and above
 M-0's. 2018–2023 and the portfolio (with per-trade costs) follow once.
+
+### 95a. Amendment before any return was computed: spread component replaced
+
+Recorded 2026-10-21. Only cost levels had been inspected; no trade return
+under the cost model had been read.
+
+**Why.** The Abdi–Ranaldo estimate is unreliable for these large caps:
+
+| Stock | Half-spread estimate (yearly medians, 2012/2016/2021) |
+|---|---|
+| KO | 11–19 bps, against a true half-spread of about 1 bp |
+| PEP | 12–15 bps |
+| JPM, AAL, ALK | Mostly floored at 0 |
+
+With spreads this small, its noise dominates; the estimator is designed
+for, and most accurate on, less liquid stocks. The per-side median at $1m
+came out at 19 bps, which is not credible for S&P 500 names.
+
+**Replacement half spread.** A tier by 20-session dollar ADV, matching
+typical effective spreads of US large caps:
+
+| 20-session dollar ADV | Half spread |
+|---|---|
+| ≥ $200m | 1 bp |
+| $50–200m | 2 bps |
+| $20–50m | 4 bps |
+| < $20m | 8 bps |
+
+Impact (Y = 0.7, square root) and the 0.5 bps commission are unchanged, as
+are the Stage M candidates and rule.
+
+**Limitation.** The tiers do not widen for 2006–2009, when spreads were
+wider. The flat 5 bps remains the project's accepted cost, and the Stage M
+results are reported alongside it.

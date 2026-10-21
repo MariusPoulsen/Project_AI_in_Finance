@@ -57,8 +57,13 @@ def exit_loop(
     stop: float,
     timeout: int,
     news: Sequence[datetime],
+    cost_bps: float | None = None,
 ) -> tuple[str, float | None, int | None, str]:
-    """Frozen entry, parameterised exit; returns (status, net, holding, reason)."""
+    """Frozen entry, parameterised exit; returns (status, net, holding, reason).
+
+    ``cost_bps`` (Decision 95) replaces the flat entry and exit cost rates with
+    one per-trade rate per side; ``None`` keeps the frozen rates.
+    """
     if frozen.entry is None or frozen.position is None:
         return frozen.status, None, None, frozen.reason
     assert config.entry_cost_bps is not None and config.exit_cost_bps is not None
@@ -97,7 +102,9 @@ def exit_loop(
             last.open_b - entry.price_b
         )
         exposure = abs(position.units_a) * last.open_a + abs(position.units_b) * last.open_b
-        trading = config.entry_cost_bps / 10000.0 + config.exit_cost_bps / 10000.0 * exposure
+        entry_rate = config.entry_cost_bps if cost_bps is None else cost_bps
+        exit_rate = config.exit_cost_bps if cost_bps is None else cost_bps
+        trading = entry_rate / 10000.0 + exit_rate / 10000.0 * exposure
         borrow = (
             config.annual_borrow_rate
             * position.short_entry_notional
