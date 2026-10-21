@@ -178,6 +178,44 @@ design with realistic costs at $10m:
   Neither reaches 0.95, so the edge is not established beyond the search
   that found it. The final test decides.
 
+## Practitioner-style extensions (Decisions 101–104)
+
+Professional stat-arb desks trade each stock's residual against factors,
+net all signals per stock before trading, and earn interest on their
+collateral. Each idea was tested here (`p6_resid`, with a daily
+open-to-open stock-level engine that reproduces the pairs portfolio within
+0.02 Sharpe).
+
+**Residual reversal (Avellaneda & Lee 2010).** Each stock is measured
+against its sector ETF or 15 PCA factors and the book bets on the residual
+returning, neutral to sectors and market beta.
+
+| Version | Sharpe before costs | Sharpe after costs | Turnover |
+|---|---|---|---|
+| Daily trading (four variants) | 0.40 to 0.74 | −0.90 to −1.35 | 51–75× a year |
+| PCA, trading a tenth of the gap each day (chosen) | 0.57 | +0.08 | 17× |
+| The same on 2018–2023 | 0.72 | +0.44 | 17× |
+
+The signal is real before costs, but on 250 large caps it only roughly
+breaks even after them. The literature's high residual-reversal Sharpe
+ratios come from much larger universes and cheaper execution.
+
+**One netted book.** Adding the residual sleeve to the pairs book raises
+the 2010–2017 Sharpe by only +0.01 (0.48 to 0.49), below the
+pre-registered +0.05, so the pairs-only design stays. Netting saved
+nothing measurable, because the two sleeves rarely trade the same stock on
+the same day.
+
+**Cash interest.** Crediting T-bill interest (less 0.25 %) on NAV lifts the
+design's 2010–2023 CAGR from +1.8 % to +2.6 %, about US inflation (≈ 2.5 %
+a year). Sharpe ratios are unchanged because they are measured in excess
+of cash.
+
+**Lesson for the report.** The industry's advantages are breadth and cheap
+execution. Without a larger universe, these methods do not add a
+measurable edge here. The decisive cost lever was trading speed:
+Gârleanu–Pedersen partial trading cut costs by about 85 %.
+
 ## Running
 
 ```powershell

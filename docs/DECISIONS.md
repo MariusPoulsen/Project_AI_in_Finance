@@ -4241,3 +4241,57 @@ Exits to a zero target are always traded in full. Everything else is as
 in Decision 101. **Choice:** the highest 2010–2017 net Sharpe; useful if
 positive, in which case Stage R (Decision 102) runs with it. 2018–2023 is
 opened once.
+
+### 104a. Stage Q2 result: partial trading makes the sleeve roughly break even
+
+Recorded 2026-10-21. 2010–2017 (choice):
+
+| Variant | Sharpe before costs | Sharpe after costs | CAGR | Turnover | Cost |
+|---|---|---|---|---|---|
+| Bands, W5 | +0.76 | −0.43 | −1.1 % | 41× | 3.0 % |
+| Bands, W21 | +0.34 | −0.22 | −0.6 % | 18× | 1.5 % |
+| Bands, S10 | +0.53 | +0.01 | +0.0 % | 20× | 0.9 % |
+| Continuous, W5 | +0.54 | −0.66 | −1.5 % | 39× | 2.6 % |
+| Continuous, W21 | +0.47 | −0.08 | −0.2 % | 16× | 1.2 % |
+| **Continuous, S10** | +0.57 | **+0.08** | +0.1 % | 17× | 0.7 % |
+
+Continuous S10 is chosen, and it is positive, so Stage R runs with it.
+Trading a tenth of the gap each day keeps most of the before-cost edge and
+cuts costs by about 85 %. Rebalancing on a calendar loses more edge than
+it saves.
+
+Holdout, opened once: 2018–2023 Sharpe +0.44 (before costs +0.72), CAGR
++0.8 %, maximum drawdown −3.3 %; 2010–2023 Sharpe +0.25. Its monthly
+correlation with the pairs book is 0.26.
+
+### 102a. Stage R result: the combined book is not adopted
+
+Recorded 2026-10-21.
+
+**Engine check passed.** With lambda = 0 the engine gives Sharpe 0.48 in
+2010–2017 and 0.50 in 2010–2023, against the research portfolio's 0.50 and
+0.52 (within 0.05; the engine marks open to open and prices each leg's
+trade size directly).
+
+| Book | 2010–2017 Sharpe | 2018–2023 Sharpe | 2010–2023 Sharpe | 2010–2023 CAGR | Max drawdown |
+|---|---|---|---|---|---|
+| Pairs only (engine) | 0.48 | 0.53 | 0.50 | +1.8 % | −9.2 % |
+| + residual, lambda 0.25 | 0.49 | 0.54 | 0.51 | +1.8 % | −9.7 % |
+| + residual, lambda 0.5 | 0.49 | 0.58 | 0.53 | +2.0 % | −10.2 % |
+| + residual, lambda 1.0 | 0.45 | 0.60 | 0.52 | +2.1 % | −11.8 % |
+
+The best lambda gains +0.01 in 2010–2017, short of the +0.05 required, so
+**the pairs-only design stays.** 2018–2023 is more favourable to the sleeve,
+but no choice uses it.
+
+**Netting saved nothing measurable:** per-sleeve and netted costs agree to
+0.01 % a year. The pairs book trades about 10 positions, so the two sleeves
+rarely trade the same stock on the same session. Netting pays off when many
+signals share stocks, which this universe does not offer.
+
+### 103a. Cash interest
+
+With NAV earning the T-bill rate minus 0.25 %, the pairs book's 2010–2023
+CAGR rises from +1.8 % to +2.6 % (2018–2023: +2.2 % to +4.0 %). Against US
+CPI inflation of about 2.5 % a year, the realistic design roughly keeps
+pace with inflation; it does not clearly beat it.

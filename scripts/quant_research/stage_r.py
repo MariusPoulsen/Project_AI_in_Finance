@@ -1,6 +1,6 @@
 """Decision 102: one netted book, pairs sleeve (P-7.5) + residual sleeve (prints 2010-2017 unless --holdout).
 
-Usage: stage_r.py <stage-q choice, e.g. pca_continuous> [--holdout]
+Usage: stage_r.py <stage-q targets, e.g. pca_continuous> [--speed 0.1] [--every 1] [--holdout]
 """
 import sys, json, math, pandas as pd, numpy as np
 from pathlib import Path
@@ -8,6 +8,7 @@ from structural_break.experiments import p6_quant_portfolio as qp, p6_quant_cost
 from structural_break.experiments.p6_improvement import _sources
 choice = sys.argv[1]
 holdout = "--holdout" in sys.argv
+control = {"speed": float(sys.argv[sys.argv.index("--speed") + 1]) if "--speed" in sys.argv else 1.0, "every": int(sys.argv[sys.argv.index("--every") + 1]) if "--every" in sys.argv else 1}
 out_dir = Path("outputs/p6_quant/stage_r"); out_dir.mkdir(parents=True, exist_ok=True)
 blocks = (("2010-2017", 2010, 2017),) + ((("2018-2023", 2018, 2023), ("2010-2023", 2010, 2023)) if holdout else ())
 
@@ -63,18 +64,18 @@ ref_book = ref_book[ref_book.session_date.between(first, last)]
 w = np.load(Path("outputs/p6_quant/stage_q") / f"targets_{choice}.npy")
 books = {"pairs_engine": pr.run_book(panels, None, legs, first, last, capital, rf=rf)}
 for lam in (0.25, 0.5, 1.0):
-    books[f"net_l{lam}"] = pr.run_book(panels, w * lam, legs, first, last, capital, rf=rf)
-    books[f"sep_l{lam}"] = pr.run_book(panels, w * lam, legs, first, last, capital, net=False, rf=rf)
+    books[f"net_l{lam}"] = pr.run_book(panels, w * lam, legs, first, last, capital, rf=rf, **control)
+    books[f"sep_l{lam}"] = pr.run_book(panels, w * lam, legs, first, last, capital, net=False, rf=rf, **control)
 check = {}
 for label, a, b in (("2010-2017", 2010, 2017), ("2010-2023", 2010, 2023)):
     ref_years = ref_book.session_date.dt.year.between(a, b)
     rr = ref_book.daily_return[ref_years]
     check[label] = {"research_portfolio": float(rr.mean() / rr.std() * math.sqrt(252)), "engine": pr.stats(books["pairs_engine"], a, b)["sharpe"]}
 print("engine check (Sharpe):", json.dumps(check), flush=True)
-summary = {"check": check}
+summary = {"check": check, "control": control}
 for name, book in books.items():
     book.to_parquet(out_dir / f"book_{name}.parquet", index=False)
     summary[name] = {"2010-2017": pr.stats(book, 2010, 2017)}
     show(name, book)
 json.dump(summary, open(out_dir / "summary_select.json", "w"), indent=1)
-json.dump({k: v for k, v in summary.items() if k != "check"}, open(out_dir / "summary.json", "w"), indent=1)
+json.dump({k: v for k, v in summary.items() if k not in ("check", "control")}, open(out_dir / "summary.json", "w"), indent=1)
