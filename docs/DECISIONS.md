@@ -3835,3 +3835,23 @@ are the Stage M candidates and rule.
 **Limitation.** The tiers do not widen for 2006–2009, when spreads were
 wider. The flat 5 bps remains the project's accepted cost, and the Stage M
 results are reported alongside it.
+
+### 95b. Stage M choice: M-1, avoiding the most expensive trades
+
+Recorded 2026-10-21, 2010–2017.
+
+**Amended cost levels** (median per side): $1m 5.5 bps, $10m 12.7 bps,
+$100m 35 bps. Impact dominates at $10m because each entry is 25 % of NAV.
+
+| Candidate | Trades | Flat 5 bps: per trade, Sharpe | Per-stock costs at $10m: per trade, Sharpe |
+|---|---|---|---|
+| M-0 (H-b) | 1,537 | +20.5 bps, 0.73 | +2.0 bps, 0.10 |
+| **M-1** | 1,304 | +19.2 bps, 0.72 | **+6.6 bps, 0.27** |
+| M-2 | 600 | +2.7 bps, 0.16 | −2.4 bps, 0.02 |
+
+**Choice: M-1.** Under realistic costs at $10m the current design's edge
+mostly disappears, and skipping the most expensive fifth of trades
+recovers part of it.
+
+The main cost driver is the position size relative to ADV, which is the
+subject of the next stage (portfolio construction).
