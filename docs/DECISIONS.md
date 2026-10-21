@@ -4593,3 +4593,49 @@ ends.
 - **Evidence:** the median company excerpt is about 2,200 characters; 3 %
   are under 400 characters, mostly Item stubs such as "See Item 8.01".
   The pre-registered packs are used unchanged.
+
+### 109a. Pilot result: below the 70 % bar; amendment v2.1 (before any label was read)
+
+Recorded 2026-10-21. The pilot ran the first 20 events in run order under
+prompts v2.0 (134 calls; results kept in `outputs/p6_agents/results_v2.0_pilot`).
+- **Completion: 10 of 20 (50 %)** reached the controller from six valid
+  roles, below the 70 % bar, so the run stopped as pre-registered. The
+  other 10 failed in a Gemma opening after one correction.
+- **Statuses:** ABSTAIN 12 (10 agent failures, 2 validator abstentions),
+  NO TRADE 4, REVIEW 4. No outcome, label or return was read.
+
+**Diagnosis from the rejected answers** (32 openings, 1 validation):
+1. **Uncitable claims, 23 of the 32 failed answers.** The advocates wrote
+   statements of absence ("no news for Company A") as claims with no
+   citation. The correction did not say which claim was at fault.
+2. **Misplaced field names, twice.** A field name such as `z_score` was put
+   in `cites` instead of `quant`.
+3. **Undefined validator fields.** The validator fields were never defined,
+   so the validator used them as "do not trade":
+   - it set `abstain_recommended` next to a HIGH break risk, which the
+     controller turns into ABSTAIN;
+   - it set the one-sided-catalyst flag on four MEDIUM-risk events with
+     routine news (credit-agreement amendments), which the controller turns
+     into NO TRADE.
+
+**Amendment `pairs-debate-prompts-v2.1`.** Graph, models, contracts,
+controller, guardrails and the evaluation are unchanged.
+- **Claim rules:** uncitable statements belong in `uncertainties`;
+  sentence IDs go only in `cites` and field names only in `quant`.
+- **Specific corrections:** a rejected answer is told which claim lacked
+  grounding, or that a field name was put in `cites`.
+- **Validator field definitions:**
+  - `validation_status` grades the synthesis's support, not the trade.
+  - `invalid_claim_count` counts unsupported synthesis claims.
+  - `contradiction_flag` excludes the expected disagreement between
+    advocates.
+  - `abstain_recommended` means risk cannot be classified, so break risk is
+    UNKNOWN.
+  - `high_materiality_one_sided_catalyst` covers only events that change
+    one company's economics relative to its peer (merger, bankruptcy, major
+    guidance change, ruling), not routine financing, dividends, board
+    changes or in-line results.
+- **Two corrections per role,** as in Decision 49, instead of one.
+- **Pilot again:** the same first 20 events are re-run under v2.1 with the
+  same 70 % bar. Results from older prompt versions are never mixed into
+  the evaluation.

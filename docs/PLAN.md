@@ -235,6 +235,17 @@ inputs, independent openings, one rebuttal exchange, separate synthesis and
 validation, fail-safe caching and the Python controller. The current architecture
 is in `docs/specs/04_MULTI_AGENT_PIPELINE.md` and DECISIONS section 28.
 
+**Update 2026-10-21 (Decision 109):** the layer is completed as v2 on branch
+`p6/agent-layer`, on the candidates of the current best book (Decision 100/108).
+- **Kept:** the Decision 28 topology and the v1 contracts.
+- **Changed:** sentence-ID citations, fresh 8-K news evidence, masked company
+  names, and the paced free-tier client with durable caps.
+- **Evaluated:** forecasting (Goal 1) and the book (Goal 2) are tested as
+  pre-registered.
+
+The human 50-event review is exported for the group. See
+`docs/P6_AGENT_LAYER.md`.
+
 Work is isolated on `phase5/agents-controller-foundation`. Keep the live v2
 checkout and its 37,421-event population, source-v3 inputs, quality-v2 FinBERT,
 500-event catalyst schedule and A/B definitions frozen. Integrate only after all

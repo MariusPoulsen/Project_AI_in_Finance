@@ -43,7 +43,7 @@ from structural_break.intelligence import catalyst_v3 as cv
 from structural_break.intelligence.extraction import ProviderFailure
 
 GRAPH_VERSION = "pairs-debate-v2"
-PROMPT_VERSION = "pairs-debate-prompts-v2.0"
+PROMPT_VERSION = "pairs-debate-prompts-v2.1"
 ADVOCATE_MODEL = "gemma-4-26b-a4b-it"
 SYNTHESIS_MODEL = "gemini-3.1-flash-lite"
 VALIDATION_MODEL = "gemini-3.5-flash-lite"
@@ -65,7 +65,7 @@ POLICY = AgentPolicy(
     no_trade_probability=0.0,
     candidate_probability=1e-6,
 )
-CORRECTIONS = 1
+CORRECTIONS = 2  # Decision 109a: as in Decision 49, up to two specific corrections
 
 
 def model_for(role: str) -> str:
@@ -253,7 +253,10 @@ _CLAIM = (
 _CLAIM_RULES = (
     "Claim rules: every claim needs at least one sentence ID in \"cites\" (IDs exactly as shown "
     "in parentheses, such as A1.3) or one field name in \"quant\" (" + ", ".join(QUANT_FIELDS) + "). "
-    "Never quote text; cite IDs. At most 6 claims per list."
+    "Sentence IDs go only in \"cites\" and field names only in \"quant\". Never quote text; cite "
+    "IDs. A statement you cannot cite, such as missing news, missing coverage or an open "
+    "question, is not a claim: put it in \"uncertainties\" (plain strings) instead. At most 6 "
+    "claims per list."
 )
 _MANDATES = {
     "mean_reversion_opening": (
@@ -322,12 +325,22 @@ _FORMATS = {
     ),
 }
 _VALIDATION_RULES = (
-    "Validation rules: PASS only when invalid_claim_count is 0, abstain_recommended is false, "
-    "source_completeness is COMPLETE and contradiction_flag is false; otherwise use "
-    "PASS_WITH_WARNINGS or FAIL. A break_risk other than UNKNOWN needs at least one claim. "
-    "Set high_materiality_one_sided_catalyst true only for a HIGH-materiality event on one "
-    "company that is relevant to the relationship. source_completeness must not be better "
-    "than the stated coverage."
+    "Field meanings. validation_status grades how well the synthesis is supported by the "
+    "excerpts, not whether the pair is a good trade: PASS fully supported; PASS_WITH_WARNINGS "
+    "minor gaps; FAIL its break-risk conclusion is not supported. invalid_claim_count counts "
+    "synthesis claims whose cited sentences do not support them. contradiction_flag: true only "
+    "if the excerpts contradict each other or the synthesis contradicts the excerpts or fields; "
+    "the advocates disagreeing is expected and is not a contradiction. abstain_recommended: "
+    "true only if the evidence is too unreliable to classify break risk at all, and then "
+    "break_risk is UNKNOWN; a HIGH break risk is a classification, not an abstention. "
+    "high_materiality_one_sided_catalyst: true only for a HIGH-materiality event on one company "
+    "that changes its economics relative to its peer (for example a merger or divestiture, "
+    "bankruptcy, a major guidance change, a regulatory or court ruling); routine financing, "
+    "dividends, board or officer changes and in-line results are not. "
+    "Consistency rules: PASS only when invalid_claim_count is 0, abstain_recommended is false, "
+    "source_completeness is COMPLETE and contradiction_flag is false. A break_risk other than "
+    "UNKNOWN needs at least one claim. source_completeness must not be better than the stated "
+    "coverage."
 )
 
 
@@ -422,7 +435,8 @@ def _claims(items: Any, case: Case, prefix: str) -> tuple[Claim, ...]:
         citations = []
         for ref in dict.fromkeys(cites):
             if not isinstance(ref, str) or ref not in refs:
-                raise ValueError(f"Unknown sentence ID {ref!r} in claim {prefix}{number}")
+                hint = " (field names belong in quant)" if ref in QUANT_FIELDS else ""
+                raise ValueError(f"Unknown sentence ID {ref!r} in claim {prefix}{number}{hint}")
             chunk_id, leg, sentence = refs[ref]
             citations.append(Citation(chunk_id=chunk_id, leg=cast(Any, leg), quote=sentence))
         references = []
@@ -431,6 +445,11 @@ def _claims(items: Any, case: Case, prefix: str) -> tuple[Claim, ...]:
             if value is None:
                 raise ValueError(f"Unknown or missing quantitative field {name!r}")
             references.append(QuantReference(field=cast(Any, name), value=float(value)))
+        if not citations and not references:
+            raise ValueError(
+                f"claim {number} in the list containing \"{str(item.get('text', ''))[:80]}\" has no "
+                "sentence ID and no field name; cite one, or move it to uncertainties"
+            )
         claims.append(
             Claim(
                 claim_id=f"{prefix}{number}",

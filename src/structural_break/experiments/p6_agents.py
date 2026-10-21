@@ -289,8 +289,12 @@ def _result_path(output: Path, event_id: str) -> Path:
 
 
 def load_result(output: Path, event_id: str) -> dict[str, Any] | None:
+    """The event's result under the current prompt version (older versions are ignored)."""
     path = _result_path(output, event_id)
-    return json.loads(path.read_bytes()) if path.exists() else None
+    if not path.exists():
+        return None
+    result = json.loads(path.read_bytes())
+    return result if result.get("prompt_version") == dv.PROMPT_VERSION else None
 
 
 def _state(output: Path, **fields: Any) -> None:

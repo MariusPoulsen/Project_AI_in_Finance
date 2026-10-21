@@ -187,7 +187,7 @@ def test_one_correction_then_valid(tmp_path: Path) -> None:
 
 def test_failed_role_abstains_and_skips_downstream(tmp_path: Path) -> None:
     bad = "not json"
-    script = Script("LOW", {"mean_reversion_opening": [bad, bad]})
+    script = Script("LOW", {"mean_reversion_opening": [bad] * (dv.CORRECTIONS + 1)})
     result = dv.run_debate(_case(), _clients(script), tmp_path)
     assert result["decision"]["status"] == "ABSTAIN"
     assert result["decision"]["reason_codes"] == ["AGENT_FAILURE"]
