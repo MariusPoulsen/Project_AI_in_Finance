@@ -216,12 +216,12 @@ def targets(
 @dataclass
 class Leg:
     ticker: str
-    entry: pd.Timestamp  # held from this session's open
-    exit: pd.Timestamp  # closed at this session's open
+    entry: pd.Timestamp  # held from this session's open (its close when timing="close")
+    exit: pd.Timestamp  # closed at this session's open (its close when timing="close")
     fraction: float  # signed dollar weight as a fraction of NAV at entry
 
 
-def _cost(trade: float, vol: float, adv: float, capital: float) -> float:
+def _cost(trade: float, vol: float, adv: float, capital: float, extra_bps: float = 0.0) -> float:
     """Cost in NAV units of trading ``trade`` (NAV units) of one stock."""
     if trade == 0:
         return 0.0
@@ -229,7 +229,7 @@ def _cost(trade: float, vol: float, adv: float, capital: float) -> float:
         return abs(trade) * qc.CAP_BPS / 1e4
     half = qc.tier_half_spread_bps(adv)
     impact = qc.IMPACT_Y * vol * math.sqrt(abs(trade) * capital / adv) * 1e4
-    return abs(trade) * min(half + impact + qc.COMMISSION_BPS, qc.CAP_BPS) / 1e4
+    return abs(trade) * (min(half + impact + qc.COMMISSION_BPS, qc.CAP_BPS) + extra_bps) / 1e4
 
 
 def run_book(
@@ -244,6 +244,11 @@ def run_book(
     rf: pd.Series | None = None,
     speed: float = 1.0,
     every: int = 1,
+    vol_target: float | None = None,
+    vol_window: int = 60,
+    scale_clip: tuple[float, float] = (0.5, 2.0),
+    timing: str = "open",
+    extra_bps: float = 0.0,
 ) -> pd.DataFrame:
     """Daily open-to-open book; returns one row per session with NAV and diagnostics.
 
@@ -253,6 +258,12 @@ def run_book(
     of each gap beyond the band (Garleanu-Pedersen partial trading), and
     ``every`` trades only on every n-th session of the run (exits to a zero
     target are always traded in full).
+    ``vol_target`` (annual) scales new pair entries and residual targets by
+    vol_target / realised book volatility over the last ``vol_window``
+    sessions, clipped to ``scale_clip``; open pair legs are not resized.
+    ``timing="close"`` trades at the signal session's close instead of the
+    next open: targets[t] trade at close t and holdings earn close-to-close
+    returns. ``extra_bps`` adds a flat cost per side (a stress test).
     """
     index = {d: i for i, d in enumerate(panels.dates)}
     n = len(panels.tickers)
@@ -271,19 +282,27 @@ def run_book(
     rows = []
     days = [i for i, d in enumerate(panels.dates) if start <= d <= end]
     rates = rf.reindex(panels.dates).ffill().to_numpy(float) if rf is not None else None
+    at_close = timing == "close"
+    history: list[float] = []
     for step, t in enumerate(days):
+        scale = 1.0
+        if vol_target is not None and len(history) >= 20:
+            realised = float(np.std(history[-vol_window:])) * math.sqrt(252)
+            if realised > 0:
+                scale = min(max(vol_target / realised, scale_clip[0]), scale_clip[1])
         d_pairs = np.zeros(n)
         for k in exits.get(t, ()):
             if k in leg_value:
                 d_pairs[col[legs[k].ticker]] -= leg_value.pop(k)
         for leg in entries.get(t, ()):
             k = leg_key[id(leg)]
-            value = leg.fraction * nav
+            value = leg.fraction * scale * nav
             leg_value[k] = value
             d_pairs[col[leg.ticker]] += value
         d_resid = np.zeros(n)
-        if resid_targets is not None and t > 0:
-            want = resid_targets[t - 1] * nav
+        signal_day = t if at_close else t - 1
+        if resid_targets is not None and signal_day >= 0:
+            want = resid_targets[signal_day] * scale * nav
             gap = want - resid
             close = (want == 0) & (resid != 0)
             if step % every == 0:
@@ -291,27 +310,31 @@ def run_book(
                 d_resid[move] = speed * gap[move]
             d_resid[close] = gap[close]
             resid = resid + d_resid
-        vol, adv = panels.vol20[t - 1], panels.adv20[t - 1]
+        vol, adv = panels.vol20[signal_day], panels.adv20[signal_day]
         cost = 0.0
         for i in np.flatnonzero((d_pairs != 0) | (d_resid != 0)):
             if net:
-                cost += _cost(d_pairs[i] + d_resid[i], vol[i], adv[i], capital * nav)
+                cost += _cost(d_pairs[i] + d_resid[i], vol[i], adv[i], capital * nav, extra_bps)
             else:
-                cost += _cost(d_pairs[i], vol[i], adv[i], capital * nav)
-                cost += _cost(d_resid[i], vol[i], adv[i], capital * nav)
+                cost += _cost(d_pairs[i], vol[i], adv[i], capital * nav, extra_bps)
+                cost += _cost(d_resid[i], vol[i], adv[i], capital * nav, extra_bps)
         traded = float(np.abs(d_pairs + d_resid).sum())
         pairs_hold = np.zeros(n)
         for k, value in leg_value.items():
             pairs_hold[col[legs[k].ticker]] += value
         hold = pairs_hold + resid
-        r = np.nan_to_num(panels.open_returns[t])
+        if at_close:
+            r = np.nan_to_num(panels.returns[t + 1]) if t + 1 < len(panels.dates) else np.zeros(n)
+        else:
+            r = np.nan_to_num(panels.open_returns[t])
         borrow = -hold[hold < 0].sum() * BORROW / 252
         pnl = float(hold @ r)
         interest = 0.0
-        if rates is not None and t > 0 and math.isfinite(rates[t - 1]):
-            interest = nav * max(rates[t - 1] - CASH_HAIRCUT, 0.0) / 252
+        if rates is not None and signal_day >= 0 and math.isfinite(rates[signal_day]):
+            interest = nav * max(rates[signal_day] - CASH_HAIRCUT, 0.0) / 252
         before = nav
         nav = nav + pnl - cost - borrow + interest
+        history.append(nav / before - 1)
         resid = resid * (1 + r)
         for k in leg_value:
             leg_value[k] *= 1 + r[col[legs[k].ticker]]
@@ -326,6 +349,7 @@ def run_book(
                 "gross": float(np.abs(hold).sum()) / before,
                 "net_exposure": float(hold.sum()) / before,
                 "names": int((np.abs(hold) > 1e-9).sum()),
+                "scale": scale,
             }
         )
     return pd.DataFrame(rows)

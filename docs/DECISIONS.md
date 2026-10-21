@@ -4295,3 +4295,52 @@ With NAV earning the T-bill rate minus 0.25 %, the pairs book's 2010–2023
 CAGR rises from +1.8 % to +2.6 % (2018–2023: +2.2 % to +4.0 %). Against US
 CPI inflation of about 2.5 % a year, the realistic design roughly keeps
 pace with inflation; it does not clearly beat it.
+
+## 105. Owner decision: adopt any 2010–2017 Sharpe gain; the residual sleeve joins the book
+
+Recorded 2026-10-21. The owner asked to keep every change that raised the
+2010–2017 Sharpe, even below the +0.05 margin of Decision 102. Applied to
+Stage R, the only stage with such a margin, the adopted book is
+**pairs (Decision 100) + the PCA residual sleeve (continuous, 10 %
+partial trading) at lambda = 0.25, netted per stock**:
+
+| Book | 2010–2017 Sharpe | 2018–2023 Sharpe | 2010–2023 Sharpe | 2010–2023 CAGR (+ cash) | Max drawdown |
+|---|---|---|---|---|---|
+| Pairs only | 0.482 | 0.53 | 0.50 | +1.8 % (+2.6 %) | −9.2 % |
+| **Adopted book** | **0.489** | 0.54 | 0.51 | +1.8 % (+2.6 %) | −9.7 % |
+
+lambda = 0.25 has the highest 2010–2017 Sharpe (0.4886 against 0.4881 for
+0.5); 2018–2023, which favours 0.5, is not used. The same rule applies
+from here on.
+
+## 106. Stage S pre-registration: constant-risk targeting
+
+Recorded 2026-10-21, before any Stage S result. Base: the Decision 105
+book with cash interest. Each new pair entry and each residual target is
+multiplied by 4 % / (realised book volatility), clipped to [0.5, 2]; open
+pair legs are not resized, to avoid extra trading.
+
+| Variant | Volatility estimate |
+|---|---|
+| VT60 | Standard deviation of the book's last 60 daily returns |
+| VT20 | The last 20 |
+
+**Choice:** the highest 2010–2017 Sharpe among the base, VT60 and VT20
+(any gain adopts). Mean and maximum gross are reported (at most 200 % of
+NAV under Reg T). 2018–2023 is opened once.
+
+## 107. Stage T pre-registration: execution at the signal close
+
+Recorded 2026-10-21, before any Stage T result. Base: the Stage S choice.
+
+- **C-close:** both sleeves trade at the close of the signal session
+  (market-on-close) instead of the next open. Pair entries move to the
+  signal session's close and exits to the trigger session's close; the
+  residual sleeve trades its target at the close it is computed;
+  holdings earn close-to-close returns.
+- **Look-ahead caveat:** the signal uses the closing price it trades at.
+  In practice it is computed minutes before the close (around 15:45), so
+  this is an approximation that favours close execution. A stress with
+  +2 bps per side on every trade is reported alongside.
+- **Choice:** C-close is adopted if its 2010–2017 Sharpe exceeds the base
+  (any gain). 2018–2023 is opened once.

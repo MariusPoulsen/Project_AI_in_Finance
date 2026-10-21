@@ -61,3 +61,23 @@ def test_run_book_nets_offsetting_trades() -> None:
     assert netted["nav"].iloc[0] == 1.0
     day1 = netted.iloc[1]
     assert math.isclose(day1["nav"], 1.0 + 0.10 * 0.01 - day1["cost"], rel_tol=1e-12)
+
+
+def test_close_timing_earns_next_close_to_close_return() -> None:
+    panels = _panels()
+    panels.returns[:] = 0.02
+    d = panels.dates
+    book = pr.run_book(panels, None, [pr.Leg("A", d[1], d[3], 0.10)], d[0], d[-1], capital=1e6, timing="close")
+    day1 = book.iloc[1]
+    assert math.isclose(day1["nav"], 1.0 + 0.10 * 0.02 - day1["cost"], rel_tol=1e-12)
+    assert book.iloc[3]["names"] == 0
+
+
+def test_vol_target_scales_new_entries_within_clip() -> None:
+    panels = _panels(days=40)
+    d = panels.dates
+    legs = [pr.Leg("A", d[1], d[2], 0.10), pr.Leg("A", d[30], d[31], 0.10)]
+    book = pr.run_book(panels, None, legs, d[0], d[-1], capital=1e6, vol_target=0.10)
+    # Returns are almost constant, so realised volatility is tiny and the scale hits its cap.
+    assert book.iloc[1]["scale"] == 1.0 and book.iloc[30]["scale"] == 2.0
+    assert math.isclose(book.iloc[30]["gross"], 0.20, rel_tol=0.01)
