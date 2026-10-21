@@ -219,11 +219,8 @@ def research_portfolio(
             if position["unresolved"] or result.exit is None or result.exit.session_date != day:
                 continue
             exit_a, exit_b = result.exit.price_a, result.exit.price_b
-            fee = (
-                (abs(position["a"]) * exit_a + abs(position["b"]) * exit_b)
-                * config.exit_cost_bps
-                / 10000.0
-            )
+            exit_bps = (rates or {}).get(position["event_id"], config.exit_cost_bps)
+            fee = (abs(position["a"]) * exit_a + abs(position["b"]) * exit_b) * exit_bps / 10000.0
             cash += position["a"] * exit_a + position["b"] * exit_b - fee
             position["trading"] += fee
             pnl = position["a"] * (exit_a - result.entry.price_a) + position["b"] * (

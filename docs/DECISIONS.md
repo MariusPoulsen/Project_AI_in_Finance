@@ -3894,3 +3894,36 @@ otherwise):
 
 **Rule:** the highest 2010–2017 daily-return portfolio Sharpe wins, then
 2018–2023 once. The winner is also reported at $1m and $100m of capital.
+
+### 96a. Stage N result: smaller positions win under realistic costs; capacity is the limit
+
+Recorded 2026-10-21. **Disclosure:** the run script printed every period,
+including 2018–2023, before this choice was written down. The rule
+(highest 2010–2017 Sharpe) is mechanical and gives the same choice
+regardless.
+
+**Results at $10m, per-stock costs:**
+
+| Design | 2010–2017 Sharpe | 2018–2023 Sharpe | 2010–2023 Sharpe | CAGR | Max drawdown |
+|---|---|---|---|---|---|
+| N-25 | −0.26 | 0.51 | 0.12 | +0.5 % | −19.2 % |
+| N-10 | 0.27 | 0.64 | 0.46 | +1.8 % | −9.5 % |
+| **N-5** | **0.46** | 0.61 | **0.52** | +1.7 % | **−8.4 %** |
+| N-10s, N-5s | Identical to N-10 and N-5 | — | — | — | — |
+
+The 30 % sector cap never binds at these sizes.
+
+**Choice: N-5** (5 % of NAV per entry).
+
+**Capacity (2010–2023):**
+
+| Capital | N-5 Sharpe | N-5 CAGR | N-25 Sharpe |
+|---|---|---|---|
+| $1m | 0.66 | +2.1 % | 0.43 |
+| $10m | 0.52 | +1.7 % | 0.12 |
+| $100m | 0.11 | +0.3 % | −0.81 |
+
+**Reading.** Smaller positions cut impact, so Sharpe roughly quadruples at
+$10m. The portfolio then holds only about 10.5 positions at 44 % gross on
+average, which is limited by the number of signals, not by capital. The
+remaining lever is breadth: a larger universe.
