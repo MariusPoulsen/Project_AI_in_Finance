@@ -118,13 +118,22 @@ exit (Decision 62). Exits are where the project has already found value.
 
 Same events, same walk-forward protocol, labels read once:
 
-| Variant | Agents | Purpose |
-|---|---|---|
-| A | none | current book (Decision 108) |
-| B | pair news analyst features | does one LLM call add information? |
-| C | B + debate on demand | does the multi-agent debate add anything over one analyst? |
-| D | v2 full debate (Decision 109) | the planned architecture, for reference |
-| E | A + position monitor exits | agents after entry |
+| Variant | Agents | New calls | Purpose |
+|---|---|---|---|
+| A | none | 0 | current book (Decision 108) |
+| B | Decision 50 per-company extractor features | 0 (already run) | does one "what happened" analyst help? |
+| B′ | pair news analyst features | about 2,000 | does pair-level interpretation help beyond labels? |
+| C | B′ + debate on demand | about 3,000 | does the debate add anything over one interpreting analyst? |
+| D | v2 full debate (Decision 109) | running | the planned architecture; it is B plus a debate |
+| E | A + position monitor exits | about 1,000 | agents after entry |
+
+**Order of tests.** B and D are compared first, on the same candidate events
+and protocol; neither needs new calls.
+- **If D beats B:** interpretation adds value, and B′ and C are run to learn
+  whether one analyst suffices.
+- **If D does not beat B:** B′ and C are skipped and the quota goes to E.
+  Note that the Decision 50 features alone already failed as forecast
+  features (Decision 54).
 
 - **Goal 1:** AUC, log loss and Brier, walk-forward, on top-40 % events with
   news. Pass rule: Decision 47's month-block bootstrap.
