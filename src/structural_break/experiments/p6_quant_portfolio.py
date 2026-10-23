@@ -39,11 +39,12 @@ def variant_result(
     timeout: int,
     news: bool,
     cost_bps: float | None = None,
+    soft: tuple[int, float] | None = None,
 ) -> PairTradeResult:
     if frozen.entry is None or frozen.position is None:
         return frozen
     status, net, holding, reason = qt.exit_loop(
-        request, frozen, config, band, stop, timeout, moments if news else (), cost_bps
+        request, frozen, config, band, stop, timeout, moments if news else (), cost_bps, soft
     )
     if status != "COMPLETE" or net is None or holding is None:
         return frozen.model_copy(update={"status": "UNPRICED", "net_return": None, "exit": None})
@@ -149,7 +150,12 @@ def run_design(
             if rate is None:
                 continue
             rates[event_id] = rate
-        results[event_id] = variant_result(request, frozen, moments, headline, *exit_settings, rate)
+        # Decision 112: the time stop may be a per-event mapping, and a fifth setting a soft stop.
+        band, stop, timeout, news = exit_settings[:4]
+        soft = exit_settings[4] if len(exit_settings) > 4 else None
+        if isinstance(timeout, dict):
+            timeout = timeout[event_id]
+        results[event_id] = variant_result(request, frozen, moments, headline, band, stop, timeout, news, rate, soft)
         proposals.append(
             PortfolioProposal(
                 request=request,

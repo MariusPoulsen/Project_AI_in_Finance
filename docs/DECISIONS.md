@@ -5003,6 +5003,57 @@ costs grow with size. The Sharpe ratio falls as the target rises.
   setting the owner confirms. The monitor needs checks up to the chosen
   time stop.
 
+## 112. Stage W pre-registration: a wider exit grid with robust selection
+
+Recorded 2026-10-23, before any Stage W result. The owner asked for more
+stop combinations and for web research.
+
+**What the literature says:**
+- **Stop-losses:** tight stop-losses usually lower pairs-trading returns in
+  published tests. The effect depends on the entry threshold and the
+  sector.
+- **Optimal exits:** under an Ornstein–Uhlenbeck spread with transaction
+  costs and a stop-loss, optimal entry and exit levels depend on each pair's
+  mean-reversion speed and costs (Leung & Li 2015, analytic thresholds).
+  Optimised exits raise profit per trade and cut turnover (Lee & Leung
+  2020).
+- **Maximum holding periods:** the evidence is mixed. Shorter maximum holds
+  cut profits in Chinese commodity futures, while short fixed holds did well
+  in a US equity study.
+- **Practice:** practitioners often scale the time stop to the half-life,
+  and warn that half-life estimates are unstable.
+
+**Grid** (`scripts/quant_research/stage_w.py`), on the Decision 108 book at
+pairs gross cap 1.0. The cap is kept because the Decision 111 cap rise
+failed the holdout. 99 configurations:
+- **Time rules (11):**
+  - fixed at 15, 20, 25, 30, 35 or 40 sessions;
+  - scaled to the half-life, clip(ceil(k × half-life), 10, 40) with k = 1.0,
+    1.5 or 2.0 (20 sessions when the half-life is unknown);
+  - a conditional no-progress stop: at session 20 the trade exits if |z| is
+    still above r × |signal z| (r = 0.75 or 1.0), otherwise it runs to 40.
+- **Take profit:** |z| ≤ 0.5, 0.75 or 1.0.
+- **Disaster stop:** |z| ≥ 4, 5 or none.
+- **Unchanged:** the news exit, sizing, costs, the residual sleeve and risk
+  targeting.
+
+**Choice rule, robust to the larger search:**
+- **Plateau rule:** pick the configuration with the highest plateau score,
+  the mean 2010–2017 Sharpe of the configuration and its direct
+  neighbours. Neighbours are one step apart in one dimension, within the
+  same time-rule family. This favours a stable region over a lucky single
+  point.
+- **Reproduction check:** the current design (fixed 20, take profit 1.0,
+  stop 5) must reproduce the Decision 108 book, or the run stops.
+- **Also reported:**
+  - the raw 2010–2017 best;
+  - PBO by CSCV on 2010–2017 monthly excess returns (12 half-year blocks);
+  - the winner's deflated Sharpe at N = 99 and N = 300.
+- **Holdout:** the selection is mechanical on 2010–2017. 2018–2023 and
+  2010–2023 are computed in the same single pass and read once.
+- **Adoption** follows Decision 105 on the plateau choice. Decision 111's
+  T30 with cap 1.5 stays pending, as one of the trials already made.
+
 **Desk (`agents/desk_v3.py`, `pairs-desk-prompts-v3.0`).**
 - **Unchanged from v2:** masking, sentence-ID citations, v1 grounding
   checks, corrections, the paced client and the durable journal.

@@ -58,11 +58,15 @@ def exit_loop(
     timeout: int,
     news: Sequence[datetime],
     cost_bps: float | None = None,
+    soft: tuple[int, float] | None = None,
 ) -> tuple[str, float | None, int | None, str]:
     """Frozen entry, parameterised exit; returns (status, net, holding, reason).
 
     ``cost_bps`` (Decision 95) replaces the flat entry and exit cost rates with
     one per-trade rate per side; ``None`` keeps the frozen rates.
+    ``soft`` (Decision 112) is a conditional time stop ``(session, ratio)``: at that
+    session the trade exits if |z| is still above ``ratio`` x |signal z| (little
+    progress); otherwise it runs on to ``timeout``.
     """
     if frozen.entry is None or frozen.position is None:
         return frozen.status, None, None, frozen.reason
@@ -88,6 +92,8 @@ def exit_loop(
             reason = "NEWS_EXIT"
         elif index == timeout:
             reason = "TIMEOUT"
+        elif soft is not None and index == soft[0] and abs(z) > soft[1] * abs(request.signal_z):
+            reason = "NO_PROGRESS_TIMEOUT"
         else:
             continue
         if index + 1 >= len(sessions):
