@@ -4959,6 +4959,50 @@ the target is the owner's risk decision.
 - The 2022–2023 reference rows favoured 30 sessions.
 - The forecaster's label is 20-session reversion.
 
+### 111a. Stage V result: the rule picks 30 sessions and a 150 % cap; the holdout reverses it
+
+Recorded 2026-10-23 (`outputs/p6_quant/stage_v.log`, `stage_v_holdout.log`).
+T20 at cap 1.0 reproduced the Decision 108 book exactly.
+
+| Variant | 2010–2017 | 2018–2023 | 2010–2023 | 2010–2023 CAGR (+ cash) | Max drawdown | Mean holding | Blocked entries |
+|---|---|---|---|---|---|---|---|
+| T20, cap 1.0 (current) | 0.612 | 0.515 | 0.565 | +2.1 % (+2.9 %) | −8.2 % | 13.5 | 138 |
+| T25, cap 1.0 | 0.619 | 0.440 | 0.533 | +2.0 % (+2.8 %) | −7.3 % | 15.3 | 242 |
+| T30, cap 1.0 | 0.666 | 0.466 | 0.568 | +2.2 % (+3.0 %) | −8.5 % | 16.7 | 231 |
+| T40, cap 1.0 | 0.625 | **0.667** | **0.643** | +2.5 % (+3.3 %) | −9.0 % | 18.8 | 278 |
+| **T30, cap 1.5 (rule's choice)** | **0.670** | 0.304 | 0.492 | +2.2 % (+3.0 %) | −9.5 % | 16.7 | 120 |
+| T30, cap 2.0 | 0.658 | 0.368 | 0.511 | +2.5 % (+3.3 %) | −11.3 % | 16.8 | 75 |
+
+**What changes:**
+- **Exits:** a longer stop turns timeouts into convergences and news exits
+  (T20 → T30: timeouts 1,033 → 609, convergences 702 → 799, news exits
+  817 → 944).
+- **Capacity:** longer holds fill the cap, so more entries are blocked. A
+  higher cap releases them, but in 2018–2023 the extra trades lose: −0.16
+  Sharpe and a deeper drawdown.
+
+**Risk targets, on the rule's choice:**
+
+| Target | 2010–2017 Sharpe | 2010–2017 CAGR | 2010–2023 Sharpe | Max drawdown |
+|---|---|---|---|---|
+| 4 % | 0.670 | +2.7 % | 0.492 | −9.5 % |
+| 6 % | 0.610 | +3.0 % | 0.438 | −11.4 % |
+| 8 % | 0.567 | +3.2 % | 0.401 | −13.4 % |
+
+Leverage buys return less than proportionally, because square-root impact
+costs grow with size. The Sharpe ratio falls as the target rises.
+
+**Status: pending the owner.**
+- **Under Decision 105:** T30 with a 150 % cap is adopted.
+- **The holdout disagrees:** it is the worst variant on 2018–2023 (0.304
+  against 0.515) and on 2010–2023.
+- **Post hoc:** T40 at cap 1.0 is the best variant ex post (2010–2023 Sharpe
+  0.643). It was not chosen by the rule, and picking it now would use the
+  holdout for selection.
+- **What waits:** the v3 desk evaluation and the monitor build use whichever
+  setting the owner confirms. The monitor needs checks up to the chosen
+  time stop.
+
 **Desk (`agents/desk_v3.py`, `pairs-desk-prompts-v3.0`).**
 - **Unchanged from v2:** masking, sentence-ID citations, v1 grounding
   checks, corrections, the paced client and the durable journal.
