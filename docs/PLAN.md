@@ -243,13 +243,6 @@ separately labelled variants against the frozen bag5 models, and count them as
 extra trials. R0 (original Model B) needs no refit: its predictions are
 bit-identical without the columns.
 
-**Reminder, open task (Decision 112c): install the locked `nlp` extra in this
-project's `.venv`** (`uv sync --frozen --extra nlp` with the other extras in
-use). Then re-run `scripts/agents/monitor_triage.py` once and confirm the
-`triage` flags are identical. The first triage ran with the v2 interpreter,
-which has the same locked torch/transformers versions and verified FinBERT
-assets.
-
 **Update 2026-10-21 (Decision 109):** the layer is completed as v2 on branch
 `p6/agent-layer`, on the candidates of the current best book (Decision 100/108).
 - **Kept:** the Decision 28 topology and the v1 contracts.

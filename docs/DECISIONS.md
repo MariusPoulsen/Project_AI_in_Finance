@@ -5195,10 +5195,16 @@ grid are unchanged.
   SHA-256 `e15a7b57…`, the project's pinned weights. The result is
   therefore the same as in a complete project environment. Runtime and
   asset hashes are in `outputs/p6_desk/triage_runtime.json`.
-- **Open fix:** install the locked extra in this project with
-  `uv sync --frozen --extra nlp` (plus the extras already in use) and
-  re-run the triage once to confirm identical flags. `uv` was not found
-  on this machine's PATH.
+- **Fixed 2026-10-24:** the locked `nlp` extra was installed into this
+  project's `.venv`. `uv` 0.12.20 (the version that created the venv) ran
+  from a separate tool environment, as `uv sync --frozen --inexact` with
+  the extras in use. It was additive: torch, transformers and five
+  dependencies, with nothing removed.
+  - **Re-check:** the triage was re-run in this environment. All 21,333
+    flags and every tone value are identical to the first run (maximum
+    difference 0.0).
+  - **Records:** `triage_runtime.json` now names this project's
+    interpreter. The first run's files are kept as `*_v2env`.
 
 **Desk (`agents/desk_v3.py`, `pairs-desk-prompts-v3.0`).**
 - **Unchanged from v2:** masking, sentence-ID citations, v1 grounding
