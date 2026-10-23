@@ -5140,6 +5140,12 @@ The pairs gross cap stays at 100 %.
   journal's 36,000-call cap, so the monitor run uses its own journal
   (`journal_monitor`): 30,000 Gemma calls in total, 9,000 a day, no
   Flash-Lite. The entry journal's identity and caps are unchanged.
+- **Throughput probe, not adopted:** `gemma-4-31b-it` has its own quota,
+  so it was probed on 20 monitor checks to see whether the monitor could
+  run alongside entry. Only 3 of 20 were valid, at 68 an hour, after 104
+  calls (probe output in `outputs/p6_desk_probe31b`, never used in the
+  evaluation). The monitor therefore stays on `gemma-4-26b-a4b-it` and
+  runs after the entry run.
 
 **Desk (`agents/desk_v3.py`, `pairs-desk-prompts-v3.0`).**
 - **Unchanged from v2:** masking, sentence-ID citations, v1 grounding

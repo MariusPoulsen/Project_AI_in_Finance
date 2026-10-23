@@ -102,6 +102,14 @@ MONITOR_BUDGET = BudgetPolicy(
 )
 
 
+MONITOR_31B = "gemma-4-31b-it"
+MONITOR_31B_BUDGET = BudgetPolicy(  # probe / optional monitor model with its own per-model quota
+    allocation_id="p6-desk-v3-monitor-31b",
+    global_cap=30_000,
+    model_caps=(ModelCap(model=MONITOR_31B, total=30_000, daily=9_000),),
+)
+
+
 def _now() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds")
 
@@ -438,26 +446,35 @@ def run(
     pass_delay: float = 600.0,
 ) -> Counter[str]:
     """Score every case of ``kind`` once (resumable); outages are retried in later passes."""
+    # Cases and inventories are always the shared ones; results, roles and journals go to ``output``.
     if kind == "entry":
-        inv = pd.read_parquet(output / "entry_inventory.parquet")
+        inv = pd.read_parquet(OUTPUT / "entry_inventory.parquet")
         names = list(inv.loc[inv.status.eq("CASE"), "event_id"])
         candidates = set(inv.loc[inv.candidate, "event_id"])
-        case_dir = output / "entry_cases"
+        case_dir = OUTPUT / "entry_cases"
     else:
-        inv = pd.read_parquet(output / "monitor_inventory.parquet")
-        names, candidates, case_dir = list(inv["file"]), set(), output / "monitor_cases"
+        inv = pd.read_parquet(OUTPUT / "monitor_inventory.parquet")
+        names, candidates, case_dir = list(inv["file"]), set(), OUTPUT / "monitor_cases"
     if limit is not None:
         names = names[:limit]
     own = journal is None and clients is None
+    use_31b = kind == "monitor" and dk.MONITOR_MODEL == MONITOR_31B
     if own:
-        journal = (
-            DurableAttemptJournal(output / "journal", BUDGET)
-            if kind == "entry"
-            else DurableAttemptJournal(output / "journal_monitor", MONITOR_BUDGET)
-        ).__enter__()
+        if kind == "entry":
+            journal = DurableAttemptJournal(output / "journal", BUDGET).__enter__()
+        elif use_31b:
+            journal = DurableAttemptJournal(output / "journal_monitor_31b", MONITOR_31B_BUDGET).__enter__()
+        else:
+            journal = DurableAttemptJournal(output / "journal_monitor", MONITOR_BUDGET).__enter__()
     try:
         if clients is None:
-            clients = dv.make_clients(cc._credential, dv.Guard(journal, {dv.VALIDATION_MODEL: 5.0}))
+            guard = dv.Guard(journal, {dv.VALIDATION_MODEL: 5.0})
+            clients = dv.make_clients(cc._credential, guard)
+            if use_31b:
+                clients[MONITOR_31B] = cv.ModelClient(
+                    MONITOR_31B, credential=cc._credential, transport=guard.for_model(MONITOR_31B),
+                    token_budget=cv.TOKEN_BUDGET, max_output_tokens=3072, timeout=180.0,
+                )
         counts: Counter[str] = Counter()
         for number in range(passes + 1):
             todo = [n for n in names if load_result(output, kind, n) is None]
@@ -827,6 +844,8 @@ def main(arguments: Sequence[str] | None = None) -> None:
     r.add_argument("--kind", choices=("entry", "monitor"), default="entry")
     r.add_argument("--limit", type=int)
     r.add_argument("--workers", type=int, default=4)
+    r.add_argument("--monitor-model", choices=(dk.MONITOR_MODEL, MONITOR_31B), default=dk.MONITOR_MODEL)
+    r.add_argument("--output", type=Path, default=OUTPUT)
     sub.add_parser("status")
     sub.add_parser("evaluate").add_argument("--holdout", action="store_true")
     args = parser.parse_args(arguments)
@@ -842,7 +861,8 @@ def main(arguments: Sequence[str] | None = None) -> None:
         cc.load_env_file(args.env_file)
         if not cc._credential():
             sys.exit("No API key in the environment")
-        say(f"finished: {dict(run(kind=args.kind, limit=args.limit, workers=args.workers, say=say))}")
+        dk.MONITOR_MODEL = args.monitor_model
+        say(f"finished: {dict(run(args.output, kind=args.kind, limit=args.limit, workers=args.workers, say=say))}")
     elif args.command == "evaluate":
         print(json.dumps(evaluate(holdout=args.holdout), indent=1, default=str))
     else:
