@@ -4828,6 +4828,11 @@ Recorded 2026-10-23, labels unread.
     as the analyst schema already does. Nothing else changes.
   - The version string is in every prompt, so both pilots are re-run under
     v3.1 with the same 70 % bar.
+- **v3.1 pilots:** entry 20 of 20 valid, monitor 20 of 20 valid. Monitor
+  scores (adverse, persistence) were (1,1) on 9 checks, (3,3) on 7, (4,3)
+  on 2, (4,5) on 1 and (1,3) on 1.
+- **Full run:** starts in run order with all entry cases, then all monitor
+  checks.
 
 **Desk (`agents/desk_v3.py`, `pairs-desk-prompts-v3.0`).**
 - **Unchanged from v2:** masking, sentence-ID citations, v1 grounding
