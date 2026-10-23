@@ -4759,3 +4759,100 @@ the 2010–2017 gain is most likely noise. The multi-agent debate on fresh
 8-K news adds no reliable value to this book. Following the staged plan of
 the v3 proposal, the single-analyst variants B′ and C are not worth their
 quota. The next step is the position monitor (variant E).
+
+## 110. Pre-registered pairs desk v3 with FNSPID headlines and a position monitor
+
+Recorded 2026-10-23, before any v3 call or result. The owner asked for:
+1. company news for all pairs (FNSPID);
+2. the full multi-agent layer with a position monitor;
+3. tuning "to improve performance as much as possible".
+
+The design follows `docs/P6_AGENT_LAYER_V3.md`. On item 3, a real
+fine-tune of the model weights is not available: the free API offers no
+tuning for these models, and a local Gemma fine-tune would need a GPU and
+outcome labels, which would leak outcomes into the agent. "Tuning" here
+therefore means a fixed, finite search over how the agents' outputs are
+used, chosen on 2010–2017 only.
+
+**News data (FNSPID; Dong et al. 2024; CC BY-NC 4.0; downloaded 2026-10-23).**
+- **Files:** `All_external.csv` (Benzinga headlines, 2009–mid-2020) and
+  `nasdaq_exteral_data.csv` (Nasdaq.com articles to December 2023, with
+  extractive summaries).
+- **Kept:** only headlines whose title names the company, either a spelling
+  of its issuer name or its exchange ticker.
+- **Availability:** stamps are labelled UTC, but 99.5 % of the Benzinga rows
+  carry a date only, and some timed stamps look like Eastern time. A
+  headline therefore counts at a session's close only if its stated time is
+  after midnight and at or before 15:00 on that date. Otherwise it counts
+  from the next session's close.
+- **Coverage before any call** (Benzinga only, Nasdaq pending): 140,000
+  company headlines for 204 of 250 stocks. 39 % of design candidates have a
+  headline in their last three sessions (2010–2020).
+
+**Desk (`agents/desk_v3.py`, `pairs-desk-prompts-v3.0`).**
+- **Unchanged from v2:** masking, sentence-ID citations, v1 grounding
+  checks, corrections, the paced client and the durable journal.
+- **Pair news analyst** (Gemma, one call per event with news):
+  - **Reads:** each company's analyst context; up to 12 company headlines
+    from the last three sessions, with a 300-character summary where
+    FNSPID has one; and up to three 8-K excerpts (Decision 50).
+  - **Returns:** the mover, and 1–5 scores with fixed anchors for
+    `explains_move`, `persistence` and `relationship_change`, each with
+    citations.
+- **Debate on demand, design candidates only:**
+  - **Trigger:** persistence is 3 or 4, or explains_move is at least 4
+    with relationship_change at least 3.
+  - **Run:** the v2.2 openings and rebuttals, then a Gemma facilitator
+    that re-scores in the analyst schema.
+- **Risk judge** (`gemini-3.5-flash-lite`, candidates with final
+  persistence of 4 or more): SUPPORTED or NOT_SUPPORTED. NOT_SUPPORTED
+  means ABSTAIN, and the event falls back to the no-agent forecast.
+- **Position monitor** (Gemma): one call per design trade and session with
+  new company headlines between entry and the planned exit. It gets the
+  position direction, profit or loss since entry and the entry z-score, and
+  scores `adverse` and `persistence` 1–5 with citations.
+- **Populations:**
+  - **Entry analyst:** top-40 % test events per year by R0 score, the
+    learning region.
+  - **Monitor:** all trades of the Decision 108 book.
+  - **No news:** events without news get deterministic "no news" features
+    and no call.
+
+**Budget** (new journal `outputs/p6_desk/journal`):
+- **Gemma:** 9,000 calls a day, 36,000 in total.
+- **Flash-Lite 3.5:** 450 a day, 3,000 in total.
+- **Flash-Lite 3.1:** 10 in total (unused).
+
+Paid use stays off. Candidates are scored first.
+
+**Tuning protocol** (finite grid, selection on 2010–2017):
+- **Trader:** a walk-forward logistic model on the region (fit on earlier
+  years, at least 200 events). Inputs are logit(R0 score) plus six agent
+  features: no-news, abstain, the three scores and persistence ×
+  explains_move. Two inputs are compared: analyst scores only (B′) and
+  desk scores with the debate where it ran (C). The book uses C.
+- **Entry rule:** 8 configurations, crossing (a) with (b):
+  - (a) a veto: none, or skipping candidates whose ratio P_agent/P_base
+    falls below the earlier years' 10 %, 20 % or 30 % quantile;
+  - (b) sizing: off, or 0.075 × clip(ratio, 0.5, 1.5).
+- **Monitor rule,** applied on top of the chosen entry rule: 6
+  configurations. Either none, or exit at the close of the first check
+  with adverse ≥ a and persistence ≥ p, for (a, p) in (3,3), (4,3), (4,4),
+  (5,4), (5,5).
+- **Choice:** each step picks the highest 2010–2017 Sharpe, as in
+  Decision 105.
+- **Holdout:** 2018–2023 is opened once, for the base, the chosen entry
+  rule and entry plus monitor.
+- **Trial count:** 14 configurations; the result is reported with that
+  count.
+
+**Goal 1 verdict.**
+- **Sample:** walk-forward on the region, 2011–2017.
+- **Pass rule:** the paired Brier difference (agents minus base) has a
+  95 % month-block interval below zero (2,000 draws, seed 5557).
+- **Holdout and comparison:** 2018–2023 is reported once. The candidate
+  subset and B′ against C are also reported.
+
+**Pilot.** The first 20 entry cases in run order, then the first 20 monitor
+checks. At least 70 % must reach a valid analyst or monitor report;
+otherwise the run stops for a dated amendment, as in Decision 109.

@@ -198,7 +198,8 @@ def render_case(case: Case) -> str:
         "PAIR: two peer companies, Company A and Company B (names are masked).",
         f"Sub-industry: {context.get('sub_industry', 'unknown')}. "
         f"Why they are peers: {context.get('rationale', 'unknown')}.",
-        f"SIGNAL: the pair's price spread diverged at the close of "
+        context.get("signal_line")
+        or f"SIGNAL: the pair's price spread diverged at the close of "
         f"{event.event_timestamp.date().isoformat()}; a statistical-arbitrage model selected "
         "this divergence as a mean-reversion candidate (top 20 % of its year).",
         "QUANTITATIVE FIELDS (cite by name in \"quant\"; values are fixed and exact):",
