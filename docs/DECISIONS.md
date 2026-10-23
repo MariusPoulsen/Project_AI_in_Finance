@@ -4834,6 +4834,53 @@ Recorded 2026-10-23, labels unread.
 - **Full run:** starts in run order with all entry cases, then all monitor
   checks.
 
+### 110b. The desk builds on the best forecaster too (owner's request, before any v3 label is read)
+
+Recorded 2026-10-23, while the entry run is in progress and before any
+label or return of a v3 event has been read.
+
+**Goal 1: three base forecasters.** The agent features are stacked
+walk-forward on each base's logit:
+- **R0** (original Model B), as before;
+- **B+rule+ou bag5,** the pre-registered Goal 1 forecaster (Decision 91),
+  which carries the verdict, using the desk variant;
+- **B+rule+ou+track bag5,** reported. It is the best observed forecaster:
+  2018–2023 AUC 0.739, against 0.735 for B+rule+ou and 0.718 for R0
+  (Decision 88b). It was chosen post hoc, so it is not the verdict model.
+
+**Goal 2: two selections, "the full model".**
+- **The two:** the book selects with R0 (as now) or with B+rule+ou bag5
+  (top 20 %, the same filters, 3,389 candidates, 2,437 shared with R0).
+- **Grids:** each selection runs the entry grid (8 configurations), then
+  the monitor grid on its best entry rule (5 more).
+- **Trader:** its base is the selecting model.
+- **Choice:** the highest 2010–2017 Sharpe among the 26 trials. 2018–2023
+  is opened once, for the current book, the best model without agents and
+  the chosen configuration.
+- **Earlier evidence, disclosed:** B+rule's selections traded worse than
+  R0's in 2010–2017 (Decision 76b). The test is still run, because the
+  owner rule adopts whatever wins on 2010–2017.
+
+**Coverage of the new candidates.**
+- The 229 best-model candidates outside the R0 top-40 % region are added
+  to the region.
+- All candidates of either selection get the debate on demand and the
+  risk judge.
+- Monitor checks are added for the best-model design's trades.
+
+**Dead Gemma catalyst columns.** Model B's 28 v2 catalyst columns are
+almost empty: 15 of 29,071 events have a known catalyst. Refitting R0
+without them gives bit-identical predictions in 2012, 2016, 2020 and 2023,
+because the fixed XGBoost never splits on them.
+- **R0:** they are therefore removed from the description of Model B, with
+  no change to any result.
+- **Bag5 models:** these sample 50 % of columns per tree, so dropping the
+  columns would change which columns are drawn and would make a different
+  model. The frozen bag5 forecasters stay as they are. A refit without the
+  columns would be a new, separately reported variant.
+- **Replacement:** the v3 analyst scores take over the catalysts' intended
+  role.
+
 **Desk (`agents/desk_v3.py`, `pairs-desk-prompts-v3.0`).**
 - **Unchanged from v2:** masking, sentence-ID citations, v1 grounding
   checks, corrections, the paced client and the durable journal.

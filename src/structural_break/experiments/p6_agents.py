@@ -60,8 +60,13 @@ def _now() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds")
 
 
-def design_candidates(workspace: Path) -> list[str]:
-    """Decision 100 candidates: R0 top 20 % per test year after the r1, cross and cost filters."""
+def design_candidates(workspace: Path, selector: str = "R0") -> list[str]:
+    """Decision 100 candidates: top 20 % per test year after the r1, cross and cost filters.
+
+    ``selector`` "R0" is the original Model B (the book's selection); any other value
+    names a stored ``outputs/p6_quant/scores__<selector>.parquet`` with a ``top20`` flag
+    (Decision 110b: the best forecaster as an alternative selection).
+    """
     from structural_break.experiments import p6_boosting as pb
     from structural_break.experiments import p6_quant_portfolio as qp
 
@@ -80,9 +85,13 @@ def design_candidates(workspace: Path) -> list[str]:
     rate_year = year.reindex(rate.index)
     cost_cut = {y: np.nanquantile(rate[rate_year.eq(y - 1)], 0.8) for y in range(2010, 2024)}
     chosen: list[str] = []
-    for y, group in scores.groupby("year"):
-        cut = float(np.quantile(group.loc[group.role.eq("threshold"), "score"], 0.8))
-        chosen += list(group[group.role.eq("test") & (group.score >= cut)].event_id)
+    if selector == "R0":
+        for y, group in scores.groupby("year"):
+            cut = float(np.quantile(group.loc[group.role.eq("threshold"), "score"], 0.8))
+            chosen += list(group[group.role.eq("test") & (group.score >= cut)].event_id)
+    else:
+        alt = pd.read_parquet(f"outputs/p6_quant/scores__{selector}.parquet")
+        chosen = list(alt.loc[alt.top20.astype(bool)].sort_values(["year", "event_id"]).event_id)
     cache = qp.load_cache(Path("outputs/p6_quant/requests.pkl"))
     return [
         e
@@ -522,14 +531,17 @@ def decisions(output: Path = OUTPUT) -> pd.DataFrame:
 
 
 def design_book(
-    workspace: Path, exclude: frozenset[str] = frozenset(), half: frozenset[str] = frozenset()
+    workspace: Path,
+    exclude: frozenset[str] = frozenset(),
+    half: frozenset[str] = frozenset(),
+    selector: str = "R0",
 ) -> tuple[list[Any], dict[str, Any]]:
     """Close-timing legs of the Decision 100 design re-run without ``exclude`` (pairs_legs.py)."""
     from structural_break.experiments import p6_quant_costs as qc
     from structural_break.experiments import p6_quant_portfolio as qp
     from structural_break.experiments import p6_resid as pr
 
-    chosen = [e for e in design_candidates(workspace) if e not in exclude]
+    chosen = [e for e in design_candidates(workspace, selector) if e not in exclude]
     cache = qp.load_cache(Path("outputs/p6_quant/requests.pkl"))
     sectors = _sources(workspace).security_sectors()
     prices = pd.read_parquet(

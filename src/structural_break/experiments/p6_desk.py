@@ -39,6 +39,10 @@ from structural_break.intelligence import catalyst_v3 as cv
 OUTPUT = Path("outputs/p6_desk")
 HEADLINES = Path("data/external/fnspid/headlines.parquet")
 MAX_HEADLINES = 12
+# Decision 110b: the book can select with the original Model B (R0) or the best forecaster.
+SELECTORS = ("R0", "B+rule+ou__recent-bag5")
+# Goal 1 bases for the agent features: R0, the pre-registered best forecaster (verdict), +track (reported).
+BASES = {"R0": None, "B+rule+ou": "B+rule+ou__recent-bag5", "B+rule+ou+track": "B+rule+ou+track__recent-bag5"}
 BUDGET = BudgetPolicy(
     allocation_id="p6-desk-v3-decision-110",
     global_cap=40_000,
@@ -127,7 +131,16 @@ def region_events(src: Sources) -> pd.DataFrame:
 def build_entry(workspace: Path, output: Path = OUTPUT) -> dict[str, Any]:
     src = Sources(workspace)
     region = region_events(src)
-    candidates = set(pa.design_candidates(workspace))
+    candidates: set[str] = set()
+    for selector in SELECTORS:
+        candidates |= set(pa.design_candidates(workspace, selector))
+    test = src.scores[src.scores.role.eq("test")].set_index("event_id")
+    extra = sorted(candidates - set(region.event_id))
+    region = pd.concat(
+        [region, pd.DataFrame({"event_id": extra, "score": test.loc[extra, "score"].to_numpy(),
+                               "year": test.loc[extra, "year"].to_numpy()})],
+        ignore_index=True,
+    )
     (output / "entry_cases").mkdir(parents=True, exist_ok=True)
     rows = []
     for event in region.itertuples(index=False):
@@ -255,7 +268,9 @@ def build_monitor(workspace: Path, output: Path = OUTPUT) -> dict[str, Any]:
 
     src = Sources(workspace)
     cache = qp.load_cache(Path("outputs/p6_quant/requests.pkl"))
-    _, results = pa.design_book(workspace)
+    results: dict[str, Any] = {}
+    for selector in SELECTORS:  # trades of either selection; the same event gives the same trade
+        results.update(pa.design_book(workspace, selector=selector)[1])
     (output / "monitor_cases").mkdir(parents=True, exist_ok=True)
     rows = []
     for event_id, result in results.items():
@@ -515,10 +530,18 @@ def entry_features(output: Path, variant: str) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def walk_forward(table: pd.DataFrame, with_agents: bool) -> pd.Series:
+def base_scores(base: str | None, events: pd.Series, r0: pd.Series) -> np.ndarray:
+    """The base forecaster's probability per event: R0's raw score or a stored bag5 probability."""
+    if base is None:
+        return r0.to_numpy(float)
+    stored = pd.read_parquet(f"outputs/p6_quant/scores__{base}.parquet").set_index("event_id")["probability"]
+    return stored.reindex(events).to_numpy(float)
+
+
+def walk_forward(table: pd.DataFrame, with_agents: bool, column: str = "score") -> pd.Series:
     from sklearn.linear_model import LogisticRegression
 
-    score = np.clip(table["score"].to_numpy(float), 1e-6, 1 - 1e-6)
+    score = np.clip(table[column].to_numpy(float), 1e-6, 1 - 1e-6)
     columns = [np.log(score / (1 - score))]
     if with_agents:
         columns += [table[name].to_numpy(float) for name in FEATURES]
@@ -549,13 +572,15 @@ def _block_bootstrap(diff: pd.Series, months: pd.Series, seed: int = 5557) -> li
     return [float(np.quantile(draws, 0.025)), float(np.quantile(draws, 0.975))]
 
 
-def desk_book(workspace: Path, fractions: dict[str, float], exclude: set[str], exits: dict[str, Any]) -> list[Any]:
+def desk_book(
+    workspace: Path, fractions: dict[str, float], exclude: set[str], exits: dict[str, Any], selector: str = "R0"
+) -> list[Any]:
     """Close-timing legs of the design with per-event sizes, vetoes and earlier monitor exits."""
     from structural_break.experiments import p6_quant_costs as qc
     from structural_break.experiments import p6_quant_portfolio as qp
     from structural_break.experiments import p6_resid as pr
 
-    chosen = [e for e in pa.design_candidates(workspace) if e not in exclude]
+    chosen = [e for e in pa.design_candidates(workspace, selector) if e not in exclude]
     cache = qp.load_cache(Path("outputs/p6_quant/requests.pkl"))
     sectors = _sources(workspace).security_sectors()
     prices = pd.read_parquet(workspace / "market/source_v1/prices.parquet",
@@ -579,39 +604,48 @@ def desk_book(workspace: Path, fractions: dict[str, float], exclude: set[str], e
 
 
 def evaluate(workspace: Path = Path("data/team"), output: Path = OUTPUT, holdout: bool = False) -> dict[str, Any]:
+    """Decision 110/110b. Goal 1: agent features on three base forecasters (verdict on B+rule+ou,
+    desk variant). Goal 2: for each selection, the entry grid and then the monitor grid; the
+    highest 2010-2017 Sharpe wins; 2018-2023 is opened once."""
     from structural_break.experiments import p6_resid as pr
 
     src_inputs = pd.read_parquet(
         workspace / "artifacts/research" / _sources(workspace).binding.evaluation.version / "model_inputs.parquet",
         columns=["event_id", "y_revert_success", "event_date"],
     ).set_index("event_id")
+    spans = [("2011-2017", (2011, 2017))] + ([("2018-2023", (2018, 2023))] if holdout else [])
     report: dict[str, Any] = {"forecast": {}}
-    tables = {}
+    tables: dict[tuple[str, str], pd.DataFrame] = {}
     for variant in ("analyst", "desk"):
-        table = entry_features(output, variant)
-        table["y"] = src_inputs.loc[table.event_id, "y_revert_success"].to_numpy()
-        table["month"] = pd.to_datetime(src_inputs.loc[table.event_id, "event_date"]).dt.to_period("M").astype(str).to_numpy()
-        table = table.dropna(subset=["y"]).reset_index(drop=True)
-        table["y"] = table.y.astype(int)
-        table["p_base"], table["p_agent"] = walk_forward(table, False), walk_forward(table, True)
-        tables[variant] = table
-        scored = table.dropna(subset=["p_base", "p_agent"])
-        blocks = {"2011-2017": scored.year.between(2011, 2017)}
-        if holdout:
-            blocks["2018-2023"] = scored.year.between(2018, 2023)
-        out = {}
-        for name, mask in blocks.items():
-            part = scored[mask]
-            diff = (part.p_agent - part.y) ** 2 - (part.p_base - part.y) ** 2
-            out[name] = {"base": _metrics(part.y, part.p_base), "agents": _metrics(part.y, part.p_agent),
-                         "brier_difference": float(diff.mean()), "brier_95": _block_bootstrap(diff, part.month)}
-            cand = part[part.candidate]
-            out[name]["candidates"] = {"base": _metrics(cand.y, cand.p_base), "agents": _metrics(cand.y, cand.p_agent)}
-        report["forecast"][variant] = out
-    # Goal 2: tuning on 2010-2017 with the desk variant (C), then the monitor.
-    table = tables["desk"].set_index("event_id")
-    candidates = table[table.candidate].copy()
-    candidates["ratio"] = (candidates.p_agent / candidates.p_base).fillna(1.0)
+        raw = entry_features(output, variant)
+        raw["y"] = src_inputs.loc[raw.event_id, "y_revert_success"].to_numpy()
+        raw["month"] = pd.to_datetime(src_inputs.loc[raw.event_id, "event_date"]).dt.to_period("M").astype(str).to_numpy()
+        raw = raw.dropna(subset=["y"]).reset_index(drop=True)
+        raw["y"] = raw.y.astype(int)
+        for base_name, base in BASES.items():
+            table = raw.assign(base_score=base_scores(base, raw.event_id, raw.score)).dropna(subset=["base_score"])
+            table = table.reset_index(drop=True)
+            table["p_base"] = walk_forward(table, False, "base_score")
+            table["p_agent"] = walk_forward(table, True, "base_score")
+            tables[(variant, base_name)] = table
+            scored = table.dropna(subset=["p_base", "p_agent"])
+            out = {}
+            for label, (a, b) in spans:
+                part = scored[scored.year.between(a, b)]
+                diff = (part.p_agent - part.y) ** 2 - (part.p_base - part.y) ** 2
+                interval = _block_bootstrap(diff, part.month)
+                cand = part[part.candidate]
+                out[label] = {
+                    "base": _metrics(part.y, part.p_base),
+                    "agents": _metrics(part.y, part.p_agent),
+                    "brier_difference": float(diff.mean()),
+                    "brier_95": interval,
+                    "passes": bool(interval[1] < 0),
+                    "candidates": {"base": _metrics(cand.y, cand.p_base), "agents": _metrics(cand.y, cand.p_agent)},
+                }
+            report["forecast"][f"{variant}|{base_name}"] = out
+    report["goal1_verdict"] = report["forecast"]["desk|B+rule+ou"]["2011-2017"]["passes"]
+
     sectors = _sources(workspace).security_sectors()
     prices = pd.read_parquet(workspace / "market/source_v1/prices.parquet",
                              columns=["ticker", "trading_date", "open", "high", "low", "close", "adj_close", "volume"])
@@ -623,49 +657,63 @@ def evaluate(workspace: Path = Path("data/team"), output: Path = OUTPUT, holdout
         return pr.run_book(panels, w, legs, pd.Timestamp("2010-01-01"), pd.Timestamp("2023-12-31"), capital=1e7, rf=rf,
                            speed=0.10, vol_target=0.04, vol_window=60, timing="close", max_gross=2.0)
 
-    def entry_rule(q: float | None, size: bool) -> tuple[dict[str, float], set[str]]:
-        exclude: set[str] = set()
-        if q is not None:
-            for year, part in candidates.groupby("year"):
-                prior = candidates[candidates.year < year].ratio
-                if len(prior) >= 50:
-                    exclude |= set(part.index[part.ratio < prior.quantile(q)])
-        fractions = {e: 0.075 * float(np.clip(r, 0.5, 1.5)) for e, r in candidates.ratio.items()} if size else {}
-        return fractions, exclude
-
-    grid = []
-    for q, size in ENTRY_GRID:
-        fractions, exclude = entry_rule(q, size)
-        b = book(desk_book(workspace, fractions, exclude, {}))
-        grid.append({"q": q, "size": size, "vetoed": len(exclude), "2010-2017": pr.stats(b, 2010, 2017)})
-    best = max(grid, key=lambda g: g["2010-2017"]["sharpe"])
-    report["entry_grid"] = grid
     monitor_rows = []
-    inv = pd.read_parquet(output / "monitor_inventory.parquet") if (output / "monitor_inventory.parquet").exists() else None
-    if inv is not None:
-        for record in inv.to_dict("records"):
+    if (output / "monitor_inventory.parquet").exists():
+        for record in pd.read_parquet(output / "monitor_inventory.parquet").to_dict("records"):
             result = load_result(output, "monitor", record["file"])
             if result and result["scores"]:
                 monitor_rows.append({**record, **{k: result["scores"][k] for k in ("adverse", "persistence")}})
     checks = pd.DataFrame(monitor_rows)
-    fractions, exclude = entry_rule(best["q"], best["size"])
-    mgrid = []
-    for rule in MONITOR_GRID:
-        exits: dict[str, Any] = {}
-        if rule is not None and len(checks):
-            hit = checks[(checks.adverse >= rule[0]) & (checks.persistence >= rule[1])]
-            exits = hit.sort_values("session").groupby("event_id").session.first().dt.date.to_dict()
-        b = book(desk_book(workspace, fractions, exclude, exits))
-        mgrid.append({"rule": rule, "exits": len(exits), "2010-2017": pr.stats(b, 2010, 2017), "_book": b})
-    chosen = max(mgrid, key=lambda g: g["2010-2017"]["sharpe"])
-    report["monitor_grid"] = [{k: v for k, v in g.items() if k != "_book"} for g in mgrid]
-    report["chosen"] = {"entry": {"q": best["q"], "size": best["size"]}, "monitor": chosen["rule"]}
+    base_for = {"R0": "R0", "B+rule+ou__recent-bag5": "B+rule+ou"}
+    trials, books = [], {}
+    for selector in SELECTORS:
+        table = tables[("desk", base_for[selector])].set_index("event_id")
+        members = set(pa.design_candidates(workspace, selector))
+        cands = table[table.index.isin(members)].copy()
+        cands["ratio"] = (cands.p_agent / cands.p_base).fillna(1.0)
+
+        def entry_rule(q: float | None, size: bool) -> tuple[dict[str, float], set[str]]:
+            exclude: set[str] = set()
+            if q is not None:
+                for year, part in cands.groupby("year"):
+                    prior = cands[cands.year < year].ratio
+                    if len(prior) >= 50:
+                        exclude |= set(part.index[part.ratio < prior.quantile(q)])
+            fractions = {e: 0.075 * float(np.clip(r, 0.5, 1.5)) for e, r in cands.ratio.items()} if size else {}
+            return fractions, exclude
+
+        entry = []
+        for q, size in ENTRY_GRID:
+            fractions, exclude = entry_rule(q, size)
+            b = book(desk_book(workspace, fractions, exclude, {}, selector))
+            entry.append({"selector": selector, "q": q, "size": size, "vetoed": len(exclude), "2010-2017": pr.stats(b, 2010, 2017)})
+            books[(selector, q, size, None)] = b
+        best = max(entry, key=lambda g: g["2010-2017"]["sharpe"])
+        fractions, exclude = entry_rule(best["q"], best["size"])
+        monitor = []
+        for rule in MONITOR_GRID[1:]:
+            hit = checks[(checks.adverse >= rule[0]) & (checks.persistence >= rule[1])] if len(checks) else checks
+            exits = hit.sort_values("session").groupby("event_id").session.first().dt.date.to_dict() if len(hit) else {}
+            b = book(desk_book(workspace, fractions, exclude, exits, selector))
+            monitor.append({"selector": selector, "q": best["q"], "size": best["size"], "rule": rule,
+                            "exits": len(exits), "2010-2017": pr.stats(b, 2010, 2017)})
+            books[(selector, best["q"], best["size"], rule)] = b
+        trials += entry + monitor
+    report["trials"] = trials
+    report["trial_count"] = len(trials)
+    winner = max(trials, key=lambda g: g["2010-2017"]["sharpe"])
+    report["chosen"] = {k: winner.get(k) for k in ("selector", "q", "size", "rule")}
     if holdout:
-        base = book(desk_book(workspace, {}, set(), {}))
-        entry_only = mgrid[0]["_book"]
+        chosen_book = books[(winner["selector"], winner["q"], winner["size"], winner.get("rule"))]
+        named = {
+            "current book (R0, no agents)": books[("R0", None, False, None)],
+            "best model, no agents": books[("B+rule+ou__recent-bag5", None, False, None)],
+            "chosen": chosen_book,
+        }
         report["holdout"] = {
-            name: {blk: pr.stats(b, *span) for blk, span in (("2010-2017", (2010, 2017)), ("2018-2023", (2018, 2023)), ("2010-2023", (2010, 2023)))}
-            for name, b in (("base", base), ("entry", entry_only), ("entry+monitor", chosen["_book"]))
+            name: {label: pr.stats(b, *span) for label, span in
+                   (("2010-2017", (2010, 2017)), ("2018-2023", (2018, 2023)), ("2010-2023", (2010, 2023)))}
+            for name, b in named.items()
         }
     dv.cv_write(output / ("evaluation_holdout.json" if holdout else "evaluation.json"), report)
     return report
