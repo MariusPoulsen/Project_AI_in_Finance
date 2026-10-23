@@ -5147,6 +5147,47 @@ The pairs gross cap stays at 100 %.
   evaluation). The monitor therefore stays on `gemma-4-26b-a4b-it` and
   runs after the entry run.
 
+### 112c. Shorter run: a FinBERT triage for the monitor, and a higher monitor day cap (owner's request)
+
+Recorded 2026-10-23, before any monitor result under v3.3 beyond the 20
+pilot checks, and before any label was read. The owner asked to shorten
+the run.
+
+**Measured load:**
+- **Token use:** the desk uses about 13,000 Gemma input tokens a minute,
+  against a pacing budget of 14,500.
+- **Calls left:** about 15,000 entry calls and 23,000 monitor calls. At
+  9,000 calls a day, the daily cap, not the token rate, would bind for
+  more than 4 days.
+
+**Changes:**
+1. **Monitor triage (course: sentiment analyst).**
+   - **Scoring:** pinned FinBERT scores each check's headlines locally (CPU,
+     no API), with the v2 environment's torch read-only.
+   - **Rule:** a check reaches the LLM monitor only if a headline that day
+     is toned against the position: net tone ≤ −0.2 on the long company,
+     or ≥ +0.2 on the short company.
+   - **Effect:** other checks are screened and cannot trigger a monitor
+     exit. Without adverse news an exit is unlikely anyway, since every
+     grid rule needs adverse ≥ 3.
+   - **Reported:** the screened share.
+2. **Monitor day cap:** 13,000 Gemma calls a day in a new monitor journal,
+   below Google's limit of about 14,400. The pilot-only journal is archived
+   as `journal_monitor_pilot` (42 calls). The entry journal is unchanged at
+   9,000 a day. Google's own daily 429 still pauses the run.
+
+The entry design, prompts, the monitor prompt (v3.3) and the evaluation
+grid are unchanged.
+
+**Triage result** (`scripts/agents/monitor_triage.py`):
+- **Scored:** 33,184 unique headlines.
+- **To the LLM monitor:** 7,937 of 21,333 checks (37.2 %), covering 2,368
+  of 3,056 trades with checks. The other 62.8 % carry no headline toned
+  against the position.
+- **Saving:** monitor calls fall from about 23,000 to about 8,700. The
+  remaining run falls from about 5–6 days to about 2–2.5 (entry about 1.6,
+  monitor about 0.6).
+
 **Desk (`agents/desk_v3.py`, `pairs-desk-prompts-v3.0`).**
 - **Unchanged from v2:** masking, sentence-ID citations, v1 grounding
   checks, corrections, the paced client and the durable journal.

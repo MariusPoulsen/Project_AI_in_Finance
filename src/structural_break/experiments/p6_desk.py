@@ -92,10 +92,11 @@ BUDGET = BudgetPolicy(
 # Decision 112b: the longer holding window raises the monitor to about 21,000 checks, so the
 # monitor run has its own journal; the entry journal's identity and caps stay unchanged.
 MONITOR_BUDGET = BudgetPolicy(
-    allocation_id="p6-desk-v3-monitor-decision-112b",
+    allocation_id="p6-desk-v3-monitor-decision-112c",
     global_cap=30_000,
     model_caps=(
-        ModelCap(model=dv.ADVOCATE_MODEL, total=30_000, daily=9_000),
+        # 112c: 13,000 a day, below Google's ~14,400 Gemma requests per day.
+        ModelCap(model=dv.ADVOCATE_MODEL, total=30_000, daily=13_000),
         ModelCap(model=dv.SYNTHESIS_MODEL, total=0, daily=0),
         ModelCap(model=dv.VALIDATION_MODEL, total=0, daily=0),
     ),
@@ -454,7 +455,10 @@ def run(
         case_dir = OUTPUT / "entry_cases"
     else:
         inv = pd.read_parquet(OUTPUT / "monitor_inventory.parquet")
-        names, candidates, case_dir = list(inv["file"]), set(), OUTPUT / "monitor_cases"
+        if "triage" not in inv:
+            raise SystemExit("Run scripts/agents/monitor_triage.py first (Decision 112c)")
+        # 112c: only checks with headlines toned against the position reach the LLM monitor.
+        names, candidates, case_dir = list(inv.loc[inv.triage, "file"]), set(), OUTPUT / "monitor_cases"
     if limit is not None:
         names = names[:limit]
     own = journal is None and clients is None
@@ -561,7 +565,10 @@ def status(output: Path = OUTPUT) -> str:
         if not path.exists():
             continue
         inv = pd.read_parquet(path)
-        names = inv.loc[inv.status.eq("CASE"), column] if kind == "entry" else inv[column]
+        if kind == "entry":
+            names = inv.loc[inv.status.eq("CASE"), column]
+        else:
+            names = inv.loc[inv.triage, column] if "triage" in inv else inv[column]
         statuses: Counter[str] = Counter()
         for name in names:
             result = load_result(output, kind, name)
