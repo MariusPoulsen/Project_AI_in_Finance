@@ -4690,3 +4690,21 @@ the controller from six valid roles:
   version, and the remaining 695 events follow in run order.
 - **Pilot cost:** 310 Gemma and about 80 Flash-Lite calls across the three
   pilots, all inside the durable caps.
+
+### 109d. Evaluation at 714 of 715 events (owner's request; deviation recorded before labels were read)
+
+Recorded 2026-10-23. The owner asked for the evaluation now rather than
+after the last event.
+- **The run:** 714 of 715 debated events have a result. The last event is
+  an outage retry waiting for the synthesis model's daily quota.
+- **Status split:** REVIEW 319, NO TRADE 271, ABSTAIN 88, CANDIDATE 36.
+- **Calls:** 4,689 Gemma, 917 and 686 Flash-Lite.
+- **Deviation:** the pending event is treated as not debated, so it is
+  traded as in V0. The evaluation is re-run once it completes, and both
+  results are reported.
+- **Blocks:** the 2010–2017 and holdout blocks are computed in one pass. The
+  variant is still chosen on 2010–2017 alone.
+- **Reported extra, not part of the verdict:** the same walk-forward with
+  the Decision 50/51 per-company extractor features (variant B of the v3
+  proposal) in place of the agent dummies, on the same events. This tells
+  whether the debate adds anything over the existing single extractor.

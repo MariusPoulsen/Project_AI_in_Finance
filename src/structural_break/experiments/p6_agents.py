@@ -580,15 +580,33 @@ def _walk_forward(table: pd.DataFrame, with_agents: bool) -> pd.Series:
     return predictions
 
 
-def evaluate(workspace: Path = Path("data/team"), output: Path = OUTPUT, holdout: bool = False) -> dict[str, Any]:
+def _extractor_features(events: pd.Series) -> pd.DataFrame:
+    """Decision 50/51 per-company news and tone features (variant B), unknowns as 0 + flag."""
+    news = pd.read_parquet(NEWS / "news_features.parquet").set_index("event_id")
+    tone = pd.read_parquet(NEWS / "tone_features.parquet").set_index("event_id")
+    block = news.join(tone, rsuffix="_tone").reindex(events)
+    block = block.select_dtypes("number")
+    flags = block.isna().any(axis=1).astype(float).rename("extractor_unknown")
+    return pd.concat([block.fillna(0.0), flags], axis=1)
+
+
+def evaluate(
+    workspace: Path = Path("data/team"),
+    output: Path = OUTPUT,
+    holdout: bool = False,
+    allow_pending: bool = False,
+) -> dict[str, Any]:
     from sklearn.metrics import brier_score_loss, log_loss, roc_auc_score
 
     from structural_break.experiments import p6_resid as pr
 
     table = decisions(output)
+    pending = table.group.eq("DEBATE") & table.status.eq("PENDING")
+    if pending.any() and not allow_pending:
+        raise SystemExit(f"{pending.sum()} debated events are still pending")
+    # Decision 109d: a pending event is treated like any other undebated event (fail-open).
+    table.loc[pending, ["group", "status"]] = ["PENDING_AT_EVALUATION", "NOT_DEBATED"]
     debated = table[table.group.eq("DEBATE")].copy()
-    if debated.status.eq("PENDING").any():
-        raise SystemExit(f"{debated.status.eq('PENDING').sum()} debated events are still pending")
     version = _sources(workspace).binding.evaluation.version
     inputs = pd.read_parquet(workspace / "artifacts/research" / version / "model_inputs.parquet").set_index("event_id")
     scores = pd.read_parquet(SCORES)
@@ -637,6 +655,32 @@ def evaluate(workspace: Path = Path("data/team"), output: Path = OUTPUT, holdout
         "brier_difference_95": [float(np.quantile(draws, 0.025)), float(np.quantile(draws, 0.975))],
         "passes": bool(np.quantile(draws, 0.975) < 0),
     }
+    # Reported extra (not part of the Decision 109 verdict): variant B, the existing
+    # per-company extractor, against the debate on the same events and protocol.
+    from sklearn.linear_model import LogisticRegression
+
+    extra = _extractor_features(labelled.event_id).to_numpy(float)
+    score = np.clip(labelled.score.to_numpy(float), 1e-6, 1 - 1e-6)
+    features = np.column_stack([np.log(score / (1 - score)), extra])
+    y = labelled.y.to_numpy(int)
+    extractor = pd.Series(np.nan, index=labelled.index)
+    for year in sorted(labelled.year.unique()):
+        train = (labelled.year < year).to_numpy()
+        if train.sum() < 30 or len(set(y[train])) < 2:
+            continue
+        test = (labelled.year == year).to_numpy()
+        mean, std = features[train].mean(0), features[train].std(0) + 1e-9
+        model = LogisticRegression(C=1.0, max_iter=2000).fit((features[train] - mean) / std, y[train])
+        extractor[test] = model.predict_proba((features[test] - mean) / std)[:, 1]
+    both = scored.assign(extractor=extractor.reindex(scored.index)).dropna(subset=["extractor"])
+    report["forecast_b_vs_d"] = {
+        name: {
+            "auc": float(roc_auc_score(both.y, both[name])),
+            "log_loss": float(log_loss(both.y, both[name])),
+            "brier": float(brier_score_loss(both.y, both[name])),
+        }
+        for name in ("base", "extractor", "agents")
+    } | {"events": int(len(both))}
     no_trade = frozenset(debated.loc[debated.status.eq("NO TRADE"), "event_id"])
     medium = frozenset(debated.loc[debated.status.eq("REVIEW") & debated.reasons.str.contains("MEDIUM_BREAK_RISK"), "event_id"])
     variants = {"V0": (frozenset(), frozenset()), "V1": (no_trade, frozenset()), "V2": (no_trade | medium, frozenset()), "V3": (no_trade, medium)}
@@ -704,6 +748,7 @@ def main(arguments: Sequence[str] | None = None) -> None:
     sub.add_parser("status")
     e = sub.add_parser("evaluate")
     e.add_argument("--holdout", action="store_true")
+    e.add_argument("--allow-pending", action="store_true")
     sub.add_parser("review-export")
     args = parser.parse_args(arguments)
 
@@ -718,7 +763,7 @@ def main(arguments: Sequence[str] | None = None) -> None:
             sys.exit("No API key in the environment")
         say(f"finished: {dict(run(limit=args.limit, workers=args.workers, say=say))}")
     elif args.command == "evaluate":
-        print(json.dumps(evaluate(holdout=args.holdout), indent=1, default=str))
+        print(json.dumps(evaluate(holdout=args.holdout, allow_pending=args.allow_pending), indent=1, default=str))
     elif args.command == "review-export":
         print(review_export())
     else:
