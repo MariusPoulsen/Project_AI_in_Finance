@@ -5054,6 +5054,63 @@ failed the holdout. 99 configurations:
 - **Adoption** follows Decision 105 on the plateau choice. Decision 111's
   T30 with cap 1.5 stays pending, as one of the trials already made.
 
+### 112a. Stage W result: a half-life-scaled time stop wins the plateau; the holdout is mixed
+
+Recorded 2026-10-23 (`outputs/p6_quant/stage_w/summary_holdout.json`). The
+current design (fixed 20, take profit 1.0, stop 5) reproduced 0.612.
+
+**Choice:**
+- **By both rules:** the plateau rule and the raw best agree on a time stop
+  of clip(ceil(1.5 × half-life), 10, 40) with take profit |z| ≤ 1.0 and no
+  disaster stop.
+- **Plateau score:** 0.711, the mean of the configuration and its
+  neighbours. Every neighbour is above 0.66.
+
+| Book | 2010–2017 | 2018–2023 | 2010–2023 | 2010–2023 CAGR | Max drawdown | Mean holding | Blocked entries |
+|---|---|---|---|---|---|---|---|
+| Current: fixed 20, take profit 1.0, stop 5 | 0.612 | **0.515** | 0.565 | +2.1 % | −8.2 % | 13.5 | 138 |
+| **Chosen: 1.5 × half-life, take profit 1.0, no stop** | **0.799** | 0.439 | **0.622** | **+2.4 %** | **−6.3 %** | 16.3 | 244 |
+| Decision 111 pick: T30, cap 1.5 | 0.670 | 0.304 | 0.492 | +2.2 % | −9.5 % | 16.7 | 120 |
+
+**Mean Sharpe by time-rule family**, over its 9 take-profit and stop
+combinations:
+
+| Time rule | 2010–2017 | 2018–2023 | 2010–2023 |
+|---|---|---|---|
+| Fixed 15 | 0.34 | 0.15 | 0.25 |
+| Fixed 20 | 0.52 | 0.60 | 0.55 |
+| Fixed 30 | 0.60 | 0.47 | 0.53 |
+| Fixed 40 | 0.58 | 0.74 | 0.65 |
+| 1.0 × half-life | 0.50 | 0.18 | 0.35 |
+| **1.5 × half-life** | **0.68** | 0.48 | 0.59 |
+| 2.0 × half-life | 0.62 | 0.59 | 0.61 |
+| No-progress stop, r = 1.0 | 0.60 | 0.67 | 0.63 |
+
+**Overfitting checks:**
+- **PBO 0.26** (CSCV, 2010–2017): about a one-in-four chance that the
+  in-sample winner falls below the median out of sample. That is moderate.
+- **Rank persistence is weak:** across the 99 configurations, the
+  correlation between 2010–2017 and 2018–2023 Sharpe is only 0.28.
+- **Deflated Sharpe within 2010–2017:** 0.96 at N = 99 and 0.95 at
+  N = 300. This counts only this stage's search, not the project's earlier
+  trials.
+
+**Reading.**
+- **Very short stops are clearly worse:** fixed 15 and 1 × half-life fail in
+  both periods. Holding a little longer, or scaling to the pair's
+  half-life, helps.
+- **Beyond that, the ranking is noisy:** the 2010–2017 winner is below the
+  current design on 2018–2023 (−0.08). Over 2010–2023 it is better (+0.06
+  Sharpe, a shallower drawdown and +0.3 % CAGR).
+- **Dropping the disaster stop** is consistent with the literature on stop
+  losses. Losses stay bounded by the scaled time stop (at most 40
+  sessions) and the news exit.
+
+**Status: under Decision 105 the chosen configuration is adopted.** It
+supersedes the pending Decision 111 pick, which is dropped. The owner may
+override it. If it stands, the v3 desk evaluation uses it, and the monitor
+checks are rebuilt to cover each trade's longer holding window.
+
 **Desk (`agents/desk_v3.py`, `pairs-desk-prompts-v3.0`).**
 - **Unchanged from v2:** masking, sentence-ID citations, v1 grounding
   checks, corrections, the paced client and the durable journal.
