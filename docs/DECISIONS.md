@@ -5111,6 +5111,36 @@ supersedes the pending Decision 111 pick, which is dropped. The owner may
 override it. If it stands, the v3 desk evaluation uses it, and the monitor
 checks are rebuilt to cover each trade's longer holding window.
 
+### 112b. Owner confirms the new exit; desk evaluation and monitor rebuilt on it
+
+Recorded 2026-10-23. The owner adopted the Decision 112a exit.
+
+**The book's exit is now:**
+- take profit at |z| ≤ 1.0;
+- no z-score stop-loss;
+- the news exit;
+- a time stop of clip(ceil(1.5 × half-life), 10, 40) sessions, or 20 when
+  the half-life is unknown.
+
+The pairs gross cap stays at 100 %.
+
+**Desk** (`p6_desk.design_trades`), not yet evaluated, no labels read:
+- **One exit everywhere:** the monitor build and the v3 evaluation both use
+  this exit on the verified 41-session paths. The adopted book reproduces
+  Stage W (2010–2017 Sharpe 0.799).
+- **Monitor checks rebuilt:**
+  - **Volume:** 21,333 checks over 3,056 trades, from 17,048 before, because
+    trades are now held longer. The old checks are archived in
+    `monitor_cases_v3.2`.
+  - **Context:** each check states the trade's own time stop and the
+    sessions left, and that there is no z-score stop-loss
+    (`pairs-desk-monitor-v3.3`).
+  - **Validity pilot:** 20 of 20 checks valid.
+- **Budget:** the longer window pushes total Gemma use past the entry
+  journal's 36,000-call cap, so the monitor run uses its own journal
+  (`journal_monitor`): 30,000 Gemma calls in total, 9,000 a day, no
+  Flash-Lite. The entry journal's identity and caps are unchanged.
+
 **Desk (`agents/desk_v3.py`, `pairs-desk-prompts-v3.0`).**
 - **Unchanged from v2:** masking, sentence-ID citations, v1 grounding
   checks, corrections, the paced client and the durable journal.

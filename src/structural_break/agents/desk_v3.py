@@ -29,7 +29,7 @@ from structural_break.intelligence.extraction import ProviderFailure
 GRAPH_VERSION = "pairs-desk-v3"
 PROMPT_VERSION = "pairs-desk-prompts-v3.1"  # 110a: monitor schema accepts uncertainties
 # 110c: the monitor has its own version (live spread state in its context), so entry results stay valid.
-MONITOR_PROMPT_VERSION = "pairs-desk-monitor-v3.2"
+MONITOR_PROMPT_VERSION = "pairs-desk-monitor-v3.3"  # 112b: half-life time stop, no z stop-loss
 ANALYST_MODEL = dv.ADVOCATE_MODEL
 MONITOR_MODEL = dv.ADVOCATE_MODEL
 JUDGE_MODEL = dv.VALIDATION_MODEL
@@ -86,8 +86,8 @@ _MONITOR = (
     "ROLE: position monitor. A pairs position is open (see the analyst context: direction, "
     "profit or loss, the live spread z-score and its distance to the desk's fixed exits). New "
     "company headlines arrived since the last check. Judge whether they threaten the trade. "
-    "The fixed exits (take profit, disaster stop, time stop) run anyway; your scores decide "
-    "only whether to leave earlier.\n"
+    "The fixed exits (take profit and the time stop; there is no z-score stop-loss) run anyway; "
+    "your scores decide only whether to leave earlier.\n"
     "Scores (integers 1-5):\n"
     "- adverse: does the new information push the spread further against the position or "
     "break the relationship? 1 no or favourable, 3 possibly, 5 clearly.\n"

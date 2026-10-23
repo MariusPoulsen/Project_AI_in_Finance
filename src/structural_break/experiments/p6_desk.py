@@ -43,6 +43,41 @@ MAX_HEADLINES = 12
 SELECTORS = ("R0", "B+rule+ou__recent-bag5")
 # Goal 1 bases for the agent features: R0, the pre-registered best forecaster (verdict), +track (reported).
 BASES = {"R0": None, "B+rule+ou": "B+rule+ou__recent-bag5", "B+rule+ou+track": "B+rule+ou+track__recent-bag5"}
+# Decision 112b: the adopted exit. Take profit |z| <= 1.0, no disaster stop, news exit, and a time
+# stop of clip(ceil(1.5 x half-life), 10, 40) sessions (20 when the half-life is unknown).
+LONG_CACHE = Path("outputs/p6_quant/requests_long.pkl")
+TAKE_PROFIT, NO_STOP, HALF_LIFE_MULTIPLE = 1.0, 99.0, 1.5
+
+
+def time_stops(workspace: Path) -> dict[str, int]:
+    version = _sources(workspace).binding.evaluation.version
+    hl = pd.read_parquet(workspace / "artifacts/research" / version / "model_inputs.parquet",
+                         columns=["event_id", "half_life"]).set_index("event_id")["half_life"]
+    return {e: int(min(max(np.ceil(HALF_LIFE_MULTIPLE * h), 10), 40)) if np.isfinite(h) and h > 0 else 20
+            for e, h in hl.items()}
+
+
+def design_trades(
+    workspace: Path,
+    selector: str = "R0",
+    chosen_events: list[str] | None = None,
+    fractions: dict[str, float] | None = None,
+    exclude: set[str] | None = None,
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    """The design under the adopted exit: (allocations, trade results, long-path cache)."""
+    from structural_break.experiments import p6_quant_costs as qc
+    from structural_break.experiments import p6_quant_portfolio as qp
+
+    cache = qp.load_cache(LONG_CACHE)
+    chosen = [e for e in pa.design_candidates(workspace, selector, chosen_events) if e not in (exclude or set())]
+    sectors = _sources(workspace).security_sectors()
+    prices = pd.read_parquet(workspace / "market/source_v1/prices.parquet",
+                             columns=["ticker", "trading_date", "open", "high", "low", "close", "adj_close", "volume"])
+    stops = time_stops(workspace)
+    design = qp.run_design(cache, chosen, (TAKE_PROFIT, NO_STOP, {e: stops.get(e, 20) for e in chosen}, True),
+                           Path("configs"), 0.075, sectors, qc.lookup(qc.stock_inputs(prices)), 1e7,
+                           fractions=fractions or None)
+    return design["allocations"], design["results"], cache
 BUDGET = BudgetPolicy(
     allocation_id="p6-desk-v3-decision-110",
     global_cap=40_000,
@@ -50,6 +85,19 @@ BUDGET = BudgetPolicy(
         ModelCap(model=dv.ADVOCATE_MODEL, total=36_000, daily=9_000),
         ModelCap(model=dv.SYNTHESIS_MODEL, total=10, daily=10),
         ModelCap(model=dv.VALIDATION_MODEL, total=3_000, daily=450),
+    ),
+)
+
+
+# Decision 112b: the longer holding window raises the monitor to about 21,000 checks, so the
+# monitor run has its own journal; the entry journal's identity and caps stay unchanged.
+MONITOR_BUDGET = BudgetPolicy(
+    allocation_id="p6-desk-v3-monitor-decision-112b",
+    global_cap=30_000,
+    model_caps=(
+        ModelCap(model=dv.ADVOCATE_MODEL, total=30_000, daily=9_000),
+        ModelCap(model=dv.SYNTHESIS_MODEL, total=0, daily=0),
+        ModelCap(model=dv.VALIDATION_MODEL, total=0, daily=0),
     ),
 )
 
@@ -267,10 +315,11 @@ def build_monitor(workspace: Path, output: Path = OUTPUT) -> dict[str, Any]:
     from structural_break.experiments import p6_quant_portfolio as qp
 
     src = Sources(workspace)
-    cache = qp.load_cache(Path("outputs/p6_quant/requests.pkl"))
     results: dict[str, Any] = {}
+    stops = time_stops(workspace)
     for selector in SELECTORS:  # trades of either selection; the same event gives the same trade
-        results.update(pa.design_book(workspace, selector=selector)[1])
+        _, trades, cache = design_trades(workspace, selector)
+        results.update(trades)
     (output / "monitor_cases").mkdir(parents=True, exist_ok=True)
     rows = []
     for event_id, result in results.items():
@@ -307,8 +356,9 @@ def build_monitor(workspace: Path, output: Path = OUTPUT) -> dict[str, Any]:
                     f"The position is long Company {long_leg} and short Company {short_leg}, betting that the spread converges.",
                     f"It was entered at the close {k} sessions ago at a spread z-score of {request.signal_z:.2f}.",
                     f"The spread z-score at this close is {z_now:.2f}.",
-                    "The desk's fixed exits are take profit at absolute z of 1.0 or less, a disaster stop at absolute "
-                    f"z of 5 or more, and a time stop after 20 sessions ({max(20 - k, 0)} sessions left).",
+                    "The desk's fixed exits are take profit at absolute z of 1.0 or less and a time stop after "
+                    f"{stops.get(event_id, 20)} sessions ({max(stops.get(event_id, 20) - k, 0)} sessions left); "
+                    "there is no stop-loss on the z-score.",
                     f"Its profit or loss since entry is {_pct(pnl)} of gross exposure.",
                     f"Company A moved {_pct(ca / entry_close[0] - 1)} and Company B moved {_pct(cb / entry_close[1] - 1)} since entry.",
                 ]
@@ -400,7 +450,11 @@ def run(
         names = names[:limit]
     own = journal is None and clients is None
     if own:
-        journal = DurableAttemptJournal(output / "journal", BUDGET).__enter__()
+        journal = (
+            DurableAttemptJournal(output / "journal", BUDGET)
+            if kind == "entry"
+            else DurableAttemptJournal(output / "journal_monitor", MONITOR_BUDGET)
+        ).__enter__()
     try:
         if clients is None:
             clients = dv.make_clients(cc._credential, dv.Guard(journal, {dv.VALIDATION_MODEL: 5.0}))
@@ -585,21 +639,14 @@ def desk_book(
     selector: str = "R0",
     chosen_events: list[str] | None = None,
 ) -> list[Any]:
-    """Close-timing legs of the design with per-event sizes, vetoes and earlier monitor exits."""
-    from structural_break.experiments import p6_quant_costs as qc
-    from structural_break.experiments import p6_quant_portfolio as qp
+    """Close-timing legs of the design under the adopted exit (Decision 112b), with per-event
+    sizes, vetoes and earlier monitor exits."""
     from structural_break.experiments import p6_resid as pr
 
-    chosen = [e for e in pa.design_candidates(workspace, selector, chosen_events) if e not in exclude]
-    cache = qp.load_cache(Path("outputs/p6_quant/requests.pkl"))
-    sectors = _sources(workspace).security_sectors()
-    prices = pd.read_parquet(workspace / "market/source_v1/prices.parquet",
-                             columns=["ticker", "trading_date", "open", "high", "low", "close", "adj_close", "volume"])
-    design = qp.run_design(cache, chosen, (1.0, 5.0, 20, True), Path("configs"), 0.075, sectors,
-                           qc.lookup(qc.stock_inputs(prices)), 1e7, fractions=fractions or None)
+    allocations, results, cache = design_trades(workspace, selector, chosen_events, fractions, exclude)
     legs = []
-    for event_id, fraction in design["allocations"].items():
-        result = design["results"][event_id]
+    for event_id, fraction in allocations.items():
+        result = results[event_id]
         if result.exit is None:
             continue
         request = cache[event_id][0]
