@@ -32,7 +32,7 @@ class Desk(Script):
         answers = {
             "pair_analyst": self.analyst,
             "facilitator": self.facilitator,
-            "position_monitor": {"adverse": 4, "persistence": 5, "claims": [_claim()]},
+            "position_monitor": {"adverse": 4, "persistence": 5, "claims": [_claim()], "uncertainties": ["Unclear impact."]},
             "risk_judge": {"verdict": self.verdict, "reason": "The cited merger sentence supports it."},
         }
         if role in answers and not self.overrides.get(role):

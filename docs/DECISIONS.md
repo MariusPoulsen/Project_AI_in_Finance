@@ -4812,6 +4812,23 @@ used, chosen on 2010–2017 only.
     checks run in a fixed hash order.
   - **Expected cost:** about 25,000–30,000 Gemma calls in total.
 
+### 110a. Pilots: entry passes; the monitor schema is fixed (v3.1)
+
+Recorded 2026-10-23, labels unread.
+- **Entry pilot (v3.0, first 20 candidates):** 20 of 20 valid.
+  - **Persistence:** 1 on 12 events, 3 on 7, 5 on 1.
+  - **Debate and judge:** 7 contested events were debated, and the
+    facilitator kept every score. The judge ran once and SUPPORTED.
+- **Monitor pilot (v3.0, first 20 checks):** 0 of 20 valid.
+  - **Cause:** every answer added an `uncertainties` list, which the shared
+    claim rules tell the model to use, but the monitor schema did not allow
+    it. The scores and citations themselves were well formed.
+- **Amendment `pairs-desk-prompts-v3.1`:**
+  - The monitor schema and format accept an optional `uncertainties` list,
+    as the analyst schema already does. Nothing else changes.
+  - The version string is in every prompt, so both pilots are re-run under
+    v3.1 with the same 70 % bar.
+
 **Desk (`agents/desk_v3.py`, `pairs-desk-prompts-v3.0`).**
 - **Unchanged from v2:** masking, sentence-ID citations, v1 grounding
   checks, corrections, the paced client and the durable journal.

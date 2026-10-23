@@ -27,7 +27,7 @@ from structural_break.intelligence import catalyst_v3 as cv
 from structural_break.intelligence.extraction import ProviderFailure
 
 GRAPH_VERSION = "pairs-desk-v3"
-PROMPT_VERSION = "pairs-desk-prompts-v3.0"
+PROMPT_VERSION = "pairs-desk-prompts-v3.1"  # 110a: monitor schema accepts uncertainties
 ANALYST_MODEL = dv.ADVOCATE_MODEL
 MONITOR_MODEL = dv.ADVOCATE_MODEL
 JUDGE_MODEL = dv.VALIDATION_MODEL
@@ -48,6 +48,7 @@ class MonitorReport(FrozenModel):
     adverse: Score
     persistence: Score
     claims: tuple[Claim, ...] = Field(min_length=1, max_length=3)
+    uncertainties: tuple[ShortText, ...] = Field(default=(), max_length=4)
 
 
 class JudgeReport(FrozenModel):
@@ -98,7 +99,7 @@ _FORMATS = {
         '{"mover": "A|B|BOTH|UNCLEAR", "explains_move": 1-5, "persistence": 1-5, '
         '"relationship_change": 1-5, "claims": [CLAIM, ...], "uncertainties": ["...", ...]}'
     ),
-    "monitor": '{"adverse": 1-5, "persistence": 1-5, "claims": [CLAIM, ...]}',
+    "monitor": '{"adverse": 1-5, "persistence": 1-5, "claims": [CLAIM, ...], "uncertainties": ["...", ...]}',
     "judge": '{"verdict": "SUPPORTED|NOT_SUPPORTED", "reason": "one sentence"}',
 }
 
@@ -164,10 +165,14 @@ def resolve_analyst(raw: Mapping[str, Any], case: dv.Case) -> AnalystReport:
 
 
 def resolve_monitor(raw: Mapping[str, Any], case: dv.Case) -> MonitorReport:
-    if set(raw) != {"adverse", "persistence", "claims"}:
-        raise ValueError("Fields differ from the required set: adverse, persistence, claims")
+    required = {"adverse", "persistence", "claims"}
+    if not required <= set(raw) or not set(raw) <= required | {"uncertainties"}:
+        raise ValueError("Fields differ from the required set: adverse, persistence, claims, uncertainties")
     return MonitorReport(
-        adverse=raw["adverse"], persistence=raw["persistence"], claims=dv._claims(raw["claims"], case, "m")
+        adverse=raw["adverse"],
+        persistence=raw["persistence"],
+        claims=dv._claims(raw["claims"], case, "m"),
+        uncertainties=dv._strings(raw.get("uncertainties", []), "uncertainties"),
     )
 
 
