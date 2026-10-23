@@ -5187,6 +5187,18 @@ grid are unchanged.
 - **Saving:** monitor calls fall from about 23,000 to about 8,700. The
   remaining run falls from about 5–6 days to about 2–2.5 (entry about 1.6,
   monitor about 0.6).
+- **Runtime:** this project's `.venv` currently lacks the optional `nlp`
+  extra, so the triage ran with the v2 project's interpreter (read-only)
+  and this project's code. That interpreter has exactly the versions in
+  this project's `uv.lock` (torch 2.14.1+cpu, transformers 4.57.6). The
+  loader verified the pinned FinBERT assets, and `pytorch_model.bin` has
+  SHA-256 `e15a7b57…`, the project's pinned weights. The result is
+  therefore the same as in a complete project environment. Runtime and
+  asset hashes are in `outputs/p6_desk/triage_runtime.json`.
+- **Open fix:** install the locked extra in this project with
+  `uv sync --frozen --extra nlp` (plus the extras already in use) and
+  re-run the triage once to confirm identical flags. `uv` was not found
+  on this machine's PATH.
 
 **Desk (`agents/desk_v3.py`, `pairs-desk-prompts-v3.0`).**
 - **Unchanged from v2:** masking, sentence-ID citations, v1 grounding

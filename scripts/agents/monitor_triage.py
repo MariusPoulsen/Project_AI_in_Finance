@@ -52,6 +52,10 @@ tone = pd.DataFrame(rows)
 inventory = inventory.drop(columns=[c for c in ("long_min_net", "short_max_net", "triage") if c in inventory])
 inventory = inventory.merge(tone, on="file", how="left", validate="one_to_one")
 inventory.to_parquet(OUT / "monitor_inventory.parquet", index=False)
+import sys  # noqa: E402
+
+(OUT / "triage_runtime.json").write_text(json.dumps(
+    {"python": sys.executable, "version": sys.version, "threshold": THRESHOLD, **backend.runtime}, indent=1))
 print(json.dumps({"checks": len(inventory), "to_monitor": int(inventory.triage.sum()),
                   "share": round(float(inventory.triage.mean()), 3),
                   "trades_with_monitored_checks": int(inventory.loc[inventory.triage, "event_id"].nunique()),
