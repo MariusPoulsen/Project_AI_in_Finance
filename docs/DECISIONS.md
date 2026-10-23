@@ -4708,3 +4708,54 @@ after the last event.
   the Decision 50/51 per-company extractor features (variant B of the v3
   proposal) in place of the agent dummies, on the same events. This tells
   whether the debate adds anything over the existing single extractor.
+
+### 109e. Result: no forecasting gain; the veto (V1) is adopted by the owner rule but fails the holdout
+
+Recorded 2026-10-23 (`outputs/p6_agents/evaluation_holdout.json`, 714 of
+715 debated events).
+
+**Goal 1, forecasting** (walk-forward on the 626 debated events with a
+label and a prior-year fit):
+
+| Model | AUC | Log loss | Brier |
+|---|---|---|---|
+| R0 score alone | 0.616 | 0.446 | 0.1356 |
+| + agent break risk (D) | 0.617 | 0.448 | 0.1361 |
+| + Decision 50/51 extractor features (B) | 0.620 | 0.485 | 0.1383 |
+
+- **Agent block fails the test:** its paired Brier difference is +0.00044,
+  with a 95 % interval of [−0.00033, +0.00123].
+- **Debate vs extractor:** the debate adds nothing over the extractor, and
+  neither beats the score alone.
+
+Reversion and trade results by validated break risk, as descriptive
+evidence:
+
+| Validated risk | Events | h20 reversion | Trade win rate | Mean net per trade |
+|---|---|---|---|---|
+| LOW | 37 | 16 % | 47 % | −29 bps |
+| MEDIUM | 562 | 14 % | 56 % | +21 bps |
+| HIGH | 27 | 26 % | 76 % | +182 bps |
+| Failed (ABSTAIN) | 88 | 19 % | 52 % | −28 bps |
+
+The agents' HIGH-risk events did *best*, the opposite of the thesis. The
+groups are small, but this does not support news-driven break vetoes.
+
+**Goal 2, the book** (Decision 108 book re-run without the vetoed events):
+
+| Variant | Vetoed / half size | 2010–2017 | 2018–2023 | 2010–2023 | Max drawdown |
+|---|---|---|---|---|---|
+| V0, no agents | 0 / 0 | 0.612 | 0.515 | 0.565 | −8.2 % |
+| **V1, skip NO TRADE** | 271 / 0 | **0.657** | 0.472 | 0.568 | −8.4 % |
+| V2, also skip MEDIUM | 589 / 0 | 0.494 | 0.498 | 0.494 | −8.1 % |
+| V3, half size on MEDIUM | 271 / 318 | 0.626 | 0.444 | 0.539 | −8.2 % |
+
+- **V1 is adopted under Decision 105:** it has the highest 2010–2017 Sharpe.
+- **The holdout goes the other way:** −0.04 on 2018–2023.
+- **Overall:** 2010–2023 is unchanged (0.568 against 0.565).
+
+Together with the failed forecast test and the inverted HIGH-risk group,
+the 2010–2017 gain is most likely noise. The multi-agent debate on fresh
+8-K news adds no reliable value to this book. Following the staged plan of
+the v3 proposal, the single-analyst variants B′ and C are not worth their
+quota. The next step is the position monitor (variant E).

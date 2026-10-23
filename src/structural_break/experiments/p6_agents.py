@@ -617,7 +617,9 @@ def evaluate(
     debated["net"] = [getattr(base_results.get(e), "net_return", None) for e in debated.event_id]
     debated["month"] = pd.to_datetime(inputs.loc[debated.event_id, "event_date"]).dt.to_period("M").astype(str).to_numpy()
     rng = np.random.default_rng(5557)
-    report: dict[str, Any] = {"counts": table.groupby(["group", "status"]).size().to_dict()}
+    report: dict[str, Any] = {
+        "counts": {f"{g}/{s}": int(n) for (g, s), n in table.groupby(["group", "status"]).size().items()}
+    }
     groups = {}
     for key, part in debated.groupby(debated.break_risk.fillna("FAILED")):
         boots = [part.y.sample(frac=1, replace=True, random_state=int(s)).mean() for s in rng.integers(0, 2**31, 500)]
