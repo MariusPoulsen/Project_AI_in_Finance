@@ -4919,6 +4919,46 @@ B+rule+ou.**
     have no monitor checks (fail-open);
   - candidates outside those two sets get analyst scores but no debate.
 
+## 111. Stage V pre-registration: time stop and pairs gross cap (no agents)
+
+Recorded 2026-10-23, before any Stage V result. The owner asked whether the
+fixed 20-session time stop is too short now that a monitor can exit, and why
+the book caps the capital in pair trades.
+- **Base:** the Decision 108 book (R0 selection, close execution, VT60
+  at 4 %, 200 % book cap, residual sleeve), with no agents.
+- **Settled before the v3 evaluation:** the result is fixed here first, and
+  the v3 evaluation then uses the chosen setting.
+
+**Longer paths.** Every design-region trade path is extended to 41 closes
+with the frozen session builder and the frozen `PriceBook`
+(`scripts/quant_research/long_requests.py`).
+- **Check:** all 9,253 rebuilt paths reproduce the cached 22-session paths
+  exactly (sessions and adjusted prices).
+- **Boundary:** no session after the development end is built.
+
+**Grid** (`scripts/quant_research/stage_v.py`), sequential, 6 trials:
+1. **Time stop** of 20, 25, 30 or 40 sessions at pairs gross cap 1.0 (the
+   portfolio policy's `gross_entry_cap`). T = 20 must reproduce the
+   Decision 108 book (2010–2017 Sharpe 0.612), or the run stops.
+2. **Pairs gross cap** of 1.5 or 2.0 at the chosen T. The 200 % book cap
+   stays.
+
+Each step picks the highest 2010–2017 Sharpe (Decision 105). Mean holding,
+exit reasons and portfolio statuses (clipped or blocked entries) are
+reported. 2018–2023 is opened once.
+
+**Risk-target information table:** 4 %, 6 % and 8 % annual volatility on
+the chosen design, with the scale clip and book cap scaled in proportion.
+This shows the return and drawdown that more capital buys. It is not a
+Sharpe choice, because leverage leaves the Sharpe ratio roughly unchanged;
+the target is the owner's risk decision.
+
+**Evidence disclosed in advance:**
+- Decision 76a: 20 sessions beat 10 under the current exits.
+- Decision 53: two half-lives (median 61 sessions) lost under the old exits.
+- The 2022–2023 reference rows favoured 30 sessions.
+- The forecaster's label is 20-session reversion.
+
 **Desk (`agents/desk_v3.py`, `pairs-desk-prompts-v3.0`).**
 - **Unchanged from v2:** masking, sentence-ID citations, v1 grounding
   checks, corrections, the paced client and the durable journal.

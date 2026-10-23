@@ -122,16 +122,21 @@ def run_design(
     capital: float = 1e7,
     sector_cap: float | None = None,
     fractions: dict[str, float] | None = None,
+    policy_override: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """``cost_table`` (Decision 96) prices each trade with per-stock costs at ``capital``.
 
     ``fractions`` (Decision 99) gives each trade its own NAV fraction; the
     portfolio then wants ``fraction`` per entry and costs use that size.
+    ``policy_override`` (Decision 111) replaces portfolio-policy fields, such as
+    ``gross_entry_cap``, for a research run.
     """
     from structural_break.experiments import p6_quant_costs as qc
 
     headline = load_headline(configs)
     policy = load_analysis_policies(configs).portfolio
+    if policy_override:
+        policy = policy.model_copy(update=policy_override)
     results: dict[str, PairTradeResult] = {}
     proposals: list[PortfolioProposal] = []
     rates: dict[str, float] = {}
