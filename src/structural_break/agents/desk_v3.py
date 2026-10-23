@@ -28,6 +28,8 @@ from structural_break.intelligence.extraction import ProviderFailure
 
 GRAPH_VERSION = "pairs-desk-v3"
 PROMPT_VERSION = "pairs-desk-prompts-v3.1"  # 110a: monitor schema accepts uncertainties
+# 110c: the monitor has its own version (live spread state in its context), so entry results stay valid.
+MONITOR_PROMPT_VERSION = "pairs-desk-monitor-v3.2"
 ANALYST_MODEL = dv.ADVOCATE_MODEL
 MONITOR_MODEL = dv.ADVOCATE_MODEL
 JUDGE_MODEL = dv.VALIDATION_MODEL
@@ -81,8 +83,11 @@ _FACILITATOR = (
     "score unless the debate exposed a cited reason to change it."
 )
 _MONITOR = (
-    "ROLE: position monitor. A pairs position is open (see the analyst context). New "
-    "company headlines arrived since the last check. Judge whether they threaten the trade.\n"
+    "ROLE: position monitor. A pairs position is open (see the analyst context: direction, "
+    "profit or loss, the live spread z-score and its distance to the desk's fixed exits). New "
+    "company headlines arrived since the last check. Judge whether they threaten the trade. "
+    "The fixed exits (take profit, disaster stop, time stop) run anyway; your scores decide "
+    "only whether to leave earlier.\n"
     "Scores (integers 1-5):\n"
     "- adverse: does the new information push the spread further against the position or "
     "break the relationship? 1 no or favourable, 3 possibly, 5 clearly.\n"
@@ -105,7 +110,8 @@ _FORMATS = {
 
 
 def _parts(role: str, mandate: str, case: dv.Case, kind: str, extra: str = "") -> str:
-    parts = [f"PROMPT {PROMPT_VERSION} | {role}", dv._COMMON, mandate]
+    version = MONITOR_PROMPT_VERSION if kind == "monitor" else PROMPT_VERSION
+    parts = [f"PROMPT {version} | {role}", dv._COMMON, mandate]
     if kind == "analyst":
         parts.append(_ANCHORS)
     parts.append(
@@ -190,6 +196,7 @@ def call(
     client: cv.ModelClient,
     cache: Path,
     corrections: int = dv.CORRECTIONS,
+    version: str = PROMPT_VERSION,
 ) -> dict[str, Any]:
     """One cached, grounded role call with up to ``corrections`` specific corrections.
 
@@ -198,7 +205,7 @@ def call(
     """
     request = {
         "graph": GRAPH_VERSION,
-        "prompt_version": PROMPT_VERSION,
+        "prompt_version": version,
         "role": role,
         "model": client.model,
         "prompt_sha256": hashlib.sha256(prompt.encode()).hexdigest(),
@@ -316,10 +323,11 @@ def run_entry(
 
 
 def run_monitor(case: dv.Case, clients: Mapping[str, cv.ModelClient], cache: Path) -> dict[str, Any]:
-    stage = call("position_monitor", monitor_prompt(case), resolve_monitor, case, clients[MONITOR_MODEL], cache)
+    stage = call("position_monitor", monitor_prompt(case), resolve_monitor, case, clients[MONITOR_MODEL], cache,
+                 version=MONITOR_PROMPT_VERSION)
     return {
         "graph_version": GRAPH_VERSION,
-        "prompt_version": PROMPT_VERSION,
+        "prompt_version": MONITOR_PROMPT_VERSION,
         "check_id": case.event.event_id,
         "case_sha256": case.digest,
         "status": "SCORED" if stage["status"] == "VALID" else "ABSTAIN",

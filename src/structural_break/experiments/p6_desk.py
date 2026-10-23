@@ -301,10 +301,14 @@ def build_monitor(workspace: Path, output: Path = OUTPUT) -> dict[str, Any]:
                     cid = f"headlines:{check_id}:{leg}"
                     evidence.append(_chunk(cid, leg, securities[leg], dk.HEADLINE_FILING, stamp, _headline_text(heads[leg], companies)))
             short_leg = "B" if long_leg == "A" else "A"
+            z_now = request.snapshot.z(ca, cb)
             context = "\n".join(
                 [
                     f"The position is long Company {long_leg} and short Company {short_leg}, betting that the spread converges.",
                     f"It was entered at the close {k} sessions ago at a spread z-score of {request.signal_z:.2f}.",
+                    f"The spread z-score at this close is {z_now:.2f}.",
+                    "The desk's fixed exits are take profit at absolute z of 1.0 or less, a disaster stop at absolute "
+                    f"z of 5 or more, and a time stop after 20 sessions ({max(20 - k, 0)} sessions left).",
                     f"Its profit or loss since entry is {_pct(pnl)} of gross exposure.",
                     f"Company A moved {_pct(ca / entry_close[0] - 1)} and Company B moved {_pct(cb / entry_close[1] - 1)} since entry.",
                 ]
@@ -367,7 +371,8 @@ def load_result(output: Path, kind: str, name: str) -> dict[str, Any] | None:
     if not path.exists():
         return None
     result = json.loads(path.read_bytes())
-    return result if result.get("prompt_version") == dk.PROMPT_VERSION else None
+    version = dk.MONITOR_PROMPT_VERSION if kind == "monitor" else dk.PROMPT_VERSION
+    return result if result.get("prompt_version") == version else None
 
 
 def run(
@@ -573,14 +578,19 @@ def _block_bootstrap(diff: pd.Series, months: pd.Series, seed: int = 5557) -> li
 
 
 def desk_book(
-    workspace: Path, fractions: dict[str, float], exclude: set[str], exits: dict[str, Any], selector: str = "R0"
+    workspace: Path,
+    fractions: dict[str, float],
+    exclude: set[str],
+    exits: dict[str, Any],
+    selector: str = "R0",
+    chosen_events: list[str] | None = None,
 ) -> list[Any]:
     """Close-timing legs of the design with per-event sizes, vetoes and earlier monitor exits."""
     from structural_break.experiments import p6_quant_costs as qc
     from structural_break.experiments import p6_quant_portfolio as qp
     from structural_break.experiments import p6_resid as pr
 
-    chosen = [e for e in pa.design_candidates(workspace, selector) if e not in exclude]
+    chosen = [e for e in pa.design_candidates(workspace, selector, chosen_events) if e not in exclude]
     cache = qp.load_cache(Path("outputs/p6_quant/requests.pkl"))
     sectors = _sources(workspace).security_sectors()
     prices = pd.read_parquet(workspace / "market/source_v1/prices.parquet",
@@ -699,6 +709,47 @@ def evaluate(workspace: Path = Path("data/team"), output: Path = OUTPUT, holdout
                             "exits": len(exits), "2010-2017": pr.stats(b, 2010, 2017)})
             books[(selector, best["q"], best["size"], rule)] = b
         trials += entry + monitor
+    # Decision 110c, the full model as selector: rank the region by the agent-adjusted forecast
+    # (desk scores on the B+rule+ou base) and take as many events per year as the best model's
+    # top 20 %, with the cut from the previous year. Years without an agent forecast fall back
+    # to the best model's own selection.
+    full = tables[("desk", "B+rule+ou")]
+    flags = pd.read_parquet("outputs/p6_quant/scores__B+rule+ou__recent-bag5.parquet")
+    per_year = flags.groupby("year").top20.sum()
+    best_top = flags.loc[flags.top20.astype(bool)]
+    chosen_full: list[str] = []
+    for year in sorted(flags.year.unique()):
+        now = full[(full.year == year) & full.p_agent.notna()]
+        prior = full[(full.year == year - 1) & full.p_agent.notna()]
+        if len(now) == 0 or len(prior) < 50:
+            chosen_full += list(best_top.loc[best_top.year == year, "event_id"])
+            continue
+        share = min(1.0, float(per_year.get(year - 1, 0)) / len(prior))
+        chosen_full += list(now.event_id[now.p_agent >= prior.p_agent.quantile(1 - share)])
+    full_members = set(pa.design_candidates(workspace, "FULL", chosen_full))
+    fcands = full.set_index("event_id")
+    fcands = fcands[fcands.index.isin(full_members)].copy()
+    fcands["ratio"] = (fcands.p_agent / fcands.p_base).fillna(1.0)
+    full_trials = []
+    for size in (False, True):
+        fractions = {e: 0.075 * float(np.clip(r, 0.5, 1.5)) for e, r in fcands.ratio.items()} if size else {}
+        b = book(desk_book(workspace, fractions, set(), {}, "FULL", chosen_full))
+        full_trials.append({"selector": "FULL", "q": None, "size": size, "vetoed": 0, "2010-2017": pr.stats(b, 2010, 2017)})
+        books[("FULL", None, size, None)] = b
+    fbest = max(full_trials, key=lambda g: g["2010-2017"]["sharpe"])
+    ffractions = (
+        {e: 0.075 * float(np.clip(r, 0.5, 1.5)) for e, r in fcands.ratio.items()} if fbest["size"] else {}
+    )
+    for rule in MONITOR_GRID[1:]:
+        hit = checks[(checks.adverse >= rule[0]) & (checks.persistence >= rule[1])] if len(checks) else checks
+        exits = hit.sort_values("session").groupby("event_id").session.first().dt.date.to_dict() if len(hit) else {}
+        b = book(desk_book(workspace, ffractions, set(), exits, "FULL", chosen_full))
+        full_trials.append({"selector": "FULL", "q": None, "size": fbest["size"], "rule": rule,
+                            "exits": len(exits), "2010-2017": pr.stats(b, 2010, 2017)})
+        books[("FULL", None, fbest["size"], rule)] = b
+    trials += full_trials
+    report["full_selection"] = {"events": len(chosen_full), "candidates_after_filters": len(full_members),
+                                "with_monitor_checks": int(len(set(checks.event_id) & full_members)) if len(checks) else 0}
     report["trials"] = trials
     report["trial_count"] = len(trials)
     winner = max(trials, key=lambda g: g["2010-2017"]["sharpe"])

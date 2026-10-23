@@ -235,6 +235,14 @@ inputs, independent openings, one rebuttal exchange, separate synthesis and
 validation, fail-safe caching and the Python controller. The current architecture
 is in `docs/specs/04_MULTI_AGENT_PIPELINE.md` and DECISIONS section 28.
 
+**Reminder, open task (Decision 110b): refit the bagged forecasters without
+Model B's 28 dead Gemma catalyst columns.** B+rule+ou and B+rule+ou+track
+(bag5) sample 50 % of columns per tree, so removing the empty columns changes
+the model. Refit both walk-forward without them, report them as new,
+separately labelled variants against the frozen bag5 models, and count them as
+extra trials. R0 (original Model B) needs no refit: its predictions are
+bit-identical without the columns.
+
 **Update 2026-10-21 (Decision 109):** the layer is completed as v2 on branch
 `p6/agent-layer`, on the candidates of the current best book (Decision 100/108).
 - **Kept:** the Decision 28 topology and the v1 contracts.

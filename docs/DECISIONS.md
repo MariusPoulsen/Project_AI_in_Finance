@@ -4880,6 +4880,44 @@ because the fixed XGBoost never splits on them.
   columns would be a new, separately reported variant.
 - **Replacement:** the v3 analyst scores take over the catalysts' intended
   role.
+- **Open task:** refit the two bag5 forecasters without the dead columns.
+  They are reported as new variants and count as extra trials. The reminder
+  is in `docs/PLAN.md`.
+
+### 110c. Monitor sees the live spread; the full model also selects (before any v3 label is read)
+
+Recorded 2026-10-23. The entry run is in progress; no monitor check has
+run under this version, and no label has been read.
+
+**Monitor context** (`pairs-desk-monitor-v3.2`, a version separate from
+entry, so finished entry results stay valid). Each check now also states:
+- the spread z-score at that close, computed from the trade's frozen
+  relationship snapshot;
+- the desk's fixed exits: take profit at |z| ≤ 1.0, disaster stop at
+  |z| ≥ 5, and a 20-session time stop, with the sessions left;
+- that those exits run anyway and the monitor only decides whether to
+  leave earlier.
+
+The monitor still never exits by itself. Its scores feed the pre-registered
+exit grid. All monitor checks were rebuilt; the count is unchanged at
+17,048.
+
+**The full model as a selector, a third selection besides R0 and
+B+rule+ou.**
+- **Ranking:** each year, the region is ranked by the agent-adjusted
+  forecast (desk scores on the B+rule+ou base). The selection takes as many
+  events as the best model's top 20 % that year.
+- **Cut and fallback:** the cut is the previous year's quantile, so it is
+  point in time. Years without an agent forecast fall back to the best
+  model's own selection.
+- **Filters and grid:** the same filters apply. The grid is sizing off or
+  on (2 trials) plus the monitor grid on the better one (5).
+- **Trial count:** 33 (R0 13, B+rule+ou 13, full 7). The highest 2010–2017
+  Sharpe wins, and 2018–2023 is opened once.
+- **Limits, reported with the result:**
+  - trades that the full model adds outside the R0 and best-model designs
+    have no monitor checks (fail-open);
+  - candidates outside those two sets get analyst scores but no debate.
 
 **Desk (`agents/desk_v3.py`, `pairs-desk-prompts-v3.0`).**
 - **Unchanged from v2:** masking, sentence-ID citations, v1 grounding

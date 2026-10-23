@@ -60,7 +60,7 @@ def _now() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds")
 
 
-def design_candidates(workspace: Path, selector: str = "R0") -> list[str]:
+def design_candidates(workspace: Path, selector: str = "R0", chosen_events: list[str] | None = None) -> list[str]:
     """Decision 100 candidates: top 20 % per test year after the r1, cross and cost filters.
 
     ``selector`` "R0" is the original Model B (the book's selection); any other value
@@ -85,7 +85,9 @@ def design_candidates(workspace: Path, selector: str = "R0") -> list[str]:
     rate_year = year.reindex(rate.index)
     cost_cut = {y: np.nanquantile(rate[rate_year.eq(y - 1)], 0.8) for y in range(2010, 2024)}
     chosen: list[str] = []
-    if selector == "R0":
+    if chosen_events is not None:  # Decision 110c: an explicit selection (the full model's ranking)
+        chosen = list(chosen_events)
+    elif selector == "R0":
         for y, group in scores.groupby("year"):
             cut = float(np.quantile(group.loc[group.role.eq("threshold"), "score"], 0.8))
             chosen += list(group[group.role.eq("test") & (group.score >= cut)].event_id)
