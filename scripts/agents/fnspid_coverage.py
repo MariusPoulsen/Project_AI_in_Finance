@@ -17,7 +17,13 @@ ws = Path("data/team")
 out = Path("data/external/fnspid/headlines.parquet")
 master = pd.read_parquet(ws / "universe/source_v1/security_master.parquet")
 sources = [Path("data/external/fnspid") / name for name in ("All_external.csv", "nasdaq_exteral_data.csv")]
-frame = hl.ingest([s for s in sources if s.exists()], master, out)
+if all(s.exists() for s in sources):
+    frame = hl.ingest(sources, master, out)
+    base = "https://huggingface.co/datasets/Zihan1004/FNSPID/resolve/main/Stock_news/"
+    hl.manifest(sources, {s.name: base + s.name for s in sources}, [out, out.with_name("articles.parquet")],
+                out.with_name("manifest.json"))
+else:
+    frame = pd.read_parquet(out)  # compact store already built; raw files may be gone
 print("by source:", frame.groupby("source").size().to_dict())
 prices = pd.read_parquet(ws / "market/source_v1/prices.parquet", columns=["trading_date"])
 sessions = pd.DatetimeIndex(sorted(pd.to_datetime(prices["trading_date"].unique())))

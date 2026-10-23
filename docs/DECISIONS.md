@@ -4785,9 +4785,23 @@ used, chosen on 2010–2017 only.
   headline therefore counts at a session's close only if its stated time is
   after midnight and at or before 15:00 on that date. Otherwise it counts
   from the next session's close.
-- **Coverage before any call** (Benzinga only, Nasdaq pending): 140,000
-  company headlines for 204 of 250 stocks. 39 % of design candidates have a
-  headline in their last three sessions (2010–2020).
+- **Coverage before any call, both files:**
+  - **Volume:** 259,000 company-specific headlines for 239 of 250 stocks,
+    2010–2023. 99.7 % carry a date only, so the one-session lag applies
+    almost everywhere.
+  - **Design candidates:** 60 % have a headline in their last three
+    sessions, and 68 % have a headline or an 8-K (24 % with 8-Ks alone).
+    The share is lowest in 2010 (33 %) and between 50 % and 82 % from 2011
+    on.
+  - **All h20 model events:** 64 % have fresh news.
+- **Compact store** (like the SEC archive), in `data/external/fnspid/`:
+  - `headlines.parquet` (79 MB), the working table;
+  - `articles.parquet` (685 MB), with the full Nasdaq article text for the
+    universe's rows;
+  - `manifest.json`, with source URLs, sizes and SHA-256 hashes.
+
+  The 29 GB raw CSVs were deleted after verification; they can be
+  re-downloaded and checked against the manifest.
 
 **Desk (`agents/desk_v3.py`, `pairs-desk-prompts-v3.0`).**
 - **Unchanged from v2:** masking, sentence-ID citations, v1 grounding

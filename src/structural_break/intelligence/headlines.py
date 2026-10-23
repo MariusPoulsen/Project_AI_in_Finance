@@ -51,15 +51,16 @@ def ingest(
     parts = []
     for csv in [csvs] if isinstance(csvs, Path) else csvs:
         header = pd.read_csv(csv, nrows=0).columns
-        usecols = COLUMNS + (["Lsa_summary"] if "Lsa_summary" in header else [])
+        usecols = COLUMNS + [c for c in ("Article", "Lsa_summary") if c in header]
         for chunk in pd.read_csv(csv, usecols=usecols, chunksize=chunksize, dtype=str):
             chunk = chunk[chunk["Stock_symbol"].isin(tickers)].dropna(subset=["Date", "Article_title"])
             if chunk.empty:
                 continue
             stamp = pd.to_datetime(chunk["Date"].str.replace(" UTC", "", regex=False), errors="coerce")
             summary = chunk.get("Lsa_summary", pd.Series("", index=chunk.index)).fillna("").str[:300]
-            chunk = chunk.assign(stamp=stamp, summary=summary, source=csv.stem).dropna(subset=["stamp"])
-            parts.append(chunk.drop(columns=["Lsa_summary"], errors="ignore"))
+            article = chunk.get("Article", pd.Series("", index=chunk.index)).fillna("")
+            chunk = chunk.assign(stamp=stamp, summary=summary, article=article, source=csv.stem)
+            parts.append(chunk.dropna(subset=["stamp"]).drop(columns=["Lsa_summary", "Article"], errors="ignore"))
     frame = pd.concat(parts, ignore_index=True)
     frame = frame.rename(
         columns={"Article_title": "title", "Stock_symbol": "ticker", "Url": "url", "Publisher": "publisher"}
@@ -74,11 +75,36 @@ def ingest(
     frame = frame.drop_duplicates(["ticker", "title", "date"]).reset_index(drop=True)
     frame = frame.loc[
         :,
-        ["ticker", "security_id", "stamp", "date", "same_day", "title", "summary", "publisher", "url", "source", "specific"],
+        ["ticker", "security_id", "stamp", "date", "same_day", "title", "summary", "article", "publisher", "url", "source", "specific"],
     ]
     out.parent.mkdir(parents=True, exist_ok=True)
-    frame.to_parquet(out, index=False)
+    # The full text lives in a separate compressed store; the working table stays small.
+    frame.to_parquet(out.with_name("articles.parquet"), index=False, compression="zstd")
+    frame = frame.drop(columns=["article"])
+    frame.to_parquet(out, index=False, compression="zstd")
     return frame
+
+
+def manifest(sources: list[Path], urls: Mapping[str, str], outputs: list[Path], path: Path) -> dict[str, object]:
+    """Provenance of the compact store: source sizes and SHA-256 hashes, so the raw files can be dropped."""
+    import hashlib
+    import json
+
+    def sha(file: Path) -> str:
+        digest = hashlib.sha256()
+        with file.open("rb") as stream:
+            for block in iter(lambda: stream.read(1 << 24), b""):
+                digest.update(block)
+        return digest.hexdigest()
+
+    record = {
+        "version": HEADLINES_VERSION,
+        "dataset": "FNSPID (Dong et al. 2024), CC BY-NC 4.0",
+        "sources": [{"file": s.name, "url": urls[s.name], "bytes": s.stat().st_size, "sha256": sha(s)} for s in sources],
+        "outputs": [{"file": o.name, "bytes": o.stat().st_size, "sha256": sha(o)} for o in outputs],
+    }
+    path.write_text(json.dumps(record, indent=1), encoding="utf-8")
+    return record
 
 
 def available_session(frame: pd.DataFrame, sessions: Iterable[pd.Timestamp]) -> pd.Series:
