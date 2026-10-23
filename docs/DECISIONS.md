@@ -4802,6 +4802,15 @@ used, chosen on 2010–2017 only.
 
   The 29 GB raw CSVs were deleted after verification; they can be
   re-downloaded and checked against the manifest.
+- **Build, before any call:**
+  - **Region:** 9,024 events (top 40 % of each test year). 6,361 have news
+    and get an analyst case, 2,226 of them design candidates. The share
+    rises from 45 % (2010) to 81 % (2023).
+  - **Analyst prompt:** median length about 5,900 characters.
+  - **Monitor:** 13,197 checks across 2,348 of the 2,816 design trades.
+  - **Run order:** candidates first, then the rest of the region. Monitor
+    checks run in a fixed hash order.
+  - **Expected cost:** about 25,000–30,000 Gemma calls in total.
 
 **Desk (`agents/desk_v3.py`, `pairs-desk-prompts-v3.0`).**
 - **Unchanged from v2:** masking, sentence-ID citations, v1 grounding
