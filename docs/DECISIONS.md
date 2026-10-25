@@ -5224,6 +5224,90 @@ Recorded 2026-10-25.
 - **Restart:** the monitor runner was restarted, with audited lease
   recovery.
 
+### 110d. Desk v3 result: entry agents add nothing; the position monitor holds out
+
+Recorded 2026-10-26 (`outputs/p6_desk/evaluation_holdout.json`).
+- **Runs:** entry 6,485 scored and 31 ABSTAIN of 6,516; monitor 7,933 scored
+  and 4 ABSTAIN of the 7,937 triaged checks.
+- **Book:** the evaluation used the adopted Decision 112b book.
+- **Choice:** made on 2010–2017 among the 33 pre-registered trials (110b,
+  110c). 2018–2023 was opened once.
+
+**Goal 1: the agent features do not improve the forecast.** Walk-forward
+on the region; the verdict model is the desk scores on the B+rule+ou base.
+
+| Base, 2011–2017 | Base AUC / Brier | With agent features | Brier difference, 95 % |
+|---|---|---|---|
+| **B+rule+ou (verdict)** | 0.640 / 0.0917 | 0.631 / 0.0928 | **+0.00104 [+0.00034, +0.00189]** |
+| B+rule+ou+track | 0.641 / 0.0920 | 0.632 / 0.0930 | +0.00101 [+0.00020, +0.00193] |
+| R0 | 0.530 / 0.0998 | 0.536 / 0.1005 | +0.00073 [−0.00068, +0.00223] |
+
+- **2011–2017:** the agent block makes the forecast slightly but
+  significantly worse on the best bases. The analyst-only variant (B′)
+  behaves the same.
+- **2018–2023:** every difference is within ±0.0002 and not significant.
+- **Verdict:** fail. The AUCs are lower than the population figures (0.735)
+  because the region is the top 40 % only.
+
+**Goal 2: the best configuration is the current selection plus the
+position monitor, exiting at adverse 5 and persistence 5.** Best
+2010–2017 Sharpe by selection:
+
+| Selection | Best configuration | 2010–2017 |
+|---|---|---|
+| **R0 (current)** | **no entry rule, monitor exit at (5, 5)** | **0.813** |
+| R0 | no agents | 0.799 |
+| R0 | entry veto, 10 % | 0.798 |
+| B+rule+ou (best forecaster) | entry veto, 10 % | 0.395 |
+| Full-model ranking | no sizing, no monitor | 0.390 |
+
+- **Entry rules:** veto and sizing never beat the plain R0 book. Stricter
+  vetoes fall steadily (0.80 → 0.71).
+- **Monitor exits:** looser rules hurt. Thresholds (4, 3) and (3, 3) exit
+  832 and 1,526 trades and fall to 0.63 and 0.42. The strict (5, 5) rule
+  exits 233 trades, only on news judged clearly adverse and lasting.
+- **The best forecaster's selections trade badly:** consistent with
+  Decision 76b.
+- **The full-model ranking is no better:** agent scores used for selection
+  do not help either.
+
+**Holdout, opened once:**
+
+| Book | 2010–2017 | 2018–2023 | 2010–2023 | 2010–2023 CAGR | Max drawdown |
+|---|---|---|---|---|---|
+| Current book (Decision 112b, no agents) | 0.799 | 0.439 | 0.622 | +2.4 % | −6.3 % |
+| **Chosen: + monitor exit (5, 5)** | **0.813** | **0.595** | **0.713** | **+2.7 %** | −6.9 % |
+| Best forecaster's selection, no agents | 0.351 | −0.041 | 0.242 | +0.7 % | −10.7 % |
+
+The monitor exit is adopted under Decision 105. Unlike most recent changes,
+**it holds out**: +0.16 Sharpe on 2018–2023, with a shallower 2018–2023
+drawdown (−4.5 % against −6.3 %).
+
+**Reading.**
+- **Entry:** the LLM agents add nothing at entry, whether as forecast
+  features, vetoes, sizing or selection, matching v2 (109e) and the earlier
+  news-feature tests (Decision 54).
+- **Exits:** they add value as a position monitor that exits on
+  clear-cut adverse news during a trade. This extends the earlier finding
+  that news helps on exits (Decision 62).
+- **What the course-style "pairs desk" contributes** is therefore the
+  monitor. The analyst, debate and judge are kept for explainability.
+
+**Book after Decision 110d:**
+- **Components:** R0 top 20 % with the filters, the half-life time stop,
+  take profit 1.0, the news exit, the monitor exit at (5, 5), 7.5 % sizing
+  with a 100 % pairs cap, the residual sleeve, VT60 at 4 %, close
+  execution and the 200 % book cap.
+- **2010–2023:** Sharpe 0.71, CAGR +2.7 % (+3.5 % with cash), maximum
+  drawdown −6.9 %.
+
+**Caveats:**
+- **Trial count:** the trial count across the project is now large. An
+  overall deflated Sharpe and PBO for the final book is the next step.
+- **Human review:** the 50-event review of agent quality is still owed.
+- **News coverage:** FNSPID ends in 2023, so the monitor needs a news
+  source for 2024–2025 before the final test.
+
 **Desk (`agents/desk_v3.py`, `pairs-desk-prompts-v3.0`).**
 - **Unchanged from v2:** masking, sentence-ID citations, v1 grounding
   checks, corrections, the paced client and the durable journal.
