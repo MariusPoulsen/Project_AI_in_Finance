@@ -49,7 +49,8 @@ class AnalystReport(FrozenModel):
 class MonitorReport(FrozenModel):
     adverse: Score
     persistence: Score
-    claims: tuple[Claim, ...] = Field(min_length=1, max_length=3)
+    # 112d: the shared prompt rule says at most 4 claims, so the contract accepts 4 (was 3).
+    claims: tuple[Claim, ...] = Field(min_length=1, max_length=4)
     uncertainties: tuple[ShortText, ...] = Field(default=(), max_length=4)
 
 

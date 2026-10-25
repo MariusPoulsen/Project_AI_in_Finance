@@ -5206,6 +5206,24 @@ grid are unchanged.
   - **Records:** `triage_runtime.json` now names this project's
     interpreter. The first run's files are kept as `*_v2env`.
 
+### 112d. Monitor claim limit matches its prompt (mid-run fix, no labels read)
+
+Recorded 2026-10-25.
+- **Entry run:** finished: 6,485 scored and 31 ABSTAIN of 6,516, including
+  the 45 outage retries.
+- **Monitor run:** started at 23:54 UTC. After 488 checks it averaged 1.76
+  answers per check.
+- **Cause:** a contract mismatch. The shared claim rule in the prompt says
+  "at most 4 claims", but `MonitorReport` allowed 3. In 371 of 488 checks
+  the first answer had 4 claims, was rejected, and needed a correction.
+- **Fix:** `MonitorReport` now accepts up to 4 claims, matching the prompt.
+  The prompt and the cache keys are unchanged.
+- **Finished checks are kept:** the corrected answers are valid
+  judgements. The fix only removes wasted correction calls, which cuts the
+  remaining monitor time by about 40 %.
+- **Restart:** the monitor runner was restarted, with audited lease
+  recovery.
+
 **Desk (`agents/desk_v3.py`, `pairs-desk-prompts-v3.0`).**
 - **Unchanged from v2:** masking, sentence-ID citations, v1 grounding
   checks, corrections, the paced client and the durable journal.
