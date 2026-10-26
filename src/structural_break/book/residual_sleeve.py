@@ -20,6 +20,7 @@ import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from typing import cast
 
 import numpy as np
 import pandas as pd
@@ -107,7 +108,8 @@ def ou_scores(residuals: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         sigma_eq = np.sqrt(zeta.var(axis=0) / (1 - b**2))
         ok = np.isfinite(kappa) & np.isfinite(m) & (sigma_eq > 0)
         centred = m - np.nanmean(np.where(ok, m, np.nan))
-        # (X_T - m) / sigma_eq; X_T is zero for OLS residuals, giving Avellaneda-Lee's -m / sigma_eq.
+        # (X_T - m) / sigma_eq; X_T is zero for OLS residuals, giving Avellaneda-Lee's
+        # -m / sigma_eq.
         s = np.where(ok, (x[-1] - centred) / sigma_eq, np.nan)
     return s, kappa
 
@@ -116,7 +118,7 @@ def _ols_residuals(y: np.ndarray, x: np.ndarray) -> np.ndarray:
     """Residuals of y (window x n) on a shared design x (window x k) with intercept."""
     design = np.column_stack([np.ones(len(x)), x])
     coef, *_ = np.linalg.lstsq(design, y, rcond=None)
-    return y - design @ coef
+    return cast(np.ndarray, y - design @ coef)
 
 
 def signals(panels: Panels, model: str, start: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -168,8 +170,8 @@ def neutralise(raw: np.ndarray, sectors: Sequence[str], beta: np.ndarray) -> np.
     idx = np.flatnonzero(np.isfinite(beta))
     if len(idx) == 0 or not np.any(raw[idx]):
         return out
-    names = sorted(set(sectors[i] for i in idx))
-    dummies = np.array([[sectors[i] == s for s in names] for i in idx], dtype=float)
+    names = sorted(set(sectors[int(i)] for i in idx))
+    dummies = np.asarray([[sectors[int(i)] == s for s in names] for i in idx], dtype=np.float64)
     basis = np.column_stack([dummies, beta[idx]])
     coef, *_ = np.linalg.lstsq(basis, raw[idx], rcond=None)
     out[idx] = raw[idx] - basis @ coef
@@ -305,6 +307,7 @@ def run_book(
             held = sum(abs(v) for v in leg_value.values())
             new = sum(abs(leg.fraction) for leg in entries.get(t, ())) * scale * nav
             if has_resid:
+                assert resid_targets is not None
                 new += float(np.abs(resid_targets[signal_day]).sum()) * scale * nav
             if held + new > max_gross * nav and new > 0:
                 room = max(0.0, (max_gross * nav - held) / new)
@@ -315,6 +318,7 @@ def run_book(
             d_pairs[col[leg.ticker]] += value
         d_resid = np.zeros(n)
         if has_resid:
+            assert resid_targets is not None
             want = resid_targets[signal_day] * scale * room * nav
             gap = want - resid
             close = (want == 0) & (resid != 0)

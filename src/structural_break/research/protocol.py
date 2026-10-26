@@ -86,6 +86,48 @@ class ResearchProtocol(SettingsModel):
         return self
 
 
+class FinalTestProtocol(ResearchProtocol):
+    """Decision 118: the frozen research protocol extended to the final-test end.
+
+    Identical to the research protocol except that the development end may pass 2023
+    only as far as ``periods.data_end()``: the development end while the final test is
+    locked (the rehearsal), 2025-12-31 after the owner's unlock record. The research
+    fitting, calibration and assessment windows are unchanged, so the research models
+    never fit or assess a final-test row; those rows fall in the ``excluded`` partition.
+    """
+
+    @model_validator(mode="after")
+    def chronological(self) -> Self:
+        from structural_break import periods
+
+        if not self.version.startswith("final-test-"):
+            raise ValueError("A final-test protocol version starts with 'final-test-'")
+        if not (
+            self.data_start
+            < self.fit_start
+            < self.fit_end
+            < self.calibration_start
+            <= self.calibration_end
+            < self.assessment_start
+            <= self.assessment_end
+            <= self.development_end
+        ):
+            raise ValueError("Final-test protocol dates must be ordered")
+        if self.development_end > periods.data_end():
+            raise ValueError(
+                "The final-test protocol reaches past the unlocked data end: the final test "
+                "is locked until the owner's unlock record cites the freeze manifest"
+            )
+        return self
+
+
+def protocol_model(values: Any) -> ResearchProtocol:
+    """The research or final-test protocol, chosen by its version."""
+    version = values.get("version", "") if isinstance(values, dict) else ""
+    model = FinalTestProtocol if str(version).startswith("final-test-") else ResearchProtocol
+    return model.model_validate(values)
+
+
 def canonical_bytes(value: Any) -> bytes:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
 
@@ -95,9 +137,7 @@ def identity(value: Any) -> str:
 
 
 def load_protocol(path: Path) -> ResearchProtocol:
-    return ResearchProtocol.model_validate(
-        yaml.load(path.read_text("utf-8"), Loader=UniqueKeyLoader)
-    )
+    return protocol_model(yaml.load(path.read_text("utf-8"), Loader=UniqueKeyLoader))
 
 
 def experiment_config(

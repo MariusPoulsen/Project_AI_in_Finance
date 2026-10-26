@@ -4,6 +4,7 @@ R1, mean-crossing and cost filters, from the original Model B (R0) or a stored f
 from __future__ import annotations
 
 from pathlib import Path
+from typing import cast
 
 import numpy as np
 import pandas as pd
@@ -41,7 +42,7 @@ def design_candidates(
     if chosen_events is not None:  # Decision 110c: an explicit selection (the full model's ranking)
         chosen = list(chosen_events)
     elif selector == "R0":
-        for y, group in scores.groupby("year"):
+        for _y, group in scores.groupby("year"):
             cut = float(np.quantile(group.loc[group.role.eq("threshold"), "score"], 0.8))
             chosen += list(group[group.role.eq("test") & (group.score >= cut)].event_id)
     else:
@@ -53,6 +54,6 @@ def design_candidates(
         for e in chosen
         if e not in r1
         and not (cross.get(e, 0) > 120)
-        and not (rate.get(e, np.inf) >= cost_cut.get(year.get(e), np.inf))
+        and not (rate.get(e, np.inf) >= cost_cut.get(cast(int, year.get(e)), np.inf))
         and e in cache
     ]

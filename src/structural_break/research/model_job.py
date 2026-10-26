@@ -134,12 +134,12 @@ def train_research_models(
     from structural_break.research.intelligence import (
         METADATA_FEATURE_COLUMNS,
     )
-    from structural_break.research.protocol import ResearchProtocol
+    from structural_break.research.protocol import protocol_model
 
     parent = _registered_manifest(paths, registry_version)
     if parent is None or parent["stage"] != "registry":
         raise ValueError("Research registry must be successfully registered")
-    protocol = ResearchProtocol.model_validate(parent["protocol"])
+    protocol = protocol_model(parent["protocol"])
     if horizon not in (protocol.primary_horizon, *protocol.sensitivity_horizons):
         raise ValueError("Unregistered research horizon")
     registry_directory = paths.artifacts / "research" / registry_version
@@ -333,7 +333,7 @@ def verify_research_models(
     source_proof_sha256: str | None = None,
     publication: bool = False,
 ) -> dict[str, Any]:
-    from structural_break.research.protocol import ResearchProtocol
+    from structural_break.research.protocol import protocol_model
 
     manifest = _registered_manifest(paths, research_version)
     if manifest is None or manifest["stage"] != "evaluation":
@@ -377,7 +377,7 @@ def verify_research_models(
     rows = rows.set_index("event_id").loc[stored["event_id"]].reset_index()
     errors: dict[str, float] = {}
     assessment = stored["research_partition"].eq("assessment")
-    protocol = ResearchProtocol.model_validate(manifest["protocol"])
+    protocol = protocol_model(manifest["protocol"])
     pairs = pd.read_parquet(universe_directory / "pair_universe.parquet")
     business_groups = tuple(sorted(pairs["business_group"].unique()))
     if report["assessment_slice_policy"]["business_group_universe"] != list(business_groups):

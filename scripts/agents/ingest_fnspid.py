@@ -37,7 +37,7 @@ sessions = pd.DatetimeIndex(sorted(pd.to_datetime(prices["trading_date"].unique(
 frame["session"] = hl.available_session(frame, sessions)
 frame.to_parquet(out, index=False)
 print(
-    f"headlines: {len(frame):,} rows, {frame.specific.sum():,} company-specific, tickers {frame.ticker.nunique()} of {len(master)}"
+    f"headlines: {len(frame):,} rows, {frame.specific.sum():,} company-specific, tickers {frame.ticker.nunique()} of {len(master)}"  # noqa: E501
 )
 print(
     "specific headlines by year:",

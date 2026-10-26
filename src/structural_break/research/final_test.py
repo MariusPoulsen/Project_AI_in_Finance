@@ -1,0 +1,256 @@
+"""Decision 118: extend a frozen research workspace with the final-test events.
+
+The development rows stay byte-identical. The final-test registry is rebuilt with the
+frozen code under ``configs/final_test.yaml`` (verified equal to the frozen registry on
+2006-2023 in the rehearsal); this module then
+
+1. computes the SEC event intelligence (filing metadata, pinned FinBERT tone; catalysts
+   stay UNKNOWN, as they are inert for the selection model) for the events after ``since``
+   only, with the frozen research code;
+2. builds their model-input rows with the research job's own join and appends them to the
+   frozen model inputs; predictions get the registry's partition (``excluded``);
+3. publishes a final-test evaluation whose parents are the final-test registry and both
+   intelligence generations, with the frozen models and report.
+
+``write_binding`` points the book's data binding at that evaluation. While the final test
+is locked only a rehearsal (development end 2023-12-31) can be built.
+"""
+
+from __future__ import annotations
+
+import json
+import shutil
+from datetime import date
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
+
+from structural_break import periods
+from structural_break.config.loader import load_config
+from structural_break.config.models import Pair, UniverseConfig
+from structural_break.config.paths import ProjectPaths
+from structural_break.intelligence.event_features import EVENT_FEATURE_NAMES
+from structural_break.intelligence.sentiment import SENTIMENT_FEATURE_COLUMNS
+from structural_break.research.protocol import (
+    canonical_bytes,
+    experiment_config,
+    identity,
+    protocol_model,
+)
+from structural_break.research.runner import _registered_manifest, publish_research
+from structural_break.storage.files import sha256_file, write_bytes
+
+BINDING = "final_test_binding.json"
+
+
+def new_evidence_events(paths: ProjectPaths, registry_version: str, since: date) -> pd.DataFrame:
+    """Evidence events (pair and UTC cutoff) of the registry dated on or after ``since``."""
+    from structural_break.research.cli import evidence_events
+
+    events, _, _ = evidence_events(paths, registry_version)
+    stamps = pd.to_datetime(events["event_timestamp"], utc=True)
+    return events.loc[stamps.dt.date.ge(since)].reset_index(drop=True)
+
+
+def build_new_intelligence(
+    paths: ProjectPaths,
+    registry_version: str,
+    since: date,
+    output_dir: Path,
+    *,
+    sec_metadata_dir: Path,
+    cache_workspace: Path,
+    finbert_cache: Path,
+    preprocessing: str = "sec-sentence-quality-wordpiece-v2",
+    offline: bool = False,
+    sec_user_agent: str | None = None,
+) -> dict[str, Any]:
+    """Frozen-code intelligence for the new events only (no catalyst provider)."""
+    from structural_break.intelligence.sentiment import FinBERTPolicy, HuggingFaceFinBERT
+    from structural_break.research.intelligence import build_event_intelligence
+
+    parent = _registered_manifest(paths, registry_version)
+    if parent is None:
+        raise ValueError("The final-test registry must be registered first")
+    protocol = protocol_model(parent["protocol"])
+    events = new_evidence_events(paths, registry_version, since)
+    policy = FinBERTPolicy(
+        model_name=protocol.sentiment_model,
+        model_revision=protocol.sentiment_revision,
+        preprocessing_version=preprocessing,
+    )
+    backend = HuggingFaceFinBERT(finbert_cache, policy, local_files_only=True)
+    return build_event_intelligence(
+        events,
+        paths.workspace_root / "universe/source_v1",
+        sec_metadata_dir,
+        output_dir,
+        provider=None,
+        model_name=protocol.extraction_model,
+        provider_config={"max_tokens": 1600, "seed": protocol.seed},
+        sentiment_backend=backend,
+        sentiment_policy=policy,
+        cache_workspace=cache_workspace,
+        catalyst_max_events=1,
+        max_retries=protocol.extraction_retries,
+        sec_user_agent=sec_user_agent,
+        offline=offline,
+        event_registry_id=registry_version,
+        market_manifest_sha256=next(i["sha256"] for i in parent["inputs"] if i["role"] == "market"),
+    )
+
+
+def model_input_rows(
+    frames: dict[str, pd.DataFrame], pairs: pd.DataFrame, intelligence_dir: Path
+) -> pd.DataFrame:
+    """The research job's model-input join (``model_job.train_research_models``), unchanged."""
+    from structural_break.research.intelligence import METADATA_FEATURE_COLUMNS
+
+    rows = frames["events"].merge(
+        frames["features"], on="event_id", validate="one_to_one", suffixes=("", "_feature")
+    )
+    rows = rows.merge(
+        frames["targets"][["event_id", "y_revert_success"]], on="event_id", validate="one_to_one"
+    )
+    rows = rows.merge(
+        frames["partitions"][["event_id", "supervised_eligible"]],
+        on="event_id",
+        validate="one_to_one",
+    )
+    rows = rows.merge(
+        pairs[["pair_id", "leg_a", "leg_b", "business_group"]], on="pair_id", validate="many_to_one"
+    )
+    mappings = pd.read_parquet(intelligence_dir / "event_mapping.parquet")
+    key_columns = ["pair_id", "event_timestamp"]
+    mappings["event_timestamp"] = pd.to_datetime(mappings["event_timestamp"], utc=True)
+    rows["event_timestamp"] = pd.to_datetime(rows["event_timestamp"], utc=True)
+    mappings = mappings.rename(columns={"event_id": "evidence_event_id"})
+    rows = rows.merge(
+        mappings[key_columns + ["evidence_event_id"]],
+        on=key_columns,
+        how="left",
+        validate="many_to_one",
+    )
+    if rows["evidence_event_id"].isna().any():
+        raise ValueError("Every new quantitative event requires an explicit text/UNKNOWN row")
+    features = pd.read_parquet(intelligence_dir / "features.parquet").rename(
+        columns={"event_id": "evidence_event_id"}
+    )
+    text_columns = (*EVENT_FEATURE_NAMES, *SENTIMENT_FEATURE_COLUMNS, *METADATA_FEATURE_COLUMNS)
+    rows = rows.merge(
+        features[["evidence_event_id", *text_columns]],
+        on="evidence_event_id",
+        how="left",
+        validate="many_to_one",
+    )
+    rows["tone_aligned_contrast"] = rows["divergence_sign"] * rows["sentiment_net_contrast"]
+    return rows
+
+
+def extend_evaluation(
+    paths: ProjectPaths,
+    frozen_evaluation: Path,
+    registry_version: str,
+    intelligence_dir: Path,
+    since: date,
+    *,
+    horizon: int = 20,
+) -> dict[str, Any]:
+    """Publish the final-test evaluation: frozen rows plus the new events' rows."""
+    registry = _registered_manifest(paths, registry_version)
+    if registry is None or registry["stage"] != "registry":
+        raise ValueError("The final-test registry must be registered first")
+    protocol = protocol_model(registry["protocol"])
+    registry_dir = paths.artifacts / "research" / registry_version
+    frames = {
+        name: pd.read_parquet(registry_dir / f"h{horizon}_{name}.parquet")
+        for name in ("events", "features", "targets", "partitions")
+    }
+    day = pd.to_datetime(frames["events"]["event_date"]).dt.date
+    new_ids = set(frames["events"].loc[day.ge(since), "event_id"])
+    frames = {name: frame[frame["event_id"].isin(new_ids)] for name, frame in frames.items()}
+    pairs = pd.read_parquet(paths.workspace_root / "universe/source_v1/pair_universe.parquet")
+    new_rows = model_input_rows(frames, pairs, intelligence_dir)
+    frozen_inputs = pd.read_parquet(frozen_evaluation / "model_inputs.parquet")
+    frozen_predictions = pd.read_parquet(frozen_evaluation / "predictions.parquet")
+    old_inputs = frozen_inputs[~frozen_inputs["event_id"].isin(new_ids)]
+    model_inputs = pd.concat(
+        [old_inputs, new_rows.loc[:, list(frozen_inputs.columns)]], ignore_index=True
+    )
+    partitions = frames["partitions"][["event_id", "research_partition"]]
+    new_predictions = partitions.reindex(columns=frozen_predictions.columns)
+    predictions = pd.concat(
+        [frozen_predictions[~frozen_predictions["event_id"].isin(new_ids)], new_predictions],
+        ignore_index=True,
+    )
+    frozen_manifest = json.loads((frozen_evaluation / "manifest.json").read_bytes())
+    inputs = {
+        "registry_version": registry_version,
+        "registry_manifest_sha256": sha256_file(registry_dir / "manifest.json"),
+        "intelligence_manifest_sha256": sha256_file(intelligence_dir / "manifest.json"),
+        "frozen_evaluation_manifest_sha256": sha256_file(frozen_evaluation / "manifest.json"),
+        "horizon": horizon,
+        "since": since.isoformat(),
+        "decision": "DECISIONS 118",
+    }
+    generation = "research_evaluation_" + identity(inputs)[:24]
+    existing = _registered_manifest(paths, generation)
+    if existing is not None:
+        return existing
+    directory = paths.artifacts / "research" / generation
+    shutil.copytree(frozen_evaluation / "models", directory / "models", dirs_exist_ok=True)
+    report = write_bytes(
+        directory / "report.json", (frozen_evaluation / "report.json").read_bytes()
+    )
+    universe = UniverseConfig(
+        version="research-v2-survivor-peers",
+        orientation="leg_a_is_y",
+        pairs=tuple(
+            Pair(leg_a=r["leg_a"], leg_b=r["leg_b"], peer_group=r["peer_group"])
+            for r in pairs.to_dict("records")
+        ),
+    )
+    config = experiment_config(
+        load_config(paths.project_root / "configs"), protocol, universe, horizon
+    )
+    final_read = protocol.development_end > periods.DEVELOPMENT_END
+    manifest: dict[str, Any] = {
+        "identity_inputs": inputs,
+        "model_files": frozen_manifest["model_files"],
+        "report_sha256": sha256_file(report),
+        "final_test_read": final_read,
+        "parents": [
+            {
+                "role": role,
+                "path": path.relative_to(paths.workspace_root).as_posix(),
+                "sha256": sha256_file(path),
+            }
+            for role, path in (
+                ("registry", registry_dir / "manifest.json"),
+                ("intelligence", intelligence_dir / "manifest.json"),
+                ("frozen_evaluation", frozen_evaluation / "manifest.json"),
+            )
+        ],
+    }
+    return publish_research(
+        paths,
+        config,
+        protocol,
+        "evaluation",
+        generation,
+        directory,
+        manifest,
+        {"predictions": predictions, "model_inputs": model_inputs},
+    )
+
+
+def write_binding(paths: ProjectPaths, evaluation_version: str) -> Path:
+    """Point ``pipeline.sources._sources`` at the final-test evaluation of this workspace."""
+    manifest = paths.artifacts / "research" / evaluation_version / "manifest.json"
+    record = {
+        "evaluation_manifest": manifest.relative_to(paths.workspace_root).as_posix(),
+        "evaluation_sha256": sha256_file(manifest),
+        "decision": "DECISIONS 118",
+    }
+    return write_bytes(paths.workspace_root / BINDING, canonical_bytes(record))

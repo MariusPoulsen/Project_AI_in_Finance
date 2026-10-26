@@ -19,6 +19,7 @@ import tempfile
 from collections.abc import Sequence
 from datetime import date
 from pathlib import Path
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -197,7 +198,7 @@ def residual_targets(out: Path) -> Path:
         columns=["ticker", "trading_date", "open", "high", "low", "close", "adj_close", "volume"],
     )
     panels = pr.load_panels(prices, sectors)
-    start = int(np.searchsorted(panels.dates, pd.Timestamp("2009-06-01")))
+    start = int(cast(Any, panels.dates).searchsorted(pd.Timestamp("2009-06-01")))
     s, kappa, beta = pr.signals(panels, "pca", start)
     path = out / "residual_targets_pca.npy"
     path.parent.mkdir(parents=True, exist_ok=True)

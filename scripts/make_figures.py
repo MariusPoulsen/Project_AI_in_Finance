@@ -1,3 +1,5 @@
+from typing import Any, cast
+
 import matplotlib
 import pandas as pd
 
@@ -62,8 +64,14 @@ fig, ax = plt.subplots(figsize=(8, 4.5))
 for label, path in curves.items():
     m = pd.read_parquet(path)
     ax.plot(pd.to_datetime(m.session_date), (1 + m.daily_return).cumprod(), label=label)
-ax.axvline(pd.Timestamp("2018-01-01"), color="grey", ls=":", lw=1)
-ax.text(pd.Timestamp("2018-02-01"), ax.get_ylim()[1] * 0.98, "holdout →", fontsize=8, va="top")
+ax.axvline(cast(Any, pd.Timestamp("2018-01-01")), color="grey", ls=":", lw=1)
+ax.text(
+    cast(Any, pd.Timestamp("2018-02-01")),
+    ax.get_ylim()[1] * 0.98,
+    "holdout →",
+    fontsize=8,
+    va="top",
+)
 ax.axhline(1.0, color="k", lw=0.6)
 ax.set_ylabel("Portfolio value (start 1.0, with cash interest)")
 ax.set_title("Adopted book, 2010–2023 (Decision 110d)")

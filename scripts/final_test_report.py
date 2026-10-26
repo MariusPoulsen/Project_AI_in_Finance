@@ -13,6 +13,7 @@ Writes outputs/final_test/<label>.json and prints the tables.
 import argparse
 import json
 from pathlib import Path
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -31,7 +32,7 @@ SPECS = {
 }
 
 
-def goal1(years: tuple[int, int]) -> dict[str, dict]:
+def goal1(years: tuple[int, int]) -> dict[str, dict[str, Any]]:
     args = harness.parser().parse_args(["summary"])
     frame, _, exits = harness.load(args)
     out = {}
@@ -43,7 +44,7 @@ def goal1(years: tuple[int, int]) -> dict[str, dict]:
     return out
 
 
-def goal2(years: tuple[int, int]) -> dict[str, dict]:
+def goal2(years: tuple[int, int]) -> dict[str, dict[str, Any]]:
     sectors = _sources(WORKSPACE).security_sectors()
     prices = pd.read_parquet(
         WORKSPACE / "market/source_v1/prices.parquet",
@@ -52,12 +53,15 @@ def goal2(years: tuple[int, int]) -> dict[str, dict]:
     panels = book.load_panels(prices, sectors)
     rf = book.tbill(Path("data/external/irx_13w_tbill.csv"))
     w = np.load("outputs/book/residual_targets_pca.npy") * 0.25
-    checks = []
+    checks: list[dict[str, Any]] = []
     for record in pd.read_parquet(desk.OUTPUT / "monitor_inventory.parquet").to_dict("records"):
         result = desk.load_result(desk.OUTPUT, "monitor", record["file"])
         if result and result["scores"]:
             checks.append(
-                {**record, **{k: result["scores"][k] for k in ("adverse", "persistence")}}
+                {
+                    **cast(dict[str, Any], record),
+                    **{k: result["scores"][k] for k in ("adverse", "persistence")},
+                }
             )
     hit = pd.DataFrame(checks).query("adverse >= 5 and persistence >= 5")
     exits = hit.sort_values("session").groupby("event_id").session.first().dt.date.to_dict()
@@ -104,7 +108,7 @@ def main() -> None:
             (periods.FINAL_TEST_YEARS[0], periods.FINAL_TEST_YEARS[-1]),
             "final_test_2024_2025",
         )
-    report = {
+    report: dict[str, Any] = {
         "years": list(years),
         "unlock_record": periods.unlock_record(),
         "manifest_sha256": periods.manifest_sha256(),
@@ -117,12 +121,12 @@ def main() -> None:
     print(f"Goal 1, {years[0]}-{years[1]}")
     for name, m in report["goal1"].items():
         print(
-            f"  {name:50s} AUC {m['roc_auc']:.3f}  PR {m['pr_auc']:.3f}  LL {m['log_loss']:.4f}  Brier {m['brier']:.4f}  n {m.get('n', '')}"
+            f"  {name:50s} AUC {m['roc_auc']:.3f}  PR {m['pr_auc']:.3f}  LL {m['log_loss']:.4f}  Brier {m['brier']:.4f}  n {m.get('n', '')}"  # noqa: E501
         )
     print(f"Goal 2, {years[0]}-{years[1]}")
     for name, s in report["goal2"].items():
         print(
-            f"  {name:36s} Sharpe {s['sharpe']:+.3f}  CAGR {s['cagr']:+.2%}  with cash {s['cagr_with_cash']:+.2%}  "
+            f"  {name:36s} Sharpe {s['sharpe']:+.3f}  CAGR {s['cagr']:+.2%}  with cash {s['cagr_with_cash']:+.2%}  "  # noqa: E501
             f"max DD {s['maxdd']:.1%}  turnover {s['turnover']:.0f}x  cost {s['cost']:.2%}/yr"
         )
     print(f"wrote {out}")

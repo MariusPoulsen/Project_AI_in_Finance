@@ -205,7 +205,7 @@ def render_case(case: Case) -> str:
             )
         else:
             header = (
-                f"[{label}] Company {chunk.leg} | {context['chunks'].get(chunk.chunk_id, 'filing')} "
+                f"[{label}] Company {chunk.leg} | {context['chunks'].get(chunk.chunk_id, 'filing')} "  # noqa: E501
                 f"| accepted {chunk.source_timestamp.date().isoformat()}"
             )
         body = [
@@ -300,7 +300,8 @@ _FORMATS = {
     ),
     "synthesis": (
         '{"summary": "at most 600 characters", "proposed_break_risk": "LOW|MEDIUM|HIGH|UNKNOWN", '
-        '"claims": [CLAIM, ...], "unresolved_conflicts": ["...", ...], "uncertainties": ["...", ...]}'
+        '"claims": [CLAIM, ...], "unresolved_conflicts": ["...", ...], "uncertainties": ["...", '
+        "...]}"
     ),
     "validation": (
         '{"validation_status": "PASS|PASS_WITH_WARNINGS|FAIL", '
@@ -520,7 +521,7 @@ class Guard:
     def for_model(self, model: str) -> cv.RawTransport:
         lock = threading.Lock()  # spacing is per model, so one model never blocks another
 
-        def send(url: str, payload: dict[str, Any], headers: dict[str, str], timeout: float):
+        def send(url: str, payload: dict[str, Any], headers: dict[str, str], timeout: float) -> Any:
             with lock:
                 wait = self.min_interval.get(model, 0.0) - (
                     self.clock() - self._last.get(model, -1e9)
@@ -610,7 +611,7 @@ def run_role(
     }
     _ROLE.name = role
     text_prompt = prompt
-    for attempt in range(CORRECTIONS + 1):
+    for _attempt in range(CORRECTIONS + 1):
         try:
             text, usage = client.generate(text_prompt)
         except cv.DailyQuotaExhausted as error:

@@ -22,21 +22,25 @@ inventory = pd.read_parquet(OUT / "monitor_inventory.parquet")
 backend = HuggingFaceFinBERT(
     Path.home() / ".cache/huggingface/hub", TONE_POLICY, local_files_only=True
 )
-checks, texts = [], {}
+checks: list[tuple[str, str, dict[str, list[str]]]] = []
+texts: dict[str, float] = {}
 for row in inventory.itertuples(index=False):
     case = json.loads((OUT / "monitor_cases" / f"{row.file}.json").read_bytes())
-    long_leg = None
-    titles = {"A": [], "B": []}
+    long_leg = "A"
+    titles: dict[str, list[str]] = {"A": [], "B": []}
     for chunk in case["event"]["evidence"]:
         if chunk["filing_id"] == "analyst-context":
-            long_leg = re.search(r"long Company ([AB])", chunk["text"]).group(1)
+            found = re.search(r"long Company ([AB])", chunk["text"])
+            if found is None:
+                raise ValueError(f"No long leg in the analyst context of {row.file}")
+            long_leg = found.group(1)
             continue
         for line in chunk["text"].splitlines():
             match = LINE.match(line.strip())
             if match:
                 titles[chunk["leg"]].append(match.group(1)[:400])
-                texts[match.group(1)[:400]] = None
-    checks.append((row.file, long_leg, titles))
+                texts[match.group(1)[:400]] = 0.0  # scored below
+    checks.append((str(row.file), long_leg, titles))
 unique = list(texts)
 for start in range(0, len(unique), 256):
     batch = unique[start : start + 256]

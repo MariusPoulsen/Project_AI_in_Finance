@@ -8,6 +8,7 @@ outcome, label or return. Writes docs/agent_review/review_cases.md and review_an
 
 import json
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
@@ -18,7 +19,7 @@ DOCS = Path("docs/agent_review")
 DOCS.mkdir(parents=True, exist_ok=True)
 SEED = 5558
 inv = pd.read_parquet(OUT / "entry_inventory.parquet").set_index("event_id")
-entries = []
+entry_rows: list[dict[str, Any]] = []
 for path in (OUT / "entry_results").glob("*.json"):
     r = json.loads(path.read_bytes())
     if (
@@ -26,8 +27,8 @@ for path in (OUT / "entry_results").glob("*.json"):
         and r["status"] == "SCORED"
         and bool(inv.loc[r["event_id"], "candidate"])
     ):
-        entries.append({"event_id": r["event_id"], "debated": r["debated"]})
-entries = pd.DataFrame(entries)
+        entry_rows.append({"event_id": r["event_id"], "debated": r["debated"]})
+entries = pd.DataFrame(entry_rows)
 picked = pd.concat(
     [
         entries[entries.debated].sample(10, random_state=SEED),
@@ -35,7 +36,7 @@ picked = pd.concat(
     ]
 )
 mon_inv = pd.read_parquet(OUT / "monitor_inventory.parquet").set_index("file")
-checks = []
+check_rows: list[dict[str, Any]] = []
 for path in (OUT / "monitor_results").glob("*.json"):
     r = json.loads(path.read_bytes())
     if (
@@ -43,8 +44,8 @@ for path in (OUT / "monitor_results").glob("*.json"):
         and r["status"] == "SCORED"
         and path.stem in mon_inv.index
     ):
-        checks.append({"file": path.stem, "adverse": r["scores"]["adverse"]})
-checks = pd.DataFrame(checks)
+        check_rows.append({"file": path.stem, "adverse": r["scores"]["adverse"]})
+checks = pd.DataFrame(check_rows)
 mpicked = pd.concat(
     [
         checks[checks.adverse >= 4].sample(10, random_state=SEED),
@@ -55,7 +56,7 @@ cases = [("E", e) for e in picked.event_id] + [("M", f) for f in mpicked.file]
 order = pd.Series(range(len(cases))).sample(frac=1, random_state=SEED).tolist()  # mix types
 
 
-def claims_block(raw: dict, case: dv.Case) -> list[str]:
+def claims_block(raw: dict[str, Any], case: dv.Case) -> list[str]:
     refs = case.sentences
     lines = []
     for number, claim in enumerate(raw.get("claims", []), start=1):
@@ -73,15 +74,20 @@ md = [
     "# Agent review: 50 blind cases (Decision 113)",
     "",
     "For each case, read the evidence first, then the agent's claims.",
-    "- In `review_answers.csv`, mark every claim **Y** (the cited text supports it), **P** (partly) or **N** (not supported).",
-    "- Give **your own** scores from 1 to 5 using the anchors below, without looking at the agent's scores (they are not shown).",
+    "- In `review_answers.csv`, mark every claim **Y** (the cited text supports it), **P** "
+    "(partly) or **N** (not supported).",
+    "- Give **your own** scores from 1 to 5 using the anchors below, without looking at the "
+    "agent's scores (they are not shown).",
     "- Company names are masked as Company A/B. No outcomes are shown.",
     "",
-    "**Entry anchors:** explains_move: 1 = unrelated or routine news, 5 = clearly the cause of the move. "
-    "persistence: 1 = transient, 3 = unclear, 5 = permanent repricing (merger, bankruptcy, large guidance reset, ruling). "
+    "**Entry anchors:** explains_move: 1 = unrelated or routine news, 5 = clearly the cause of "
+    "the move. "
+    "persistence: 1 = transient, 3 = unclear, 5 = permanent repricing (merger, bankruptcy, "
+    "large guidance reset, ruling). "
     "relationship_change: 1 = no change, 5 = a different economic exposure.",
     "",
-    "**Monitor anchors:** adverse: 1 = no threat or favourable, 5 = clearly pushes the spread against the position or breaks the relationship. "
+    "**Monitor anchors:** adverse: 1 = no threat or favourable, 5 = clearly pushes the spread "
+    "against the position or breaks the relationship. "
     "persistence: 1 = transient, 5 = permanent.",
     "",
 ]

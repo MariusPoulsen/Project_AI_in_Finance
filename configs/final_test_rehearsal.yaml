@@ -1,0 +1,45 @@
+# Decision 118: the frozen research protocol (research_v2.yaml) with only the development end
+# kept at 2023-12-31 for the rehearsal,
+# and the primary 20-session horizon only. Every other value is unchanged.
+version: final-test-rehearsal-20261027
+data_start: 2004-01-01
+development_end: 2023-12-31
+fit_start: 2006-01-01
+fit_end: 2019-12-31
+tuning_years: [2018, 2019]
+calibration_start: 2020-01-01
+calibration_end: 2021-12-31
+assessment_start: 2022-01-01
+assessment_end: 2023-12-31
+final_test_locked: true
+population: estimable
+primary_horizon: 20
+sensitivity_horizons: []
+formation_sessions: 504
+entry_z: 2.0
+success_z: 0.5
+adverse_z: 3.0
+seed: 42
+logistic_c: [0.01, 0.1, 1.0]
+xgb_candidates:
+  - {max_depth: 2, n_estimators: 100, learning_rate: 0.05, min_child_weight: 10, reg_lambda: 10}
+  - {max_depth: 2, n_estimators: 200, learning_rate: 0.05, min_child_weight: 10, reg_lambda: 10}
+  - {max_depth: 3, n_estimators: 100, learning_rate: 0.05, min_child_weight: 20, reg_lambda: 10}
+primary_family: logistic
+primary_b_variant: both
+candidate_threshold: 0.65
+bootstrap_replicates: 2000
+bootstrap_calendar_months: 3
+sentiment_model: ProsusAI/finbert
+sentiment_revision: 4556d13015211d73dccd3fdd39d39232506f3e43
+metadata_feature_policy: sec-item-recency-v1
+extraction_provider: gemma
+extraction_model: gemma-4-26b-a4b-it
+extraction_max_calls: 1000
+extraction_interval_seconds: 8
+extraction_retries: 1
+extraction_max_pack_chars: 12000
+extraction_max_chunks_per_leg: 3
+extraction_order: chronological
+flash_reserved_for_agents: true
+paid_api_enabled: false

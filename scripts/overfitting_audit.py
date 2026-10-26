@@ -10,6 +10,7 @@ import itertools
 import json
 import math
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -24,7 +25,7 @@ final = next(c for c in M.columns if "desk|R0|qNone|sizeFalse|rule(5, 5)" in c)
 print("trial matrix", M.shape, "final book column:", final)
 
 
-def sr(x):
+def sr(x: Any) -> Any:
     return x.mean() / x.std(ddof=1)
 
 
@@ -42,7 +43,7 @@ trial = sr(M)
 gamma = 0.5772156649
 
 
-def dsr(r, n):
+def dsr(r: Any, n: int) -> dict[str, float]:
     s, g3, g4 = r.mean() / r.std(ddof=1), skew(r), kurtosis(r, fisher=False)
     sr0 = trial.std(ddof=1) * (
         (1 - gamma) * norm.ppf(1 - 1 / n) + gamma * norm.ppf(1 - 1 / (n * math.e))

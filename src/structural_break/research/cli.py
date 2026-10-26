@@ -29,7 +29,12 @@ from structural_break.intelligence.sentiment import (
 from structural_break.research.intelligence import build_event_intelligence, collect_sec_metadata
 from structural_break.research.market import collect_market
 from structural_break.research.model_job import train_research_models, verify_research_models
-from structural_break.research.protocol import ResearchProtocol, identity, load_protocol
+from structural_break.research.protocol import (
+    ResearchProtocol,
+    identity,
+    load_protocol,
+    protocol_model,
+)
 from structural_break.research.runner import _registered_manifest, build_research_registry
 from structural_break.research.scheduling import DEFAULT_CATALYST_EVENTS
 from structural_break.research.universe import freeze_universe
@@ -62,7 +67,7 @@ def evidence_events(
     parent = _registered_manifest(paths, registry_version)
     if parent is None or parent["stage"] != "registry":
         raise ValueError("Evidence collection requires a successfully registered research registry")
-    protocol = ResearchProtocol.model_validate(parent["protocol"])
+    protocol = protocol_model(parent["protocol"])
     directory = paths.artifacts / "research" / registry_version
     frames = []
     for horizon in (protocol.primary_horizon, *protocol.sensitivity_horizons):
