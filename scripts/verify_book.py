@@ -13,6 +13,7 @@ import hashlib
 import json
 import sys
 from pathlib import Path
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -44,7 +45,7 @@ def main() -> None:
     rf = book.tbill(Path("data/external/irx_13w_tbill.csv"))
     w = np.load("outputs/book/residual_targets_pca.npy") * 0.25
 
-    def run(legs: list) -> pd.DataFrame:
+    def run(legs: list[Any]) -> pd.DataFrame:
         return book.run_book(
             panels,
             w,
@@ -60,12 +61,15 @@ def main() -> None:
             max_gross=2.0,
         )
 
-    checks = []
+    checks: list[dict[str, Any]] = []
     for record in pd.read_parquet(desk.OUTPUT / "monitor_inventory.parquet").to_dict("records"):
         result = desk.load_result(desk.OUTPUT, "monitor", record["file"])
         if result and result["scores"]:
             checks.append(
-                {**record, **{k: result["scores"][k] for k in ("adverse", "persistence")}}
+                {
+                    **cast(dict[str, Any], record),
+                    **{k: result["scores"][k] for k in ("adverse", "persistence")},
+                }
             )
     hit = pd.DataFrame(checks).query("adverse >= 5 and persistence >= 5")
     exits = hit.sort_values("session").groupby("event_id").session.first().dt.date.to_dict()

@@ -112,7 +112,7 @@ def _marks(request: PairTradeRequest, frozen: PairTradeResult, holding: int) -> 
 def run_design(
     cache: dict[str, Any],
     selected: Sequence[str],
-    exit_settings: tuple[float, float, int, bool],
+    exit_settings: tuple[Any, ...],
     configs: Path,
     target: float,
     sectors: dict[str, str],

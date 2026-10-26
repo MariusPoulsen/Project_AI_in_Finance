@@ -20,6 +20,7 @@ from __future__ import annotations
 import re
 from collections.abc import Iterable, Mapping
 from pathlib import Path
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -111,13 +112,13 @@ def ingest(
     frame.to_parquet(out.with_name("articles.parquet"), index=False, compression="zstd")
     frame = frame.drop(columns=["article"])
     frame.to_parquet(out, index=False, compression="zstd")
-    return frame
+    return cast(pd.DataFrame, frame)
 
 
 def manifest(
     sources: list[Path], urls: Mapping[str, str], outputs: list[Path], path: Path
 ) -> dict[str, object]:
-    """Provenance of the compact store: source sizes and SHA-256 hashes, so the raw files can be dropped."""
+    """Provenance of the compact store: source sizes and SHA-256 hashes, so the raw files can be dropped."""  # noqa: E501
     import hashlib
     import json
 
@@ -128,7 +129,7 @@ def manifest(
                 digest.update(block)
         return digest.hexdigest()
 
-    record = {
+    record: dict[str, object] = {
         "version": HEADLINES_VERSION,
         "dataset": "FNSPID (Dong et al. 2024), CC BY-NC 4.0",
         "sources": [
@@ -159,16 +160,16 @@ def coverage(
     """Per event: company-specific headline counts per leg in the last ``lookback`` sessions."""
     days = pd.DatetimeIndex(sorted(sessions))
     grouped: Mapping[str, pd.DataFrame] = {
-        sec: g for sec, g in headlines[headlines["specific"]].groupby("security_id")
+        str(sec): g for sec, g in headlines[headlines["specific"]].groupby("security_id")
     }
     rows = []
     for event in events.itertuples(index=False):
-        end = pd.Timestamp(event.event_date).normalize()
-        position = days.searchsorted(end)
+        end = pd.Timestamp(cast(Any, event.event_date)).normalize()
+        position = int(days.searchsorted(end))
         start = days[max(position - lookback + 1, 0)]
         counts = {}
         for leg, sec in (("a", event.leg_a_security_id), ("b", event.leg_b_security_id)):
-            g = grouped.get(sec)
+            g = grouped.get(str(sec))
             counts[leg] = 0 if g is None else int(g["session"].between(start, end).sum())
         rows.append(
             {"event_id": event.event_id, "headlines_a": counts["a"], "headlines_b": counts["b"]}

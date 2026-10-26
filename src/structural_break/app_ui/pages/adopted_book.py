@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -19,7 +20,7 @@ COLORS = {
 
 
 @st.cache_data(show_spinner=False)
-def _load(root: str) -> tuple[dict, pd.DataFrame] | None:
+def _load(root: str) -> tuple[dict[str, Any], pd.DataFrame] | None:
     folder = Path(root)
     if not (folder / "summary.json").is_file() or not (folder / "book_daily.parquet").is_file():
         return None
@@ -51,7 +52,8 @@ def _curves(daily: pd.DataFrame) -> go.Figure:
 def render() -> None:
     components.page_header(
         "Adopted book",
-        "The trading book chosen on 2010–2017 and confirmed once on 2018–2023: the original Model B "
+        "The trading book chosen on 2010–2017 and confirmed once on 2018–2023: the original "
+        "Model B "
         "selects the trades, and the agent desk's position monitor can close them early.",
     )
     root = Path.cwd() / SUMMARY
@@ -121,7 +123,7 @@ def render() -> None:
         "Overfitting audit (Decision 113)",
         f" Across {audit['trials']} tracked designs the probability of backtest overfitting is "
         f"{audit['pbo']:.2f}, and the book's deflated Sharpe ratio is "
-        f"{audit['dsr_2010_2023']['132']:.2f} for 2010–2023 ({audit['dsr_2018_2023']['132']:.2f} for "
+        f"{audit['dsr_2010_2023']['132']:.2f} for 2010–2023 ({audit['dsr_2018_2023']['132']:.2f} for "  # noqa: E501
         "2018–2023), below the usual 0.95 bar. The 2024–2025 final test is the clean test.",
         "inconclusive",
     )
@@ -129,13 +131,13 @@ def render() -> None:
     desk, news = summary["desk"], summary["news"]
     st.subheader("Agent desk")
     st.markdown(
-        f"- **Entry agents** (pair news analyst, bull/bear debate, risk judge): {desk['entry_scored']:,} "
-        f"events scored, {desk['entry_abstained']} abstained. Their scores did not improve the forecast "
+        f"- **Entry agents** (pair news analyst, bull/bear debate, risk judge): {desk['entry_scored']:,} "  # noqa: E501
+        f"events scored, {desk['entry_abstained']} abstained. Their scores did not improve the forecast "  # noqa: E501
         "or the book, so they are reported but not used.\n"
         f"- **Position monitor:** a FinBERT triage sent {desk['monitor_after_triage']:,} of "
-        f"{desk['monitor_checks']:,} checks to the model; {desk['monitor_scored']:,} were scored. A trade "
+        f"{desk['monitor_checks']:,} checks to the model; {desk['monitor_scored']:,} were scored. A trade "  # noqa: E501
         "closes when the monitor rates new news adverse 5 and persistent 5 (Decision 110d).\n"
         f"- **News for 2024–2025:** {news['source_2024_2025']}, which is about "
-        f"{news['toned_session_ratio']:.1f}× denser than the development source (Decision {news['decision']})."
+        f"{news['toned_session_ratio']:.1f}× denser than the development source (Decision {news['decision']})."  # noqa: E501
     )
     st.caption(summary["decisions"])

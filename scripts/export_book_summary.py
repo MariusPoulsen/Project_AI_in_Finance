@@ -34,7 +34,7 @@ def main() -> None:
         ),
     }
     daily = pd.DataFrame({"session_date": pd.to_datetime(next(iter(books.values())).session_date)})
-    stats = {}
+    stats: dict[str, dict[str, dict[str, float]]] = {}
     for name, b in books.items():
         daily[name] = (1 + b.daily_return.to_numpy()).cumprod()
         stats[name] = {}
@@ -64,7 +64,8 @@ def main() -> None:
             ],
             [
                 "Exits",
-                "Take profit at |z| ≤ 1.0, no z-score stop; time stop of 1.5 half-lives (10–40 sessions); "
+                "Take profit at |z| ≤ 1.0, no z-score stop; time stop of 1.5 half-lives (10–40 "
+                "sessions); "
                 "8-K adverse-tone news exit; agent monitor exit (adverse ≥ 5 and persistence ≥ 5)",
             ],
             ["Residual sleeve", "PCA residual reversal, λ 0.25, trading speed 0.10"],

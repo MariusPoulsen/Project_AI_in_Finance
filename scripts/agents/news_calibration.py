@@ -14,6 +14,7 @@ import re
 import sys
 from datetime import date
 from pathlib import Path
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -35,8 +36,8 @@ def master() -> pd.DataFrame:
 
 
 def sessions() -> pd.DatetimeIndex:
-    days = pd.read_parquet(WS / "market/source_v1/prices.parquet", columns=["trading_date"])
-    days = pd.DatetimeIndex(pd.to_datetime(days.trading_date.unique())).sort_values()
+    raw = pd.read_parquet(WS / "market/source_v1/prices.parquet", columns=["trading_date"])
+    days = pd.DatetimeIndex(pd.to_datetime(raw.trading_date.unique())).sort_values()
     return days[(days >= pd.Timestamp(START)) & (days <= pd.Timestamp(2023, 7, 7))]
 
 
@@ -83,7 +84,7 @@ def run_gdelt() -> dict[str, dict[str, int]]:
     stats = {}
     for ticker in tickers():
         _, stats[ticker] = ns.gdelt_collect(
-            ticker, names.loc[ticker].issuer_name, START, END, spacer=spacer
+            ticker, str(names.loc[ticker].issuer_name), START, END, spacer=spacer
         )
         print(ticker, stats[ticker], flush=True)
     (OUT / "gdelt_stats.json").write_text(json.dumps(stats, indent=1))
@@ -94,10 +95,13 @@ def gdelt_table() -> pd.DataFrame:
     names = master().set_index("ticker")
     frames = []
     for ticker in tickers():
-        payloads, _ = ns.gdelt_collect(ticker, names.loc[ticker].issuer_name, START, END)
+        payloads, _ = ns.gdelt_collect(ticker, str(names.loc[ticker].issuer_name), START, END)
         frames.append(
             ns.gdelt_frame(
-                payloads, ticker, names.loc[ticker].security_id, names.loc[ticker].issuer_name
+                payloads,
+                ticker,
+                str(names.loc[ticker].security_id),
+                str(names.loc[ticker].issuer_name),
             )
         )
     return in_window(pd.concat(frames, ignore_index=True))
@@ -125,7 +129,7 @@ def words(title: str) -> set[str]:
 
 def measures(
     frame: pd.DataFrame, days: pd.DatetimeIndex, scores: dict[str, float], names: list[str]
-) -> dict:
+) -> dict[str, Any]:
     spec = frame[frame.specific].copy()
     spec["session"] = available_session(spec, days)
     spec = spec.dropna(subset=["session"])
@@ -157,14 +161,16 @@ def overlap(fn: pd.DataFrame, other: pd.DataFrame) -> float:
         g = by_ticker.get(row.ticker)
         if g is None:
             continue
-        a = words(row.title)
-        near = g[(g.date - row.date).abs() <= pd.Timedelta(days=1)]
+        a = words(str(row.title))
+        near = g[(g.date - cast(Any, row.date)).abs() <= pd.Timedelta(days=1)]
         if any(len(a & words(t)) / max(len(a | words(t)), 1) >= JACCARD for t in near.title):
             matched += 1
     return matched / len(fn) if len(fn) else math.nan
 
 
-def compare(candidate: dict, reference: dict, names: list[str]) -> dict:
+def compare(
+    candidate: dict[str, Any], reference: dict[str, Any], names: list[str]
+) -> dict[str, Any]:
     ratios = [
         candidate["per_ticker_specific"][t] / reference["per_ticker_specific"][t]
         for t in names
@@ -188,12 +194,13 @@ def compare(candidate: dict, reference: dict, names: list[str]) -> dict:
     }
 
 
-def report() -> dict:
+def report() -> dict[str, Any]:
     names, m = tickers(), master()
     fn = fnspid(names)
     lookup = m.set_index("ticker")
     fn["specific"] = [
-        bool(_matcher(lookup.loc[t].issuer_name, t).search(x)) for t, x in zip(fn.ticker, fn.title)
+        bool(_matcher(lookup.loc[t].issuer_name, t).search(x))
+        for t, x in zip(fn.ticker, fn.title, strict=True)
     ]
     tt = in_window(ns.tickertick_frame(pd.read_parquet(OUT / "tickertick_stories.parquet"), m))
     # Decision 116c: GDELT counts only if its run completed (gdelt_stats.json exists).
@@ -202,7 +209,7 @@ def report() -> dict:
     days = sessions()
     scores = tone([*fn[fn.specific].title, *tt[tt.specific].title, *gd[gd.specific].title])
     ref = measures(fn, days, scores, names)
-    result = {
+    result: dict[str, Any] = {
         "decision": "DECISIONS 116 (116a, 116b, 116c)",
         "window": [str(START), str(END)],
         "tickers": names,
@@ -211,15 +218,25 @@ def report() -> dict:
     }
     for label, frame in (("gdelt", gd), ("tickertick", tt)) if gdelt_ok else (("tickertick", tt),):
         own = measures(frame, days, scores, names)
-        result["sources"][label] = {**own, **compare(own, ref, names), "overlap_fnspid_matched": overlap(fn, frame)}
+        result["sources"][label] = {
+            **own,
+            **compare(own, ref, names),
+            "overlap_fnspid_matched": overlap(fn, frame),
+        }
     tt_ok = result["sources"]["tickertick"]["passes_rule"]
     if gdelt_ok:
         stats = json.loads((OUT / "gdelt_stats.json").read_text())
         queries = sum(s["weeks"] + 7 * s["capped_weeks"] for s in stats.values())
         g = result["sources"]["gdelt"]
-        g["capped_week_share"] = sum(s["capped_weeks"] for s in stats.values()) / sum(s["weeks"] for s in stats.values())
-        g["capture_queries_2024_2025"] = int(queries / (len(names) * max(s["weeks"] for s in stats.values()))
-                                             * TICKERS_ALL * WEEKS_2024_2025)
+        g["capped_week_share"] = sum(s["capped_weeks"] for s in stats.values()) / sum(
+            s["weeks"] for s in stats.values()
+        )
+        g["capture_queries_2024_2025"] = int(
+            queries
+            / (len(names) * max(s["weeks"] for s in stats.values()))
+            * TICKERS_ALL
+            * WEEKS_2024_2025
+        )
         gd_ok = g["passes_rule"]
         if gd_ok or not tt_ok:
             choice = "GDELT" + ("" if gd_ok else " (with reported limitation)")
@@ -227,7 +244,9 @@ def report() -> dict:
             choice = "TickerTick (bulk to May 2025, live API after)"
     else:
         result["gdelt"] = "infeasible under Decision 116c (rate-limited); not measured"
-        choice = "TickerTick (bulk to May 2025, live API after)" + ("" if tt_ok else ", with reported limitation")
+        choice = "TickerTick (bulk to May 2025, live API after)" + (
+            "" if tt_ok else ", with reported limitation"
+        )
     result["final_test_source"] = choice
     (OUT / "report.json").write_text(json.dumps(result, indent=1, default=str))
     return result

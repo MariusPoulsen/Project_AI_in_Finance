@@ -28,7 +28,8 @@ from structural_break.intelligence.extraction import ProviderFailure
 
 GRAPH_VERSION = "pairs-desk-v3"
 PROMPT_VERSION = "pairs-desk-prompts-v3.1"  # 110a: monitor schema accepts uncertainties
-# 110c: the monitor has its own version (live spread state in its context), so entry results stay valid.
+# 110c: the monitor has its own version (live spread state in its context), so entry results
+# stay valid.
 MONITOR_PROMPT_VERSION = "pairs-desk-monitor-v3.3"  # 112b: half-life time stop, no z stop-loss
 ANALYST_MODEL = dv.ADVOCATE_MODEL
 MONITOR_MODEL = dv.ADVOCATE_MODEL
@@ -105,7 +106,7 @@ _FORMATS = {
         '{"mover": "A|B|BOTH|UNCLEAR", "explains_move": 1-5, "persistence": 1-5, '
         '"relationship_change": 1-5, "claims": [CLAIM, ...], "uncertainties": ["...", ...]}'
     ),
-    "monitor": '{"adverse": 1-5, "persistence": 1-5, "claims": [CLAIM, ...], "uncertainties": ["...", ...]}',
+    "monitor": '{"adverse": 1-5, "persistence": 1-5, "claims": [CLAIM, ...], "uncertainties": ["...", ...]}',  # noqa: E501
     "judge": '{"verdict": "SUPPORTED|NOT_SUPPORTED", "reason": "one sentence"}',
 }
 
@@ -257,7 +258,8 @@ def call(
             stage["error"] = "INCOMPLETE_PROVIDER_RESPONSE"
             text_prompt = (
                 prompt
-                + "\n\nYour previous answer was cut off or malformed; give a shorter complete JSON object."
+                + "\n\nYour previous answer was cut off or malformed; give a shorter complete "
+                "JSON object."
             )
             continue
         stage["usage"].append(usage)
@@ -283,7 +285,7 @@ def call(
 
 
 def contested(report: Mapping[str, Any]) -> bool:
-    """Debate trigger (Decision 110): unclear or likely-persistent, or a well-explained relationship change."""
+    """Debate trigger (Decision 110): unclear or likely-persistent, or a well-explained relationship change."""  # noqa: E501
     return report["persistence"] in (3, 4) or (
         report["explains_move"] >= 4 and report["relationship_change"] >= 3
     )

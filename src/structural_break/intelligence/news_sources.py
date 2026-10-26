@@ -24,7 +24,7 @@ import urllib.request
 from collections.abc import Callable, Iterable
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pandas as pd
 
@@ -230,7 +230,7 @@ def tickertick_frame(stories: pd.DataFrame, master: pd.DataFrame) -> pd.DataFram
     for row in stories.itertuples(index=False):
         meta = names.loc[row.ticker]
         stamp = (
-            pd.Timestamp(row.unix_timestamp, unit="s", tz="UTC")
+            pd.Timestamp(cast(Any, row.unix_timestamp), unit="s", tz="UTC")
             .tz_convert("America/New_York")
             .tz_localize(None)
         )
@@ -247,7 +247,7 @@ def tickertick_frame(stories: pd.DataFrame, master: pd.DataFrame) -> pd.DataFram
                 "publisher": str(row.site or ""),
                 "url": str(row.url or ""),
                 "source": "tickertick",
-                "specific": bool(_matcher(meta.issuer_name, row.ticker).search(title)),
+                "specific": bool(_matcher(str(meta.issuer_name), str(row.ticker)).search(title)),
             }
         )
     return _table(rows)

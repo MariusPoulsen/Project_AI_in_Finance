@@ -14,7 +14,7 @@ from structural_break.agents.contracts import (
 )
 from structural_break.intelligence import catalysts as cv
 
-TEXT_A = "Company A entered into a merger agreement with an unrelated buyer. The board approved the deal."
+TEXT_A = "Company A entered into a merger agreement with an unrelated buyer. The board approved the deal."  # noqa: E501
 TEXT_B = "Company B declared its regular quarterly dividend. No other matters were reported."
 
 
@@ -164,7 +164,7 @@ def test_resolve_maps_sentence_ids_to_exact_quotes_and_rejects_bad_refs() -> Non
 
 def test_analyst_context_is_labelled_zero_and_citable() -> None:
     base = _case()
-    text = "Company A's 1-day abnormal return at the signal was -6.9 %.\nCompany A's recent 8-K news was M&A."
+    text = "Company A's 1-day abnormal return at the signal was -6.9 %.\nCompany A's recent 8-K news was M&A."  # noqa: E501
     context = SourceChunk(
         chunk_id="context:evt_1:A",
         leg="A",
