@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from structural_break.agents import debate_v2 as dv
+from structural_break.agents import debate as dv
 
 OUT = Path("outputs/p6_desk")
 DOCS = Path("docs/agent_review")

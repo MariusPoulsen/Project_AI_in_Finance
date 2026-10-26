@@ -37,7 +37,7 @@ import pandas as pd
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from structural_break.config.paths import ProjectPaths
-from structural_break.intelligence import catalyst_v3 as cv
+from structural_break.intelligence import catalysts as cv
 from structural_break.intelligence.evidence import EvidencePolicy, cache_filing, parse_documents
 from structural_break.intelligence.timing import _leg_known, _window_starts
 
@@ -454,7 +454,7 @@ def _correction(message: str, raw: Mapping[str, Any] | None) -> str:
 def extract_leg(
     client: cv.ModelClient, pack: Mapping[str, Any], *, retries: int = 2
 ) -> dict[str, Any]:
-    """Cached record for one company's recent-news pack (same shape as catalyst_v3)."""
+    """Cached record for one company's recent-news pack (same shape as the catalysts records)."""
     record: dict[str, Any] = {
         "adapter_version": ADAPTER_VERSION,
         "model": client.model,

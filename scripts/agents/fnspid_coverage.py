@@ -9,8 +9,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from structural_break.experiments import p6_agents as pa
-from structural_break.experiments.p6_improvement import _sources
+from structural_break.agents import debate_runner as pa
+from structural_break.pipeline.sources import _sources
 from structural_break.intelligence import headlines as hl
 
 ws = Path("data/team")

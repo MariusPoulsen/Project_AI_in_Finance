@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
 
-from structural_break.experiments.p6_sec_features import variants
 from structural_break.intelligence.event_features import EVENT_FEATURE_NAMES
 from structural_break.intelligence.timing import TIMING_FEATURE_COLUMNS, filing_timing_features
+from structural_break.pipeline.sec_timing import variants
 
 CLOSES = pd.DatetimeIndex(
     pd.to_datetime(
@@ -101,7 +101,7 @@ def test_variants_add_or_replace_blocks_without_touching_base() -> None:
 
 
 def test_walk_forward_scores_variants_and_applies_the_pass_rule() -> None:
-    from structural_break.experiments import p6_sec_features as sf
+    from structural_break.pipeline import sec_timing as sf
 
     rng = np.random.default_rng(0)
     rows = []

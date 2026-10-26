@@ -24,7 +24,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from structural_break.agents.debate_v2 import name_variants
+from structural_break.agents.debate import name_variants
 
 HEADLINES_VERSION = "fnspid-headlines-v1"
 COLUMNS = ["Date", "Article_title", "Stock_symbol", "Url", "Publisher"]

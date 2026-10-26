@@ -16,10 +16,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from structural_break.experiments import p6_agents as selection
-from structural_break.experiments import p6_desk as desk
-from structural_break.experiments import p6_resid as book
-from structural_break.experiments.p6_improvement import _sources
+from structural_break.agents import debate_runner as selection
+from structural_break.agents import desk_runner as desk
+from structural_break.book import residual_sleeve as book
+from structural_break.pipeline.sources import _sources
 
 WORKSPACE = Path("data/team")
 FINGERPRINT = Path("outputs/checks/book_fingerprint.json")

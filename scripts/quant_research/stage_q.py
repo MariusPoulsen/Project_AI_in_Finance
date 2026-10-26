@@ -1,8 +1,8 @@
 """Decision 101: residual-reversal sleeve, ETF/PCA x bands/continuous (prints 2010-2017 unless --holdout)."""
 import sys, json, pandas as pd, numpy as np
 from pathlib import Path
-from structural_break.experiments import p6_resid as pr
-from structural_break.experiments.p6_improvement import _sources
+from structural_break.book import residual_sleeve as pr
+from structural_break.pipeline.sources import _sources
 out_dir = Path("outputs/p6_quant/stage_q"); out_dir.mkdir(parents=True, exist_ok=True)
 blocks = (("2010-2017", 2010, 2017),) + ((("2018-2023", 2018, 2023), ("2010-2023", 2010, 2023)) if "--holdout" in sys.argv else ())
 if "--holdout" in sys.argv and (out_dir / "summary.json").exists():

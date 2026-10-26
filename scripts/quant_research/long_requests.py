@@ -12,8 +12,8 @@ import pandas as pd
 
 from structural_break.backtest import historical
 from structural_break.backtest.historical import PriceBook
-from structural_break.experiments import p6_quant_portfolio as qp
-from structural_break.experiments.p6_improvement import _sources, _spec
+from structural_break.book import portfolio as qp
+from structural_break.pipeline.sources import _sources, _spec
 
 HORIZON = 41  # monitored closes; 40-session time stop plus one spare close
 ws = Path("data/team")

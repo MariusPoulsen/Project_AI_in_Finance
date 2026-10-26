@@ -244,11 +244,11 @@ Gârleanu–Pedersen partial trading cut costs by about 85 %.
 
 ```powershell
 # features and forecast specs (selection years; add --holdout to confirm)
-.venv\Scripts\python.exe -m structural_break.experiments.p6_quant run --specs B+rule+ou --schemes recent:bag5
-.venv\Scripts\python.exe -m structural_break.experiments.p6_quant summary
+.venv\Scripts\python.exe -m structural_break.forecast.harness run --specs B+rule+ou --schemes recent:bag5
+.venv\Scripts\python.exe -m structural_break.forecast.harness summary
 # exit grid (all events, 36 exits, checked against the frozen simulator)
-.venv\Scripts\python.exe -m structural_break.experiments.p6_quant_trading build
-.venv\Scripts\python.exe -m structural_break.experiments.p6_quant_trading explore-exits
+.venv\Scripts\python.exe -m structural_break.book.trades build
+.venv\Scripts\python.exe -m structural_break.book.trades explore-exits
 # portfolios from a designs JSON
-.venv\Scripts\python.exe -m structural_break.experiments.p6_quant_portfolio --designs outputs\p6_quant\designs_h.json
+.venv\Scripts\python.exe -m structural_break.book.portfolio --designs outputs\p6_quant\designs_h.json
 ```

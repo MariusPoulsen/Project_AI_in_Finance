@@ -5,7 +5,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from structural_break.intelligence import catalyst_v3 as cv
+from structural_break.intelligence import catalysts as cv
 from structural_break.intelligence import recent_news as rn
 
 CLOSES = pd.DatetimeIndex(

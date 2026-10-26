@@ -2,7 +2,8 @@
 import pickle, pandas as pd, numpy as np
 from pathlib import Path
 from structural_break.backtest.production_policy import load_headline
-from structural_break.experiments import p6_quant_trading as qt, p6_quant_costs as qc
+from structural_break.book import trades as qt
+from structural_break.book import costs as qc
 h = load_headline(Path("configs")); cache = pickle.load(open("outputs/p6_quant/requests.pkl", "rb"))
 prices = pd.read_parquet("data/team/market/source_v1/prices.parquet", columns=["ticker", "trading_date", "open", "high", "low", "close", "adj_close", "volume"])
 table = qc.lookup(qc.stock_inputs(prices))

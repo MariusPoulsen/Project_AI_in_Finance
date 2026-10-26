@@ -3,7 +3,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from pathlib import Path
 from sklearn.metrics import roc_curve, roc_auc_score
-from structural_break.experiments import p6_boosting as pb
+from structural_break.forecast import model_b as pb
 out = Path("docs/figures/quant")
 frame, _ = pb.load_data(Path("data/team"), Path("outputs/p6_improvement/walkforward/simulation_frozen_exit.parquet"))
 info = frame[["event_id", "supervised_eligible", "y_revert_success"]]
