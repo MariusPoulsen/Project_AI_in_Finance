@@ -5664,3 +5664,36 @@ either.
   (after its last bulk file), the TickerTick live API is the planned source. Whether its
   pagination reaches that far back is checked on 2026 stories only (outside the final-test
   years) before the unlock, and confirmed after it.
+
+### 116d. Calibration result: TickerTick is adopted with a reported limitation; GDELT is infeasible
+
+- **GDELT:** 2 queries cached by 22:00, then HTTP 429 through every back-off. It is
+  infeasible under Decision 116c and is not measured.
+- **TickerTick against FNSPID**, 20 tickers, 2023-01-01 to 06-30, identical definitions
+  (report in `docs/freeze/news_calibration_2023h1.json`):
+
+  | Measure | FNSPID | TickerTick | Ratio |
+  |---|---|---|---|
+  | Company-specific headlines | 943 | 11,593 | median per ticker × 6.4 |
+  | **Toned sessions** (decisive) | 288 | 1,392 | **× 4.83** |
+  | Ticker-weeks with company news | 48 % | 92 % | × 1.90 |
+  | Headlines with a time of day | 0 % | 99.9 % | — |
+  | FNSPID headlines matched by TickerTick | — | 43 % | — |
+
+- **Rule:** the toned-session ratio lies outside [0.67, 1.5], so TickerTick is **adopted with
+  a reported limitation**. It is denser than FNSPID, which in 2023 carries date-only stamps
+  and misses many companies.
+- **Consequences for the final test** (reported, not corrected):
+  - the monitor triage will pass roughly five times more checks per trade than in
+    development, so the frozen exit rule (adverse ≥ 5, persistence ≥ 5) gets more
+    opportunities to fire;
+  - the Gemma monitor run is larger: about 5,000 calls instead of about 1,100, still within
+    the free tier over a few days.
+  - No threshold is changed (Decision 116).
+- **Capture plan after the unlock:**
+  - January 2024 to 25 May 2025 from TickerTick's 2025-05-26 bulk file;
+  - 26 May to December 2025 from its live API.
+  - Paging back through 2026 worked for six months without gaps (15 pages of 150 stories
+    for MA, read before the unlock and only 2026 stories); reaching mid-2025 is confirmed
+    after the unlock.
+  - Both are written to `data/external/news_final/headlines.parquet` in the FNSPID layout.

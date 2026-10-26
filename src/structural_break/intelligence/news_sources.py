@@ -251,3 +251,53 @@ def tickertick_frame(stories: pd.DataFrame, master: pd.DataFrame) -> pd.DataFram
             }
         )
     return _table(rows)
+
+
+TICKERTICK_API = "https://api.tickertick.com/feed"
+TICKERTICK_SPACING = 7.0  # 10 requests a minute per IP, with a margin
+
+
+def tickertick_api(
+    ticker: str,
+    first: date,
+    last: date,
+    *,
+    spacer: Spacer | None = None,
+    transport: Callable[[str], dict[str, Any]] = _http,
+    max_pages: int = 400,
+) -> pd.DataFrame:
+    """Live-API stories for ``ticker`` dated ``first`` to ``last`` (US Eastern), paging back
+    from the newest story; stories after ``last`` are skipped unread beyond their timestamp.
+    For months after the last bulk file (Decision 116c); refused while the final test is
+    locked when ``last`` is a final-test date."""
+    periods.check_end(last)
+    spacer = spacer or Spacer(TICKERTICK_SPACING)
+    lower = pd.Timestamp(first, tz="America/New_York")
+    upper = pd.Timestamp(last + timedelta(days=1), tz="America/New_York")
+    params: dict[str, Any] = {"q": f"tt:{ticker.lower()}", "n": 200}
+    rows = []
+    for _ in range(max_pages):
+        spacer.wait()
+        payload = transport(f"{TICKERTICK_API}?{urllib.parse.urlencode(params)}")
+        stories = payload.get("stories", [])
+        if not stories:
+            break
+        for story in stories:
+            stamp = pd.Timestamp(int(story["time"]), unit="ms", tz="UTC").tz_convert(
+                "America/New_York"
+            )
+            if lower <= stamp < upper:
+                rows.append(
+                    {
+                        "ticker": ticker,
+                        "unix_timestamp": stamp.timestamp(),
+                        "title": story.get("title", ""),
+                        "url": story.get("url", ""),
+                        "site": story.get("site", ""),
+                    }
+                )
+        oldest = pd.Timestamp(int(stories[-1]["time"]), unit="ms", tz="UTC")
+        if oldest < lower:
+            break
+        params["last"] = payload.get("last_id") or stories[-1]["id"]
+    return pd.DataFrame(rows, columns=["ticker", "unix_timestamp", "title", "url", "site"])

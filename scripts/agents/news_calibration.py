@@ -196,46 +196,38 @@ def report() -> dict:
         bool(_matcher(lookup.loc[t].issuer_name, t).search(x)) for t, x in zip(fn.ticker, fn.title)
     ]
     tt = in_window(ns.tickertick_frame(pd.read_parquet(OUT / "tickertick_stories.parquet"), m))
-    gd = gdelt_table()
+    # Decision 116c: GDELT counts only if its run completed (gdelt_stats.json exists).
+    gdelt_ok = (OUT / "gdelt_stats.json").exists()
+    gd = gdelt_table() if gdelt_ok else tt.iloc[0:0]
     days = sessions()
     scores = tone([*fn[fn.specific].title, *tt[tt.specific].title, *gd[gd.specific].title])
     ref = measures(fn, days, scores, names)
     result = {
-        "decision": "DECISIONS 116 (116a, 116b)",
+        "decision": "DECISIONS 116 (116a, 116b, 116c)",
         "window": [str(START), str(END)],
         "tickers": names,
         "fnspid": ref,
         "sources": {},
     }
-    stats = json.loads((OUT / "gdelt_stats.json").read_text())
-    queries = sum(s["weeks"] + 7 * s["capped_weeks"] for s in stats.values())
-    capped_share = sum(s["capped_weeks"] for s in stats.values()) / sum(
-        s["weeks"] for s in stats.values()
-    )
-    for label, frame in (("gdelt", gd), ("tickertick", tt)):
+    for label, frame in (("gdelt", gd), ("tickertick", tt)) if gdelt_ok else (("tickertick", tt),):
         own = measures(frame, days, scores, names)
-        result["sources"][label] = {
-            **own,
-            **compare(own, ref, names),
-            "overlap_fnspid_matched": overlap(fn, frame),
-        }
-    result["sources"]["gdelt"]["capped_week_share"] = capped_share
-    result["sources"]["gdelt"]["capped_day_count"] = sum(s["capped_days"] for s in stats.values())
-    per_ticker_week = queries / (len(names) * max(s["weeks"] for s in stats.values()))
-    result["sources"]["gdelt"]["capture_queries_2024_2025"] = int(
-        per_ticker_week * TICKERS_ALL * WEEKS_2024_2025
-    )
-    result["sources"]["gdelt"]["capture_hours_at_6s"] = round(
-        result["sources"]["gdelt"]["capture_queries_2024_2025"] * ns.GDELT_SPACING / 3600, 1
-    )
-    gd_ok, tt_ok = (
-        result["sources"]["gdelt"]["passes_rule"],
-        result["sources"]["tickertick"]["passes_rule"],
-    )
-    if gd_ok or not tt_ok:
-        choice = "GDELT" + ("" if gd_ok else " (with reported limitation)")
+        result["sources"][label] = {**own, **compare(own, ref, names), "overlap_fnspid_matched": overlap(fn, frame)}
+    tt_ok = result["sources"]["tickertick"]["passes_rule"]
+    if gdelt_ok:
+        stats = json.loads((OUT / "gdelt_stats.json").read_text())
+        queries = sum(s["weeks"] + 7 * s["capped_weeks"] for s in stats.values())
+        g = result["sources"]["gdelt"]
+        g["capped_week_share"] = sum(s["capped_weeks"] for s in stats.values()) / sum(s["weeks"] for s in stats.values())
+        g["capture_queries_2024_2025"] = int(queries / (len(names) * max(s["weeks"] for s in stats.values()))
+                                             * TICKERS_ALL * WEEKS_2024_2025)
+        gd_ok = g["passes_rule"]
+        if gd_ok or not tt_ok:
+            choice = "GDELT" + ("" if gd_ok else " (with reported limitation)")
+        else:
+            choice = "TickerTick (bulk to May 2025, live API after)"
     else:
-        choice = "TickerTick for 2024 to May 2025 (June-December 2025 gap reported)"
+        result["gdelt"] = "infeasible under Decision 116c (rate-limited); not measured"
+        choice = "TickerTick (bulk to May 2025, live API after)" + ("" if tt_ok else ", with reported limitation")
     result["final_test_source"] = choice
     (OUT / "report.json").write_text(json.dumps(result, indent=1, default=str))
     return result

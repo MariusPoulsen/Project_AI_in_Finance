@@ -21,7 +21,8 @@ writes an unlock record. The earlier phase-by-phase plan and status pages are ar
 | Input pipeline and reproduction checks | Done | `pipeline`, `scripts/verify_book.py` | 115 |
 | Overall overfitting audit (PBO, deflated Sharpe) | Done | `scripts/overfitting_audit.py` | 113 |
 | Blind human review of 50 agent cases | **Open:** the group fills in the answers | [agent_review/](agent_review/review_cases.md) | 113 |
-| 2024–2025 company-news source | **Open:** free Alpha Vantage key obtained; the 2022–2023 calibration is to be pre-registered | [NEWS_2024_2025.md](NEWS_2024_2025.md) | 113 |
+| 2024–2025 company-news source | Done: TickerTick, adopted with a reported limitation (× 4.8 denser than FNSPID) | [NEWS_2024_2025.md](NEWS_2024_2025.md) | 116–116d |
+| Final-test readiness: period switch, news adapters, report script | Done; the research layer's final-test mode is still to build | [FINAL_TEST_RUNBOOK.md](FINAL_TEST_RUNBOOK.md) | 117 |
 | Research freeze manifest | **Draft** `42ecc9ed…`: owner review | [FREEZE_MANIFEST.md](FREEZE_MANIFEST.md) | 113, 115 |
 | Final test 2024–2025 | **Locked** until the owner's unlock record | — | 42 |
 | Streamlit app | Outside this workstream (the group) | `app` | — |
@@ -29,7 +30,8 @@ writes an unlock record. The earlier phase-by-phase plan and status pages are ar
 ## Open items
 
 - [ ] Group: complete `docs/agent_review/review_answers.csv` (claim support Y/P/N, own scores).
-- [ ] Pre-register and run the 2022–2023 news calibration (Alpha Vantage against FNSPID).
+- [ ] Build the research layer's final-test mode (step 1 of the [final-test runbook](FINAL_TEST_RUNBOOK.md)), with a
+      pre-registered rule for joining 2024–2025 prices to the frozen prices, and rehearse it on 2022–2023.
 - [ ] Refit the bagged forecasters without Model B's 28 inert catalyst columns, as new
       labelled variants.
 - [ ] Plan ladder's Full System rung under the frozen Decision 36 policy: needs the controller
