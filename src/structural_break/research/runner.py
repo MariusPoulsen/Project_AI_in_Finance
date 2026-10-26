@@ -26,6 +26,7 @@ from structural_break.research.protocol import (
     experiment_config,
     identity,
     load_protocol,
+    protocol_model,
 )
 from structural_break.research.universe import verify_universe_freeze
 from structural_break.services.foundation import git_revision
@@ -91,7 +92,7 @@ def _pair_dataset_inner(arguments: dict[str, Any]) -> dict[str, Any]:
     """One pair bounds memory; full raw/monthly/daily audits stay available."""
     market = Path(arguments["market_directory"])
     cache = Path(arguments["cache_directory"])
-    protocol = ResearchProtocol.model_validate(arguments["protocol"])
+    protocol = protocol_model(arguments["protocol"])
     config = ProjectConfig.model_validate(arguments["config"])
     pair = pd.DataFrame([arguments["pair"]])
     pair_id = str(arguments["pair"]["pair_id"])

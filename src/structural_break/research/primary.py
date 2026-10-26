@@ -19,7 +19,7 @@ from typing import Any
 import duckdb
 
 from structural_break.config.paths import ProjectPaths, confined_path
-from structural_break.research.protocol import ResearchProtocol, canonical_bytes, identity
+from structural_break.research.protocol import canonical_bytes, identity, protocol_model
 from structural_break.storage.database import DuckDBConnectionFactory
 from structural_break.storage.files import sha256_file, write_bytes
 
@@ -282,7 +282,7 @@ def _inputs(
     _pipeline_check(receipt)
     registry_version = receipt["registry_version"]
     registry_path, registry = registered_manifest(paths, registry_version, "registry")
-    protocol = ResearchProtocol.model_validate(registry["protocol"])
+    protocol = protocol_model(registry["protocol"])
     horizons = (protocol.primary_horizon, *protocol.sensitivity_horizons)
     if horizons != (20, 10, 30) or receipt.get("horizons") != list(horizons):
         raise ValueError("Primary readiness requires the predeclared 20/10/30 horizons")

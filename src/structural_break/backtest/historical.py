@@ -20,6 +20,7 @@ from typing import Any, Literal, cast
 
 import pandas as pd
 
+from structural_break import periods
 from structural_break.backtest.contracts import (
     ExecutionConfig,
     MarketSession,
@@ -119,7 +120,12 @@ def _chain(
     market_parent = _one(registry["inputs"], "market")
     market_file = confined_path(root, market_parent["path"])
     market = checked_json(market_file, market_parent["sha256"])
-    if market.get("final_test_prices_collected") is not False:
+    # Decision 118: a final-test generation may hold final-test prices once the owner has
+    # unlocked the final test; every other generation must not.
+    final_test = str(protocol.get("version", "")).startswith("final-test-")
+    if market.get("final_test_prices_collected") is not False and not (
+        final_test and periods.final_years_open()
+    ):
         raise ValueError("Market generation must not contain final-test prices")
     files = market["files"]
     return GenerationBinding(
