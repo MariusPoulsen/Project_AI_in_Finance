@@ -8,7 +8,8 @@ frozen code under ``configs/final_test.yaml`` (verified equal to the frozen regi
    stay UNKNOWN, as they are inert for the selection model) for the events after ``since``
    only, with the frozen research code;
 2. builds their model-input rows with the research job's own join and appends them to the
-   frozen model inputs; predictions get the registry's partition (``excluded``);
+   frozen model inputs; the frozen research predictions stay unchanged (final-test events are
+   excluded rows, which the research models never score);
 3. publishes a final-test evaluation whose parents are the final-test registry and both
    intelligence generations, with the frozen models and report.
 
@@ -185,12 +186,9 @@ def extend_evaluation(
     model_inputs = pd.concat(
         [old_inputs, new_rows.loc[:, list(frozen_inputs.columns)]], ignore_index=True
     )
-    partitions = frames["partitions"][["event_id", "research_partition"]]
-    new_predictions = partitions.reindex(columns=frozen_predictions.columns)
-    predictions = pd.concat(
-        [frozen_predictions[~frozen_predictions["event_id"].isin(new_ids)], new_predictions],
-        ignore_index=True,
-    )
+    # The research models score only fit, calibration and assessment rows; like every other
+    # excluded event, final-test events have no research prediction row.
+    predictions = frozen_predictions
     frozen_manifest = json.loads((frozen_evaluation / "manifest.json").read_bytes())
     inputs = {
         "registry_version": registry_version,
