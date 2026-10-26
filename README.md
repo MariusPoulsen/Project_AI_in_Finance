@@ -38,6 +38,26 @@ See [STATUS.md](docs/STATUS.md) for gates and evidence.
 `structural-break-reference` reproduces the original experiment in a separate
 workspace. `structural-break-backtest` runs the Phase 6 backtests (below).
 
+## Research application
+
+`app/research_app.py` is the full read-only application (PLAN P7): Overview,
+Scanner, Pair detail, Model Lab, Strategy Lab, Data and model monitor, and
+Methodology. It shows the spread with its entry/convergence/stop bands, both
+models' calibrated probabilities for every development event, exact feature
+contributions of the saved models (linear SHAP for logistic, TreeSHAP for
+XGBoost), the full A/B ablation ladder with paired intervals, the Phase 6
+backtest ladder, SEC coverage and data/model provenance on every page.
+
+```shell
+python scripts/team.py research-app                       # on the imported snapshot
+python scripts/team.py app-bundle --output outputs/app-bundles/v2   # small deployable bundle
+uv run --frozen structural-break-app synthetic --output outputs/app-bundles/synthetic  # invented preview
+```
+
+Data sources, bundles, the synthetic preview and Streamlit Community Cloud
+deployment are described in [app/README.md](app/README.md). `requirements.txt` is
+exported from `uv.lock` for hosts that install with pip.
+
 ## Setup
 
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/) and run from
@@ -166,6 +186,18 @@ freeze manifest. It never fetches or runs 2024–2025 data.
 The exploratory improvement and walk-forward experiments live in
 `structural_break.experiments` (`p6_improvement`, `p6_walkforward`). They are
 pre-registered, and every variant is reported.
+
+## Known issues and planned enhancements
+
+- The deployed demo bundle carries daily history for a showcase subset of
+  pairs; the full workspace view shows every pair.
+- SEC filing text is not in the group snapshot, so the app shows SEC *feature*
+  evidence per event rather than cited filing passages.
+- The multi-agent Full System is deferred (DECISIONS 40); the app shows it as
+  not run rather than inventing agent output.
+- Planned: agent cases and controller reason codes once an accepted controller
+  generation exists; cited filing chunks if a text-bearing demo snapshot is
+  approved; final-test pages only after the owner's explicit unlock.
 
 ## Development and documentation
 
