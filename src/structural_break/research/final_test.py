@@ -8,7 +8,8 @@ frozen code under ``configs/final_test.yaml`` (verified equal to the frozen regi
    stay UNKNOWN, as they are inert for the selection model) for the events after ``since``
    only, with the frozen research code;
 2. builds their model-input rows with the research job's own join and appends them to the
-   frozen model inputs; predictions get the registry's partition (``excluded``);
+   frozen model inputs; the frozen research predictions stay unchanged (final-test events are
+   excluded rows, which the research models never score);
 3. publishes a final-test evaluation whose parents are the final-test registry and both
    intelligence generations, with the frozen models and report.
 
@@ -145,6 +146,13 @@ def model_input_rows(
         validate="many_to_one",
     )
     rows["tone_aligned_contrast"] = rows["divergence_sign"] * rows["sentiment_net_contrast"]
+    # No final-test event is catalyst-extracted (no provider). The scheduler must still select at
+    # least one event, which would carry evidence_available = 1; it gets the value of every other
+    # unscheduled event instead (the only column that differs, verified in the rehearsal).
+    schedule = intelligence_dir / "catalyst_schedule.json"
+    if schedule.exists():
+        selected = set(json.loads(schedule.read_bytes()).get("selected_event_ids", []))
+        rows.loc[rows["evidence_event_id"].isin(selected), "evidence_available"] = 0.0
     return rows
 
 
@@ -178,12 +186,9 @@ def extend_evaluation(
     model_inputs = pd.concat(
         [old_inputs, new_rows.loc[:, list(frozen_inputs.columns)]], ignore_index=True
     )
-    partitions = frames["partitions"][["event_id", "research_partition"]]
-    new_predictions = partitions.reindex(columns=frozen_predictions.columns)
-    predictions = pd.concat(
-        [frozen_predictions[~frozen_predictions["event_id"].isin(new_ids)], new_predictions],
-        ignore_index=True,
-    )
+    # The research models score only fit, calibration and assessment rows; like every other
+    # excluded event, final-test events have no research prediction row.
+    predictions = frozen_predictions
     frozen_manifest = json.loads((frozen_evaluation / "manifest.json").read_bytes())
     inputs = {
         "registry_version": registry_version,
@@ -254,3 +259,77 @@ def write_binding(paths: ProjectPaths, evaluation_version: str) -> Path:
         "decision": "DECISIONS 118",
     }
     return write_bytes(paths.workspace_root / BINDING, canonical_bytes(record))
+
+
+# --------------------------------------------------------------------------- #
+# Price splice (Decision 118): frozen raw rows through the development cut, new rows after it
+# rescaled so the cut day's close and adjusted close equal the frozen values.
+# --------------------------------------------------------------------------- #
+
+YAHOO_NAMES = {
+    "open": "Open",
+    "high": "High",
+    "low": "Low",
+    "close": "Close",
+    "adj_close": "Adj Close",
+    "volume": "Volume",
+    "dividends": "Dividends",
+    "stock_splits": "Stock Splits",
+}
+
+
+def _yahoo_frame(ticker: str, rows: pd.DataFrame) -> pd.DataFrame:
+    """Rows in the layout ``yfinance.download(group_by="ticker")`` returns."""
+    frame = rows.set_index(pd.DatetimeIndex(pd.to_datetime(rows["trading_date"])))
+    frame = frame.loc[:, list(YAHOO_NAMES)].rename(columns=YAHOO_NAMES)
+    frame.columns = pd.MultiIndex.from_product([[ticker], list(frame.columns)])
+    return frame
+
+
+def splice(frozen: pd.DataFrame, new: pd.DataFrame, cut: date) -> pd.DataFrame:
+    """Frozen rows through ``cut``; new rows after it, scaled to the frozen level on ``cut``."""
+    old = frozen.loc[pd.to_datetime(frozen["trading_date"]).dt.date.le(cut)]
+    days = pd.to_datetime(new["trading_date"]).dt.date
+    anchor_old = old.loc[pd.to_datetime(old["trading_date"]).dt.date.eq(cut)]
+    anchor_new = new.loc[days.eq(cut)]
+    if len(anchor_old) != 1 or len(anchor_new) != 1:
+        raise ValueError(f"Both captures need the cut day {cut} to splice")
+    price = float(anchor_old["close"].iloc[0]) / float(anchor_new["close"].iloc[0])
+    adjusted = float(anchor_old["adj_close"].iloc[0]) / float(anchor_new["adj_close"].iloc[0])
+    after = new.loc[days.gt(cut)].copy()
+    for column in ("open", "high", "low", "close"):
+        after[column] = after[column] * price
+    after["adj_close"] = after["adj_close"] * adjusted
+    after["volume"] = after["volume"] / price
+    after["dividends"] = after["dividends"] * price
+    return pd.concat(
+        [
+            old.loc[:, list(YAHOO_NAMES) + ["trading_date"]],
+            after.loc[:, list(YAHOO_NAMES) + ["trading_date"]],
+        ],
+        ignore_index=True,
+    )
+
+
+def splice_downloader(frozen_raw: Path, cut: date, live: Any = None) -> Any:
+    """A ``collect_market`` downloader: frozen raw rows plus spliced live rows, per ticker."""
+    from structural_break.data.market import YAHOO_FIELDS
+
+    def download(tickers: list[str], start: str, end: str, **kwargs: Any) -> pd.DataFrame:
+        if len(tickers) != 1:
+            raise ValueError("The splice downloader serves one ticker per request")
+        ticker = tickers[0]
+        frozen = pd.read_parquet(frozen_raw / f"{ticker}.parquet")
+        source = live
+        if source is None:
+            import yfinance
+
+            source = yfinance.download
+        window_start = (pd.Timestamp(cut) - pd.Timedelta(days=60)).date().isoformat()
+        batch = source([ticker], start=window_start, end=end, **kwargs)
+        raw = pd.DataFrame(batch.xs(ticker, axis=1, level=0)).rename(columns=YAHOO_FIELDS)
+        raw.insert(0, "trading_date", pd.DatetimeIndex(raw.index).date)
+        raw = raw.reset_index(drop=True)
+        return _yahoo_frame(ticker, splice(frozen, raw, cut))
+
+    return download

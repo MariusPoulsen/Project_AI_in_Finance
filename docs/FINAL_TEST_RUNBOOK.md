@@ -24,14 +24,25 @@ an estimate), **Owner** or **Group** (a person's action).
 | 0a | Group completes the blind review of 50 agent cases | **Group** | `docs/agent_review/review_answers.csv` |
 | 0b | Owner reviews the freeze manifest | **Owner** | [FREEZE_MANIFEST.md](FREEZE_MANIFEST.md) |
 | 0c | Owner writes the unlock record (template below) | **Owner** | in `docs/DECISIONS.md` |
-| 1 | Research layer in final-test mode: capture 2024–2025 prices and SEC filings for the 250 issuers, extend relationship snapshots, build 2024–2025 events, labels and Model A/B inputs | **Build** (about 2–3 days of work plus compute; a rehearsal on 2022–2023 first) | the research protocol is hard-locked below 2024 by design (`final_test_locked: true`); it needs an unlock-gated final-test protocol and a pre-registered rule for joining the new price capture to the frozen 2004–2023 prices |
-| 2 | Book inputs on the final-test workspace | **Ready** once step 1 exists | `python -m structural_break.pipeline.build_inputs plan` (walk-forward frame, SEC timing, 8-K news and tone, headline tone, news-exit results, features, OU, R1, costs, residual targets) |
+| 1 | Research layer in final-test mode: spliced 2024–2025 prices, SEC metadata, registry, intelligence for new events, final-test evaluation and binding (Decision 118) | **Ready** (rehearsed: registry, splice and intelligence reproduce the frozen data) | `scripts/final_test_data.py market --archive …`, `sec`, `registry --workers 4`, `intelligence --archive …`, `evaluation`, `check` (about 8 hours, mostly the registry) |
+| 2 | Book inputs on the final-test workspace | **Ready** | `python -m structural_break.pipeline.build_inputs plan` (walk-forward frame, SEC timing, 8-K news and tone, headline tone, news-exit results, features, OU, R1, costs, residual targets) |
 | 3 | Forecasters refitted walk-forward through 2025 | **Ready** | `python -m structural_break.forecast.model_b_scores`; `python -m structural_break.forecast.harness run --specs B+rule+ou B+rule+ou+track --schemes recent:bag5` |
 | 4 | Company headlines 2024–2025 | **Ready** | TickerTick (Decision 116d): the 2025-05-26 bulk file, then the live API from 26 May 2025; see [NEWS_2024_2025.md](NEWS_2024_2025.md) |
 | 5 | Monitor cases, FinBERT triage and the Gemma monitor run | **Ready** | the desk reads FNSPID up to 2023 and `data/external/news_final/headlines.parquet` for the unlocked years; `desk_runner build-monitor`, `scripts/agents/monitor_triage.py`, `desk_runner run --kind monitor` (about 1,100 calls, within the free tier) |
 | 6 | Adopted book and the same book without the monitor exit | **Ready** (rehearsed on 2022–2023) | `python scripts/final_test_report.py` (refuses while locked; `--rehearsal` runs 2022–2023) |
 | 7 | Goal 1 and Goal 2 report, opened once | **Ready** (same script) | AUC, PR-AUC, log loss, Brier; Sharpe, CAGR with and without cash, drawdown, turnover, costs |
 | 8 | Plan ladder (Baseline 0, Baseline 1, Model A, Model B) under the frozen Decision 36 policy | **Build** with step 1 | `structural-break-backtest` on the final-test workspace, after `final-test-gate` |
+
+## Setting up the final-test checkout
+
+```powershell
+git worktree add ..inal_test <frozen commit>          # the commit pinned by the freeze manifest
+robocopy data	eam ..inal_test\data	eam /E          # the frozen workspace
+robocopy <archive>\sec_metadata\source_v3 ..inal_test\data	eam\sec_metadata\source_v3 /E
+cd ..inal_test                                          # every later command runs here
+```
+
+`outputs/` starts empty in that checkout, so the development results cannot be overwritten.
 
 ## Unlock record template
 

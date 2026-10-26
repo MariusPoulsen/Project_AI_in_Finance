@@ -5,9 +5,9 @@
 | | |
 |---|---|
 | Manifest | [freeze/research_freeze_manifest.json](freeze/research_freeze_manifest.json) |
-| SHA-256 of the manifest file | `8d5a3c5c6d3f86c4dedeb29da05322f9aa70a660d1c9bfd6f895454407d2be2f` |
-| Code commit it pins | `3ea08f720e3c7cc9d84333a035333a71c0c324dd` on `p6/agent-layer` (clean tree) |
-| Files pinned by SHA-256 | 124: every module of `pipeline`, `forecast`, `book`, `agents`, `decision`, `intelligence` and `backtest`, the scripts, the configs, and the book's data inputs |
+| SHA-256 of the manifest file | `4c4104399b6fb4b38b3585e22446d6258e5d7b369ddd9f31bdf98a6bd355def7` |
+| Code commit it pins | `3339ff8882c444541a74781d09bcb509f28b6331` on `p6/agent-layer` (clean tree) |
+| Files pinned by SHA-256 | 128: every module of `pipeline`, `forecast`, `book`, `agents`, `decision`, `intelligence` and `backtest`, the scripts, the configs, and the book's data inputs |
 | Built by | `python scripts/freeze_manifest.py` (Decisions 113 and 115) |
 
 ## What it fixes
