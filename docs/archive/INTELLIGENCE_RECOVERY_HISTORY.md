@@ -7,7 +7,7 @@ prior attempts. They are historical records, not current launch instructions or
 proof of completed features, fitted results or promotion.
 
 Use the [current runbook](../RESEARCH_RUNBOOK.md) for active commands,
-[status](../STATUS.md) for remaining gates and [decisions](../DECISIONS.md) for
+[status](PHASE_STATUS.md) for remaining gates and [decisions](../DECISIONS.md) for
 canonical amendments. All original narrative and immutable identities below
 are retained; only Markdown link destinations are adjusted for this archive
 directory and the corresponding historical snapshots. The original runbook byte SHA-256 is
