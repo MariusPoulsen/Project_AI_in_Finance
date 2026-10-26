@@ -24,6 +24,7 @@ from typing import Any, Self, cast
 
 import pandas as pd
 
+from structural_break import periods
 from structural_break.config.paths import ProjectPaths, confined_path
 from structural_break.data.http import FetchedResponse, HttpClient, SourceError
 from structural_break.data.sec import (
@@ -285,8 +286,9 @@ def collect_sec_metadata(
     produces an auditable partial capture, never a completed coverage assertion.
     Missing acceptance times remain ineligible; filing dates are not substitutes.
     """
-    if start > end or end > date(2023, 12, 31):
-        raise ValueError("Research SEC development sources must end by 2023-12-31")
+    # Decision 118: the final-test end only after the owner's unlock (periods.data_end).
+    if start > end or end > periods.data_end():
+        raise ValueError(f"Research SEC sources must end by {periods.data_end()}")
     if max_issuers is not None and (type(max_issuers) is not int or max_issuers < 1):
         raise ValueError("SEC metadata issuer limit must be a positive integer")
     freeze = verify_universe_freeze(frozen_universe_dir)
@@ -398,7 +400,7 @@ def collect_sec_metadata(
         "scheduled_issuer_count": sum(row["status"] != "NOT_SCHEDULED" for row in coverage),
         "complete_source_issuer_count": sum(row["status"] == "OK" for row in coverage),
         "missing_acceptance_count": int(filings["acceptance_datetime_utc"].isna().sum()),
-        "final_test_sources_requested": False,
+        "final_test_sources_requested": end > periods.DEVELOPMENT_END,
         "timestamp_recovery_from_filing_date": False,
     }
     write_bytes(output_dir / "manifest.json", json_bytes(manifest))
@@ -494,8 +496,9 @@ def verify_sec_metadata(directory: Path, frozen_universe_dir: Path) -> dict[str,
         )
         or inputs["universe_freeze_id"] != freeze["freeze_id"]
         or inputs["universe_manifest_sha256"] != sha256_file(frozen_universe_dir / "manifest.json")
-        or date.fromisoformat(inputs["end"]) > date(2023, 12, 31)
-        or manifest.get("final_test_sources_requested") is not False
+        or date.fromisoformat(inputs["end"]) > periods.data_end()
+        or manifest.get("final_test_sources_requested")
+        is not (date.fromisoformat(inputs["end"]) > periods.DEVELOPMENT_END)
     ):
         raise ValueError("SEC metadata violates its frozen universe or final-test boundary")
     sources = json.loads((directory / "sources.json").read_bytes())
@@ -587,7 +590,7 @@ def _event_inputs(events: pd.DataFrame, pairs: pd.DataFrame) -> pd.DataFrame:
         if pd.isna(stamp) or pd.isna(cutoff) or stamp.tzinfo is None or cutoff.tzinfo is None:
             raise ValueError("Research SEC event cutoff violates the development information set")
         stamp, cutoff = stamp.tz_convert("UTC"), cutoff.tz_convert("UTC")
-        if cutoff > stamp or stamp.date() > date(2023, 12, 31) or stamp.date() < date(2004, 1, 1):
+        if cutoff > stamp or stamp.date() > periods.data_end() or stamp.date() < date(2004, 1, 1):
             raise ValueError("Research SEC event cutoff violates the development information set")
         start, end = pair.get("active_from"), pair.get("active_to")
         if (pd.notna(start) and min(stamp.date(), cutoff.date()) < pd.Timestamp(start).date()) or (

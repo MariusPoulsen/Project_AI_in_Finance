@@ -109,7 +109,7 @@ def collect_market(
     """
     # Decision 118: the final-test end only after the owner's unlock (periods.data_end).
     if start >= end or end > periods.data_end():
-        raise ValueError("Research-v2 development collection must end by 2023-12-31")
+        raise ValueError(f"Research market collection must end by {periods.data_end()}")
     if not 1 <= attempts <= 5 or not 0 <= min_interval_seconds <= 60:
         raise ValueError("Invalid bounded market source policy")
     freeze = verify_universe_freeze(frozen_universe_dir)

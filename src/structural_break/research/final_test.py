@@ -323,7 +323,7 @@ def splice_downloader(frozen_raw: Path, cut: date, live: Any = None) -> Any:
         window_start = (pd.Timestamp(cut) - pd.Timedelta(days=60)).date().isoformat()
         batch = source([ticker], start=window_start, end=end, **kwargs)
         raw = pd.DataFrame(batch.xs(ticker, axis=1, level=0)).rename(columns=YAHOO_FIELDS)
-        raw.insert(0, "trading_date", raw.index.date)
+        raw.insert(0, "trading_date", pd.DatetimeIndex(raw.index).date)
         raw = raw.reset_index(drop=True)
         return _yahoo_frame(ticker, splice(frozen, raw, cut))
 
