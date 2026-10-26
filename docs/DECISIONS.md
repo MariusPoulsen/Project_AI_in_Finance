@@ -5586,3 +5586,32 @@ same companies and dates. It reads no 2024–2025 data and changes no frozen set
 
 **Guard.** The adapter refuses any request that ends after 2023-12-31 unless the decision
 log holds an owner unlock record citing the freeze manifest's SHA-256.
+
+### 116a. Amendment before any calibration measure: Alpha Vantage news is premium; GDELT and TickerTick instead
+
+**Finding.** Both format probes (one ticker-week, MA, 2023-01-02 to 01-08; one with and one
+without the sort and limit options) returned "This is a premium endpoint". The free key
+cannot read historical `NEWS_SENTIMENT`, and paid APIs stay off. No headline was read; two of
+the 25 daily requests were used. The 20-ticker sample (drawn before any request) is kept.
+
+**Candidates**, calibrated against FNSPID with the unchanged sample, window, definitions,
+measures and rule of Decision 116:
+- **A. GDELT DOC 2.0 API** (free, no key, English news from 2017 to now): one article-list
+  query per ticker and calendar week for the company name as a phrase (the FNSPID name
+  variants), up to 250 articles a query; GDELT's `seendate` (UTC) is the stamp. It covers
+  all of 2024–2025 with one method.
+- **B. TickerTick** (free; the 2023-11-23 bulk file of about 8 million stories): stories whose
+  `tickers_direct` lists the ticker, with the `unix_timestamp` converted to US Eastern time.
+  Its later bulk file covers January 2024 to 25 May 2025 only (from the release notes, not
+  from data) and is **not downloaded** before the unlock, since it holds final-test news.
+
+**Choice of the final-test source.**
+- GDELT is adopted if it passes the Decision 116 rule. If it does not, it is still adopted
+  if TickerTick also fails, as the only free source covering all of 2024–2025 with one
+  method, and the ratios are reported as a limitation.
+- If GDELT fails and TickerTick passes, TickerTick is adopted for 2024 to May 2025, and the
+  June–December 2025 gap is reported; whether its live API can fill the gap is checked only
+  after the unlock.
+- The monitor stays frozen in every case.
+
+The Alpha Vantage adapter stays in the code with its guard; it is not used.
