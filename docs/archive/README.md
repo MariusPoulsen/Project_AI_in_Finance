@@ -25,7 +25,7 @@ are retained. Status in a snapshot is historical.
 
 - [Full decision history](DECISIONS_HISTORY.md)
 - [Implementation and acceptance history](IMPLEMENTATION_HISTORY.md)
-- [Research protocol amendment diagnostics](RESEARCH_V2_PROTOCOL_HISTORY.md)
+- [Research protocol amendment diagnostics](RESEARCH_PROTOCOL_HISTORY.md)
 - [SEC metadata replay history](SEC_METADATA_RECAPTURE_HISTORY.md)
 - [Intelligence recovery and benchmark history](INTELLIGENCE_RECOVERY_HISTORY.md)
 

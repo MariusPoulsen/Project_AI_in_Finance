@@ -201,7 +201,7 @@ Final-test outcomes remain locked; current P5 work is tracked below.
 ## Research v2 — authorized development redesign
 
 Status: **ACCEPTED** 2026-10-17 (DECISIONS section 34). Current delivery gates are in `docs/STATUS.md`; the
-scientific authority is `docs/RESEARCH_V2_PROTOCOL.md`. Detailed prior acceptance
+scientific authority is `docs/RESEARCH_PROTOCOL.md`. Detailed prior acceptance
 and recovery records are archived, rather than repeated in this plan.
 
 - [x] Freeze the 250-issuer, 40-group, 736-pair business-peer roster and original orientations.
@@ -223,7 +223,7 @@ The detached worker performs feature generation only. Model fits, independent
 verification, publication and merge are separate gates. It does not open the
 2024–2025 final test or establish Model B improvement. The old worker has exited;
 cleanup and recovery are integrated before the next frozen launch. Commands are in
-`docs/RESEARCH_V2_RUNBOOK.md`.
+`docs/RESEARCH_RUNBOOK.md`.
 
 ---
 
@@ -252,7 +252,7 @@ bit-identical without the columns.
   pre-registered.
 
 The human 50-event review is exported for the group. See
-`docs/P6_AGENT_LAYER.md`.
+`docs/archive/DEBATE_LAYER.md`.
 
 Work is isolated on `phase5/agents-controller-foundation`. Keep the live v2
 checkout and its 37,421-event population, source-v3 inputs, quality-v2 FinBERT,

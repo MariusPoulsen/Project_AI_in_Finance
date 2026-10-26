@@ -522,7 +522,7 @@ The user will prepare the final academic written report and presentation/video s
 - On 2026-10-06 the user authorized implementation and scientific design of the
   redesign with the aim of improving Model B over matched Model A. The original
   Phase 4 experiment remains an immutable reference. The authorized new protocol
-  is `configs/research_v2.yaml` and `docs/RESEARCH_V2_PROTOCOL.md`, frozen before
+  is `configs/research_v2.yaml` and `docs/RESEARCH_PROTOCOL.md`, frozen before
   computing added development labels. No 2024–2025 outcome unlock is granted.
 - Freeze 250 current-survivor domestic issuer candidates in 40 documented peer
   groups, 736 fixed pairs including the original 28 orientations. Business-group

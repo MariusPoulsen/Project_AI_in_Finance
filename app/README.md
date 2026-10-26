@@ -18,7 +18,7 @@ explicitly published. Missing outputs show a pending state; failed verification
 shows an error. Browsing does not download sources, call providers, fit models
 or write analytical results. The current actual study is still awaiting feature
 completion, model fitting and acceptance: see [status](../docs/STATUS.md) and
-the [publication runbook](../docs/RESEARCH_V2_RUNBOOK.md).
+the [publication runbook](../docs/RESEARCH_RUNBOOK.md).
 
 `reference_streamlit_app.py` preserves the original Scanner and Pair Detail
 interface for its recorded workspace. Reproduction instructions live in the

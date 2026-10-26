@@ -1,7 +1,7 @@
 # SEC timing features and recent-news catalysts
 
-Exploratory work pre-registered in [DECISIONS 47](DECISIONS.md),
-[DECISIONS 50](DECISIONS.md) and [DECISIONS 51](DECISIONS.md); results in
+Exploratory work pre-registered in [DECISIONS 47](../DECISIONS.md),
+[DECISIONS 50](../DECISIONS.md) and [DECISIONS 51](../DECISIONS.md); results in
 DECISIONS 48, 53, 54, 56, 58, 60, 62 and 64. Each block is added to
 v2's Model B and tested against B with the Decision 45 walk-forward (fit before
 year Y−1, threshold on Y−1, score Y; 2010–2021 decide, 2022–2023 reference).

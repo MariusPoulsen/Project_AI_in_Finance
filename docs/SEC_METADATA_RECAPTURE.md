@@ -129,7 +129,7 @@ or raw source provenance. Parser caching and audited checkpoint recovery likewis
 preserve this source and its admission rules. Independent scientific verification
 uses fresh raw-source replay; a checkpoint audit alone is not that acceptance.
 
-See [the current protocol](RESEARCH_V2_PROTOCOL.md), [delivery gates](STATUS.md)
+See [the current protocol](RESEARCH_PROTOCOL.md), [delivery gates](STATUS.md)
 and [archived replay/engineering history](archive/SEC_METADATA_RECAPTURE_HISTORY.md)
 for the distinct source, inference and publication gates. Preserve source_v1/v2/v3,
 all body/retrieval identities, previous tone policies/caches and failed attempts.

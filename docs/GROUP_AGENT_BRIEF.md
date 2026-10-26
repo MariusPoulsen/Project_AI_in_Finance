@@ -76,7 +76,7 @@ Full instructions: `docs/GROUP_QUICKSTART.md`.
 
 1. `AGENTS.md`: binding rules for every agent in this repo.
 2. `docs/DECISIONS.md`: canonical decisions. These override any other document.
-3. `docs/RESEARCH_V2_PROTOCOL.md`: the scientific protocol.
+3. `docs/RESEARCH_PROTOCOL.md`: the scientific protocol.
 4. `docs/GROUP_QUICKSTART.md`: snapshot workflow.
 5. Your work stream's specification (section 5 below).
 
@@ -137,7 +137,7 @@ stop and ask the human.
 - New dependencies: `uv add <pkg>` (updates `uv.lock`; mention it in the PR).
   CI runs without network; tests must use small deterministic fixtures, never the
   snapshot or paid/LLM APIs.
-- Avoid editing `docs/DECISIONS.md`, `docs/RESEARCH_V2_PROTOCOL.md`,
+- Avoid editing `docs/DECISIONS.md`, `docs/RESEARCH_PROTOCOL.md`,
   `docs/STATUS.md` and `docs/PLAN.md` (merge-conflict hotspots and Marius's
   canonical record). Put your notes in `docs/team/<stream>.md` instead; Marius
   folds accepted decisions into the canonical docs.
@@ -240,7 +240,7 @@ every table; all ten bundles and all three horizons reported (no cherry-picking)
 PLAN phase: **P5** (multi-agent investigation and decision controller).
 
 The merged Phase 5 foundation in `src/structural_break/agents/` (CLI
-`structural-break-agents`, runbook `docs/PHASE5_RUNBOOK.md`, DECISIONS sections
+`structural-break-agents`, runbook `docs/archive/AGENT_PIPELINE_RUNBOOK.md`, DECISIONS sections
 28-29) has bounded LLM agents and a deterministic controller plus a 50-case blinded
 SEC review export with zero human annotations so far. Whether the multi-agent
 layer is completed is still undecided. A group member can complete the blind

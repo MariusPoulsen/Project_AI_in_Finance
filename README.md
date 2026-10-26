@@ -18,15 +18,15 @@ calibration and assessment periods.
 - **Phase 6 backtesting is accepted for development** (DECISIONS 35–42). One
   frozen execution engine and cost policy runs Baseline 0/1 and Models A/B on
   the 2022–2023 assessment years. Results are in
-  [P6_DEVELOPMENT_RESULTS.md](docs/P6_DEVELOPMENT_RESULTS.md): at frozen costs,
+  [P6_DEVELOPMENT_RESULTS.md](docs/archive/DEVELOPMENT_RESULTS.md): at frozen costs,
   no strategy shows an economic effect distinguishable from noise.
 - **Exploratory follow-ups** are in
-  [P6_IMPROVEMENT_RESULTS.md](docs/P6_IMPROVEMENT_RESULTS.md) (DECISIONS
+  [P6_IMPROVEMENT_RESULTS.md](docs/archive/IMPROVEMENT_RESULTS.md) (DECISIONS
   43–46). The pre-registered model and trading improvements did not make B
   beat A. A promising lead then failed its walk-forward replication over
   2010–2021 (+1.1 bps per candidate, 95 % interval [−0.5, +2.8]) and was not
   adopted.
-- **Quant research programme** ([P6_QUANT_RESEARCH.md](docs/P6_QUANT_RESEARCH.md),
+- **Quant research programme** ([P6_QUANT_RESEARCH.md](docs/FORECASTING_AND_BOOK.md),
   DECISIONS 75–91). Peer, earnings-calendar, momentum, relationship-state and
   structural Ornstein–Uhlenbeck features, with seed bagging, significantly
   improve the reversion forecast on the 2018–2023 holdout (ROC-AUC
@@ -35,7 +35,7 @@ calibration and assessment periods.
   from break-even into Sharpe 0.42, +2.3 % CAGR over 2010–2023. This is
   proposed for the final test; the owner decides.
 - **New SEC information blocks** are in
-  [P6_SEC_FEATURES.md](docs/P6_SEC_FEATURES.md) (DECISIONS 47–54). Narrow
+  [P6_SEC_FEATURES.md](docs/archive/SEC_FEATURES.md) (DECISIONS 47–54). Narrow
   filing-timing features, Gemma labels of each company's 8-K news from the
   three sessions before each divergence, and FinBERT tone of that news all
   failed their pre-registered walk-forward tests against Model B, as did a
@@ -87,8 +87,8 @@ Source clones contain no generated data or model weights.
 
 ## Run the study
 
-Read the [protocol](docs/RESEARCH_V2_PROTOCOL.md) and
-[runbook](docs/RESEARCH_V2_RUNBOOK.md) before launching jobs. Preserve the active
+Read the [protocol](docs/RESEARCH_PROTOCOL.md) and
+[runbook](docs/RESEARCH_RUNBOOK.md) before launching jobs. Preserve the active
 local build and its frozen source. Its detached-launch receipt supplies a manual
 progress command; the runbook describes audited recovery.
 
@@ -198,20 +198,20 @@ Tests use deterministic offline fixtures, with network sockets blocked. Genuine
 source/model acceptance is a separate gate. Release checks include Windows/Linux
 CI and independent replay of all actual evaluations.
 
-The [agent runbook](docs/PHASE5_RUNBOOK.md) runs the bounded debate and deterministic
+The [agent runbook](docs/archive/AGENT_PIPELINE_RUNBOOK.md) runs the bounded debate and deterministic
 controller with synthetic inputs. Genuine agent integration and quality
 evaluation are deferred (DECISIONS 40), so the Full System rung is not run in
 the backtests.
 
-- Current research: [protocol](docs/RESEARCH_V2_PROTOCOL.md),
-  [runbook](docs/RESEARCH_V2_RUNBOOK.md),
+- Current research: [protocol](docs/RESEARCH_PROTOCOL.md),
+  [runbook](docs/RESEARCH_RUNBOOK.md),
   [status](docs/STATUS.md).
 - Backtesting: [runbook](docs/BACKTEST_RUNBOOK.md),
-  [development results](docs/P6_DEVELOPMENT_RESULTS.md),
-  [improvement results](docs/P6_IMPROVEMENT_RESULTS.md),
-  [SEC timing and catalysts](docs/P6_SEC_FEATURES.md),
-  [boosting and cointegration](docs/P6_BOOSTING.md),
-  [quant research programme](docs/P6_QUANT_RESEARCH.md).
+  [development results](docs/archive/DEVELOPMENT_RESULTS.md),
+  [improvement results](docs/archive/IMPROVEMENT_RESULTS.md),
+  [SEC timing and catalysts](docs/archive/SEC_FEATURES.md),
+  [boosting and cointegration](docs/archive/BOOSTING_TUNING.md),
+  [quant research programme](docs/FORECASTING_AND_BOOK.md).
 - Governance: [decisions](docs/DECISIONS.md), [plan](docs/PLAN.md),
   [specifications](docs/specs/README.md).
 - [Archive](docs/archive/README.md): original reproduction runbooks for

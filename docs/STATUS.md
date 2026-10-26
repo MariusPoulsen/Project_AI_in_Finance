@@ -40,7 +40,7 @@ clocks still fail. The one-next-event source overlap, one CPU model, inference
 settings, 500-event schedule, model definitions and final lock stay fixed.
 
 Actual audit, launch, progress and exit facts belong to the new operational
-receipts. The [runbook](RESEARCH_V2_RUNBOOK.md) describes the exact recovery and
+receipts. The [runbook](RESEARCH_RUNBOOK.md) describes the exact recovery and
 manual-status commands; never infer a live worker from this static snapshot.
 
 The empty-clock repair passed 135 focused regression cases across the suite and
@@ -71,7 +71,7 @@ are not valid release receipts for this generation.
 
 The detached worker only builds features. No automatic fitting, publication or
 merge follows it. Keep its live source checkout frozen after launch. See
-[the runbook](RESEARCH_V2_RUNBOOK.md) for
+[the runbook](RESEARCH_RUNBOOK.md) for
 manual status, recovery, evaluation and publication commands.
 
 The [original experiment](archive/README.md#original-experiment), source snapshots,
@@ -104,7 +104,7 @@ and fixture workflow in [CI run 38107828059](https://github.com/MariusPoulsen/Pr
 The expanded batch slice passed full hosted Linux checks on `e93df1c` in
 [CI run 38109150954](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/38109150954).
 Commands are in
-[the agent runbook](PHASE5_RUNBOOK.md). The accepted-generation adapter, genuine
+[the agent runbook](archive/AGENT_PIPELINE_RUNBOOK.md). The accepted-generation adapter, genuine
 provider pilot and at least 50 human annotations remain pending; fixtures do not
 establish semantic correctness or predictive usefulness.
 
@@ -228,7 +228,7 @@ DEFERRED), and `final-test-gate` reports locked. The official diagnostics
 matched the provisional ones exactly. The run took 135 minutes on one thread.
 
 The results are post-hoc 2022–2023 development results, recorded in
-`docs/P6_DEVELOPMENT_RESULTS.md`; DECISIONS 35–42 cover this work. The Phase 6
+`docs/archive/DEVELOPMENT_RESULTS.md`; DECISIONS 35–42 cover this work. The Phase 6
 suite passes 355 checks with sockets blocked, along with Ruff, formatting and
 strict mypy.
 

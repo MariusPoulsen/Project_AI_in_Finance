@@ -1,7 +1,7 @@
 # Workstream 1: boosting, tuning and cointegration experiments
 
 Branch `p6/boosting-tuning`. Pre-registrations and results:
-[DECISIONS 65–70](DECISIONS.md). Nothing here changes the frozen Decision
+[DECISIONS 65–70](../DECISIONS.md). Nothing here changes the frozen Decision
 36–42 policies or the accepted v2 snapshot, and the 2024–2025 final test
 stays locked.
 

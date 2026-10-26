@@ -233,7 +233,7 @@ SHA-256 `4311287edfcd2aa8fc1f095ffae2b099ec549f9ee5207c1f74d9d26f8b2c111e`.
 These checks cover the quality, reporting and compact-union amendments; they do
 not establish complete historical feature coverage or predictive improvement.
 
-See [the protocol](RESEARCH_V2_PROTOCOL_HISTORY.md) and
+See [the protocol](RESEARCH_PROTOCOL_HISTORY.md) and
 [runbook](INTELLIGENCE_RECOVERY_HISTORY.md) for commands and scientific limitations.
 
 ## Phase 0 — foundation
@@ -839,7 +839,7 @@ tuning through 2019, separate 2020–2021 calibration and 2022–2023 assessment
 predeclared 10/20/30-session targets, SEC metadata, pinned local FinBERT and a
 guarded, year/business-group balanced Gemma pilot. Its larger estimable-crossing
 population and ACTIVE subset are separate from the canonical experiment. See
-[the protocol](RESEARCH_V2_PROTOCOL_HISTORY.md) and [runbook](INTELLIGENCE_RECOVERY_HISTORY.md).
+[the protocol](RESEARCH_PROTOCOL_HISTORY.md) and [runbook](INTELLIGENCE_RECOVERY_HISTORY.md).
 
 Hosted CI for `3c01d262` passed the committed offline pipeline, balanced catalyst
 schedule and v2 metadata guards on Windows, Linux and Colab. At `100e1e48`, the

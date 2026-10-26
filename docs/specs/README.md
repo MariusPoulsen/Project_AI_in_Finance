@@ -1,7 +1,7 @@
 # Component specification index
 
 Read [current decisions](../DECISIONS.md), [the plan](../PLAN.md) and the relevant
-component contract. The [v2 protocol](../RESEARCH_V2_PROTOCOL.md) governs the
+component contract. The [v2 protocol](../RESEARCH_PROTOCOL.md) governs the
 expanded study where older specification defaults differ. These files remain
 stable reference contracts; their presence does not imply every subsystem is implemented.
 

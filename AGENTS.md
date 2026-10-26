@@ -22,8 +22,8 @@ Before substantial work, read in this order:
 1. `docs/DECISIONS.md` — canonical decisions, including the v2 amendments and promotion;
    overrides conflicting or stale wording elsewhere.
 2. The active work/gate in `docs/PLAN.md`.
-3. For primary research, `docs/RESEARCH_V2_PROTOCOL.md` and the relevant section of
-   `docs/RESEARCH_V2_RUNBOOK.md`; otherwise only the relevant specification(s).
+3. For primary research, `docs/RESEARCH_PROTOCOL.md` and the relevant section of
+   `docs/RESEARCH_RUNBOOK.md`; otherwise only the relevant specification(s).
 
 Use `docs/specs/README.md` to find component specifications. Original experiment runbooks in `docs/archive/reference/`
 and configurations remain reference contracts; their old dates/populations are not

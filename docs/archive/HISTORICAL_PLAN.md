@@ -147,7 +147,7 @@ under `tmp_path` and never the provisional data)
 ## 3. Step B: production execution policy proposal (DRAFT, needs your approval)
 
 Deliverables:
-- `docs/proposals/P6_EXECUTION_POLICY.md`;
+- `docs/archive/EXECUTION_POLICY_PROPOSAL.md`;
 - `configs/phase6_execution_proposed.json` (`status: DRAFT`);
 - a target-blind diagnostics script.
 

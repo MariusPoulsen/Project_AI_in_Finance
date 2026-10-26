@@ -1,8 +1,8 @@
 # Run the bounded multi-agent investigation
 
 Phase 5 is under implementation on `phase5/agents-controller-foundation`.
-[Decision 26](DECISIONS.md#26-phase-5-bounded-adversarial-investigation) and the
-[specification](specs/04_MULTI_AGENT_PIPELINE.md) define its current design.
+[Decision 26](../DECISIONS.md#26-phase-5-bounded-adversarial-investigation) and the
+[specification](../specs/04_MULTI_AGENT_PIPELINE.md) define its current design.
 Keep this checkout separate from the frozen live v2 build until all v2
 feature/model/replay/CI/publication gates pass. These commands run synthetic
 fixtures; they do not fit models, consume live quota or open final-test outcomes.
@@ -221,7 +221,7 @@ are still needed for Phase 5 completion.
 
 ## Registered historical sources and model bridge
 
-[Decision 30](DECISIONS.md#30-historical-bridges-and-economic-analysis-before-v2-completion)
+[Decision 30](../DECISIONS.md#30-historical-bridges-and-economic-analysis-before-v2-completion)
 adds two explicit offline adapters. They do not download, fit, call a provider or
 change the running v2 checkout. `--research-workspace` names the existing research
 workspace itself (normally `PROJECT/data/research_v2`), while `--cache-workspace`

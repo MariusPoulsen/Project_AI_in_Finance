@@ -198,7 +198,7 @@ transition and `development_primary_v2` launch are pending. Launch proof:
 `587e55d4ddc0f8d006a5b476d319c205a973055f27beed6c6dbe7a6a77447613`.
 The quality batch uses the separately versioned
 `sec-sentence-quality-wordpiece-v2` FinBERT amendment described in
-[the protocol](RESEARCH_V2_PROTOCOL_HISTORY.md#fit-input-preprocessing-amendment).
+[the protocol](RESEARCH_PROTOCOL_HISTORY.md#fit-input-preprocessing-amendment).
 It is based on nineteen FIT-only source inputs after quantitative cohorts were
 constructed and before any research model assessment; no labels/scores or
 calibration/assessment text informed it. This changes sentiment preprocessing,

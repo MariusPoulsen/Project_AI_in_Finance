@@ -280,7 +280,7 @@ For each of h20, h10 and h30 it runs the experiment, verifies it by fresh
 replay and writes the policy diagnostics. It then writes
 `freeze/<freeze_id>/freeze-manifest.json`. The official run on 2026-10-17 took
 135 minutes on one thread (h20 took about 45 minutes including its replay);
-see `docs/P6_DEVELOPMENT_RESULTS.md`. Review the manifest's `open_decisions`.
+see `docs/archive/DEVELOPMENT_RESULTS.md`. Review the manifest's `open_decisions`.
 
 The final test stays locked. Check the gate with:
 
@@ -294,7 +294,7 @@ unlock record binds that exact manifest. Passing the gate does not run or fetch
 
 ### Target-blind execution-policy diagnostics
 
-The proposal in `docs/proposals/P6_EXECUTION_POLICY.md` is supported by a
+The proposal in `docs/archive/EXECUTION_POLICY_PROPOSAL.md` is supported by a
 diagnostics command. It reads only fit- and calibration-period data (dates
 before the bound assessment start) and summarizes three things:
 
@@ -339,7 +339,7 @@ threshold is 0.30, with 0.20, 0.40 and 0.65 reported.
 The engine still refuses captured input under a DRAFT policy, and fixture mode
 cannot admit a captured market request. Legacy `configs/backtest.yaml` remains
 an original reference contract. The cited rationale is in
-`docs/proposals/P6_EXECUTION_POLICY.md`.
+`docs/archive/EXECUTION_POLICY_PROPOSAL.md`.
 
 Typed input/config files can be submitted explicitly:
 

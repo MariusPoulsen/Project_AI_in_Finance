@@ -16,7 +16,7 @@ manifests are retained.
 - **Phase 6 backtesting** (`src/structural_break/backtest/`,
   `structural-break-backtest`) runs on the imported accepted workspace under
   frozen execution policies. See [BACKTEST_RUNBOOK.md](BACKTEST_RUNBOOK.md) and
-  [P6_DEVELOPMENT_RESULTS.md](P6_DEVELOPMENT_RESULTS.md).
+  [archive/DEVELOPMENT_RESULTS.md](archive/DEVELOPMENT_RESULTS.md).
 
 Coding agents: give your agent [GROUP_AGENT_BRIEF.md](GROUP_AGENT_BRIEF.md) first.
 Keep per-stream notes in [docs/team/](team/README.md).

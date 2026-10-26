@@ -11,5 +11,5 @@ They read and write `outputs/p6_quant/`.
 | `stage_d.py` | Decision 85 Goal 2 selections (the OU-alone forecaster was erased, Decision 114) |
 | `stage_f.py` | Decision 87 expected-value ranking (F-b; F-a erased, Decision 114) |
 | `eval_sel.py` | Per-candidate evaluation of selection files under the adopted exit |
-| `cost_sens.py`, `leverage.py` | Sensitivities reported in `docs/P6_QUANT_RESEARCH.md` |
+| `cost_sens.py`, `leverage.py` | Sensitivities reported in `docs/FORECASTING_AND_BOOK.md` |
 | `figures.py` | Figures in `docs/figures/quant/` |

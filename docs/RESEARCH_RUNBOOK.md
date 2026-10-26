@@ -1,7 +1,7 @@
 # Research v2 batch runbook
 
 Research v2 uses `data/research_v2` with separate immutable sources, checkpoints,
-models and DuckDB storage. Read [the protocol](RESEARCH_V2_PROTOCOL.md) and
+models and DuckDB storage. Read [the protocol](RESEARCH_PROTOCOL.md) and
 [canonical decisions](DECISIONS.md) before changing a research input. The
 2024–2025 final-test outcome lock remains in force. Model B improvement is an
 objective; it has not yet been established.

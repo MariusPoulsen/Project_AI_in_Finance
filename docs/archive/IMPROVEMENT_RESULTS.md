@@ -1,7 +1,7 @@
 # P6 model and trading improvements: results (post-hoc exploratory)
 
 Technical record of the pre-registered improvement experiment (DECISIONS 43, 43a
-and 44; plan in `docs/proposals/P6_IMPROVEMENT_PLAN.md`). It is not the
+and 44; plan in `docs/archive/IMPROVEMENT_PLAN.md`). It is not the
 academic report.
 
 **Read this first.**

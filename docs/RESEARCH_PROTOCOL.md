@@ -148,7 +148,7 @@ CLI defaults to `sec-sentence-quality-wordpiece-v2`; legacy reproduction uses
 policy identities require a separate immutable generation. Quantitative pairs,
 labels, dates, estimator grids, the 0.65 threshold and the 500-event catalyst
 schedule remain unchanged. Operational attempts and benchmark receipts are in
-[protocol history](archive/RESEARCH_V2_PROTOCOL_HISTORY.md).
+[protocol history](archive/RESEARCH_PROTOCOL_HISTORY.md).
 
 ### Guarded catalyst processing
 
@@ -301,5 +301,5 @@ Run the same package commands in local Python 3.11.
 Report negative or inconclusive comparisons without selecting favorable
 companies, throwing away UNKNOWN observations, or inspecting the final test.
 Current acceptance gates are in [STATUS.md](STATUS.md), operational commands in
-[the runbook](RESEARCH_V2_RUNBOOK.md), and prior attempts/receipts in
+[the runbook](RESEARCH_RUNBOOK.md), and prior attempts/receipts in
 [the archive](archive/README.md).

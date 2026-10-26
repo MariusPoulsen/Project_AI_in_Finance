@@ -1,6 +1,6 @@
 # P6 model and trading improvements: pre-registered plan
 
-Status: **PRE-REGISTERED 2026-10-17** (DECISIONS section 43), **EVALUATED** (DECISIONS 44; results in `docs/P6_IMPROVEMENT_RESULTS.md`). This plan was written
+Status: **PRE-REGISTERED 2026-10-17** (DECISIONS section 43), **EVALUATED** (DECISIONS 44; results in `docs/archive/IMPROVEMENT_RESULTS.md`). This plan was written
 and committed before any variant below was evaluated on 2022–2023. Every choice
 is made with fit (2006–2019) and calibration (2020–2021) data only. Each
 pre-registered variant is evaluated once on 2022–2023, and all of them are
@@ -168,4 +168,4 @@ Outputs go to `outputs/p6_improvement/<run_id>/`, which is gitignored. A
 development stage writes `frozen_choices.json` (exit, gate, models, parameters,
 thresholds and checksums) before any 2022–2023 metric is computed. That file's
 checksum is recorded in DECISIONS before the evaluation stage runs. The results
-are recorded in `docs/P6_IMPROVEMENT_RESULTS.md` and DECISIONS section 44.
+are recorded in `docs/archive/IMPROVEMENT_RESULTS.md` and DECISIONS section 44.
