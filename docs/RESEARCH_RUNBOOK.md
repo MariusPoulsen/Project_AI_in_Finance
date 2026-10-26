@@ -47,7 +47,7 @@ Build `SUCCESS` and the complete batch `manifest.json` establish feature
 completion only. The audited builder records independent raw replay as pending;
 training, native verification and publication still require fresh raw replay.
 All thirty fits, their independent verification, accepted workspace publication
-and GitHub `main` promotion remain pending. See [status](STATUS.md) for delivery
+and GitHub `main` promotion remain pending. See [plan and status](PLAN.md) for delivery
 gates and [recovery history](archive/INTELLIGENCE_RECOVERY_HISTORY.md) for old
 attempts, benchmarks and receipts.
 

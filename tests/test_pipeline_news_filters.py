@@ -43,4 +43,3 @@ def test_bootstrap_reports_interval_se_and_one_sided_p() -> None:
     months = np.array(["2010-01", "2010-02", "2010-03", "2010-04"] * 10)
     stats = ex.bootstrap(np.full(40, 0.001), months)
     assert stats["estimate_bps"] == 10.0 and stats["p_one_sided"] == 0.0
-

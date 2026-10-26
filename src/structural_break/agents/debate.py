@@ -181,7 +181,7 @@ def render_case(case: Case) -> str:
         or f"SIGNAL: the pair's price spread diverged at the close of "
         f"{event.event_timestamp.date().isoformat()}; a statistical-arbitrage model selected "
         "this divergence as a mean-reversion candidate (top 20 % of its year).",
-        "QUANTITATIVE FIELDS (cite by name in \"quant\"; values are fixed and exact):",
+        'QUANTITATIVE FIELDS (cite by name in "quant"; values are fixed and exact):',
         f"- model_b_probability = {_number(quant.model_b_probability)}: the forecaster's "
         "probability that the spread fully reverts within 20 sessions (base rate about 0.16 "
         "for selected candidates).",
@@ -200,7 +200,9 @@ def render_case(case: Case) -> str:
     blocks = []
     for label, chunk in case.labelled():
         if chunk.filing_id == CONTEXT_FILING:
-            header = f"[{label}] Company {chunk.leg} | analyst context at the signal (not an SEC filing)"
+            header = (
+                f"[{label}] Company {chunk.leg} | analyst context at the signal (not an SEC filing)"
+            )
         else:
             header = (
                 f"[{label}] Company {chunk.leg} | {context['chunks'].get(chunk.chunk_id, 'filing')} "
@@ -235,11 +237,11 @@ _CLAIM = (
     '"cites": ["A1.3", ...], "quant": ["z_score", ...]}'
 )
 _CLAIM_RULES = (
-    "Claim rules: every claim needs at least one sentence ID in \"cites\" (IDs exactly as shown "
-    "in parentheses, such as A1.3) or one field name in \"quant\" (" + ", ".join(QUANT_FIELDS) + "). "
-    "Sentence IDs go only in \"cites\" and field names only in \"quant\". Never quote text; cite "
+    'Claim rules: every claim needs at least one sentence ID in "cites" (IDs exactly as shown '
+    'in parentheses, such as A1.3) or one field name in "quant" (' + ", ".join(QUANT_FIELDS) + "). "
+    'Sentence IDs go only in "cites" and field names only in "quant". Never quote text; cite '
     "IDs. Analyst-context lines (A0.x, B0.x) are cited the same way. A statement you cannot "
-    "cite, such as an open question, is not a claim: put it in \"uncertainties\" (plain "
+    'cite, such as an open question, is not a claim: put it in "uncertainties" (plain '
     "strings) instead. At most 6 claims per list."
 )
 _MANDATES = {
@@ -431,7 +433,7 @@ def _claims(items: Any, case: Case, prefix: str) -> tuple[Claim, ...]:
             references.append(QuantReference(field=cast(Any, name), value=float(value)))
         if not citations and not references:
             raise ValueError(
-                f"claim {number} in the list containing \"{str(item.get('text', ''))[:80]}\" has no "
+                f'claim {number} in the list containing "{str(item.get("text", ""))[:80]}" has no '
                 "sentence ID and no field name; cite one, or move it to uncertainties"
             )
         claims.append(
@@ -452,13 +454,16 @@ def _strings(items: Any, name: str) -> tuple[str, ...]:
     return tuple(item for item in items if item.strip())
 
 
-def resolve(role: str, raw: Mapping[str, Any], case: Case) -> AdvocateReport | SynthesisReport | ValidationReport:
+def resolve(
+    role: str, raw: Mapping[str, Any], case: Case
+) -> AdvocateReport | SynthesisReport | ValidationReport:
     """Exact contract object for one answer; omitted empty lists read as empty."""
     kind = _kind(role)
     allowed = set(_LISTS[kind]) | set(_SCALARS[kind])
     if not set(raw) <= allowed or not set(_SCALARS[kind]) <= set(raw):
         raise ValueError(
-            "Fields differ from the required set: " + ", ".join(sorted(_SCALARS[kind] + _LISTS[kind]))
+            "Fields differ from the required set: "
+            + ", ".join(sorted(_SCALARS[kind] + _LISTS[kind]))
         )
     if kind == "advocate":
         return AdvocateReport(
@@ -475,7 +480,9 @@ def resolve(role: str, raw: Mapping[str, Any], case: Case) -> AdvocateReport | S
             summary=raw["summary"],
             proposed_break_risk=raw["proposed_break_risk"],
             claims=_claims(raw.get("claims", []), case, "s"),
-            unresolved_conflicts=_strings(raw.get("unresolved_conflicts", []), "unresolved_conflicts"),
+            unresolved_conflicts=_strings(
+                raw.get("unresolved_conflicts", []), "unresolved_conflicts"
+            ),
             uncertainties=_strings(raw.get("uncertainties", []), "uncertainties"),
         )
     return ValidationReport(
@@ -515,12 +522,16 @@ class Guard:
 
         def send(url: str, payload: dict[str, Any], headers: dict[str, str], timeout: float):
             with lock:
-                wait = self.min_interval.get(model, 0.0) - (self.clock() - self._last.get(model, -1e9))
+                wait = self.min_interval.get(model, 0.0) - (
+                    self.clock() - self._last.get(model, -1e9)
+                )
                 if wait > 0:
                     self.sleep(wait)
                 self._last[model] = self.clock()
                 if self.journal is not None:
-                    request = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
+                    request = hashlib.sha256(
+                        json.dumps(payload, sort_keys=True).encode()
+                    ).hexdigest()
                     self.journal.reserve(
                         model=model, role=getattr(_ROLE, "name", "agent"), request_sha256=request
                     )

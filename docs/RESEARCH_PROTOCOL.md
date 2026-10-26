@@ -300,6 +300,6 @@ diagnostics and limitations; do not relabel them as pre-label decisions.
 Run the same package commands in local Python 3.11.
 Report negative or inconclusive comparisons without selecting favorable
 companies, throwing away UNKNOWN observations, or inspecting the final test.
-Current acceptance gates are in [STATUS.md](STATUS.md), operational commands in
+Current acceptance gates are in [PLAN.md](PLAN.md), operational commands in
 [the runbook](RESEARCH_RUNBOOK.md), and prior attempts/receipts in
 [the archive](archive/README.md).

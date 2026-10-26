@@ -134,7 +134,9 @@ def analyst_prompt(case: dv.Case) -> str:
     return _parts("pair_analyst", _ANALYST, case, "analyst")
 
 
-def facilitator_prompt(case: dv.Case, analyst_raw: Mapping[str, Any], debate: Mapping[str, Any]) -> str:
+def facilitator_prompt(
+    case: dv.Case, analyst_raw: Mapping[str, Any], debate: Mapping[str, Any]
+) -> str:
     prior = {"pair_analyst": analyst_raw, **debate}
     extra = (
         "BEGIN EARLIER ROLE ANSWERS (untrusted; check them against the excerpts)\n"
@@ -160,7 +162,11 @@ def judge_prompt(case: dv.Case, analyst_raw: Mapping[str, Any]) -> str:
 def resolve_analyst(raw: Mapping[str, Any], case: dv.Case) -> AnalystReport:
     required = {"mover", "explains_move", "persistence", "relationship_change", "claims"}
     if not required <= set(raw) or not set(raw) <= required | {"uncertainties"}:
-        raise ValueError("Fields differ from the required set: " + ", ".join(sorted(required)) + ", uncertainties")
+        raise ValueError(
+            "Fields differ from the required set: "
+            + ", ".join(sorted(required))
+            + ", uncertainties"
+        )
     return AnalystReport(
         mover=raw["mover"],
         explains_move=raw["explains_move"],
@@ -174,7 +180,9 @@ def resolve_analyst(raw: Mapping[str, Any], case: dv.Case) -> AnalystReport:
 def resolve_monitor(raw: Mapping[str, Any], case: dv.Case) -> MonitorReport:
     required = {"adverse", "persistence", "claims"}
     if not required <= set(raw) or not set(raw) <= required | {"uncertainties"}:
-        raise ValueError("Fields differ from the required set: adverse, persistence, claims, uncertainties")
+        raise ValueError(
+            "Fields differ from the required set: adverse, persistence, claims, uncertainties"
+        )
     return MonitorReport(
         adverse=raw["adverse"],
         persistence=raw["persistence"],
@@ -217,8 +225,16 @@ def call(
         if stored.get("request") != request:
             raise ValueError("Role cache binding mismatch")
         return cast(dict[str, Any], stored["stage"])
-    stage: dict[str, Any] = {"role": role, "model": client.model, "status": "FAILED", "error": None,
-                             "raw": None, "report": None, "usage": [], "rejected": []}
+    stage: dict[str, Any] = {
+        "role": role,
+        "model": client.model,
+        "status": "FAILED",
+        "error": None,
+        "raw": None,
+        "report": None,
+        "usage": [],
+        "rejected": [],
+    }
     dv._ROLE.name = role
     text_prompt = prompt
     for _ in range(corrections + 1):
@@ -239,7 +255,10 @@ def call(
                 break
             stage["rejected"].append({"error": str(error)[:200], "text": None})
             stage["error"] = "INCOMPLETE_PROVIDER_RESPONSE"
-            text_prompt = prompt + "\n\nYour previous answer was cut off or malformed; give a shorter complete JSON object."
+            text_prompt = (
+                prompt
+                + "\n\nYour previous answer was cut off or malformed; give a shorter complete JSON object."
+            )
             continue
         stage["usage"].append(usage)
         try:
@@ -252,7 +271,8 @@ def call(
             stage["rejected"].append({"error": message, "text": text[:2000]})
             stage["error"] = "INVALID_ROLE_OUTPUT"
             text_prompt = (
-                prompt + f"\n\nYour previous answer was rejected: {message}. Return a corrected JSON "
+                prompt
+                + f"\n\nYour previous answer was rejected: {message}. Return a corrected JSON "
                 "object that follows every rule."
             )
             continue
@@ -279,7 +299,16 @@ def run_entry(
     judge_from: int = 4,
 ) -> dict[str, Any]:
     """Analyst; on contested candidates the v2 debate and a facilitator; then the risk judge."""
-    stages = {"analyst": call("pair_analyst", analyst_prompt(case), resolve_analyst, case, clients[ANALYST_MODEL], cache)}
+    stages = {
+        "analyst": call(
+            "pair_analyst",
+            analyst_prompt(case),
+            resolve_analyst,
+            case,
+            clients[ANALYST_MODEL],
+            cache,
+        )
+    }
     final = stages["analyst"]
     if final["status"] == "VALID" and debate and contested(final["report"]):
         debate_raw: dict[str, Any] = {}
@@ -297,16 +326,28 @@ def run_entry(
                 break
         if ok:
             stages["facilitator"] = call(
-                "facilitator", facilitator_prompt(case, final["raw"], debate_raw), resolve_analyst, case,
-                clients[ANALYST_MODEL], cache,
+                "facilitator",
+                facilitator_prompt(case, final["raw"], debate_raw),
+                resolve_analyst,
+                case,
+                clients[ANALYST_MODEL],
+                cache,
             )
             if stages["facilitator"]["status"] == "VALID":
                 final = stages["facilitator"]
     if final["status"] == "VALID" and judge and final["report"]["persistence"] >= judge_from:
-        stages["judge"] = call("risk_judge", judge_prompt(case, final["raw"]), resolve_judge, case, clients[JUDGE_MODEL], cache)
+        stages["judge"] = call(
+            "risk_judge",
+            judge_prompt(case, final["raw"]),
+            resolve_judge,
+            case,
+            clients[JUDGE_MODEL],
+            cache,
+        )
     verdict = stages.get("judge", {}).get("report", {}) or {}
     status = (
-        "ABSTAIN" if final["status"] != "VALID"
+        "ABSTAIN"
+        if final["status"] != "VALID"
         or ("judge" in stages and verdict.get("verdict") != "SUPPORTED")
         else "SCORED"
     )
@@ -323,9 +364,18 @@ def run_entry(
     }
 
 
-def run_monitor(case: dv.Case, clients: Mapping[str, cv.ModelClient], cache: Path) -> dict[str, Any]:
-    stage = call("position_monitor", monitor_prompt(case), resolve_monitor, case, clients[MONITOR_MODEL], cache,
-                 version=MONITOR_PROMPT_VERSION)
+def run_monitor(
+    case: dv.Case, clients: Mapping[str, cv.ModelClient], cache: Path
+) -> dict[str, Any]:
+    stage = call(
+        "position_monitor",
+        monitor_prompt(case),
+        resolve_monitor,
+        case,
+        clients[MONITOR_MODEL],
+        cache,
+        version=MONITOR_PROMPT_VERSION,
+    )
     return {
         "graph_version": GRAPH_VERSION,
         "prompt_version": MONITOR_PROMPT_VERSION,

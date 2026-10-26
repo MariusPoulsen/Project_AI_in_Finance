@@ -432,7 +432,7 @@ def record_choices(output: Path, decisions: Path) -> bool:
         "immediately after stage 1 and before stage 2 ran; the commit containing this",
         "record precedes the confirmation run. Stage 1 explored "
         f"{len(explored)} variants on 2006–2015, {positive} with a positive estimate.",
-        f"`outputs/p6_sec_explore2/choices.json` SHA-256 `{hashlib.sha256(raw).hexdigest()}`.",
+        f"`outputs/news_exit/choices.json` SHA-256 `{hashlib.sha256(raw).hexdigest()}`.",
         "",
         "| Family | Variant | Population | Exploration estimate | t |",
         "|---|---|---|---|---|",
@@ -468,8 +468,7 @@ def record_results(output: Path, decisions: Path) -> bool:
         "",
         f"Recorded {date.today().isoformat()} automatically by `scripts/round2_watcher.ps1`",
         "after the one-time Decision 59 stage 2 on 2016–2021",
-        "(`outputs/p6_sec_explore2/confirmation.json`, choices "
-        f"`{result['choices_sha256'][:8]}…`).",
+        f"(`outputs/news_exit/confirmation.json`, choices `{result['choices_sha256'][:8]}…`).",
         "",
         "| Family | Variant | Population | 2016–2021 difference | 95 % interval "
         "| One-sided p | Holm p | Years positive | Result |",
@@ -510,7 +509,6 @@ def load_exits(output: Path) -> pd.DataFrame:
     return exits.loc[
         :, ["event_id", "frozen_status", "frozen_net", f"{EXIT}|status", f"{EXIT}|net"]
     ]
-
 
 
 def main(arguments: Sequence[str] | None = None) -> None:

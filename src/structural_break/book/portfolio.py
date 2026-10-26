@@ -152,7 +152,9 @@ def run_design(
         soft = exit_settings[4] if len(exit_settings) > 4 else None
         if isinstance(timeout, dict):
             timeout = timeout[event_id]
-        results[event_id] = variant_result(request, frozen, moments, headline, band, stop, timeout, news, rate, soft)
+        results[event_id] = variant_result(
+            request, frozen, moments, headline, band, stop, timeout, news, rate, soft
+        )
         proposals.append(
             PortfolioProposal(
                 request=request,

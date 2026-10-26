@@ -53,21 +53,37 @@ def ingest(
         header = pd.read_csv(csv, nrows=0).columns
         usecols = COLUMNS + [c for c in ("Article", "Lsa_summary") if c in header]
         for chunk in pd.read_csv(csv, usecols=usecols, chunksize=chunksize, dtype=str):
-            chunk = chunk[chunk["Stock_symbol"].isin(tickers)].dropna(subset=["Date", "Article_title"])
+            chunk = chunk[chunk["Stock_symbol"].isin(tickers)].dropna(
+                subset=["Date", "Article_title"]
+            )
             if chunk.empty:
                 continue
-            stamp = pd.to_datetime(chunk["Date"].str.replace(" UTC", "", regex=False), errors="coerce")
-            summary = chunk.get("Lsa_summary", pd.Series("", index=chunk.index)).fillna("").str[:300]
+            stamp = pd.to_datetime(
+                chunk["Date"].str.replace(" UTC", "", regex=False), errors="coerce"
+            )
+            summary = (
+                chunk.get("Lsa_summary", pd.Series("", index=chunk.index)).fillna("").str[:300]
+            )
             article = chunk.get("Article", pd.Series("", index=chunk.index)).fillna("")
             chunk = chunk.assign(stamp=stamp, summary=summary, article=article, source=csv.stem)
-            parts.append(chunk.dropna(subset=["stamp"]).drop(columns=["Lsa_summary", "Article"], errors="ignore"))
+            parts.append(
+                chunk.dropna(subset=["stamp"]).drop(
+                    columns=["Lsa_summary", "Article"], errors="ignore"
+                )
+            )
     frame = pd.concat(parts, ignore_index=True)
     frame = frame.rename(
-        columns={"Article_title": "title", "Stock_symbol": "ticker", "Url": "url", "Publisher": "publisher"}
+        columns={
+            "Article_title": "title",
+            "Stock_symbol": "ticker",
+            "Url": "url",
+            "Publisher": "publisher",
+        }
     )
     frame["security_id"] = frame["ticker"].map(tickers)
     frame["specific"] = [
-        bool(matchers[t].search(title)) for t, title in zip(frame["ticker"], frame["title"], strict=True)
+        bool(matchers[t].search(title))
+        for t, title in zip(frame["ticker"], frame["title"], strict=True)
     ]
     frame["date"] = frame["stamp"].dt.normalize()
     seconds = (frame["stamp"] - frame["date"]).dt.total_seconds()
@@ -75,7 +91,20 @@ def ingest(
     frame = frame.drop_duplicates(["ticker", "title", "date"]).reset_index(drop=True)
     frame = frame.loc[
         :,
-        ["ticker", "security_id", "stamp", "date", "same_day", "title", "summary", "article", "publisher", "url", "source", "specific"],
+        [
+            "ticker",
+            "security_id",
+            "stamp",
+            "date",
+            "same_day",
+            "title",
+            "summary",
+            "article",
+            "publisher",
+            "url",
+            "source",
+            "specific",
+        ],
     ]
     out.parent.mkdir(parents=True, exist_ok=True)
     # The full text lives in a separate compressed store; the working table stays small.
@@ -85,7 +114,9 @@ def ingest(
     return frame
 
 
-def manifest(sources: list[Path], urls: Mapping[str, str], outputs: list[Path], path: Path) -> dict[str, object]:
+def manifest(
+    sources: list[Path], urls: Mapping[str, str], outputs: list[Path], path: Path
+) -> dict[str, object]:
     """Provenance of the compact store: source sizes and SHA-256 hashes, so the raw files can be dropped."""
     import hashlib
     import json
@@ -100,7 +131,10 @@ def manifest(sources: list[Path], urls: Mapping[str, str], outputs: list[Path], 
     record = {
         "version": HEADLINES_VERSION,
         "dataset": "FNSPID (Dong et al. 2024), CC BY-NC 4.0",
-        "sources": [{"file": s.name, "url": urls[s.name], "bytes": s.stat().st_size, "sha256": sha(s)} for s in sources],
+        "sources": [
+            {"file": s.name, "url": urls[s.name], "bytes": s.stat().st_size, "sha256": sha(s)}
+            for s in sources
+        ],
         "outputs": [{"file": o.name, "bytes": o.stat().st_size, "sha256": sha(o)} for o in outputs],
     }
     path.write_text(json.dumps(record, indent=1), encoding="utf-8")
@@ -136,5 +170,7 @@ def coverage(
         for leg, sec in (("a", event.leg_a_security_id), ("b", event.leg_b_security_id)):
             g = grouped.get(sec)
             counts[leg] = 0 if g is None else int(g["session"].between(start, end).sum())
-        rows.append({"event_id": event.event_id, "headlines_a": counts["a"], "headlines_b": counts["b"]})
+        rows.append(
+            {"event_id": event.event_id, "headlines_a": counts["a"], "headlines_b": counts["b"]}
+        )
     return pd.DataFrame(rows)

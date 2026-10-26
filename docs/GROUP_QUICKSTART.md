@@ -13,7 +13,7 @@ manifests are retained.
 - **v2 is accepted** (DECISIONS 34), and the official `group-v2.zip` is the
   snapshot to use. The earlier `group-v2-provisional.zip` is superseded; do
   not use it.
-- **Phase 6 backtesting** (`src/structural_break/backtest/`,
+- **Plan-ladder backtesting** (`src/structural_break/backtest/`,
   `structural-break-backtest`) runs on the imported accepted workspace under
   frozen execution policies. See [BACKTEST_RUNBOOK.md](BACKTEST_RUNBOOK.md) and
   [archive/DEVELOPMENT_RESULTS.md](archive/DEVELOPMENT_RESULTS.md).

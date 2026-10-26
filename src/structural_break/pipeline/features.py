@@ -339,4 +339,3 @@ def build_all(
         momentum_features(events, prices),
     ]
     return pd.concat([events[["event_id"]], *parts], axis=1)
-

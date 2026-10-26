@@ -25,8 +25,8 @@ import pandas as pd
 
 WORKSPACE = Path("data/team")
 OUTPUTS = Path("outputs")
-BOOK = OUTPUTS / "p6_quant"
-SIMULATION = OUTPUTS / "p6_improvement/walkforward/simulation_frozen_exit.parquet"
+BOOK = OUTPUTS / "book"
+SIMULATION = OUTPUTS / "walkforward/simulation_frozen_exit.parquet"
 LONG_HORIZON = 41  # monitored closes: the 40-session time-stop cap plus one spare close
 
 # Upstream inputs built by module CLIs, in order (python -m <module> ...).
@@ -34,70 +34,70 @@ PLAN = (
     (
         "walk-forward frame",
         "structural_break.pipeline.walkforward",
-        "p6_improvement/walkforward/simulation_frozen_exit.parquet",
+        "walkforward/simulation_frozen_exit.parquet",
     ),
     (
         "SEC filing timing features",
         "structural_break.pipeline.sec_timing",
-        "p6_sec_features/timing_features.parquet",
+        "sec_timing/timing_features.parquet",
     ),
     (
         "recent 8-K news and tone features",
         "structural_break.pipeline.news_features",
-        "news_v1/{windows,news_features,tone_features}.parquet",
+        "news_8k/{windows,news_features,tone_features}.parquet",
     ),
     (
         "8-K headline tone",
         "structural_break.pipeline.headline_tone",
-        "headline_v1/headline_tone.parquet",
+        "headline_tone/headline_tone.parquet",
     ),
     (
         "E3 news-exit results",
         "structural_break.pipeline.news_exit",
-        "p6_sec_explore2/exits_*.parquet",
+        "news_exit/exits_*.parquet",
     ),
     (
         "forecast features",
         "structural_break.pipeline.build_inputs features",
-        "p6_quant/features.parquet",
+        "book/features.parquet",
     ),
-    ("OU features", "structural_break.pipeline.build_inputs ou", "p6_quant/ou_features.parquet"),
+    ("OU features", "structural_break.pipeline.build_inputs ou", "book/ou_features.parquet"),
     (
         "R1 fresh-news events",
         "structural_break.pipeline.build_inputs r1",
-        "p6_quant/r1_events.parquet",
+        "book/r1_events.parquet",
     ),
     (
         "R0 selection scores",
         "structural_break.forecast.model_b_scores",
-        "p6_boosting2/scores.parquet",
+        "model_b/scores.parquet",
     ),
     (
         "bagged forecaster scores",
         "structural_break.forecast.harness run"
         " --specs B+rule+ou B+rule+ou+track --schemes recent:bag5",
-        "p6_quant/scores__*__recent-bag5.parquet",
+        "book/scores__*__recent-bag5.parquet",
     ),
-    ("trade requests and exit grid", "structural_break.book.trades build", "p6_quant/requests.pkl"),
+    ("trade requests and exit grid", "structural_break.book.trades build", "book/requests.pkl"),
     (
         "per-trade costs",
         "structural_break.pipeline.build_inputs costs",
-        "p6_quant/cost_model_nets.parquet",
+        "book/cost_model_nets.parquet",
     ),
     (
         "residual-sleeve targets",
         "structural_break.pipeline.build_inputs residual-targets",
-        "p6_quant/stage_q/targets_pca_continuous.npy",
+        "book/residual_targets_pca.npy",
     ),
     (
         "desk entry and monitor cases",
         "structural_break.agents.desk_runner build-entry / build-monitor",
-        "p6_desk/*_inventory.parquet",
+        "agent_desk/*_inventory.parquet",
     ),
     (
         "41-session trade paths",
         "structural_break.pipeline.build_inputs long-paths",
-        "p6_quant/requests_long.pkl",
+        "book/requests_long.pkl",
     ),
 )
 
@@ -138,9 +138,9 @@ def r1(out: Path) -> Path:
     from structural_break.pipeline import news_filters as ex
 
     inputs = [
-        OUTPUTS / "p6_sec_features/timing_features.parquet",
-        OUTPUTS / "news_v1/news_features.parquet",
-        OUTPUTS / "news_v1/tone_features.parquet",
+        OUTPUTS / "sec_timing/timing_features.parquet",
+        OUTPUTS / "news_8k/news_features.parquet",
+        OUTPUTS / "news_8k/tone_features.parquet",
     ]
     frame, _ = ex.load(WORKSPACE, inputs, SIMULATION)
     flagged = ex.FILTERS["R1_fresh_news_filter"][1](frame).fillna(False).astype(bool)
@@ -197,7 +197,7 @@ def residual_targets(out: Path) -> Path:
     panels = pr.load_panels(prices, sectors)
     start = int(np.searchsorted(panels.dates, pd.Timestamp("2009-06-01")))
     s, kappa, beta = pr.signals(panels, "pca", start)
-    path = out / "stage_q" / "targets_pca_continuous.npy"
+    path = out / "residual_targets_pca.npy"
     path.parent.mkdir(parents=True, exist_ok=True)
     np.save(path, pr.targets(panels, s, kappa, beta, "continuous"))
     return path
@@ -215,7 +215,7 @@ def long_paths(out: Path) -> Path:
     end = sources.binding.development_end
     book = PriceBook.build(sources.prices(date(2005, 11, 1), end), spec)
     cache = qp.load_cache(BOOK / "requests.pkl")
-    wanted = set(pd.read_parquet(OUTPUTS / "p6_desk/entry_inventory.parquet").event_id)
+    wanted = set(pd.read_parquet(OUTPUTS / "agent_desk/entry_inventory.parquet").event_id)
     long_cache, mismatches = {}, 0
     for event_id in sorted(wanted):
         request, frozen, moments = cache[event_id]
@@ -266,7 +266,7 @@ def verify(sec_metadata: Path) -> dict[str, str]:
         report["r1"] = _same_frame(r1(out), BOOK / "r1_events.parquet")
         report["costs"] = _same_frame(costs(out), BOOK / "cost_model_nets.parquet")
         new = np.load(residual_targets(out))
-        old = np.load(BOOK / "stage_q/targets_pca_continuous.npy")
+        old = np.load(BOOK / "residual_targets_pca.npy")
         report["residual-targets"] = (
             "identical" if np.array_equal(new, old, equal_nan=True) else "DIFFERENT"
         )

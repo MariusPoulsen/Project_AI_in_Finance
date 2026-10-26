@@ -72,7 +72,12 @@ def _case(coverage: str = "COMPLETE") -> dv.Case:
 
 
 def _claim(cites=("A1.1",), quant=()) -> dict:
-    return {"text": "The merger is one-sided.", "kind": "FACT", "cites": list(cites), "quant": list(quant)}
+    return {
+        "text": "The merger is one-sided.",
+        "kind": "FACT",
+        "cites": list(cites),
+        "quant": list(quant),
+    }
 
 
 def _answer(role: str, risk: str) -> dict:
@@ -142,8 +147,13 @@ def test_mask_text_hides_names_and_tickers() -> None:
 
 def test_resolve_maps_sentence_ids_to_exact_quotes_and_rejects_bad_refs() -> None:
     case = _case()
-    report = dv.resolve("structural_break_opening", _answer("structural_break_opening", "HIGH"), case)
-    assert report.claims[0].citations[0].quote == "Company A entered into a merger agreement with an unrelated buyer."
+    report = dv.resolve(
+        "structural_break_opening", _answer("structural_break_opening", "HIGH"), case
+    )
+    assert (
+        report.claims[0].citations[0].quote
+        == "Company A entered into a merger agreement with an unrelated buyer."
+    )
     assert report.claims[1].quant_refs[0].value == 2.3
     bad = _answer("structural_break_opening", "HIGH") | {"claims": [_claim(cites=("A9.9",))]}
     with pytest.raises(ValueError, match="Unknown sentence ID"):
@@ -166,10 +176,16 @@ def test_analyst_context_is_labelled_zero_and_citable() -> None:
         source_timestamp=base.event.event_timestamp,
         text=text,
     )
-    case = dv.Case(base.event.model_copy(update={"evidence": (context, *base.event.evidence)}), base.context)
+    case = dv.Case(
+        base.event.model_copy(update={"evidence": (context, *base.event.evidence)}), base.context
+    )
     prompt = dv.build_prompt("mean_reversion_opening", case, {})
     assert "[A0] Company A | analyst context" in prompt and "(A1.1) Company A entered" in prompt
-    report = dv.resolve("structural_break_opening", _answer("structural_break_opening", "LOW") | {"claims": [_claim(cites=("A0.1",))]}, case)
+    report = dv.resolve(
+        "structural_break_opening",
+        _answer("structural_break_opening", "LOW") | {"claims": [_claim(cites=("A0.1",))]},
+        case,
+    )
     assert report.claims[0].citations[0].quote.endswith("-6.9 %.")
 
 

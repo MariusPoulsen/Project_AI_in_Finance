@@ -1,4 +1,3 @@
-
 import pytest
 
 from structural_break.backtest.simulator import simulate_pair_trade

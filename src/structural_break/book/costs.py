@@ -100,4 +100,3 @@ def trade_rate_bps(
         impact = IMPACT_Y * vol * math.sqrt(notional / adv) * 1e4
         rate += share * min(half + impact + COMMISSION_BPS, CAP_BPS)
     return rate
-

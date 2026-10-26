@@ -138,4 +138,3 @@ def allocation(selected: pd.Series, status: pd.Series, net: pd.Series) -> pd.Ser
     result[complete] = net[complete].astype(float)
     result[selected & ~status.eq("COMPLETE")] = np.nan
     return result
-

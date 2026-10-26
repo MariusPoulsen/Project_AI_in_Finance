@@ -4,16 +4,17 @@ Start with [the project README](../README.md). The active documentation is:
 
 | Document | Purpose |
 | --- | --- |
-| [Decisions](DECISIONS.md) | Current authority, scientific invariants and release rules |
-| [Research protocol](RESEARCH_PROTOCOL.md) | Frozen population, targets, models, dates and text processing |
-| [Runbook](RESEARCH_RUNBOOK.md) | Local jobs, detached recovery, evaluation and publication |
-| [Group quick start](GROUP_QUICKSTART.md) | Snapshot setup and commands for group members |
-| [Agent brief](GROUP_AGENT_BRIEF.md) | First message for group members' coding agents; work streams |
-| [Phase 5 runbook](archive/AGENT_PIPELINE_RUNBOOK.md) / [Backtest runbook](BACKTEST_RUNBOOK.md) | Agent and simulator foundations (fixture-tested, draft policies) |
-| [Delivery status](STATUS.md) | Accepted inputs and remaining release gates |
-| [Plan](PLAN.md) | Implementation stages and future subsystem acceptance |
-| [SEC replay policy](SEC_METADATA_RECAPTURE.md) | Corrected source-v3 clock/provenance contract |
-| [Specifications](specs/README.md) | Component contracts; active decisions take precedence |
+| [Plan and status](PLAN.md) | Components, status, open items and the final-test sequence |
+| [Decisions](DECISIONS.md) | Pre-registrations, results and rules (append-only) |
+| [Forecasting and the book](FORECASTING_AND_BOOK.md) | Goal 1 forecasters, Goal 2 book, overfitting audit, rebuild commands |
+| [Agent desk](AGENT_DESK.md) | The multi-agent layer and its position monitor |
+| [News for 2024–2025](NEWS_2024_2025.md) | Headline source for the final test |
+| [Names](NAMES.md) | Old module, script, document and output names and their replacements |
+| [Research protocol](RESEARCH_PROTOCOL.md) / [runbook](RESEARCH_RUNBOOK.md) | The accepted research study: population, targets, models, jobs |
+| [Backtest runbook](BACKTEST_RUNBOOK.md) | Plan-ladder engine and the final-test gate |
+| [Group quick start](GROUP_QUICKSTART.md) / [agent brief](GROUP_AGENT_BRIEF.md) | Snapshot setup and open work for group members |
+| [SEC replay policy](SEC_METADATA_RECAPTURE.md) | Corrected source-v3 clock and provenance contract |
+| [Specifications](specs/README.md) | Original component contracts; decisions take precedence |
 
 [The archive](archive/README.md) holds original experiment runbooks, prior decisions,
 acceptance histories, redesign motivation and the original PDFs. Historical

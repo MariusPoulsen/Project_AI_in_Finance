@@ -236,4 +236,3 @@ def test_server_errors_do_not_consume_the_token_budget() -> None:
     cv.extract_view(client, _pack())
     assert sorted(entry[1] for entry in client.window) == [0.0, 3000.0]
     assert client.statuses == {500: 1, 200: 1}
-

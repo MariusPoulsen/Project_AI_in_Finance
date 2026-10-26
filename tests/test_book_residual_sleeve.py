@@ -1,4 +1,4 @@
-﻿import math
+import math
 
 import numpy as np
 import pandas as pd
@@ -67,7 +67,9 @@ def test_close_timing_earns_next_close_to_close_return() -> None:
     panels = _panels()
     panels.returns[:] = 0.02
     d = panels.dates
-    book = pr.run_book(panels, None, [pr.Leg("A", d[1], d[3], 0.10)], d[0], d[-1], capital=1e6, timing="close")
+    book = pr.run_book(
+        panels, None, [pr.Leg("A", d[1], d[3], 0.10)], d[0], d[-1], capital=1e6, timing="close"
+    )
     day1 = book.iloc[1]
     assert math.isclose(day1["nav"], 1.0 + 0.10 * 0.02 - day1["cost"], rel_tol=1e-12)
     assert book.iloc[3]["names"] == 0

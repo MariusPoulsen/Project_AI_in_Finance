@@ -75,4 +75,3 @@ def test_selection_threshold_comes_from_prior_year() -> None:
         pd.Series([0.01, 0.02, 0.03]),
     )
     assert alloc.iloc[0] == 0.01 and np.isnan(alloc.iloc[1]) and alloc.iloc[2] == 0.0
-

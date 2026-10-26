@@ -5,6 +5,7 @@ rated adverse >= 4, 10 others), fixed seed 5558. Reviewers see the masked eviden
 agents' cited claims; no model probability is shown beyond the case's own fields, and no
 outcome, label or return. Writes docs/agent_review/review_cases.md and review_answers.csv.
 """
+
 import json
 from pathlib import Path
 
@@ -12,7 +13,7 @@ import pandas as pd
 
 from structural_break.agents import debate as dv
 
-OUT = Path("outputs/p6_desk")
+OUT = Path("outputs/agent_desk")
 DOCS = Path("docs/agent_review")
 DOCS.mkdir(parents=True, exist_ok=True)
 SEED = 5558
@@ -20,20 +21,36 @@ inv = pd.read_parquet(OUT / "entry_inventory.parquet").set_index("event_id")
 entries = []
 for path in (OUT / "entry_results").glob("*.json"):
     r = json.loads(path.read_bytes())
-    if r.get("prompt_version", "").endswith("v3.1") and r["status"] == "SCORED" and bool(inv.loc[r["event_id"], "candidate"]):
+    if (
+        r.get("prompt_version", "").endswith("v3.1")
+        and r["status"] == "SCORED"
+        and bool(inv.loc[r["event_id"], "candidate"])
+    ):
         entries.append({"event_id": r["event_id"], "debated": r["debated"]})
 entries = pd.DataFrame(entries)
-picked = pd.concat([entries[entries.debated].sample(10, random_state=SEED),
-                    entries[~entries.debated].sample(20, random_state=SEED)])
+picked = pd.concat(
+    [
+        entries[entries.debated].sample(10, random_state=SEED),
+        entries[~entries.debated].sample(20, random_state=SEED),
+    ]
+)
 mon_inv = pd.read_parquet(OUT / "monitor_inventory.parquet").set_index("file")
 checks = []
 for path in (OUT / "monitor_results").glob("*.json"):
     r = json.loads(path.read_bytes())
-    if r.get("prompt_version", "").endswith("v3.3") and r["status"] == "SCORED" and path.stem in mon_inv.index:
+    if (
+        r.get("prompt_version", "").endswith("v3.3")
+        and r["status"] == "SCORED"
+        and path.stem in mon_inv.index
+    ):
         checks.append({"file": path.stem, "adverse": r["scores"]["adverse"]})
 checks = pd.DataFrame(checks)
-mpicked = pd.concat([checks[checks.adverse >= 4].sample(10, random_state=SEED),
-                     checks[checks.adverse < 4].sample(10, random_state=SEED)])
+mpicked = pd.concat(
+    [
+        checks[checks.adverse >= 4].sample(10, random_state=SEED),
+        checks[checks.adverse < 4].sample(10, random_state=SEED),
+    ]
+)
 cases = [("E", e) for e in picked.event_id] + [("M", f) for f in mpicked.file]
 order = pd.Series(range(len(cases))).sample(frac=1, random_state=SEED).tolist()  # mix types
 
@@ -75,7 +92,12 @@ for position, index in enumerate(order, start=1):
     if kind == "E":
         case = dv.Case.from_json(json.loads((OUT / "entry_cases" / f"{key}.json").read_bytes()))
         result = json.loads((OUT / "entry_results" / f"{key}.json").read_bytes())
-        stage = result["stages"]["facilitator"] if result["debated"] and result["stages"].get("facilitator", {}).get("status") == "VALID" else result["stages"]["analyst"]
+        stage = (
+            result["stages"]["facilitator"]
+            if result["debated"]
+            and result["stages"].get("facilitator", {}).get("status") == "VALID"
+            else result["stages"]["analyst"]
+        )
         title = "Entry case: pair news analyst" + (" (after a debate)" if result["debated"] else "")
         own = "explains_move, persistence, relationship_change"
     else:
@@ -85,15 +107,56 @@ for position, index in enumerate(order, start=1):
         title = "Monitor check: position monitor"
         own = "adverse, persistence"
     raw = stage["raw"]
-    md += [f"## {rid}. {title}", "", "```", dv.render_case(case), "```", "", "**Agent's claims:**", *claims_block(raw, case), ""]
+    md += [
+        f"## {rid}. {title}",
+        "",
+        "```",
+        dv.render_case(case),
+        "```",
+        "",
+        "**Agent's claims:**",
+        *claims_block(raw, case),
+        "",
+    ]
     if raw.get("uncertainties"):
         md += ["**Agent's uncertainties:** " + " | ".join(raw["uncertainties"]), ""]
     for number, _ in enumerate(raw.get("claims", []), start=1):
-        answers.append({"review_id": rid, "type": kind, "item": f"claim {number}", "answer (Y/P/N)": "", "notes": ""})
-    answers.append({"review_id": rid, "type": kind, "item": f"your scores: {own}", "answer (Y/P/N)": "", "notes": ""})
-    answers.append({"review_id": rid, "type": kind, "item": "overall: is the agent's reasoning sound? (Y/P/N)", "answer (Y/P/N)": "", "notes": ""})
+        answers.append(
+            {
+                "review_id": rid,
+                "type": kind,
+                "item": f"claim {number}",
+                "answer (Y/P/N)": "",
+                "notes": "",
+            }
+        )
+    answers.append(
+        {
+            "review_id": rid,
+            "type": kind,
+            "item": f"your scores: {own}",
+            "answer (Y/P/N)": "",
+            "notes": "",
+        }
+    )
+    answers.append(
+        {
+            "review_id": rid,
+            "type": kind,
+            "item": "overall: is the agent's reasoning sound? (Y/P/N)",
+            "answer (Y/P/N)": "",
+            "notes": "",
+        }
+    )
 (DOCS / "review_cases.md").write_text("\n".join(md), encoding="utf-8")
 pd.DataFrame(answers).to_csv(DOCS / "review_answers.csv", index=False)
-key = pd.DataFrame([{"review_id": f"R{p:02d}", "type": cases[i][0], "source": cases[i][1]} for p, i in enumerate(order, start=1)])
-key.to_csv(OUT / "review_key.csv", index=False)  # kept out of docs so reviewers stay blind to agent scores
+key = pd.DataFrame(
+    [
+        {"review_id": f"R{p:02d}", "type": cases[i][0], "source": cases[i][1]}
+        for p, i in enumerate(order, start=1)
+    ]
+)
+key.to_csv(
+    OUT / "review_key.csv", index=False
+)  # kept out of docs so reviewers stay blind to agent scores
 print(f"wrote {len(cases)} cases, {len(answers)} answer rows")

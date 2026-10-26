@@ -4,7 +4,8 @@ Research v2 is the authorized primary development workflow. The base scientific
 freeze is dated 2026-10-06; later amendments retain their original timing and
 provenance. This document states current rules. Past implementation records are
 in [the decision history](archive/DECISIONS_HISTORY.md); archived rollout status
-is not current status. See [STATUS.md](STATUS.md) for delivery gates.
+is not current status. See [PLAN.md](PLAN.md) for status and [NAMES.md](NAMES.md) for
+modules, scripts and documents renamed in Decision 115 (older entries use the old names).
 
 ## 1. Authority and precedence
 
@@ -5436,3 +5437,104 @@ decision, and no result changes.
   the erased trials.
 - **The Goal 1 table** in `docs/P6_QUANT_RESEARCH.md` and its ROC figure now show
   the headline models only.
+
+## 113. Overall overfitting audit, human review sheet, 2024–2025 news and the research freeze (owner's request, 2026-10-26)
+
+The owner asked for four things before the final test: an overall overfitting check of
+the adopted book, the 50-case human review sheet, a news source for 2024–2025, and the
+freeze manifest. None of them reads 2024–2025 data.
+
+**Overall overfitting audit** (`scripts/overfitting_audit.py`).
+- **Trial matrix:** monthly excess returns, 2010–2023 (168 months), of the 99 Stage W exit
+  settings (Decision 112) and the 33 desk trials (Decisions 110b–c): 132 trials. Both runs
+  were repeated without the holdout flag only to write the monthly series; no choice
+  changed.
+- **Probability of backtest overfitting** (CSCV, 14 yearly blocks): **0.54** (median logit
+  −0.08). The trials' annualised Sharpe ratios have mean 0.53, standard deviation 0.19 and
+  maximum 0.82; the adopted book ranks 7th.
+- **Deflated Sharpe ratio of the adopted book** (monthly Sharpe 0.224, 0.78 annualised):
+
+  | Trials assumed | 2010–2023 | 2018–2023 only |
+  |---|---|---|
+  | 132 (this matrix) | 0.86 | 0.65 |
+  | 300 | 0.82 | 0.61 |
+  | 500 (the whole programme) | 0.79 | 0.58 |
+
+- **Reading:** all values are below the usual 0.95 bar. After correcting for the number of
+  designs tried, the book's Sharpe is not significantly different from luck. PBO is
+  inflated by the 99 highly correlated exit settings, but it is reported as it stands. This
+  is a limitation for the report; the 2024–2025 final test is the clean test.
+
+**Human review sheet** (`scripts/agents/review_export.py`, Decision 28 quality gate).
+- 50 blind cases, seed 5558: 30 entry cases (10 debated, 20 not) and 20 monitor checks (10
+  that the monitor rated adverse ≥ 4, 10 others), shuffled.
+- Reviewers see the masked evidence and the agents' cited claims, never the agents' scores,
+  outcomes or returns. They mark each claim Y/P/N and give their own scores against the same
+  anchors. 290 answer rows in `docs/agent_review/review_answers.csv`; the key that maps
+  cases to sources is kept outside `docs` (`outputs/agent_desk/review_key.csv`).
+- **Status:** waiting for the group.
+
+**News for 2024–2025** ([NEWS_2024_2025.md](NEWS_2024_2025.md)).
+- FNSPID ends in 2023, so the monitor needs another headline source for the final test.
+- With the owner's permission, a free Alpha Vantage key was obtained on 2026-10-26 (stored
+  only in the git-ignored `.env`). Hugging Face access to the multi-source corpus needs the
+  owner's own login and was not requested.
+- **Next:** a pre-registered 2022–2023 calibration of Alpha Vantage against FNSPID
+  (company-specific headline counts and the FinBERT triage pass rate). No 2024–2025 capture
+  happens before the unlock record.
+
+**Debate layer refresh at 715 events** (Decision 109e, recomputed with every event).
+- Forecast: Brier 0.13545 (base) against 0.13587 (agents), difference +0.00042, 95 %
+  interval [−0.00036, +0.00122], 627 events. No gain.
+- Book: V0 Sharpe 0.612 (2010–2017), 0.515 (2018–2023); V1 with 272 vetoes 0.657 and 0.472;
+  V3 with 272 vetoes 0.626 and 0.444. The conclusions of Decision 109e are unchanged, and V1
+  is not part of the adopted book: entry vetoes never helped in the desk evaluation
+  (Decision 110d).
+
+**Freeze manifest** (`scripts/freeze_manifest.py`). It pins the git commit, every adopted
+parameter, the final-test protocol and the SHA-256 of the code, configuration and data
+inputs. It is generated on a clean commit after the cleanup (Decision 115) and stays a
+**draft** until the owner signs off; the final test needs an owner-written unlock record
+that cites the manifest's SHA-256.
+
+## 115. Repository cleanup: role-named packages, no phase or version names (owner's request, 2026-10-26)
+
+The owner asked to remove old files and to rename every module, script, document and folder
+that still referred to a finished phase or to v1/v2/v3. The owner chose the full plan. No
+label, return or holdout was read, and no result changed. The complete old-to-new mapping is
+in [NAMES.md](NAMES.md); the earlier state is the tag `archive/pre-cleanup`.
+
+**Steps** (each committed only after its checks passed):
+1. **Removed** the original phase-5 agent pipeline (about 3,100 lines, its tests, the
+   `structural-break-agents` command and its CI job), 26 one-off scripts and watchers, and
+   archived eleven finished phase documents.
+2. **Moved** 27 modules from `experiments/` and the versioned agent files into `pipeline/`,
+   `forecast/`, `book/` and `agents/` with `git mv`, rewriting every import and reference.
+3. **Pruned** code that is no longer reachable from the book, the forecasters or the desk
+   (call-graph analysis): the Decision 65 tuning, the round-2 variants (R0 only), the
+   cointegration module, the v2 debate graph and runner, and the entry-vol, news-filter,
+   news-exit, improvement and half-life experiments. About 4,000 lines. The journal, quota
+   and rate-guard tests now run through the desk.
+4. **Added `pipeline/build_inputs.py`.** Three book inputs (`features.parquet`,
+   `ou_features.parquet`, `r1_events.parquet`) had come from one-off commands, and three more
+   from stage scripts. They now have one builder with a `plan` of the full build order and a
+   `verify` mode; the final test needs this to build 2024–2025 inputs with frozen code.
+5. **Renamed output folders** (`outputs/book`, `agent_desk`, `model_b`, `walkforward`,
+   `news_exit`, `news_8k`, `headline_tone`, `sec_timing`); earlier results moved to
+   `outputs/archive/`, nothing deleted. Rewrote PLAN (components instead of phases), README,
+   the desk and book documents and the group brief.
+
+**Verification.**
+- `scripts/verify_book.py` rebuilds the adopted book and matches its saved fingerprint bit
+  for bit after every step (2010–2017 Sharpe 0.813; 0.799 without the monitor exit).
+- R0 scores recomputed for 2010, 2016 and 2023 are identical to the stored scores.
+- `build_inputs verify` rebuilds features, OU, R1, costs and residual targets identical to
+  the stored files.
+- Unit, module and integration tests pass.
+
+**Kept on purpose.** Names that are identities inside frozen artefacts stay: the data
+generations (`data/research_v2`, `source_v*`, `group-v2.zip`), the config files that the
+research receipt and the Decision 42 freeze record by name (`configs/research_v2*.yaml`,
+`configs/phase6_*.json`), version strings stored with cached results (prompt, plan and schema
+versions), the fixed test fixtures (`tests/fixtures/phase1`) and this decision log, which is
+not rewritten.

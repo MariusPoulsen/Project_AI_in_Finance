@@ -132,10 +132,10 @@ def main(arguments: Sequence[str] | None = None) -> None:
     parser.add_argument(
         "--simulation",
         type=Path,
-        default=Path("outputs/p6_improvement/walkforward/simulation_frozen_exit.parquet"),
+        default=Path("outputs/walkforward/simulation_frozen_exit.parquet"),
     )
-    parser.add_argument("--exits-dir", type=Path, default=Path("outputs/p6_sec_explore2"))
-    parser.add_argument("--output", type=Path, default=Path("outputs/p6_boosting2"))
+    parser.add_argument("--exits-dir", type=Path, default=Path("outputs/news_exit"))
+    parser.add_argument("--output", type=Path, default=Path("outputs/model_b"))
     args = parser.parse_args(arguments)
     from structural_break.pipeline.news_exit import EXIT, load_exits
 

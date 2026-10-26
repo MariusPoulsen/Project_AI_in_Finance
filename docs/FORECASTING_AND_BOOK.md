@@ -1,11 +1,35 @@
-# Quant research programme (workstream 1)
+# Forecasting and the trading book
 
-Branch `p6/quant-research`. Pre-registrations and results:
-[DECISIONS 75–100](DECISIONS.md). The 2024–2025 final test stays locked, and
-nothing here changes the frozen Decision 36–42 policies or the accepted v2
-snapshot.
+The reversion forecasters (Goal 1) and the trading book (Goal 2), 2010–2023.
+Pre-registrations and results: [Decisions 75–115](DECISIONS.md). The 2024–2025 final test
+stays locked, and nothing here changes the frozen Decision 36–42 policies or the accepted
+research snapshot.
 
-**Overfitting control.**
+## Adopted design (Decision 110d)
+
+| Part | Choice |
+|---|---|
+| Selection | Original Model B (R0, fixed XGBoost), top 20 % of each test year, after the R1 fresh-news filter, a 120-session mean-crossing filter and the most-expensive-fifth cost filter |
+| Execution and size | Signal and trade at the close; 7.5 % of NAV per entry; pairs gross entry cap 100 % |
+| Exits | Take profit at \|z\| ≤ 1.0, no z-score stop; time stop clip(ceil(1.5 × half-life), 10, 40) sessions (20 when unknown); 8-K adverse-tone news exit; agent monitor exit at adverse ≥ 5 and persistence ≥ 5 |
+| Residual sleeve | PCA residual reversal, λ 0.25, trading speed 0.10 |
+| Risk | 4 % volatility target on a 60-session window; hard 200 % book gross cap |
+| Cash | Interest at the 13-week T-bill minus 0.25 %; Sharpe is in excess of it |
+
+| 2010–2023 | Sharpe | CAGR | CAGR with cash | Max drawdown |
+|---|---|---|---|---|
+| Adopted book | 0.713 (2010–2017: 0.813; 2018–2023: 0.595) | +2.7 % | +3.5 % | −6.9 % |
+
+**Overfitting audit (Decision 113).** Over all 132 tracked trials (99 exit settings and 33
+desk trials) the probability of backtest overfitting is 0.54 and the book's deflated Sharpe
+ratio is 0.86 at 132 trials (0.79 at 500) for 2010–2023 and 0.65 for 2018–2023 alone, below
+the usual 0.95 bar. After correcting for the number of designs tried, the book's Sharpe is not
+significantly different from luck; the 2024–2025 final test is the clean test.
+
+![Adopted book, 2010–2023](figures/quant/goal2_equity_curves.png)
+
+## Overfitting control during the programme
+
 - **Choices:** every choice was made on the 2010–2017 walk-forward test years.
 - **Confirmation:** 2018–2023 was opened once per stage, only after the
   choice was committed.
@@ -30,7 +54,7 @@ The target is whether a divergence (|z| ≥ 2) reverts to |z| ≤ 0.5 within 20
 sessions before |z| ≥ 3. The base rate is 5.6 % in 2010–2017 and about 10 %
 in 2018–2023.
 
-New point-in-time inputs (`p6_quant_features`, `p6_quant_ou`):
+New point-in-time inputs (`pipeline.features`, `pipeline.ou_features`):
 
 | Block | Contents |
 |---|---|
@@ -181,7 +205,7 @@ design with realistic costs at $10m:
 
 Professional stat-arb desks trade each stock's residual against factors,
 net all signals per stock before trading, and earn interest on their
-collateral. Each idea was tested here (`p6_resid`, with a daily
+collateral. Each idea was tested here (`book.residual_sleeve`, with a daily
 open-to-open stock-level engine that reproduces the pairs portfolio within
 0.02 Sharpe).
 
@@ -240,15 +264,23 @@ execution. Without a larger universe, these methods do not add a
 measurable edge here. The decisive cost lever was trading speed:
 Gârleanu–Pedersen partial trading cut costs by about 85 %.
 
-## Running
+## Rebuilding the inputs and checking the book
 
 ```powershell
-# features and forecast specs (selection years; add --holdout to confirm)
-.venv\Scripts\python.exe -m structural_break.forecast.harness run --specs B+rule+ou --schemes recent:bag5
+# the full build order of every book input (module CLIs and build_inputs commands)
+.venv\Scripts\python.exe -m structural_break.pipeline.build_inputs plan
+# rebuild features, OU, R1, costs and residual targets and compare with the stored files
+.venv\Scripts\python.exe -m structural_break.pipeline.build_inputs verify --sec-metadata SEC_METADATA_FOLDER
+# rebuild the adopted book and compare with its saved fingerprint
+.venv\Scripts\python.exe scriptserify_book.py
+# forecaster specs (selection years; add --holdout to confirm)
+.venv\Scripts\python.exe -m structural_break.forecast.harness run --specs B+rule+ou B+rule+ou+track --schemes recent:bag5
 .venv\Scripts\python.exe -m structural_break.forecast.harness summary
-# exit grid (all events, 36 exits, checked against the frozen simulator)
-.venv\Scripts\python.exe -m structural_break.book.trades build
-.venv\Scripts\python.exe -m structural_break.book.trades explore-exits
-# portfolios from a designs JSON
-.venv\Scripts\python.exe -m structural_break.book.portfolio --designs outputs\p6_quant\designs_h.json
+# figures in docs/figures/quant and the overall overfitting audit
+.venv\Scripts\python.exe scripts\make_figures.py
+.venv\Scripts\python.exe scripts\overfitting_audit.py
 ```
+
+Inputs and results live in `outputs/` (git-ignored): `book/`, `model_b/`, `walkforward/`,
+`news_exit/`, `news_8k/`, `headline_tone/`, `sec_timing/` and `agent_desk/`. Earlier stage
+results are kept locally in `outputs/archive/`.

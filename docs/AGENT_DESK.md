@@ -1,171 +1,100 @@
-# Multi-agent layer v3: design proposal ("pairs desk")
+# Agent desk
 
-Status: **proposal, 2026-10-22.** Nothing here is run yet. It becomes a
-pre-registration (Decision 110) only after the v2 run (Decision 109) has
-finished and the owner has approved it.
+The agent desk is the project's multi-agent layer. It follows the course's TradingAgents
+structure (analyst team, bull/bear debate, risk check, fund manager) on top of the
+quantitative book, and adds a position monitor that watches open trades. It was
+pre-registered in Decision 110 and evaluated in Decision 110d.
 
-v3 keeps the course's Week 4 TradingAgents structure:
-- an analyst team;
-- a bull/bear researcher debate;
-- a trader;
-- a risk team;
-- a fund manager.
+**What it contributes to the adopted book:** only the **monitor exit**. Agent scores at
+entry did not improve the reversion forecast or the book, so they are reported but not
+used (Decision 110d).
 
-Three lessons from v2 change it:
-1. **Agents produce features, not vetoes.** Their outputs feed the forecaster
-   and walk-forward training learns their weight; no hand-coded rule such as
-   "catalyst flag → NO TRADE".
-2. **A debate only where it can matter.** One analyst call per event; the
-   bull/bear debate runs only on contested events.
-3. **Agents also watch open trades,** where the project's news evidence
-   actually paid off (Decision 62).
+## Roles
 
-## Why change v2
-
-| v2 finding | Consequence | v3 response |
-|---|---|---|
-| Validator risk is MEDIUM on 18 of 19 pilot events | Almost no resolution, so little room to improve AUC or Brier | Ordinal 1–5 scores with explicit anchors; their weights learned walk-forward |
-| The catalyst flag vetoes about 40 % of events by a fixed rule | Untested mapping from LLM label to action | Agent outputs become forecaster features; the data sets the action |
-| Six calls per event, about 11 % abstain, 2+ days for 715 events | Expensive and fragile | One analyst call per event; debate on about 25 % |
-| Only 715 of 3,291 candidates, and none outside the candidate set | Too few events to learn from | Analyst on every top-40 % event with news (about 2,000–2,500), so there is training data |
-| News features failed at entry (Decision 54); the news exit worked (Decision 62) | Value sits after entry | New position monitor for news during open trades |
-
-## The desk
-
-| Course role | v3 role | Who | Calls |
+| Course role | Desk role | Who | When |
 |---|---|---|---|
-| Technical analyst | **Quant analyst:** spread z-score, half-life, beta drift, cointegration, model probability | Python (deterministic) | 0 |
-| Sentiment analyst | **Sentiment analyst:** FinBERT tone of each company's 8-K excerpts | Python (pinned FinBERT, already scored) | 0 |
-| News analyst | **Pair news analyst:** reads both companies' fresh 8-K excerpts, writes the structured report below | Gemma, 1 call | 1 per event with news |
-| Historian / memory (TradingAgents reflection) | **Track-record analyst:** this pair's earlier divergences whose 20-session outcome had closed before the signal | Python (point-in-time) | 0 |
-| Bull vs bear researchers | **Mean-reversion vs structural-break advocates,** one exchange (the v2 graph) | Gemma, 4 calls | contested events only |
-| Research manager | **Facilitator:** revises the analyst's scores after the debate | Gemma, 1 call | contested events only |
-| Trader | **Forecaster:** R0 score plus agent features in a walk-forward logistic model; gives calibrated P(revert) | Python (learned) | 0 |
-| Risk team | **Risk judge:** checks that the cited reasons support any score that would change the action | Flash-Lite 3.5 (a different model family, so independent) | about 10–20 % of events |
-| Fund manager | **Book:** the existing deterministic portfolio, with size and veto thresholds chosen on 2010–2017 | Python | 0 |
-| (new) | **Position monitor:** a new 8-K on either company during an open trade → HOLD / EXIT score | Gemma, 1 call | per news arrival in an open trade |
+| Technical analyst | Quant state: z-score, half-life, beta drift, model probability | Python | always |
+| Sentiment analyst | FinBERT tone of each company's 8-K excerpts and headlines | Python (pinned FinBERT) | always |
+| News analyst | **Pair news analyst**: reads both companies' fresh news and scores the divergence | Gemma 4 26B | one call per event with news |
+| Bull and bear researchers | Mean-reversion and structural-break **advocates**, one exchange (four turns) | Gemma 4 26B | contested events only |
+| Research manager | **Facilitator**: revises the analyst's scores after the debate | Gemma 4 26B | contested events only |
+| Risk team | **Risk judge**: checks that the cited sentences support the scores | Gemini 3.5 Flash-Lite (a different model family) | design candidates |
+| Fund manager | The deterministic book (selection, sizing, exits, risk) | Python | always |
+| — | **Position monitor**: judges news that arrives during an open trade | Gemma 4 26B | headlines toned against the position |
 
-## The pair news analyst's report (one call)
+An event is **contested** when the analyst's persistence is 3 or 4, or when
+explains-move is at least 4 and relationship-change at least 3.
 
-Same masking, sentence-ID citations and v1-style grounding checks as v2. The
-fields are ordinal with anchors, so the answer is a graded judgement rather
-than a pseudo-probability:
-- `mover`: A, B, BOTH or UNCLEAR. Which company's move made the divergence,
-  checked against the cited abnormal returns.
-- `explains_move`: 1–5. Does the news explain the direction and size of that
-  move? (1 = unrelated or routine, 5 = clearly the cause.)
-- `persistence`: 1–5. Will the move persist? (1 = transient, such as a
-  one-off charge or in-line results; 3 = unclear; 5 = permanent repricing,
-  such as M&A, bankruptcy, a business-mix change or a large guidance reset.)
-- `relationship_change`: 1–5. Does the news change how the two businesses
-  relate? (1 = no, 5 = a different economic exposure.)
-- `materiality` and `event_type`: as in Decision 50.
-- `claims`: up to four cited claims supporting the three scores.
+## Reports
 
-**Features for the forecaster:**
-- the three scores;
-- `persistence × explains_move`;
-- a "no fresh news" indicator. Events without news get the deterministic
-  value; they are not missing data.
+All scores are ordinal 1–5 with written anchors; claims cite sentence IDs that are resolved
+locally against the masked evidence (company names appear as "Company A/B").
 
-## Debate on demand
+- **Analyst and facilitator:** mover (A, B, both or unclear), explains_move, persistence,
+  relationship_change, up to four cited claims and the uncertainties.
+- **Monitor:** adverse (does the news push the spread against the position or break the
+  relationship?) and persistence, up to four cited claims and the uncertainties. The prompt
+  states the live z-score and the trade's time stop, and that there is no z-score stop-loss.
+- **Risk judge:** SUPPORTED or NOT_SUPPORTED with a reason; NOT_SUPPORTED makes the event
+  ABSTAIN, so it falls back to the no-agent forecast.
 
-The v2 graph runs only when the analyst's report is contested:
-- `persistence` is 3 or 4;
-- or `explains_move` is 4 or more with `relationship_change` 3 or more.
+Invalid answers get up to two specific corrections, then ABSTAIN. ABSTAIN is a failure state
+and is reported separately from any judgement.
 
-Expected share: about 25 %. The facilitator issues revised scores in the same
-schema. Both versions are stored, so the evaluation can measure what the
-debate adds.
+## Monitor exit (part of the book)
 
-## Risk judge
+A trade is closed at the close of the first monitor check with **adverse ≥ 5 and
+persistence ≥ 5** (Decision 110d), in addition to the take profit, the half-life time stop and
+the 8-K news exit. A **FinBERT triage** decides which checks reach the model: a check is sent
+only when a new headline is toned against the position (net tone ≤ −0.2 on the long leg or
+≥ +0.2 on the short leg; Decision 112c). This cut the monitor checks from 21,333 to 7,937.
 
-The Flash-Lite judge runs only when the final scores would move an event
-across the book's chosen veto or size threshold, at most about 20 % of
-events. It checks whether the cited sentences support the scores.
-- **Pass:** the scores stand.
-- **Fail:** the event falls back to the no-agent forecast, the v3 form of
-  ABSTAIN.
+## Results (2010–2023, Decision 110d)
 
-This keeps Flash-Lite use within its daily quota while preserving an
-independent check where it matters.
+| | Result |
+|---|---|
+| Entry run | 6,485 events scored, 31 abstained |
+| Monitor run | 7,933 checks scored, 4 abstained |
+| Goal 1 (forecast) | Agent features do not improve the forecast on any base; slightly worse on the bagged B+rule+ou base |
+| Goal 2 (book) | R0 selection with the monitor exit: Sharpe 0.813 (2010–2017), 0.595 (2018–2023), 0.713 (2010–2023) |
+| Full model as selector | About 0.39, below the R0 book |
 
-## Position monitor (exits)
+The 50-case blind human review sheet is in [agent_review/](agent_review/review_cases.md).
 
-For each open trade, at every 8-K accepted on either company before the
-planned exit, one call produces:
-- `persistence` 1–5 of the new news, and whether it moves against the
-  position;
-- a cited reason.
+## Models, limits and guardrails
 
-The monitor exit rule, "exit at the next close if persistence ≥ T on the
-adverse leg", is chosen on 2010–2017 against the existing adverse-tone news
-exit (Decision 62). Exits are where the project has already found value.
+- Free API tier only. Durable per-model call caps (entry: 9,000 a day, 36,000 in total;
+  monitor: 13,000 a day, 30,000 in total), a reservation before every HTTP call, and a pause
+  until the provider's daily reset.
+- Gemini Flash (non-Lite) models are reserved and unused.
+- Temperature 0, seed 42, minimal thinking.
+- Names masked; no outcomes in prompts; nothing from 2024 or later before the final-test
+  unlock.
+- Prompt identities are stored with every result: `pairs-desk-prompts-v3.1` (entry) and
+  `pairs-desk-monitor-v3.3` (monitor). They are content identifiers of the cached results and
+  are not renamed.
 
-## Statuses, simplified
+## Code and commands
 
-- **NO TRADE:** a judged, cited reason not to trade. In v3 it arises only
-  when the forecaster's P(revert) falls below the book's threshold after
-  agent features.
-- **ABSTAIN:** no defensible judgement, for example a failed analyst call or
-  a failed risk check. The event is traded on the no-agent forecast and the
-  abstention rate is reported. This keeps failure separate from judgement,
-  as in v2.
-- **REVIEW / CANDIDATE:** kept only for the demo app. The backtest uses
-  trade, skip or size.
+| Module | Contents |
+|---|---|
+| `structural_break.agents.debate` | Shared case format, masking, sentence-ID citations, rate guard, clients, advocate turns |
+| `structural_break.agents.desk` | Report contracts, prompts, entry flow and monitor check |
+| `structural_break.agents.desk_runner` | Case building, the resumable run, status and evaluation |
+| `structural_break.book.selection` | The book's candidate selection that the desk works on |
 
-## Evaluation plan (to pre-register after the v2 run)
+```shell
+python -m structural_break.agents.desk_runner build-entry
+python -m structural_break.agents.desk_runner build-monitor
+python scripts/agents/monitor_triage.py
+python -m structural_break.agents.desk_runner run --kind entry --env-file PATH/TO/.env
+python -m structural_break.agents.desk_runner run --kind monitor --env-file PATH/TO/.env
+python -m structural_break.agents.desk_runner status
+python -m structural_break.agents.desk_runner evaluate            # add --holdout once
+python scripts/agents/review_export.py                            # blind review sheet
+python scripts/agents/ingest_fnspid.py                            # FNSPID headlines
+```
 
-Same events, same walk-forward protocol, labels read once:
-
-| Variant | Agents | New calls | Purpose |
-|---|---|---|---|
-| A | none | 0 | current book (Decision 108) |
-| B | Decision 50 per-company extractor features | 0 (already run) | does one "what happened" analyst help? |
-| B′ | pair news analyst features | about 2,000 | does pair-level interpretation help beyond labels? |
-| C | B′ + debate on demand | about 3,000 | does the debate add anything over one interpreting analyst? |
-| D | v2 full debate (Decision 109) | running | the planned architecture; it is B plus a debate |
-| E | A + position monitor exits | about 1,000 | agents after entry |
-
-**Order of tests.** B and D are compared first, on the same candidate events
-and protocol; neither needs new calls.
-- **If D beats B:** interpretation adds value, and B′ and C are run to learn
-  whether one analyst suffices.
-- **If D does not beat B:** B′ and C are skipped and the quota goes to E.
-  Note that the Decision 50 features alone already failed as forecast
-  features (Decision 54).
-
-- **Goal 1:** AUC, log loss and Brier, walk-forward, on top-40 % events with
-  news. Pass rule: Decision 47's month-block bootstrap.
-- **Goal 2:** 2010–2017 Sharpe picks the variant (owner rule, Decision 105);
-  2018–2023 is opened once.
-- **Human check:** the 50-event blind review sheet also scores the analyst
-  report.
-
-## Guardrails (unchanged unless stated)
-
-- **Kept from v2:**
-  - free tier only, with durable per-model caps and quota pauses;
-  - names masked;
-  - no outcomes in prompts, and nothing from 2024 or later;
-  - sentence-ID citations, resolved locally;
-  - pre-registration before any run.
-- **New, a leakage canary:** before the run, 50 masked cases ask the model
-  to name the companies. If it names either company in more than 20 % of
-  cases, the masking is strengthened before the run, and the rate is
-  reported as a limitation.
-- **New, a track-record cutoff:** the track-record analyst uses only
-  outcomes whose 20-session window closed before the signal.
-
-## Budget estimate (free tier)
-
-| Stage | Calls | Model | Time at measured pacing |
-|---|---|---|---|
-| Leakage canary | 50 | Gemma | minutes |
-| Pair news analyst | about 2,000–2,500 | Gemma | about 8–10 hours |
-| Debate on demand | about 600 × 5 | Gemma | about 10–12 hours |
-| Risk judge | about 300–500 | Flash-Lite 3.5 | 1–2 days of quota |
-| Position monitor | about 800–1,200 | Gemma | about 4 hours |
-
-That is roughly 2–3 days in total, mostly Gemma. It reuses the v2 case
-builder, resolver, client and journal.
+Outputs go to `outputs/agent_desk/`. The earlier debate-only layer (Decision 109) and the
+original agent pipeline are described in [archive/DEBATE_LAYER.md](archive/DEBATE_LAYER.md)
+and [archive/AGENT_PIPELINE_RUNBOOK.md](archive/AGENT_PIPELINE_RUNBOOK.md).

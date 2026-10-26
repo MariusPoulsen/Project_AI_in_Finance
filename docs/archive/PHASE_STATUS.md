@@ -2,8 +2,8 @@
 
 Snapshot: 2026-10-10. The primary development workflow is research v2; actual
 expanded A/B results and promotion to GitHub `main` remain pending.
-[The plan](PLAN.md) tracks implementation stages. Detailed past acceptance records
-are in [implementation history](archive/IMPLEMENTATION_HISTORY.md).
+[The plan](PHASE_PLAN.md) tracks implementation stages. Detailed past acceptance records
+are in [implementation history](IMPLEMENTATION_HISTORY.md).
 
 ## Accepted development inputs
 
@@ -32,7 +32,7 @@ remain preserved. The earlier 4,727-checkpoint audit cannot authorize new code.
 
 Recovery targets distinct `development_clockgap_v2` after a tested source freeze
 and fresh SHA-bound audit of all 6,835 checkpoints. The
-[disclosed amendment](DECISIONS.md#25-explicitly-empty-official-acceptance-clocks)
+[disclosed amendment](../DECISIONS.md#25-explicitly-empty-official-acceptance-clocks)
 keeps that accession selected but excludes its unavailable-clock text and records
 the coverage gap; metadata features remain under the frozen source-v3 policy.
 It never infers a date or drops events. Malformed, duplicate and contradictory
@@ -40,7 +40,7 @@ clocks still fail. The one-next-event source overlap, one CPU model, inference
 settings, 500-event schedule, model definitions and final lock stay fixed.
 
 Actual audit, launch, progress and exit facts belong to the new operational
-receipts. The [runbook](RESEARCH_RUNBOOK.md) describes the exact recovery and
+receipts. The [runbook](../RESEARCH_RUNBOOK.md) describes the exact recovery and
 manual-status commands; never infer a live worker from this static snapshot.
 
 The empty-clock repair passed 135 focused regression cases across the suite and
@@ -71,10 +71,10 @@ are not valid release receipts for this generation.
 
 The detached worker only builds features. No automatic fitting, publication or
 merge follows it. Keep its live source checkout frozen after launch. See
-[the runbook](RESEARCH_RUNBOOK.md) for
+[the runbook](../RESEARCH_RUNBOOK.md) for
 manual status, recovery, evaluation and publication commands.
 
-The [original experiment](archive/README.md#original-experiment), source snapshots,
+The [original experiment](README.md#original-experiment), source snapshots,
 models and Git history remain reference material. Their seven assessment events
 and zero positives cannot establish predictive usefulness. The expanded study's
 Model B improvement is still an objective, not a result. Later agents, the shared
@@ -84,8 +84,8 @@ simulator and final-test evaluation remain separate work under the plan.
 
 2026-10-11: the user authorized the bounded Week 4-inspired multi-agent redesign
 and implementation on isolated branch `phase5/agents-controller-foundation`.
-[Decision 26](DECISIONS.md#26-phase-5-bounded-adversarial-investigation) and the
-[multi-agent specification](specs/04_MULTI_AGENT_PIPELINE.md) now define independent
+[Decision 26](../DECISIONS.md#26-phase-5-bounded-adversarial-investigation) and the
+[multi-agent specification](../specs/04_MULTI_AGENT_PIPELINE.md) now define independent
 mean-reversion/break openings, one rebuttal exchange, separate synthesis and
 semantic validation, and a deterministic categorical-risk controller. Gemma is
 assigned to advocates and Flash-Lite to synthesis and validation.
@@ -104,7 +104,7 @@ and fixture workflow in [CI run 38107828059](https://github.com/MariusPoulsen/Pr
 The expanded batch slice passed full hosted Linux checks on `e93df1c` in
 [CI run 38109150954](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/38109150954).
 Commands are in
-[the agent runbook](archive/AGENT_PIPELINE_RUNBOOK.md). The accepted-generation adapter, genuine
+[the agent runbook](AGENT_PIPELINE_RUNBOOK.md). The accepted-generation adapter, genuine
 provider pilot and at least 50 human annotations remain pending; fixtures do not
 establish semantic correctness or predictive usefulness.
 
@@ -122,7 +122,7 @@ replay spends zero. Blind source exports omit scores, extraction suggestions and
 outcomes. Annotation validation checks frozen selection and source provenance,
 while explicitly leaving semantic accuracy and genuine quality acceptance false.
 Prepared inventories are mock-only; accepted Model B/source integration remains
-pending. See [decision 27](DECISIONS.md#27-phase-5-durable-batches-and-blind-source-review).
+pending. See [decision 27](../DECISIONS.md#27-phase-5-durable-batches-and-blind-source-review).
 
 The historical bridge slice adds offline registered source-v3 adapters and a
 source-only 50–100-case review sample with frozen raw captures and fresh parser
@@ -138,15 +138,15 @@ checks and two historical CLI refusal checks. Ruff, formatting, strict mypy and
 the lockfile check pass. Fresh hosted checks are required for this expanded commit.
 The real source review requires human annotations and separate interpretation
 evaluation; no genuine provider pilot, semantic quality or model improvement is
-claimed. [Decision 30](DECISIONS.md#30-historical-bridges-and-economic-analysis-before-v2-completion)
+claimed. [Decision 30](../DECISIONS.md#30-historical-bridges-and-economic-analysis-before-v2-completion)
 records this engineering slice and its timing.
 
 ## Phase 6 development simulator started
 
 2026-10-11: the user authorized a shared event-level simulator on isolated
 branch `phase6/shared-simulator`, alongside Phase 5 batch infrastructure.
-[Decision 28](DECISIONS.md#28-phase-6-fixed-share-development-simulator) and
-the [backtesting specification](specs/05_BACKTESTING_EVALUATION.md) align its
+[Decision 28](../DECISIONS.md#28-phase-6-fixed-share-development-simulator) and
+the [backtesting specification](../specs/05_BACKTESTING_EVALUATION.md) align its
 20-session primary horizon, observed close-band convergence, same-side adverse
 stop, exact next-XNYS-open fills and frozen entry share units with the canonical
 research rules. Synthetic cost scenarios apply to actual entry/exit turnover
@@ -163,7 +163,7 @@ passed the full hosted Linux regression in
 [CI run 38109378392](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/38109378392).
 Genuine captured market inputs, accepted v2/controller bindings, historical
 five-rung integration/economic metrics, portfolio accounting and economic bootstrap are
-pending. The [runbook](BACKTEST_RUNBOOK.md) gives the synthetic command and
+pending. The [runbook](../BACKTEST_RUNBOOK.md) gives the synthetic command and
 the production refusal boundary. This work leaves v2 source/checkpoints and
 its forecast protocol unchanged and does not authorize final-test outcomes.
 
@@ -184,7 +184,7 @@ experiment identity. The fixture ladder/reporting commit `292a12f` passed
 [CI run 38120892852](https://github.com/MariusPoulsen/Project_AI_in_Finance/actions/runs/38120892852).
 Genuine source/model/controller bindings, human quality, portfolio accounting,
 economic uncertainty and production assumptions
-remain open under [decision 29](DECISIONS.md#29-phase-6-fixture-ladder-and-coverage-reporting).
+remain open under [decision 29](../DECISIONS.md#29-phase-6-fixture-ladder-and-coverage-reporting).
 
 The third slice implements all twelve predeclared fixture cost/borrow scenarios,
 coverage-preserving robustness and pair/sector concentration diagnostics, seeded

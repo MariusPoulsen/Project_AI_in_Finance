@@ -284,11 +284,11 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--simulation",
         type=Path,
-        default=Path("outputs/p6_improvement/walkforward/simulation_frozen_exit.parquet"),
+        default=Path("outputs/walkforward/simulation_frozen_exit.parquet"),
     )
-    p.add_argument("--features", type=Path, default=Path("outputs/p6_quant/features.parquet"))
-    p.add_argument("--exits-dir", type=Path, default=Path("outputs/p6_sec_explore2"))
-    p.add_argument("--output", type=Path, default=Path("outputs/p6_quant"))
+    p.add_argument("--features", type=Path, default=Path("outputs/book/features.parquet"))
+    p.add_argument("--exits-dir", type=Path, default=Path("outputs/news_exit"))
+    p.add_argument("--output", type=Path, default=Path("outputs/book"))
     p.add_argument("--holdout", action="store_true", help="also report 2018-2023 (confirmation)")
     return p
 

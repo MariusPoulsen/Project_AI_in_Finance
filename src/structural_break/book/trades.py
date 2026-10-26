@@ -125,14 +125,12 @@ def build(workspace: Path, configs: Path, outputs: Path, output: Path) -> Path:
     """Price every event under every exit variant; cache requests for later stages."""
     sources = _sources(workspace)
     headline = load_headline(configs)
-    frame, _ = pb.load_data(
-        workspace, outputs / "p6_improvement/walkforward/simulation_frozen_exit.parquet"
-    )
+    frame, _ = pb.load_data(workspace, outputs / "walkforward/simulation_frozen_exit.parquet")
     wanted = set(frame["event_id"])
     pairs = pd.read_parquet(workspace / "universe/source_v1/pair_universe.parquet").set_index(
         "pair_id"
     )
-    index = headline_index(pd.read_parquet(outputs / "headline_v1/headline_tone.parquet"))
+    index = headline_index(pd.read_parquet(outputs / "headline_tone/headline_tone.parquet"))
     rows: list[dict[str, Any]] = []
     cache: dict[str, Any] = {}
     for start, end in _chunks(pd.Timestamp(2006, 1, 1).date(), pd.Timestamp(2023, 12, 31).date()):
@@ -195,7 +193,7 @@ SELECT, HOLDOUT = (2010, 2017), (2018, 2023)
 
 def r0_selections(outputs: Path, share: float = 0.20) -> pd.DataFrame:
     """The Decision 45 R0 top-share test selections (event_id, year, selected)."""
-    scores = pd.read_parquet(outputs / "p6_boosting2/scores.parquet")
+    scores = pd.read_parquet(outputs / "model_b/scores.parquet")
     scores = scores.loc[scores["variant"].eq("R0_xgb_fixed")].copy()
     chosen = pd.Series(False, index=scores.index)
     for _, group in scores.groupby("year"):
@@ -246,7 +244,7 @@ def main(arguments: Sequence[str] | None = None) -> None:
     parser.add_argument("--workspace-root", type=Path, default=Path("data/team"))
     parser.add_argument("--configs", type=Path, default=Path("configs"))
     parser.add_argument("--outputs", type=Path, default=Path("outputs"))
-    parser.add_argument("--output", type=Path, default=Path("outputs/p6_quant"))
+    parser.add_argument("--output", type=Path, default=Path("outputs/book"))
     args = parser.parse_args(arguments)
     if args.command == "build":
         build(args.workspace_root, args.configs, args.outputs, args.output)
@@ -254,7 +252,7 @@ def main(arguments: Sequence[str] | None = None) -> None:
     grid = pd.read_parquet(args.output / "exit_grid.parquet")
     frame, _ = pb.load_data(
         args.workspace_root,
-        args.outputs / "p6_improvement/walkforward/simulation_frozen_exit.parquet",
+        args.outputs / "walkforward/simulation_frozen_exit.parquet",
     )
     months = frame.set_index("event_id")["event_date"].map(lambda d: str(d)[:7])
     selections = r0_selections(args.outputs)

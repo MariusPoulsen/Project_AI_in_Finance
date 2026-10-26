@@ -520,4 +520,3 @@ def extract_view(
         break
     record.pop("_signatures", None)
     return record
-

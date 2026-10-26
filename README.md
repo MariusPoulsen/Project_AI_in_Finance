@@ -5,55 +5,31 @@ official accepted snapshot `group-v2.zip` with
 `python scripts/team.py setup --snapshot PATH/TO/group-v2.zip --sha256 <CHECKSUM>`.
 The checksum is shared with the snapshot, and the provisional pack is superseded.
 
-AI Structural-Break Detector for Statistical Arbitrage: a reproducible research
-system comparing quantitative Model A with SEC-augmented Model B. Research v2
-uses 250 frozen issuers and 736 fixed business-peer pairs, with separate fitting,
-calibration and assessment periods.
+AI Structural-Break Detector for Statistical Arbitrage: a reproducible research system
+that forecasts whether a diverged stock pair reverts (Goal 1) and trades the best book on
+top of the forecasts (Goal 2). The study uses 250 frozen issuers and 736 fixed
+business-peer pairs; everything up to 2023 is built and evaluated, and the 2024–2025 final
+test stays locked until the owner's unlock record.
 
-**Current delivery:**
+| Part | Package | Status |
+|---|---|---|
+| Data, relationships, divergence events, Model A and SEC-augmented Model B | `research`, `econometrics`, `ml`, `intelligence` | Accepted (Decision 34) |
+| Plan-ladder backtests (Baseline 0/1, Models A/B) on 2022–2023 | `backtest` | Accepted for development (Decisions 35–42) |
+| Inputs for the forecasters and the book | `pipeline` | Reproducible (`pipeline.build_inputs`) |
+| Forecasters: Model B (R0) and the bagged feature-set models | `forecast` | Holdout ROC-AUC 0.718 → 0.735 (pre-registered) |
+| Trading book | `book` | Sharpe 0.713, +2.7 % CAGR (+3.5 % with cash), 2010–2023 (Decision 110d) |
+| Agent desk: news analyst, debate, risk judge, position monitor | `agents` | Monitor exit adopted; entry agents add nothing (Decision 110d) |
 
-- **Research v2 is accepted and on `main`** (DECISIONS 34): primary
-  `research_primary_5c01ab3d29c74e3e9154d9e3`, with all thirty models
-  independently verified.
-- **Phase 6 backtesting is accepted for development** (DECISIONS 35–42). One
-  frozen execution engine and cost policy runs Baseline 0/1 and Models A/B on
-  the 2022–2023 assessment years. Results are in
-  [P6_DEVELOPMENT_RESULTS.md](docs/archive/DEVELOPMENT_RESULTS.md): at frozen costs,
-  no strategy shows an economic effect distinguishable from noise.
-- **Exploratory follow-ups** are in
-  [P6_IMPROVEMENT_RESULTS.md](docs/archive/IMPROVEMENT_RESULTS.md) (DECISIONS
-  43–46). The pre-registered model and trading improvements did not make B
-  beat A. A promising lead then failed its walk-forward replication over
-  2010–2021 (+1.1 bps per candidate, 95 % interval [−0.5, +2.8]) and was not
-  adopted.
-- **Quant research programme** ([P6_QUANT_RESEARCH.md](docs/FORECASTING_AND_BOOK.md),
-  DECISIONS 75–91). Peer, earnings-calendar, momentum, relationship-state and
-  structural Ornstein–Uhlenbeck features, with seed bagging, significantly
-  improve the reversion forecast on the 2018–2023 holdout (ROC-AUC
-  0.718 → 0.735). A redesigned trading layer (take profit at |z| 1.0,
-  disaster stop at 5, news exit, two entry filters) turns the model portfolio
-  from break-even into Sharpe 0.42, +2.3 % CAGR over 2010–2023. This is
-  proposed for the final test; the owner decides.
-- **New SEC information blocks** are in
-  [P6_SEC_FEATURES.md](docs/archive/SEC_FEATURES.md) (DECISIONS 47–54). Narrow
-  filing-timing features, Gemma labels of each company's 8-K news from the
-  three sessions before each divergence, and FinBERT tone of that news all
-  failed their pre-registered walk-forward tests against Model B, as did a
-  half-life-based trade timeout. Used to **exit** trades instead, SEC news
-  helps: closing a trade when an 8-K headline contradicts the position passed
-  a pre-registered confirmation (+6.1 bps per trade, 2016–2021) and is a
-  candidate policy for the locked final test (DECISIONS 59–62).
-- **Full System deferred** (DECISIONS 40): the multi-agent rung is reported as
-  not run.
-- **Model B improvement is not established**, and the 2024–2025 final test
-  stays locked.
-
-See [STATUS.md](docs/STATUS.md) for gates and evidence.
+The book's Sharpe does not survive a correction for the number of designs tried (deflated
+Sharpe 0.86, PBO 0.54; Decision 113); the locked final test is the clean test. See
+[PLAN.md](docs/PLAN.md) for status and open items,
+[FORECASTING_AND_BOOK.md](docs/FORECASTING_AND_BOOK.md) and [AGENT_DESK.md](docs/AGENT_DESK.md)
+for the design and results.
 
 `structural-break` is the research CLI in this checkout;
 `structural-break-research` is its compatible research alias.
 `structural-break-reference` reproduces the original experiment in a separate
-workspace. `structural-break-backtest` runs the Phase 6 backtests (below).
+workspace. `structural-break-backtest` runs the plan-ladder backtests (below).
 
 ## Setup
 
@@ -148,7 +124,7 @@ Publication performs fresh source and native-model verification. The
 reports missing/incomplete outputs. Publication does not itself merge GitHub
 `main`, establish B improvement or unlock final-test outcomes.
 
-## Backtesting (Phase 6)
+## Plan-ladder backtests
 
 One shared engine, governed by DECISIONS 30–45, applies the same execution
 convention to every strategy rung:
@@ -180,9 +156,9 @@ returns.
 `final-test-gate` refuses unless an owner-written unlock record binds the
 freeze manifest. It never fetches or runs 2024–2025 data.
 
-The exploratory improvement and walk-forward experiments live in
-`structural_break.experiments` (`p6_improvement`, `p6_walkforward`). They are
-pre-registered, and every variant is reported.
+The forecasters, the trading book and the agent desk build on this engine; their inputs are
+rebuilt and checked with `python -m structural_break.pipeline.build_inputs` and
+`python scripts/verify_book.py` (see [FORECASTING_AND_BOOK.md](docs/FORECASTING_AND_BOOK.md)).
 
 ## Development and documentation
 
@@ -198,22 +174,18 @@ Tests use deterministic offline fixtures, with network sockets blocked. Genuine
 source/model acceptance is a separate gate. Release checks include Windows/Linux
 CI and independent replay of all actual evaluations.
 
-The [agent runbook](docs/archive/AGENT_PIPELINE_RUNBOOK.md) runs the bounded debate and deterministic
-controller with synthetic inputs. Genuine agent integration and quality
-evaluation are deferred (DECISIONS 40), so the Full System rung is not run in
-the backtests.
+The agent desk is documented in [AGENT_DESK.md](docs/AGENT_DESK.md). The plan ladder's Full
+System rung needs a controller adapter under the frozen Decision 36 policy (Decision 40)
+and is otherwise reported as not run.
 
-- Current research: [protocol](docs/RESEARCH_PROTOCOL.md),
-  [runbook](docs/RESEARCH_RUNBOOK.md),
-  [status](docs/STATUS.md).
-- Backtesting: [runbook](docs/BACKTEST_RUNBOOK.md),
-  [development results](docs/archive/DEVELOPMENT_RESULTS.md),
-  [improvement results](docs/archive/IMPROVEMENT_RESULTS.md),
-  [SEC timing and catalysts](docs/archive/SEC_FEATURES.md),
-  [boosting and cointegration](docs/archive/BOOSTING_TUNING.md),
-  [quant research programme](docs/FORECASTING_AND_BOOK.md).
-- Governance: [decisions](docs/DECISIONS.md), [plan](docs/PLAN.md),
-  [specifications](docs/specs/README.md).
+- Research study: [protocol](docs/RESEARCH_PROTOCOL.md),
+  [runbook](docs/RESEARCH_RUNBOOK.md).
+- Forecasters, book and agents: [FORECASTING_AND_BOOK.md](docs/FORECASTING_AND_BOOK.md),
+  [AGENT_DESK.md](docs/AGENT_DESK.md), [NEWS_2024_2025.md](docs/NEWS_2024_2025.md).
+- Backtesting: [runbook](docs/BACKTEST_RUNBOOK.md); earlier results in the
+  [archive](docs/archive/README.md) (development, improvement, SEC features, boosting).
+- Governance: [decisions](docs/DECISIONS.md), [plan and status](docs/PLAN.md),
+  [names](docs/NAMES.md), [specifications](docs/specs/README.md).
 - [Archive](docs/archive/README.md): original reproduction runbooks for
   [data](docs/archive/reference/DATA_RUNBOOK.md),
   [econometrics](docs/archive/reference/ECONOMETRICS_RUNBOOK.md),

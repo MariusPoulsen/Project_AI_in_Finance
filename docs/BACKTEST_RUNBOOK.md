@@ -1,9 +1,9 @@
-# Shared event simulator runbook
+# Plan-ladder backtest runbook
 
-Phase 6 starts with a synthetic, event-level execution engine and capability
-comparison reports. It is prepared on isolated branch
-`phase6/shared-simulator` while v2's live source and
-checkpoints remain frozen. [Decision 30](DECISIONS.md#30-phase-6-fixed-share-development-simulator)
+The plan ladder (Baseline 0, Baseline 1, Model A, Model B) runs on one shared, event-level
+execution engine with capability comparison reports. It was built while the research
+study's live source and checkpoints remained frozen; configuration file names such as
+`configs/phase6_execution.json` are frozen identities (see [NAMES.md](NAMES.md)). [Decision 30](DECISIONS.md#30-phase-6-fixed-share-development-simulator)
 and [the specification](specs/05_BACKTESTING_EVALUATION.md) govern execution.
 [Decision 31](DECISIONS.md#31-phase-6-fixture-ladder-and-coverage-reporting)
 governs fixture selection and coverage reporting.
@@ -371,10 +371,8 @@ The synthetic acceptance boundary checks direction/units, exact entry/exit
 timing, convergence versus an equilibrium overshoot, same-side stops,
 timeouts, gaps, turnover costs, borrow duration, missing/truncated/lifecycle
 paths, final-test refusal and immutable artifacts with network sockets blocked.
-The current Phase 6 suite contains 296 blocked-socket checks: 75 simulator,
-57 ladder, 32 reporting, 37 experiment and 95 analysis/cost/portfolio/robustness
-checks. The integrated Phase 5/6 suite is checked after branch integration.
-Earlier slices passed 381 and 255 combined tests. Local repository
+The engine's tests are blocked-socket checks of the simulator, ladder, reporting,
+experiment and analysis, cost, portfolio and robustness code. Local repository
 Ruff, formatting, full strict mypy and lockfile checks pass. The single-event
 console fixture repeats with an identical immutable result identity. The
 14-row ladder publishes its manifest, independently verifies as

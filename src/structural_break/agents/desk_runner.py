@@ -42,26 +42,36 @@ from structural_break.pipeline import catalysts as cc
 from structural_break.pipeline import news_features as nc
 from structural_break.pipeline.sources import _sources
 
-OUTPUT = Path("outputs/p6_desk")
-NEWS = Path("outputs/news_v1")
+OUTPUT = Path("outputs/agent_desk")
+NEWS = Path("outputs/news_8k")
 HEADLINES = Path("data/external/fnspid/headlines.parquet")
 MAX_HEADLINES = 12
 # Decision 110b: the book can select with the original Model B (R0) or the best forecaster.
 SELECTORS = ("R0", "B+rule+ou__recent-bag5")
 # Goal 1 bases for the agent features: R0, the pre-registered best forecaster (verdict), +track (reported).
-BASES = {"R0": None, "B+rule+ou": "B+rule+ou__recent-bag5", "B+rule+ou+track": "B+rule+ou+track__recent-bag5"}
+BASES = {
+    "R0": None,
+    "B+rule+ou": "B+rule+ou__recent-bag5",
+    "B+rule+ou+track": "B+rule+ou+track__recent-bag5",
+}
 # Decision 112b: the adopted exit. Take profit |z| <= 1.0, no disaster stop, news exit, and a time
 # stop of clip(ceil(1.5 x half-life), 10, 40) sessions (20 when the half-life is unknown).
-LONG_CACHE = Path("outputs/p6_quant/requests_long.pkl")
+LONG_CACHE = Path("outputs/book/requests_long.pkl")
 TAKE_PROFIT, NO_STOP, HALF_LIFE_MULTIPLE = 1.0, 99.0, 1.5
 
 
 def time_stops(workspace: Path) -> dict[str, int]:
     version = _sources(workspace).binding.evaluation.version
-    hl = pd.read_parquet(workspace / "artifacts/research" / version / "model_inputs.parquet",
-                         columns=["event_id", "half_life"]).set_index("event_id")["half_life"]
-    return {e: int(min(max(np.ceil(HALF_LIFE_MULTIPLE * h), 10), 40)) if np.isfinite(h) and h > 0 else 20
-            for e, h in hl.items()}
+    hl = pd.read_parquet(
+        workspace / "artifacts/research" / version / "model_inputs.parquet",
+        columns=["event_id", "half_life"],
+    ).set_index("event_id")["half_life"]
+    return {
+        e: int(min(max(np.ceil(HALF_LIFE_MULTIPLE * h), 10), 40))
+        if np.isfinite(h) and h > 0
+        else 20
+        for e, h in hl.items()
+    }
 
 
 def design_trades(
@@ -76,15 +86,31 @@ def design_trades(
     from structural_break.book import portfolio as qp
 
     cache = qp.load_cache(LONG_CACHE)
-    chosen = [e for e in selection.design_candidates(workspace, selector, chosen_events) if e not in (exclude or set())]
+    chosen = [
+        e
+        for e in selection.design_candidates(workspace, selector, chosen_events)
+        if e not in (exclude or set())
+    ]
     sectors = _sources(workspace).security_sectors()
-    prices = pd.read_parquet(workspace / "market/source_v1/prices.parquet",
-                             columns=["ticker", "trading_date", "open", "high", "low", "close", "adj_close", "volume"])
+    prices = pd.read_parquet(
+        workspace / "market/source_v1/prices.parquet",
+        columns=["ticker", "trading_date", "open", "high", "low", "close", "adj_close", "volume"],
+    )
     stops = time_stops(workspace)
-    design = qp.run_design(cache, chosen, (TAKE_PROFIT, NO_STOP, {e: stops.get(e, 20) for e in chosen}, True),
-                           Path("configs"), 0.075, sectors, qc.lookup(qc.stock_inputs(prices)), 1e7,
-                           fractions=fractions or None)
+    design = qp.run_design(
+        cache,
+        chosen,
+        (TAKE_PROFIT, NO_STOP, {e: stops.get(e, 20) for e in chosen}, True),
+        Path("configs"),
+        0.075,
+        sectors,
+        qc.lookup(qc.stock_inputs(prices)),
+        1e7,
+        fractions=fractions or None,
+    )
     return design["allocations"], design["results"], cache
+
+
 BUDGET = BudgetPolicy(
     allocation_id="p6-desk-v3-decision-110",
     global_cap=40_000,
@@ -118,7 +144,9 @@ def _pct(value: Any) -> str:
     return f"{100 * value:+.1f} %" if value is not None and np.isfinite(value) else "unknown"
 
 
-def _chunk(chunk_id: str, leg: str, security: str, filing: str, stamp: Any, text: str) -> SourceChunk:
+def _chunk(
+    chunk_id: str, leg: str, security: str, filing: str, stamp: Any, text: str
+) -> SourceChunk:
     return SourceChunk(
         chunk_id=chunk_id,
         leg=leg,  # type: ignore[arg-type]
@@ -165,15 +193,25 @@ class Sources:
 
     def __init__(self, workspace: Path) -> None:
         version = _sources(workspace).binding.evaluation.version
-        self.inputs = pd.read_parquet(workspace / "artifacts/research" / version / "model_inputs.parquet").set_index("event_id")
-        self.pairs = pd.read_parquet(workspace / "universe/source_v1/pair_universe.parquet").set_index("pair_id")
-        self.master = pd.read_parquet(workspace / "universe/source_v1/security_master.parquet").set_index("security_id")
+        self.inputs = pd.read_parquet(
+            workspace / "artifacts/research" / version / "model_inputs.parquet"
+        ).set_index("event_id")
+        self.pairs = pd.read_parquet(
+            workspace / "universe/source_v1/pair_universe.parquet"
+        ).set_index("pair_id")
+        self.master = pd.read_parquet(
+            workspace / "universe/source_v1/security_master.parquet"
+        ).set_index("security_id")
         scores = pd.read_parquet(selection.SCORES)
         self.scores = scores[scores.variant.eq("R0_xgb_fixed")]
         self.headlines = pd.read_parquet(HEADLINES)
         self.headlines = self.headlines[self.headlines.specific & self.headlines.session.notna()]
-        self.by_security = {s: g.sort_values(["session", "stamp"]) for s, g in self.headlines.groupby("security_id")}
-        prices = pd.read_parquet(workspace / "market/source_v1/prices.parquet", columns=["trading_date"])
+        self.by_security = {
+            s: g.sort_values(["session", "stamp"]) for s, g in self.headlines.groupby("security_id")
+        }
+        prices = pd.read_parquet(
+            workspace / "market/source_v1/prices.parquet", columns=["trading_date"]
+        )
         self.sessions = pd.DatetimeIndex(sorted(pd.to_datetime(prices["trading_date"].unique())))
         self.windows = pd.read_parquet(NEWS / "windows.parquet").set_index(["event_id", "leg"])
 
@@ -181,11 +219,14 @@ class Sources:
         pair = self.pairs.loc[pair_id]
         securities = {"A": pair["leg_a_security_id"], "B": pair["leg_b_security_id"]}
         companies = {
-            leg: (str(self.master.loc[s, "issuer_name"]), str(self.master.loc[s, "ticker"])) for leg, s in securities.items()
+            leg: (str(self.master.loc[s, "issuer_name"]), str(self.master.loc[s, "ticker"]))
+            for leg, s in securities.items()
         }
         return securities, companies
 
-    def headlines_between(self, security: str, first: pd.Timestamp, last: pd.Timestamp) -> pd.DataFrame:
+    def headlines_between(
+        self, security: str, first: pd.Timestamp, last: pd.Timestamp
+    ) -> pd.DataFrame:
         group = self.by_security.get(security)
         if group is None:
             return self.headlines.iloc[0:0]
@@ -211,8 +252,16 @@ def build_entry(workspace: Path, output: Path = OUTPUT) -> dict[str, Any]:
     test = src.scores[src.scores.role.eq("test")].set_index("event_id")
     extra = sorted(candidates - set(region.event_id))
     region = pd.concat(
-        [region, pd.DataFrame({"event_id": extra, "score": test.loc[extra, "score"].to_numpy(),
-                               "year": test.loc[extra, "year"].to_numpy()})],
+        [
+            region,
+            pd.DataFrame(
+                {
+                    "event_id": extra,
+                    "score": test.loc[extra, "score"].to_numpy(),
+                    "year": test.loc[extra, "year"].to_numpy(),
+                }
+            ),
+        ],
         ignore_index=True,
     )
     (output / "entry_cases").mkdir(parents=True, exist_ok=True)
@@ -227,7 +276,11 @@ def build_entry(workspace: Path, output: Path = OUTPUT) -> dict[str, Any]:
         evidence, described, counts = [], {}, {}
         packs = {}
         for leg in ("A", "B"):
-            w = src.windows.loc[(event.event_id, leg.lower())] if (event.event_id, leg.lower()) in src.windows.index else None
+            w = (
+                src.windows.loc[(event.event_id, leg.lower())]
+                if (event.event_id, leg.lower()) in src.windows.index
+                else None
+            )
             key = None if w is None else w["leg_key"]
             if isinstance(key, str):
                 path = NEWS / "packs" / f"{key}.json"
@@ -245,8 +298,14 @@ def build_entry(workspace: Path, output: Path = OUTPUT) -> dict[str, Any]:
                 if accepted > stamp:
                     continue
                 text = dv.mask_text(chunk["chunk_text"], companies)[:4000]
-                evidence.append(_chunk(chunk["chunk_id"], leg, securities[leg], chunk["filing_id"], accepted, text))
-                described[chunk["chunk_id"]] = f"{chunk['document_type']} {chunk.get('section_label') or ''}".strip()
+                evidence.append(
+                    _chunk(
+                        chunk["chunk_id"], leg, securities[leg], chunk["filing_id"], accepted, text
+                    )
+                )
+                described[chunk["chunk_id"]] = (
+                    f"{chunk['document_type']} {chunk.get('section_label') or ''}".strip()
+                )
         has_news = bool(evidence)
         record = {
             "event_id": event.event_id,
@@ -265,9 +324,15 @@ def build_entry(workspace: Path, output: Path = OUTPUT) -> dict[str, Any]:
         for leg in ("B", "A"):
             label = None
             if leg in packs:
-                label = describe_news(True, packs[leg][1], cc.load_record(NEWS, packs[leg][1]), packs[leg][0])
+                label = describe_news(
+                    True, packs[leg][1], cc.load_record(NEWS, packs[leg][1]), packs[leg][0]
+                )
             tone = nc.load_tone(NEWS, packs[leg][1]) if leg in packs else None
-            tone_text = f"{tone['positive'] - tone['negative']:+.2f}" if tone and tone.get("status") == "OK" else "not available"
+            tone_text = (
+                f"{tone['positive'] - tone['negative']:+.2f}"
+                if tone and tone.get("status") == "OK"
+                else "not available"
+            )
             text = "\n".join(
                 [
                     f"Company {leg}'s 1-day abnormal return at the signal was {_pct(row[f'abnormal_return_{leg}_1d'])}.",
@@ -276,7 +341,17 @@ def build_entry(workspace: Path, output: Path = OUTPUT) -> dict[str, Any]:
                     f"FinBERT net tone of Company {leg}'s 8-K excerpts was {tone_text}.",
                 ]
             )
-            evidence.insert(0, _chunk(f"context:{event.event_id}:{leg}", leg, securities[leg], dv.CONTEXT_FILING, stamp, text))
+            evidence.insert(
+                0,
+                _chunk(
+                    f"context:{event.event_id}:{leg}",
+                    leg,
+                    securities[leg],
+                    dv.CONTEXT_FILING,
+                    stamp,
+                    text,
+                ),
+            )
 
         def finite(value: Any, positive: bool = False) -> float | None:
             if value is None or not np.isfinite(value) or (positive and value <= 0):
@@ -295,24 +370,39 @@ def build_entry(workspace: Path, output: Path = OUTPUT) -> dict[str, Any]:
                     model_b_probability=float(event.score),
                     z_score=finite(row["z_signed"]),
                     half_life_sessions=finite(row["half_life"], positive=True),
-                    beta_drift=finite(abs(row["beta_drift_pct"])) if np.isfinite(row["beta_drift_pct"]) else None,
+                    beta_drift=finite(abs(row["beta_drift_pct"]))
+                    if np.isfinite(row["beta_drift_pct"])
+                    else None,
                     cointegration_pvalue=finite(row["coint_pvalue"]),
                 ),
                 gates=DataGates(
-                    market_data_ok=True, model_inputs_ok=True, source_timestamps_ok=True,
-                    source_coverage="PARTIAL", liquidity_ok=True, implementation_ok=True,
+                    market_data_ok=True,
+                    model_inputs_ok=True,
+                    source_timestamps_ok=True,
+                    source_coverage="PARTIAL",
+                    liquidity_ok=True,
+                    implementation_ok=True,
                 ),
                 lineage=Lineage(
-                    registry_id="p6-decision-110-desk", model_bundle_id="R0_xgb_fixed", model_version="walk-forward",
-                    calibrator_version="raw-walk-forward-score", relationship_version=str(row["relationship_version"]),
+                    registry_id="p6-decision-110-desk",
+                    model_bundle_id="R0_xgb_fixed",
+                    model_version="walk-forward",
+                    calibrator_version="raw-walk-forward-score",
+                    relationship_version=str(row["relationship_version"]),
                     evidence_policy_version="fnspid-headlines-v1+sec-recent-news-v1+mask-v1",
-                    source_manifest_sha256=hashlib.sha256(json.dumps(sorted(c.document_sha256 for c in evidence)).encode()).hexdigest(),
+                    source_manifest_sha256=hashlib.sha256(
+                        json.dumps(sorted(c.document_sha256 for c in evidence)).encode()
+                    ).hexdigest(),
                 ),
                 evidence=tuple(evidence),
             ),
             {
-                "sub_industry": dv.mask_text(str(src.pairs.loc[row["pair_id"], "sub_industry"]), companies),
-                "rationale": dv.mask_text(str(src.pairs.loc[row["pair_id"], "economic_rationale"]), companies),
+                "sub_industry": dv.mask_text(
+                    str(src.pairs.loc[row["pair_id"], "sub_industry"]), companies
+                ),
+                "rationale": dv.mask_text(
+                    str(src.pairs.loc[row["pair_id"], "economic_rationale"]), companies
+                ),
                 "chunks": described,
                 "signal_line": (
                     f"SIGNAL: the pair's price spread diverged at the close of {signal.date().isoformat()}; "
@@ -325,13 +415,17 @@ def build_entry(workspace: Path, output: Path = OUTPUT) -> dict[str, Any]:
         rows.append(record | {"status": "CASE", "prompt_chars": len(dk.analyst_prompt(case))})
     inventory = pd.DataFrame(rows)
     inventory["order"] = inventory.event_id.map(cv.processing_order)
-    inventory = inventory.sort_values(["candidate", "order"], ascending=[False, True]).reset_index(drop=True)
+    inventory = inventory.sort_values(["candidate", "order"], ascending=[False, True]).reset_index(
+        drop=True
+    )
     inventory.to_parquet(output / "entry_inventory.parquet", index=False)
     return {
         "region_events": len(inventory),
         "with_case": int(inventory.status.eq("CASE").sum()),
         "candidates_with_case": int((inventory.status.eq("CASE") & inventory.candidate).sum()),
-        "by_year_case_share": inventory.groupby("year")["status"].apply(lambda s: round(float(s.eq("CASE").mean()), 3)).to_dict(),
+        "by_year_case_share": inventory.groupby("year")["status"]
+        .apply(lambda s: round(float(s.eq("CASE").mean()), 3))
+        .to_dict(),
         "prompt_chars_median": float(inventory.prompt_chars.median()),
     }
 
@@ -361,19 +455,33 @@ def build_monitor(workspace: Path, output: Path = OUTPUT) -> dict[str, Any]:
         long_leg = "A" if position.weight_a > 0 else "B"
         for k, day in enumerate(days[1 : days.index(trigger) + 1], start=1):
             stamp_day = pd.Timestamp(day)
-            heads = {leg: src.headlines_between(securities[leg], stamp_day, stamp_day) for leg in ("A", "B")}
+            heads = {
+                leg: src.headlines_between(securities[leg], stamp_day, stamp_day)
+                for leg in ("A", "B")
+            }
             if not any(len(h) for h in heads.values()):
                 continue
             session = request.sessions[days.index(day)]
             stamp = session.close_at
             ca, cb = closes[day]
-            pnl = position.weight_a * (ca / entry_close[0] - 1) + position.weight_b * (cb / entry_close[1] - 1)
+            pnl = position.weight_a * (ca / entry_close[0] - 1) + position.weight_b * (
+                cb / entry_close[1] - 1
+            )
             check_id = f"{event_id}:{day.isoformat()}"
             evidence = []
             for leg in ("A", "B"):
                 if len(heads[leg]):
                     cid = f"headlines:{check_id}:{leg}"
-                    evidence.append(_chunk(cid, leg, securities[leg], dk.HEADLINE_FILING, stamp, _headline_text(heads[leg], companies)))
+                    evidence.append(
+                        _chunk(
+                            cid,
+                            leg,
+                            securities[leg],
+                            dk.HEADLINE_FILING,
+                            stamp,
+                            _headline_text(heads[leg], companies),
+                        )
+                    )
             short_leg = "B" if long_leg == "A" else "A"
             z_now = request.snapshot.z(ca, cb)
             context = "\n".join(
@@ -388,7 +496,12 @@ def build_monitor(workspace: Path, output: Path = OUTPUT) -> dict[str, Any]:
                     f"Company A moved {_pct(ca / entry_close[0] - 1)} and Company B moved {_pct(cb / entry_close[1] - 1)} since entry.",
                 ]
             )
-            evidence.insert(0, _chunk(f"context:{check_id}:A", "A", securities["A"], dv.CONTEXT_FILING, stamp, context))
+            evidence.insert(
+                0,
+                _chunk(
+                    f"context:{check_id}:A", "A", securities["A"], dv.CONTEXT_FILING, stamp, context
+                ),
+            )
             case = dv.Case(
                 AgentInput(
                     event_id=check_id[:200],
@@ -399,21 +512,38 @@ def build_monitor(workspace: Path, output: Path = OUTPUT) -> dict[str, Any]:
                     pair_status="ACTIVE",
                     quant=QuantState(model_b_probability=None, z_score=float(request.signal_z)),
                     gates=DataGates(
-                        market_data_ok=True, model_inputs_ok=True, source_timestamps_ok=True,
-                        source_coverage="PARTIAL", liquidity_ok=True, implementation_ok=True,
+                        market_data_ok=True,
+                        model_inputs_ok=True,
+                        source_timestamps_ok=True,
+                        source_coverage="PARTIAL",
+                        liquidity_ok=True,
+                        implementation_ok=True,
                     ),
                     lineage=Lineage(
-                        registry_id="p6-decision-110-monitor", model_bundle_id="R0_xgb_fixed", model_version="walk-forward",
-                        calibrator_version="none", relationship_version=str(row["relationship_version"]),
+                        registry_id="p6-decision-110-monitor",
+                        model_bundle_id="R0_xgb_fixed",
+                        model_version="walk-forward",
+                        calibrator_version="none",
+                        relationship_version=str(row["relationship_version"]),
                         evidence_policy_version="fnspid-headlines-v1+mask-v1",
-                        source_manifest_sha256=hashlib.sha256(json.dumps(sorted(c.document_sha256 for c in evidence)).encode()).hexdigest(),
+                        source_manifest_sha256=hashlib.sha256(
+                            json.dumps(sorted(c.document_sha256 for c in evidence)).encode()
+                        ).hexdigest(),
                     ),
                     evidence=tuple(evidence),
                 ),
                 {
-                    "sub_industry": dv.mask_text(str(src.pairs.loc[request.pair_id, "sub_industry"]), companies),
-                    "rationale": dv.mask_text(str(src.pairs.loc[request.pair_id, "economic_rationale"]), companies),
-                    "chunks": {c.chunk_id: "news headlines (FNSPID), this session" for c in evidence if c.filing_id == dk.HEADLINE_FILING},
+                    "sub_industry": dv.mask_text(
+                        str(src.pairs.loc[request.pair_id, "sub_industry"]), companies
+                    ),
+                    "rationale": dv.mask_text(
+                        str(src.pairs.loc[request.pair_id, "economic_rationale"]), companies
+                    ),
+                    "chunks": {
+                        c.chunk_id: "news headlines (FNSPID), this session"
+                        for c in evidence
+                        if c.filing_id == dk.HEADLINE_FILING
+                    },
                     "signal_line": (
                         f"CHECK: an open pairs position on {day.isoformat()}, {k} sessions after entry. "
                         "New company headlines became available at this close (A0 describes the position)."
@@ -422,14 +552,26 @@ def build_monitor(workspace: Path, output: Path = OUTPUT) -> dict[str, Any]:
             )
             name = hashlib.sha256(check_id.encode()).hexdigest()[:40]
             dv.cv_write(output / "monitor_cases" / f"{name}.json", case.to_json())
-            rows.append({"check_id": check_id, "file": name, "event_id": event_id, "session": pd.Timestamp(day),
-                         "held": k, "year": pd.Timestamp(day).year})
+            rows.append(
+                {
+                    "check_id": check_id,
+                    "file": name,
+                    "event_id": event_id,
+                    "session": pd.Timestamp(day),
+                    "held": k,
+                    "year": pd.Timestamp(day).year,
+                }
+            )
     inventory = pd.DataFrame(rows)
     inventory["order"] = inventory.check_id.map(cv.processing_order)
     inventory = inventory.sort_values("order").reset_index(drop=True)
     inventory.to_parquet(output / "monitor_inventory.parquet", index=False)
-    return {"checks": len(inventory), "trades_with_checks": int(inventory.event_id.nunique()), "trades": len(results),
-            "by_year": inventory.groupby("year").size().to_dict()}
+    return {
+        "checks": len(inventory),
+        "trades_with_checks": int(inventory.event_id.nunique()),
+        "trades": len(results),
+        "by_year": inventory.groupby("year").size().to_dict(),
+    }
 
 
 # --------------------------------------------------------------------------- #
@@ -474,7 +616,11 @@ def run(
         if "triage" not in inv:
             raise SystemExit("Run scripts/agents/monitor_triage.py first (Decision 112c)")
         # 112c: only checks with headlines toned against the position reach the LLM monitor.
-        names, candidates, case_dir = list(inv.loc[inv.triage, "file"]), set(), OUTPUT / "monitor_cases"
+        names, candidates, case_dir = (
+            list(inv.loc[inv.triage, "file"]),
+            set(),
+            OUTPUT / "monitor_cases",
+        )
     if limit is not None:
         names = names[:limit]
     own = journal is None and clients is None
@@ -500,7 +646,9 @@ def run(
                 case = dv.Case.from_json(json.loads((case_dir / f"{name}.json").read_bytes()))
                 if kind == "entry":
                     candidate = name in candidates
-                    return dk.run_entry(case, clients, output / "roles", debate=candidate, judge=candidate)
+                    return dk.run_entry(
+                        case, clients, output / "roles", debate=candidate, judge=candidate
+                    )
                 return dk.run_monitor(case, clients, output / "roles")
 
             counts += _pass(output, kind, todo, task, clients, workers, say, journal)
@@ -535,7 +683,9 @@ def _pass(output, kind, todo, task, clients, workers, say, journal) -> Counter[s
                 except dv.PauseRequired as error:
                     reset = cv.next_quota_reset()
                     say(f"{error}: daily quota reached; pausing until {reset.isoformat()}")
-                    while (left := (reset - datetime.now(UTC)).total_seconds()) > 0 and not stop.is_set():
+                    while (
+                        left := (reset - datetime.now(UTC)).total_seconds()
+                    ) > 0 and not stop.is_set():
                         time.sleep(min(left, 300))
                 except cv.ProviderDown:
                     label = "PROVIDER_UNAVAILABLE"
@@ -592,9 +742,18 @@ def status(output: Path = OUTPUT) -> str:
 # Evaluation and tuning (labels are read only here)
 # --------------------------------------------------------------------------- #
 
-ENTRY_GRID = [(None, False), (None, True)] + [(q, s) for q in (0.1, 0.2, 0.3) for s in (False, True)]
+ENTRY_GRID = [(None, False), (None, True)] + [
+    (q, s) for q in (0.1, 0.2, 0.3) for s in (False, True)
+]
 MONITOR_GRID = [None, (3, 3), (4, 3), (4, 4), (5, 4), (5, 5)]
-FEATURES = ("no_news", "abstain", "explains_move", "persistence", "relationship_change", "persistence_x_explains")
+FEATURES = (
+    "no_news",
+    "abstain",
+    "explains_move",
+    "persistence",
+    "relationship_change",
+    "persistence_x_explains",
+)
 
 
 def entry_features(output: Path, variant: str) -> pd.DataFrame:
@@ -616,8 +775,15 @@ def entry_features(output: Path, variant: str) -> pd.DataFrame:
                 for name in ("explains_move", "persistence", "relationship_change"):
                     values[name] = float(scores[name])
                 values["persistence_x_explains"] = values["persistence"] * values["explains_move"]
-        rows.append({"event_id": record["event_id"], "year": record["year"], "score": record["score"],
-                     "candidate": record["candidate"], **values})
+        rows.append(
+            {
+                "event_id": record["event_id"],
+                "year": record["year"],
+                "score": record["score"],
+                "candidate": record["candidate"],
+                **values,
+            }
+        )
     return pd.DataFrame(rows)
 
 
@@ -625,7 +791,9 @@ def base_scores(base: str | None, events: pd.Series, r0: pd.Series) -> np.ndarra
     """The base forecaster's probability per event: R0's raw score or a stored bag5 probability."""
     if base is None:
         return r0.to_numpy(float)
-    stored = pd.read_parquet(f"outputs/p6_quant/scores__{base}.parquet").set_index("event_id")["probability"]
+    stored = pd.read_parquet(f"outputs/book/scores__{base}.parquet").set_index("event_id")[
+        "probability"
+    ]
     return stored.reindex(events).to_numpy(float)
 
 
@@ -652,14 +820,21 @@ def walk_forward(table: pd.DataFrame, with_agents: bool, column: str = "score") 
 def _metrics(y: pd.Series, p: pd.Series) -> dict[str, float]:
     from sklearn.metrics import brier_score_loss, log_loss, roc_auc_score
 
-    return {"auc": float(roc_auc_score(y, p)), "log_loss": float(log_loss(y, p)), "brier": float(brier_score_loss(y, p)), "n": int(len(y))}
+    return {
+        "auc": float(roc_auc_score(y, p)),
+        "log_loss": float(log_loss(y, p)),
+        "brier": float(brier_score_loss(y, p)),
+        "n": int(len(y)),
+    }
 
 
 def _block_bootstrap(diff: pd.Series, months: pd.Series, seed: int = 5557) -> list[float]:
     rng = np.random.default_rng(seed)
     groups = {m: diff[months == m].to_numpy() for m in months.unique()}
     keys = np.array(list(groups))
-    draws = [np.concatenate([groups[k] for k in rng.choice(keys, len(keys))]).mean() for _ in range(2000)]
+    draws = [
+        np.concatenate([groups[k] for k in rng.choice(keys, len(keys))]).mean() for _ in range(2000)
+    ]
     return [float(np.quantile(draws, 0.025)), float(np.quantile(draws, 0.975))]
 
 
@@ -675,7 +850,9 @@ def desk_book(
     sizes, vetoes and earlier monitor exits."""
     from structural_break.book import residual_sleeve as pr
 
-    allocations, results, cache = design_trades(workspace, selector, chosen_events, fractions, exclude)
+    allocations, results, cache = design_trades(
+        workspace, selector, chosen_events, fractions, exclude
+    )
     legs = []
     for event_id, fraction in allocations.items():
         result = results[event_id]
@@ -686,20 +863,34 @@ def desk_book(
         trigger = days[days.index(result.exit.session_date) - 1]
         if event_id in exits and exits[event_id] < trigger:
             trigger = exits[event_id]
-        for ticker, units, price in ((request.leg_a, result.position.units_a, result.entry.price_a),
-                                     (request.leg_b, result.position.units_b, result.entry.price_b)):
-            legs.append(pr.Leg(str(ticker), pd.Timestamp(days[0]), pd.Timestamp(trigger), fraction * units * price))
+        for ticker, units, price in (
+            (request.leg_a, result.position.units_a, result.entry.price_a),
+            (request.leg_b, result.position.units_b, result.entry.price_b),
+        ):
+            legs.append(
+                pr.Leg(
+                    str(ticker),
+                    pd.Timestamp(days[0]),
+                    pd.Timestamp(trigger),
+                    fraction * units * price,
+                )
+            )
     return legs
 
 
-def evaluate(workspace: Path = Path("data/team"), output: Path = OUTPUT, holdout: bool = False) -> dict[str, Any]:
+def evaluate(
+    workspace: Path = Path("data/team"), output: Path = OUTPUT, holdout: bool = False
+) -> dict[str, Any]:
     """Decision 110/110b. Goal 1: agent features on three base forecasters (verdict on B+rule+ou,
     desk variant). Goal 2: for each selection, the entry grid and then the monitor grid; the
     highest 2010-2017 Sharpe wins; 2018-2023 is opened once."""
     from structural_break.book import residual_sleeve as pr
 
     src_inputs = pd.read_parquet(
-        workspace / "artifacts/research" / _sources(workspace).binding.evaluation.version / "model_inputs.parquet",
+        workspace
+        / "artifacts/research"
+        / _sources(workspace).binding.evaluation.version
+        / "model_inputs.parquet",
         columns=["event_id", "y_revert_success", "event_date"],
     ).set_index("event_id")
     spans = [("2011-2017", (2011, 2017))] + ([("2018-2023", (2018, 2023))] if holdout else [])
@@ -708,11 +899,18 @@ def evaluate(workspace: Path = Path("data/team"), output: Path = OUTPUT, holdout
     for variant in ("analyst", "desk"):
         raw = entry_features(output, variant)
         raw["y"] = src_inputs.loc[raw.event_id, "y_revert_success"].to_numpy()
-        raw["month"] = pd.to_datetime(src_inputs.loc[raw.event_id, "event_date"]).dt.to_period("M").astype(str).to_numpy()
+        raw["month"] = (
+            pd.to_datetime(src_inputs.loc[raw.event_id, "event_date"])
+            .dt.to_period("M")
+            .astype(str)
+            .to_numpy()
+        )
         raw = raw.dropna(subset=["y"]).reset_index(drop=True)
         raw["y"] = raw.y.astype(int)
         for base_name, base in BASES.items():
-            table = raw.assign(base_score=base_scores(base, raw.event_id, raw.score)).dropna(subset=["base_score"])
+            table = raw.assign(base_score=base_scores(base, raw.event_id, raw.score)).dropna(
+                subset=["base_score"]
+            )
             table = table.reset_index(drop=True)
             table["p_base"] = walk_forward(table, False, "base_score")
             table["p_agent"] = walk_forward(table, True, "base_score")
@@ -730,28 +928,47 @@ def evaluate(workspace: Path = Path("data/team"), output: Path = OUTPUT, holdout
                     "brier_difference": float(diff.mean()),
                     "brier_95": interval,
                     "passes": bool(interval[1] < 0),
-                    "candidates": {"base": _metrics(cand.y, cand.p_base), "agents": _metrics(cand.y, cand.p_agent)},
+                    "candidates": {
+                        "base": _metrics(cand.y, cand.p_base),
+                        "agents": _metrics(cand.y, cand.p_agent),
+                    },
                 }
             report["forecast"][f"{variant}|{base_name}"] = out
     report["goal1_verdict"] = report["forecast"]["desk|B+rule+ou"]["2011-2017"]["passes"]
 
     sectors = _sources(workspace).security_sectors()
-    prices = pd.read_parquet(workspace / "market/source_v1/prices.parquet",
-                             columns=["ticker", "trading_date", "open", "high", "low", "close", "adj_close", "volume"])
+    prices = pd.read_parquet(
+        workspace / "market/source_v1/prices.parquet",
+        columns=["ticker", "trading_date", "open", "high", "low", "close", "adj_close", "volume"],
+    )
     panels = pr.load_panels(prices, sectors)
     rf = pr.tbill(Path("data/external/irx_13w_tbill.csv"))
-    w = np.load("outputs/p6_quant/stage_q/targets_pca_continuous.npy") * 0.25
+    w = np.load("outputs/book/residual_targets_pca.npy") * 0.25
 
     def book(legs: list[Any]) -> pd.DataFrame:
-        return pr.run_book(panels, w, legs, pd.Timestamp("2010-01-01"), pd.Timestamp("2023-12-31"), capital=1e7, rf=rf,
-                           speed=0.10, vol_target=0.04, vol_window=60, timing="close", max_gross=2.0)
+        return pr.run_book(
+            panels,
+            w,
+            legs,
+            pd.Timestamp("2010-01-01"),
+            pd.Timestamp("2023-12-31"),
+            capital=1e7,
+            rf=rf,
+            speed=0.10,
+            vol_target=0.04,
+            vol_window=60,
+            timing="close",
+            max_gross=2.0,
+        )
 
     monitor_rows = []
     if (output / "monitor_inventory.parquet").exists():
         for record in pd.read_parquet(output / "monitor_inventory.parquet").to_dict("records"):
             result = load_result(output, "monitor", record["file"])
             if result and result["scores"]:
-                monitor_rows.append({**record, **{k: result["scores"][k] for k in ("adverse", "persistence")}})
+                monitor_rows.append(
+                    {**record, **{k: result["scores"][k] for k in ("adverse", "persistence")}}
+                )
     checks = pd.DataFrame(monitor_rows)
     base_for = {"R0": "R0", "B+rule+ou__recent-bag5": "B+rule+ou"}
     trials, books = [], {}
@@ -768,24 +985,52 @@ def evaluate(workspace: Path = Path("data/team"), output: Path = OUTPUT, holdout
                     prior = cands[cands.year < year].ratio
                     if len(prior) >= 50:
                         exclude |= set(part.index[part.ratio < prior.quantile(q)])
-            fractions = {e: 0.075 * float(np.clip(r, 0.5, 1.5)) for e, r in cands.ratio.items()} if size else {}
+            fractions = (
+                {e: 0.075 * float(np.clip(r, 0.5, 1.5)) for e, r in cands.ratio.items()}
+                if size
+                else {}
+            )
             return fractions, exclude
 
         entry = []
         for q, size in ENTRY_GRID:
             fractions, exclude = entry_rule(q, size)
             b = book(desk_book(workspace, fractions, exclude, {}, selector))
-            entry.append({"selector": selector, "q": q, "size": size, "vetoed": len(exclude), "2010-2017": pr.stats(b, 2010, 2017)})
+            entry.append(
+                {
+                    "selector": selector,
+                    "q": q,
+                    "size": size,
+                    "vetoed": len(exclude),
+                    "2010-2017": pr.stats(b, 2010, 2017),
+                }
+            )
             books[(selector, q, size, None)] = b
         best = max(entry, key=lambda g: g["2010-2017"]["sharpe"])
         fractions, exclude = entry_rule(best["q"], best["size"])
         monitor = []
         for rule in MONITOR_GRID[1:]:
-            hit = checks[(checks.adverse >= rule[0]) & (checks.persistence >= rule[1])] if len(checks) else checks
-            exits = hit.sort_values("session").groupby("event_id").session.first().dt.date.to_dict() if len(hit) else {}
+            hit = (
+                checks[(checks.adverse >= rule[0]) & (checks.persistence >= rule[1])]
+                if len(checks)
+                else checks
+            )
+            exits = (
+                hit.sort_values("session").groupby("event_id").session.first().dt.date.to_dict()
+                if len(hit)
+                else {}
+            )
             b = book(desk_book(workspace, fractions, exclude, exits, selector))
-            monitor.append({"selector": selector, "q": best["q"], "size": best["size"], "rule": rule,
-                            "exits": len(exits), "2010-2017": pr.stats(b, 2010, 2017)})
+            monitor.append(
+                {
+                    "selector": selector,
+                    "q": best["q"],
+                    "size": best["size"],
+                    "rule": rule,
+                    "exits": len(exits),
+                    "2010-2017": pr.stats(b, 2010, 2017),
+                }
+            )
             books[(selector, best["q"], best["size"], rule)] = b
         trials += entry + monitor
     # Decision 110c, the full model as selector: rank the region by the agent-adjusted forecast
@@ -793,7 +1038,7 @@ def evaluate(workspace: Path = Path("data/team"), output: Path = OUTPUT, holdout
     # top 20 %, with the cut from the previous year. Years without an agent forecast fall back
     # to the best model's own selection.
     full = tables[("desk", "B+rule+ou")]
-    flags = pd.read_parquet("outputs/p6_quant/scores__B+rule+ou__recent-bag5.parquet")
+    flags = pd.read_parquet("outputs/book/scores__B+rule+ou__recent-bag5.parquet")
     per_year = flags.groupby("year").top20.sum()
     best_top = flags.loc[flags.top20.astype(bool)]
     chosen_full: list[str] = []
@@ -811,24 +1056,57 @@ def evaluate(workspace: Path = Path("data/team"), output: Path = OUTPUT, holdout
     fcands["ratio"] = (fcands.p_agent / fcands.p_base).fillna(1.0)
     full_trials = []
     for size in (False, True):
-        fractions = {e: 0.075 * float(np.clip(r, 0.5, 1.5)) for e, r in fcands.ratio.items()} if size else {}
+        fractions = (
+            {e: 0.075 * float(np.clip(r, 0.5, 1.5)) for e, r in fcands.ratio.items()}
+            if size
+            else {}
+        )
         b = book(desk_book(workspace, fractions, set(), {}, "FULL", chosen_full))
-        full_trials.append({"selector": "FULL", "q": None, "size": size, "vetoed": 0, "2010-2017": pr.stats(b, 2010, 2017)})
+        full_trials.append(
+            {
+                "selector": "FULL",
+                "q": None,
+                "size": size,
+                "vetoed": 0,
+                "2010-2017": pr.stats(b, 2010, 2017),
+            }
+        )
         books[("FULL", None, size, None)] = b
     fbest = max(full_trials, key=lambda g: g["2010-2017"]["sharpe"])
     ffractions = (
-        {e: 0.075 * float(np.clip(r, 0.5, 1.5)) for e, r in fcands.ratio.items()} if fbest["size"] else {}
+        {e: 0.075 * float(np.clip(r, 0.5, 1.5)) for e, r in fcands.ratio.items()}
+        if fbest["size"]
+        else {}
     )
     for rule in MONITOR_GRID[1:]:
-        hit = checks[(checks.adverse >= rule[0]) & (checks.persistence >= rule[1])] if len(checks) else checks
-        exits = hit.sort_values("session").groupby("event_id").session.first().dt.date.to_dict() if len(hit) else {}
+        hit = (
+            checks[(checks.adverse >= rule[0]) & (checks.persistence >= rule[1])]
+            if len(checks)
+            else checks
+        )
+        exits = (
+            hit.sort_values("session").groupby("event_id").session.first().dt.date.to_dict()
+            if len(hit)
+            else {}
+        )
         b = book(desk_book(workspace, ffractions, set(), exits, "FULL", chosen_full))
-        full_trials.append({"selector": "FULL", "q": None, "size": fbest["size"], "rule": rule,
-                            "exits": len(exits), "2010-2017": pr.stats(b, 2010, 2017)})
+        full_trials.append(
+            {
+                "selector": "FULL",
+                "q": None,
+                "size": fbest["size"],
+                "rule": rule,
+                "exits": len(exits),
+                "2010-2017": pr.stats(b, 2010, 2017),
+            }
+        )
         books[("FULL", None, fbest["size"], rule)] = b
     trials += full_trials
-    report["full_selection"] = {"events": len(chosen_full), "candidates_after_filters": len(full_members),
-                                "with_monitor_checks": int(len(set(checks.event_id) & full_members)) if len(checks) else 0}
+    report["full_selection"] = {
+        "events": len(chosen_full),
+        "candidates_after_filters": len(full_members),
+        "with_monitor_checks": int(len(set(checks.event_id) & full_members)) if len(checks) else 0,
+    }
     report["trials"] = trials
     report["trial_count"] = len(trials)
     # Decision 113: monthly excess returns of every trial book, for the overall overfitting audit.
@@ -837,7 +1115,9 @@ def evaluate(workspace: Path = Path("data/team"), output: Path = OUTPUT, holdout
         frame = b.assign(m=pd.to_datetime(b.session_date).dt.strftime("%Y-%m"))
         grouped = frame.groupby("m")
         monthly[f"desk|{selector}|q{q}|size{size}|rule{rule}"] = (
-            grouped.daily_return.apply(lambda s: float(np.prod(1 + s))) / grouped.interest.apply(lambda s: float(np.prod(1 + s))) - 1
+            grouped.daily_return.apply(lambda s: float(np.prod(1 + s)))
+            / grouped.interest.apply(lambda s: float(np.prod(1 + s)))
+            - 1
         )
     pd.DataFrame(monthly).to_parquet(output / "monthly_excess.parquet")
     winner = max(trials, key=lambda g: g["2010-2017"]["sharpe"])
@@ -850,8 +1130,14 @@ def evaluate(workspace: Path = Path("data/team"), output: Path = OUTPUT, holdout
             "chosen": chosen_book,
         }
         report["holdout"] = {
-            name: {label: pr.stats(b, *span) for label, span in
-                   (("2010-2017", (2010, 2017)), ("2018-2023", (2018, 2023)), ("2010-2023", (2010, 2023)))}
+            name: {
+                label: pr.stats(b, *span)
+                for label, span in (
+                    ("2010-2017", (2010, 2017)),
+                    ("2018-2023", (2018, 2023)),
+                    ("2010-2023", (2010, 2023)),
+                )
+            }
             for name, b in named.items()
         }
     dv.cv_write(output / ("evaluation_holdout.json" if holdout else "evaluation.json"), report)
@@ -884,7 +1170,9 @@ def main(arguments: Sequence[str] | None = None) -> None:
         cc.load_env_file(args.env_file)
         if not cc._credential():
             sys.exit("No API key in the environment")
-        say(f"finished: {dict(run(args.output, kind=args.kind, limit=args.limit, workers=args.workers, say=say))}")
+        say(
+            f"finished: {dict(run(args.output, kind=args.kind, limit=args.limit, workers=args.workers, say=say))}"
+        )
     elif args.command == "evaluate":
         print(json.dumps(evaluate(holdout=args.holdout), indent=1, default=str))
     else:
