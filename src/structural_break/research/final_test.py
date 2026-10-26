@@ -145,6 +145,13 @@ def model_input_rows(
         validate="many_to_one",
     )
     rows["tone_aligned_contrast"] = rows["divergence_sign"] * rows["sentiment_net_contrast"]
+    # No final-test event is catalyst-extracted (no provider). The scheduler must still select at
+    # least one event, which would carry evidence_available = 1; it gets the value of every other
+    # unscheduled event instead (the only column that differs, verified in the rehearsal).
+    schedule = intelligence_dir / "catalyst_schedule.json"
+    if schedule.exists():
+        selected = set(json.loads(schedule.read_bytes()).get("selected_event_ids", []))
+        rows.loc[rows["evidence_event_id"].isin(selected), "evidence_available"] = 0.0
     return rows
 
 
