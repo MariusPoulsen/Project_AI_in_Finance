@@ -20,6 +20,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from structural_break import periods
 from structural_break.backtest.historical import HistoricalSources
 from structural_break.backtest.production_policy import load_headline
 from structural_break.pipeline.sources import (
@@ -96,7 +97,7 @@ def run_walk_forward(
     else:
         headline = load_headline(configs)
         simulated = simulate_events(
-            sources, {"frozen": headline}, date(2006, 1, 1), date(2023, 12, 31), progress=say
+            sources, {"frozen": headline}, date(2006, 1, 1), periods.data_end(), progress=say
         )
         output.mkdir(parents=True, exist_ok=True)
         simulated.to_parquet(cache, index=False)

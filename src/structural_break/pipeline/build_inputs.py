@@ -23,6 +23,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from structural_break import periods
+
 WORKSPACE = Path("data/team")
 OUTPUTS = Path("outputs")
 BOOK = OUTPUTS / "book"
@@ -211,7 +213,7 @@ def long_paths(out: Path) -> Path:
     from structural_break.pipeline.sources import _sources, _spec
 
     sources = _sources(WORKSPACE)
-    spec = _spec(sources, date(2006, 1, 1), date(2023, 12, 31))
+    spec = _spec(sources, date(2006, 1, 1), periods.data_end())
     end = sources.binding.development_end
     book = PriceBook.build(sources.prices(date(2005, 11, 1), end), spec)
     cache = qp.load_cache(BOOK / "requests.pkl")

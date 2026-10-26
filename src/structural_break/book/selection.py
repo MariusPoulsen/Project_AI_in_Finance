@@ -8,6 +8,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from structural_break import periods
+
 SCORES = Path("outputs/model_b/scores.parquet")
 
 
@@ -34,7 +36,7 @@ def design_candidates(
     costs = pd.read_parquet("outputs/book/cost_model_nets.parquet").set_index("event_id")
     rate = 2 * costs["rate_10m"]
     rate_year = year.reindex(rate.index)
-    cost_cut = {y: np.nanquantile(rate[rate_year.eq(y - 1)], 0.8) for y in range(2010, 2024)}
+    cost_cut = {y: np.nanquantile(rate[rate_year.eq(y - 1)], 0.8) for y in periods.scored_years()}
     chosen: list[str] = []
     if chosen_events is not None:  # Decision 110c: an explicit selection (the full model's ranking)
         chosen = list(chosen_events)

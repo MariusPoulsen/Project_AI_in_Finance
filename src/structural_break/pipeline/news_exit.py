@@ -34,6 +34,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from structural_break import periods
 from structural_break.backtest.historical import (
     HistoricalSources,
     PriceBook,
@@ -117,7 +118,7 @@ def entry_evidence(
 ) -> pd.DataFrame:
     """Headline-based evidence for the moving company before each signal close."""
     cutoffs = pd.DatetimeIndex(pd.to_datetime(frame["event_timestamp"], utc=True))
-    closes = session_closes(date(2005, 10, 1), date(2024, 1, 31))
+    closes = session_closes(date(2005, 10, 1), periods.data_end() + timedelta(days=31))
     position = closes.searchsorted(cutoffs, side="right") - 1
     starts = {k: closes[position - k] for k in (1, 3, 5)}
     movers = _mover_security(frame, pairs)

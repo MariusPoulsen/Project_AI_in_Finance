@@ -20,6 +20,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from structural_break import periods
 from structural_break.forecast import model_b as pb
 
 PLAN_VERSION = "p6-boosting-round2-v1"
@@ -46,7 +47,7 @@ def score(train: pd.DataFrame, rows: pd.DataFrame, base: tuple[str, ...]) -> np.
 def walk_forward(frame: pd.DataFrame, base: tuple[str, ...]) -> pd.DataFrame:
     """R0 scores for the Y-1 threshold rows and the Y test rows of every year."""
     parts = []
-    for year in (*pb.DECISION_YEARS, *pb.REFERENCE_YEARS):
+    for year in (*pb.DECISION_YEARS, *pb.REFERENCE_YEARS, *periods.final_years_open()):
         train, threshold_rows, test = pb.rolling_split(frame, year)
         rows = pd.concat([threshold_rows.assign(role="threshold"), test.assign(role="test")])
         parts.append(

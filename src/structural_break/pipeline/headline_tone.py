@@ -23,11 +23,12 @@ from typing import Any
 
 import pandas as pd
 
+from structural_break import periods
 from structural_break.config.paths import ProjectPaths
 from structural_break.intelligence import recent_news as rn
 from structural_break.pipeline.catalysts import _now
 
-START, END = "2005-11-01", "2023-12-31"
+START, END = "2005-11-01", str(periods.data_end())
 WINDOWS = 3
 SHARD = 400
 _ITEM = re.compile(r"\b\d+\.\d+\b")

@@ -26,6 +26,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from structural_break import periods
 from structural_break.agents import debate as dv
 from structural_break.agents import desk as dk
 from structural_break.agents.budgets import BudgetPolicy, DurableAttemptJournal, ModelCap
@@ -45,6 +46,9 @@ from structural_break.pipeline.sources import _sources
 OUTPUT = Path("outputs/agent_desk")
 NEWS = Path("outputs/news_8k")
 HEADLINES = Path("data/external/fnspid/headlines.parquet")
+# Decisions 116-117: the final-test headline source, in the FNSPID layout, used only for the
+# final-test years once they are unlocked (written by the final-test capture).
+FINAL_HEADLINES = Path("data/external/news_final/headlines.parquet")
 MAX_HEADLINES = 12
 # Decision 110b: the book can select with the original Model B (R0) or the best forecaster.
 SELECTORS = ("R0", "B+rule+ou__recent-bag5")
@@ -188,6 +192,22 @@ def describe_news(known: bool, leg_key: Any, record: dict[str, Any] | None, pack
     )
 
 
+def load_headlines(sessions: pd.DatetimeIndex) -> pd.DataFrame:
+    """Company-specific headlines: FNSPID up to the development end and, once the final test
+    is unlocked, the final-test source for the final-test years (Decision 117)."""
+    from structural_break.intelligence.headlines import available_session
+
+    fnspid = pd.read_parquet(HEADLINES)
+    parts = [fnspid[fnspid.date <= pd.Timestamp(periods.DEVELOPMENT_END)]]
+    if periods.final_years_open() and FINAL_HEADLINES.exists():
+        final = pd.read_parquet(FINAL_HEADLINES)
+        final = final[final.date.dt.year.isin(periods.final_years_open())].copy()
+        final["session"] = available_session(final, sessions)
+        parts.append(final)
+    headlines = pd.concat(parts, ignore_index=True)
+    return headlines[headlines.specific & headlines.session.notna()]
+
+
 class Sources:
     """Shared inputs for entry and monitor cases (all read-only, point in time)."""
 
@@ -204,15 +224,14 @@ class Sources:
         ).set_index("security_id")
         scores = pd.read_parquet(selection.SCORES)
         self.scores = scores[scores.variant.eq("R0_xgb_fixed")]
-        self.headlines = pd.read_parquet(HEADLINES)
-        self.headlines = self.headlines[self.headlines.specific & self.headlines.session.notna()]
-        self.by_security = {
-            s: g.sort_values(["session", "stamp"]) for s, g in self.headlines.groupby("security_id")
-        }
         prices = pd.read_parquet(
             workspace / "market/source_v1/prices.parquet", columns=["trading_date"]
         )
         self.sessions = pd.DatetimeIndex(sorted(pd.to_datetime(prices["trading_date"].unique())))
+        self.headlines = load_headlines(self.sessions)
+        self.by_security = {
+            s: g.sort_values(["session", "stamp"]) for s, g in self.headlines.groupby("security_id")
+        }
         self.windows = pd.read_parquet(NEWS / "windows.parquet").set_index(["event_id", "leg"])
 
     def companies(self, pair_id: str) -> tuple[dict[str, str], dict[str, tuple[str, str]]]:
@@ -951,7 +970,7 @@ def evaluate(
             w,
             legs,
             pd.Timestamp("2010-01-01"),
-            pd.Timestamp("2023-12-31"),
+            pd.Timestamp(periods.data_end()),
             capital=1e7,
             rf=rf,
             speed=0.10,

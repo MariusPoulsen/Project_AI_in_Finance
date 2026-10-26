@@ -24,6 +24,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from structural_break import periods
 from structural_break.backtest.contracts import ExecutionConfig, PairTradeRequest, PairTradeResult
 from structural_break.backtest.historical import build_historical_events
 from structural_break.backtest.production_policy import load_headline
@@ -133,7 +134,7 @@ def build(workspace: Path, configs: Path, outputs: Path, output: Path) -> Path:
     index = headline_index(pd.read_parquet(outputs / "headline_tone/headline_tone.parquet"))
     rows: list[dict[str, Any]] = []
     cache: dict[str, Any] = {}
-    for start, end in _chunks(pd.Timestamp(2006, 1, 1).date(), pd.Timestamp(2023, 12, 31).date()):
+    for start, end in _chunks(pd.Timestamp(2006, 1, 1).date(), periods.data_end()):
         events, _, _ = build_historical_events(sources, _spec(sources, start, end))
         print(f"{pb._now()} pricing {len(events)} events {start}..{end}", flush=True)
         for event in events:

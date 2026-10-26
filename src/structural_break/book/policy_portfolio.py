@@ -40,7 +40,6 @@ from structural_break.backtest.portfolio import (
 )
 
 PLAN_VERSION = "p6-portfolio-designs-v1"
-START, END = date(2010, 1, 1), date(2023, 12, 31)
 TARGETS = {"frozen_25pct": 0.25, "sensitivity_10pct": 0.10}
 PERIODS = {"2010-2015": (2010, 2015), "2016-2021": (2016, 2021), "2022-2023": (2022, 2023)}
 TRADING_DAYS = 252

@@ -5627,3 +5627,25 @@ two closely spaced requests. Weekly queries would therefore undercount large com
   and days are reported alongside.
 - Requests are spaced by at least 6 seconds, with a back-off on HTTP 429.
 - The final-test capture uses the same weekly-then-daily rule.
+
+## 117. Final-test readiness: one unlock-gated period switch (2026-10-26)
+
+So that the final test can run on the frozen code without edits after the freeze, the
+hard-coded development end (2023-12-31) in the book's code is replaced by one switch.
+- **`structural_break.periods`:** `data_end()` returns 2023-12-31 until the decision log holds
+  a section whose heading contains "unlock record", written by the owner, that cites the
+  SHA-256 of `docs/freeze/research_freeze_manifest.json`; then it returns 2025-12-31.
+  `check_end()` refuses any later request while locked. A record citing another manifest
+  does not unlock.
+- **Uses:** the input builders (long paths, walk-forward frame, headline tone, news-exit
+  sessions), the forecasters' scored years (harness through `data_end`; R0 adds the final
+  years once open), the selection's yearly cost cut, the trade-request build, the desk's
+  book end, the agent input contract (no event after `data_end`), and the news adapters.
+- **Headlines:** the desk reads FNSPID up to the development end and, only for the unlocked
+  final years, `data/external/news_final/headlines.parquet` (the source chosen in Decision 116).
+- **Verification:** while locked, every value is unchanged: `scripts/verify_book.py`
+  reproduces the Decision 110d book bit for bit, and the module tests pass, including new
+  tests of the guard and of the headline switch.
+- **Not yet built:** the research layer's final-test mode (2024–2025 prices, SEC filings,
+  relationship snapshots, events and model inputs). Its protocol is hard-locked below 2024
+  by design. The plan and estimates are in [FINAL_TEST_RUNBOOK.md](FINAL_TEST_RUNBOOK.md).

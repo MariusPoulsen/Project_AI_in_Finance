@@ -166,3 +166,42 @@ def test_daily_quota_pauses_and_resumes_from_cached_roles(tmp_path: Path) -> Non
     script = Desk(_analyst(persistence=5))
     dk.run_entry(_case(), _clients(script), tmp_path, debate=False, judge=True)
     assert [role for _, role in script.calls] == ["risk_judge"]
+
+
+def test_headlines_switch_to_the_final_source_only_after_the_unlock(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import pandas as pd
+
+    from structural_break import periods
+    from structural_break.agents import desk_runner
+
+    def table(day: str, source: str) -> pd.DataFrame:
+        stamp = pd.Timestamp(day)
+        return pd.DataFrame(
+            {
+                "security_id": ["US:A"],
+                "ticker": ["A"],
+                "stamp": [stamp],
+                "date": [stamp],
+                "same_day": [False],
+                "title": [f"A news {source}"],
+                "specific": [True],
+                "session": [stamp + pd.Timedelta(days=1)],
+                "source": [source],
+            }
+        )
+
+    pd.concat([table("2023-06-01", "fnspid"), table("2024-01-03", "fnspid")]).to_parquet(
+        tmp_path / "f.parquet"
+    )
+    table("2024-02-01", "final").drop(columns="session").to_parquet(tmp_path / "n.parquet")
+    monkeypatch.setattr(desk_runner, "HEADLINES", tmp_path / "f.parquet")
+    monkeypatch.setattr(desk_runner, "FINAL_HEADLINES", tmp_path / "n.parquet")
+    sessions = pd.bdate_range("2023-01-02", "2024-03-29")
+    locked = desk_runner.load_headlines(sessions)
+    assert list(locked.source) == ["fnspid"] and locked.date.max() == pd.Timestamp("2023-06-01")
+    monkeypatch.setattr(periods, "final_years_open", lambda: (2024, 2025))
+    unlocked = desk_runner.load_headlines(sessions)
+    assert list(unlocked.source) == ["fnspid", "final"]
+    assert unlocked.session.iloc[-1] == pd.Timestamp("2024-02-02")

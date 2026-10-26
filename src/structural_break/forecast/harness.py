@@ -34,12 +34,13 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from structural_break import periods
 from structural_break.forecast import model_b as pb
 from structural_break.pipeline import features as qf
 
 PLAN_VERSION = "p6-quant-v1"
 TARGET = pb.TARGET
-YEARS = tuple(range(2010, 2024))
+YEARS = periods.scored_years()
 SELECT, HOLDOUT = (2010, 2017), (2018, 2023)
 SHARES = (0.20, 0.10)
 OOF_FOLDS = 5
