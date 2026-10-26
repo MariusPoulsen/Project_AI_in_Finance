@@ -1,0 +1,316 @@
+{
+ "files": [
+  {
+   "path": "pairs.parquet",
+   "rows": 736,
+   "sha256": "fcdb0423c3f163b60f232af3063002d75fe15994d0ebb95eb38960b2bd894a91"
+  },
+  {
+   "path": "pair_state.parquet",
+   "rows": 159879,
+   "sha256": "993d8ab4d4441a6c5ce6a560577b7b0a24981d29cca4b70fabb1187adc598534"
+  },
+  {
+   "path": "pair_prices.parquet",
+   "rows": 268267,
+   "sha256": "a1100c2839cfe2376c4f8be4ebf46bb84af6757030668eca7182679de39c464b"
+  },
+  {
+   "path": "pair_snapshots.parquet",
+   "rows": 9572,
+   "sha256": "e526bd034ac0e5216eead46c34127d6aefe1540f9957da0bf673f5607a4659a7"
+  },
+  {
+   "path": "pair_crossings.parquet",
+   "rows": 3349,
+   "sha256": "6abd05b8ab9bba5c9935f20a6e0758e1ae774662c78fab52716adb76929261bc"
+  },
+  {
+   "path": "h10/report.json",
+   "rows": 1,
+   "sha256": "e3233f0125c642b0f78567cbb4b9276326528e966f48be8645d5c1d5bb77a460"
+  },
+  {
+   "path": "h10/strategy.json",
+   "rows": 1,
+   "sha256": "13ea78acae7d7613fd4cff577f5cd74d410465127d997462e3b749ca369ab080"
+  },
+  {
+   "path": "h10/events.parquet",
+   "rows": 34534,
+   "sha256": "18f82ee561d9dfa330d16faaac55b361058e46d325d13e9736cd54dcfdab58a2"
+  },
+  {
+   "path": "h10/curves.parquet",
+   "rows": 2500,
+   "sha256": "5cc4127e64f7b9d9f73dc77ff2d951f607042858fc1cee4155f5a239fa09de68"
+  },
+  {
+   "path": "h10/importance.parquet",
+   "rows": 270,
+   "sha256": "42a13f083e2ee2f533e727f8cbef25b1f64cebe8f7f9c9dd5bf0e5edbebaddca"
+  },
+  {
+   "path": "h10/contributions.parquet",
+   "rows": 233480,
+   "sha256": "11e6e0c0634c3a4fc672ce38f060af09daf4541c9c1a569c6e26d740112ce537"
+  },
+  {
+   "path": "h10/contribution_totals.parquet",
+   "rows": 23348,
+   "sha256": "848dfcbcdf7c4526607a0d8bdc86ab29eba0559239c8cf735ca69827ee8880f9"
+  },
+  {
+   "path": "h10/feature_profile.parquet",
+   "rows": 1782,
+   "sha256": "d3c3eb13272299361c2e5e54e32fdaa4ca09bb565c8bf444e79494c69545bced"
+  },
+  {
+   "path": "h10/strategy_nav.parquet",
+   "rows": 4000,
+   "sha256": "6c1b210b96a7f4671759730244115f95a0ca4c890306d8e4cb532c995f90e0f0"
+  },
+  {
+   "path": "h10/strategy_trades.parquet",
+   "rows": 4305,
+   "sha256": "6f8c136609ea186ae6abdf52429b28b748cdcd204fd5edd71ac5ea8f1df17986"
+  },
+  {
+   "path": "h20/report.json",
+   "rows": 1,
+   "sha256": "f9f6c1cdb236c51cbe124dcc9436a277e248817e029b93713ddf5d3abf4f1dcc"
+  },
+  {
+   "path": "h20/strategy.json",
+   "rows": 1,
+   "sha256": "23245ae8d6b237215eee13f4b15f15850f04ad6ecc8b4d37dc4a3720a9170473"
+  },
+  {
+   "path": "h20/events.parquet",
+   "rows": 28329,
+   "sha256": "f67e8610c44ec6eb4a2bdc84d08ba63ba13ffbb9d58e1914591c7bbbe8e408d4"
+  },
+  {
+   "path": "h20/curves.parquet",
+   "rows": 2500,
+   "sha256": "867faed1c15a55c8f03c66be6c60749e0c1f5636958f79b59e1f39375e7e90d6"
+  },
+  {
+   "path": "h20/importance.parquet",
+   "rows": 270,
+   "sha256": "f3f82843a7ec608854910f821f34126e1288cba118f04c9f52ea54dfa8b7776f"
+  },
+  {
+   "path": "h20/contributions.parquet",
+   "rows": 189960,
+   "sha256": "afb00c046d238320359d2b7de2733f29a881d0a82a61f2ac63fb8b298bc04fcc"
+  },
+  {
+   "path": "h20/contribution_totals.parquet",
+   "rows": 18996,
+   "sha256": "d3698bde035c5c0af4b631a9d3670d30123749c0ad26f26cc4ff7ce7bb7bd689"
+  },
+  {
+   "path": "h20/feature_profile.parquet",
+   "rows": 1782,
+   "sha256": "33f2ee7f0d4aafb4f89e4bab78ed4cf6f6359ca7a9a05d60cf3939772d781428"
+  },
+  {
+   "path": "h20/strategy_nav.parquet",
+   "rows": 4000,
+   "sha256": "cae41b4eca4de3b211ecdd9f6730adc9c4afd2c73d1031ec8f0371110bb3fb74"
+  },
+  {
+   "path": "h20/strategy_trades.parquet",
+   "rows": 3558,
+   "sha256": "9e356561e61a85ef1473c07d693eb5859265f47227b2e2da1e8d09974c8967ca"
+  },
+  {
+   "path": "h30/report.json",
+   "rows": 1,
+   "sha256": "8e1d14b3535200e7ee062e522994224546e65374f5776c5ae67c6532e13fb559"
+  },
+  {
+   "path": "h30/strategy.json",
+   "rows": 1,
+   "sha256": "d4b4ceb7bf09879cea3e149bd2acd34e2c9bbc9d03732341e57cfbbfaed047ae"
+  },
+  {
+   "path": "h30/events.parquet",
+   "rows": 25270,
+   "sha256": "3627490e2b408d777d7f48cfce65757cf3d97c5bf1c620dd1044f688fcb41427"
+  },
+  {
+   "path": "h30/curves.parquet",
+   "rows": 2500,
+   "sha256": "193e59b60d4dc083b58efd8b84f9902b429566f76e03fb49f9561655b68732c5"
+  },
+  {
+   "path": "h30/importance.parquet",
+   "rows": 270,
+   "sha256": "1ac27f43e2bdd18289694efc4e2e5f2da599153e30edd98f4323fb402e60cfb3"
+  },
+  {
+   "path": "h30/contributions.parquet",
+   "rows": 167800,
+   "sha256": "1c099e633316a70ac225283b35d0027823bb5f08ee47ca7fe196203f40e79779"
+  },
+  {
+   "path": "h30/contribution_totals.parquet",
+   "rows": 16780,
+   "sha256": "239746f5e836a21756d204e24f86492d8ce8eb45c66e9b4bb06491b5426f4f66"
+  },
+  {
+   "path": "h30/feature_profile.parquet",
+   "rows": 1782,
+   "sha256": "cd4173991080102be30bbab68e8ed953f443f040e755f0cea0c55fae5445f06d"
+  },
+  {
+   "path": "h30/strategy_nav.parquet",
+   "rows": 4000,
+   "sha256": "4455329e5e9e9f3cf714ed270a26b3325415f2fc5830377eec4a1e0b031170d1"
+  },
+  {
+   "path": "h30/strategy_trades.parquet",
+   "rows": 3179,
+   "sha256": "72e6d05cb6d3dc22e0ad164ff6d2a852a025a4e80587edab9d5acce5912cde10"
+  }
+ ],
+ "final_test_read": false,
+ "identity": {
+  "bundle_id": "app_bundle_551a53c2be6ced180095483a",
+  "evaluations": {
+   "10": "research_evaluation_219b30fcf452cd5e1609ec3c",
+   "20": "research_evaluation_16a431c4fea73ffd35f56062",
+   "30": "research_evaluation_bc319e752527bdd7f10ff0c2"
+  },
+  "experiments": {
+   "10": "bea3126de965f3367b312a45c5f15d90ab1a223ddf2a1104a31f35c9ef79e11a",
+   "20": "d828d7aceb30950536226f48185664440db6e34f0b7f5b342b706b21f669cab5",
+   "30": "02a2c5fa68db6a479d49323170b127d78597b76ce8f5cffe4bafb4b3fc3e82eb"
+  },
+  "explanation_status": "AVAILABLE",
+  "intelligence_version": "research_intelligence_b7c1529f24b40185f48b786f",
+  "primary_version": "research_primary_5c01ab3d29c74e3e9154d9e3",
+  "protocol": {
+   "adverse_z": 3.0,
+   "assessment_end": "2023-12-31",
+   "assessment_start": "2022-01-01",
+   "bootstrap_calendar_months": 3,
+   "bootstrap_replicates": 2000,
+   "calibration_end": "2021-12-31",
+   "calibration_start": "2020-01-01",
+   "candidate_threshold": 0.65,
+   "data_start": "2004-01-01",
+   "development_end": "2023-12-31",
+   "entry_z": 2.0,
+   "extraction_interval_seconds": 8.0,
+   "extraction_max_calls": 1000,
+   "extraction_max_chunks_per_leg": 3,
+   "extraction_max_pack_chars": 12000,
+   "extraction_model": "gemma-4-26b-a4b-it",
+   "extraction_order": "chronological",
+   "extraction_provider": "gemma",
+   "extraction_retries": 1,
+   "final_test_locked": true,
+   "fit_end": "2019-12-31",
+   "fit_start": "2006-01-01",
+   "flash_reserved_for_agents": true,
+   "formation_sessions": 504,
+   "logistic_c": [
+    0.01,
+    0.1,
+    1.0
+   ],
+   "metadata_feature_policy": "sec-item-recency-v1",
+   "paid_api_enabled": false,
+   "population": "estimable",
+   "primary_b_variant": "both",
+   "primary_family": "logistic",
+   "primary_horizon": 20,
+   "seed": 42,
+   "sensitivity_horizons": [
+    10,
+    30
+   ],
+   "sentiment_model": "ProsusAI/finbert",
+   "sentiment_revision": "4556d13015211d73dccd3fdd39d39232506f3e43",
+   "success_z": 0.5,
+   "tuning_years": [
+    2018,
+    2019
+   ],
+   "version": "research-v2-20261006",
+   "xgb_candidates": [
+    {
+     "learning_rate": 0.05,
+     "max_depth": 2,
+     "min_child_weight": 10,
+     "n_estimators": 100,
+     "reg_lambda": 10
+    },
+    {
+     "learning_rate": 0.05,
+     "max_depth": 2,
+     "min_child_weight": 10,
+     "n_estimators": 200,
+     "reg_lambda": 10
+    },
+    {
+     "learning_rate": 0.05,
+     "max_depth": 3,
+     "min_child_weight": 20,
+     "n_estimators": 100,
+     "reg_lambda": 10
+    }
+   ]
+  },
+  "registry_version": "research_registry_0bd415d2a5af1f4891dc1f0d",
+  "schema_version": "app-bundle-v1",
+  "showcase_pairs": [
+   "KO__PEP",
+   "EBAY__NFLX",
+   "AAP__ORLY",
+   "CRM__MSFT",
+   "ON__TXN",
+   "AEO__BURL",
+   "BURL__URBN",
+   "JBLU__UAL",
+   "PNC__TFC",
+   "PPL__SO",
+   "UPS__XPO",
+   "ADBE__CRM",
+   "AEO__ROST",
+   "ALK__UAL",
+   "AMZN__META",
+   "AVGO__QCOM",
+   "BAC__WFC",
+   "BMY__JNJ",
+   "BSX__MDT",
+   "CHRW__FDX",
+   "CRM__INTU",
+   "C__CFG",
+   "EBAY__GOOGL",
+   "ES__EXC",
+   "ES__NEE",
+   "ES__PCG",
+   "ES__PPL",
+   "GIS__HRL",
+   "GPN__V",
+   "INTU__ORCL",
+   "JPM__USB",
+   "KLAC__TER",
+   "MA__PYPL",
+   "MCD__SBUX",
+   "MCHP__ON",
+   "NOW__ORCL",
+   "PNC__USB",
+   "PNC__WFC",
+   "AAP__AZO",
+   "ADI__SWKS"
+  ],
+  "source": "bundle",
+  "synthetic": false
+ },
+ "schema_version": "app-bundle-v1"
+}
