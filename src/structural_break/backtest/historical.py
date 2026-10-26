@@ -99,7 +99,11 @@ def _chain(
     """Follow the checksum chain evaluation -> registry -> market; never list folders."""
     evaluation_file = confined_path(root, evaluation_path)
     evaluation = checked_json(evaluation_file, evaluation_sha256)
-    if evaluation.get("stage") != "evaluation" or evaluation.get("final_test_read") is not False:
+    final_eval = str(evaluation.get("protocol", {}).get("version", "")).startswith("final-test-")
+    if evaluation.get("stage") != "evaluation" or (
+        evaluation.get("final_test_read") is not False
+        and not (final_eval and periods.final_years_open())
+    ):
         raise ValueError("Bound evaluation must be a development-only evaluation generation")
     inputs = evaluation["identity_inputs"]
     registry_parent = _one(evaluation["parents"], "registry")

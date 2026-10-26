@@ -188,7 +188,19 @@ def paired_block_bootstrap(
 
 
 def _sources(workspace: Path) -> HistoricalSources:
+    """The accepted binding, or a final-test workspace's evaluation (Decision 118)."""
     paths = ProjectPaths.resolve(Path.cwd(), workspace)
+    marker = workspace / "final_test_binding.json"
+    if marker.exists():
+        from structural_break.backtest.historical import bind_unaccepted
+
+        record = json.loads(marker.read_bytes())
+        binding = bind_unaccepted(
+            workspace.resolve(), record["evaluation_manifest"], record["evaluation_sha256"]
+        )
+        if binding.horizon_sessions != HORIZON:
+            raise ValueError("The final-test binding is for another horizon")
+        return HistoricalSources.open(workspace.resolve(), binding, paths=paths)
     binding = bind_accepted(paths, HORIZON)
     return HistoricalSources.open(workspace.resolve(), binding, paths=paths)
 
