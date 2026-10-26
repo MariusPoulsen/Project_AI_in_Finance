@@ -5615,3 +5615,15 @@ measures and rule of Decision 116:
 - The monitor stays frozen in every case.
 
 The Alpha Vantage adapter stays in the code with its guard; it is not used.
+
+### 116b. Amendment from the GDELT format probe (before any measure): split capped weeks by day
+
+The format probe (MA, week of 2023-01-02) returned GDELT's cap of 250 articles, of which 27
+had company-specific titles; GDELT was rate-limited (HTTP 429) for about two hours after
+two closely spaced requests. Weekly queries would therefore undercount large companies.
+- A ticker-week returning 250 articles is re-queried day by day (seven queries of up to 250),
+  as Decision 116 split truncated Alpha Vantage windows into quarters.
+- The decision uses the split counts. The weekly-only counts and the share of capped weeks
+  and days are reported alongside.
+- Requests are spaced by at least 6 seconds, with a back-off on HTTP 429.
+- The final-test capture uses the same weekly-then-daily rule.
