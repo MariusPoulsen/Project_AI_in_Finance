@@ -5649,3 +5649,18 @@ hard-coded development end (2023-12-31) in the book's code is replaced by one sw
 - **Not yet built:** the research layer's final-test mode (2024–2025 prices, SEC filings,
   relationship snapshots, events and model inputs). Its protocol is hard-locked below 2024
   by design. The plan and estimates are in [FINAL_TEST_RUNBOOK.md](FINAL_TEST_RUNBOOK.md).
+
+### 116c. Amendment before any measure: GDELT must sustain the query rate
+
+GDELT answered two queries 13 seconds apart (20:58) and then refused the next ones with
+HTTP 429 for more than the back-off windows, despite the pre-registered 6-second spacing.
+A source that cannot be queried at a workable rate cannot serve the final-test capture
+either.
+- **Feasibility test:** the running GDELT job is left alone until 22:00. If it has cached
+  fewer than 100 queries by then, GDELT is **infeasible**: the job is stopped, and no GDELT
+  measure is computed or reported as a calibration result.
+- **If GDELT is infeasible:** TickerTick is the only candidate. The Decision 116 rule decides
+  between "adopt unchanged" and "adopt with a reported limitation". For June to December 2025
+  (after its last bulk file), the TickerTick live API is the planned source. Whether its
+  pagination reaches that far back is checked on 2026 stories only (outside the final-test
+  years) before the unlock, and confirmed after it.
