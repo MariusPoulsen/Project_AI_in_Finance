@@ -19,6 +19,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from structural_break import periods
 from structural_break.config.paths import confined_path
 from structural_break.data.http import FetchedResponse, HttpClient
 from structural_break.data.market import (
@@ -106,7 +107,8 @@ def collect_market(
     reversion outcomes. Raw successes are hash-verified on an interrupted retry.
     A finished capture is immutable; changing inputs requires a new directory.
     """
-    if start >= end or end > date(2023, 12, 31):
+    # Decision 118: the final-test end only after the owner's unlock (periods.data_end).
+    if start >= end or end > periods.data_end():
         raise ValueError("Research-v2 development collection must end by 2023-12-31")
     if not 1 <= attempts <= 5 or not 0 <= min_interval_seconds <= 60:
         raise ValueError("Invalid bounded market source policy")
@@ -281,7 +283,7 @@ def collect_market(
         "context_rows": len(context),
         "non_session_raw_rows_excluded": non_session_count,
         "vix_context_lag_sessions": 1,
-        "final_test_prices_collected": False,
+        "final_test_prices_collected": end > periods.DEVELOPMENT_END,
         "historical_adjustment_vintages_available": False,
         "listing_delisting_dates_inferred": False,
         "delisting_complete": False,
@@ -350,10 +352,9 @@ def verify_market_capture(directory: Path, universe_directory: Path) -> dict[str
         "universe_manifest_sha256"
     ] != sha256_file(universe_directory / "manifest.json"):
         raise ValueError("Market capture belongs to a different universe freeze")
-    if (
-        date.fromisoformat(inputs["end"]) > date(2023, 12, 31)
-        or manifest.get("final_test_prices_collected") is not False
-    ):
+    if date.fromisoformat(inputs["end"]) > periods.data_end() or manifest.get(
+        "final_test_prices_collected"
+    ) is not (date.fromisoformat(inputs["end"]) > periods.DEVELOPMENT_END):
         raise ValueError("Market capture violates the final-test lock")
     expected_id = (
         "market_" + hashlib.sha256(json_bytes(manifest["source_identity"])).hexdigest()[:24]

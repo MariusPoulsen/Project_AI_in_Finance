@@ -5697,3 +5697,53 @@ either.
     for MA, read before the unlock and only 2026 stories); reaching mid-2025 is confirmed
     after the unlock.
   - Both are written to `data/external/news_final/headlines.parquet` in the FNSPID layout.
+
+## 118. Pre-registered final-test data extension (owner's choice of the splice, 2026-10-27)
+
+The owner chose the recommended splice and asked for speed. The research layer is extended
+for 2024–2025 by rerunning the frozen research code on a separate final-test workspace. The
+development rows stay identical, and nothing runs on 2024–2025 data before the owner's unlock
+record.
+
+**Protocol.**
+- `configs/final_test.yaml` is the research protocol with only two changes: the development
+  end is 2025-12-31, and the horizon is 20 sessions only.
+- It loads as a `FinalTestProtocol`, whose end may not pass `periods.data_end()`: 2023-12-31
+  until the unlock, 2025-12-31 after it.
+- The fitting, calibration and assessment windows are unchanged, so the research models never
+  fit or assess a final-test row; those rows are in the `excluded` partition.
+- The market capture, the market verifier and the generation binding accept final-test prices
+  only for a final-test protocol after the unlock.
+
+**Prices: splice rule.**
+- `collect_market` runs with a splice downloader. Per ticker, it keeps the frozen raw Yahoo
+  rows through 2023-12-29. It takes a new capture from 60 days before that date and keeps the
+  rows after it, scaled so that the 2023-12-29 close and adjusted close equal the frozen
+  values:
+  - open, high, low and close by the close ratio;
+  - the adjusted close by the adjusted-close ratio;
+  - volume divided by the close ratio, and dividends multiplied by it.
+- The unchanged normalisation then builds every curated table (returns, realised
+  volatilities, sector and VIX context).
+- A ticker without the 2023-12-29 row in both captures is an error, not a silent gap.
+
+**Steps after the unlock** (listed in `docs/FINAL_TEST_RUNBOOK.md`):
+1. capture the market with the splice;
+2. collect SEC metadata through 2025-12-31 (existing `collect-sec`);
+3. build the registry with `--protocol configs/final_test.yaml`;
+4. build the event intelligence for events from 2024-01-01 only (`research/final_test.py`):
+   frozen code, pinned FinBERT, no catalyst provider, so catalysts stay UNKNOWN, as they are
+   inert for R0;
+5. publish the final-test evaluation: the frozen model inputs plus the new events' rows (the
+   research job's own join), the frozen models and report;
+6. write `final_test_binding.json`, which `pipeline.sources._sources` then binds.
+
+**Rehearsals while locked** (final-test code path, development end 2023-12-31):
+- **Registry** rebuilt for all 736 pairs under `configs/final_test_rehearsal.yaml`: every pair
+  history (2,208 files) and all 29,071 h20 events, features, targets and partitions are
+  identical to the frozen registry, except identity fields (version names, creation times).
+- **Splice** with the frozen raw rows as the "new capture" and the cut at 2021-12-31: prices
+  (1,222,930 rows), market context, VIX, security master and pair universe are identical,
+  except identity fields.
+- **Intelligence and model inputs** for the events from 2023-07-01 (792 evidence events): in
+  progress; the result is added below.

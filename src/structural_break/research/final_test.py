@@ -254,3 +254,77 @@ def write_binding(paths: ProjectPaths, evaluation_version: str) -> Path:
         "decision": "DECISIONS 118",
     }
     return write_bytes(paths.workspace_root / BINDING, canonical_bytes(record))
+
+
+# --------------------------------------------------------------------------- #
+# Price splice (Decision 118): frozen raw rows through the development cut, new rows after it
+# rescaled so the cut day's close and adjusted close equal the frozen values.
+# --------------------------------------------------------------------------- #
+
+YAHOO_NAMES = {
+    "open": "Open",
+    "high": "High",
+    "low": "Low",
+    "close": "Close",
+    "adj_close": "Adj Close",
+    "volume": "Volume",
+    "dividends": "Dividends",
+    "stock_splits": "Stock Splits",
+}
+
+
+def _yahoo_frame(ticker: str, rows: pd.DataFrame) -> pd.DataFrame:
+    """Rows in the layout ``yfinance.download(group_by="ticker")`` returns."""
+    frame = rows.set_index(pd.DatetimeIndex(pd.to_datetime(rows["trading_date"])))
+    frame = frame.loc[:, list(YAHOO_NAMES)].rename(columns=YAHOO_NAMES)
+    frame.columns = pd.MultiIndex.from_product([[ticker], list(frame.columns)])
+    return frame
+
+
+def splice(frozen: pd.DataFrame, new: pd.DataFrame, cut: date) -> pd.DataFrame:
+    """Frozen rows through ``cut``; new rows after it, scaled to the frozen level on ``cut``."""
+    old = frozen.loc[pd.to_datetime(frozen["trading_date"]).dt.date.le(cut)]
+    days = pd.to_datetime(new["trading_date"]).dt.date
+    anchor_old = old.loc[pd.to_datetime(old["trading_date"]).dt.date.eq(cut)]
+    anchor_new = new.loc[days.eq(cut)]
+    if len(anchor_old) != 1 or len(anchor_new) != 1:
+        raise ValueError(f"Both captures need the cut day {cut} to splice")
+    price = float(anchor_old["close"].iloc[0]) / float(anchor_new["close"].iloc[0])
+    adjusted = float(anchor_old["adj_close"].iloc[0]) / float(anchor_new["adj_close"].iloc[0])
+    after = new.loc[days.gt(cut)].copy()
+    for column in ("open", "high", "low", "close"):
+        after[column] = after[column] * price
+    after["adj_close"] = after["adj_close"] * adjusted
+    after["volume"] = after["volume"] / price
+    after["dividends"] = after["dividends"] * price
+    return pd.concat(
+        [
+            old.loc[:, list(YAHOO_NAMES) + ["trading_date"]],
+            after.loc[:, list(YAHOO_NAMES) + ["trading_date"]],
+        ],
+        ignore_index=True,
+    )
+
+
+def splice_downloader(frozen_raw: Path, cut: date, live: Any = None) -> Any:
+    """A ``collect_market`` downloader: frozen raw rows plus spliced live rows, per ticker."""
+    from structural_break.data.market import YAHOO_FIELDS
+
+    def download(tickers: list[str], start: str, end: str, **kwargs: Any) -> pd.DataFrame:
+        if len(tickers) != 1:
+            raise ValueError("The splice downloader serves one ticker per request")
+        ticker = tickers[0]
+        frozen = pd.read_parquet(frozen_raw / f"{ticker}.parquet")
+        source = live
+        if source is None:
+            import yfinance
+
+            source = yfinance.download
+        window_start = (pd.Timestamp(cut) - pd.Timedelta(days=60)).date().isoformat()
+        batch = source([ticker], start=window_start, end=end, **kwargs)
+        raw = pd.DataFrame(batch.xs(ticker, axis=1, level=0)).rename(columns=YAHOO_FIELDS)
+        raw.insert(0, "trading_date", raw.index.date)
+        raw = raw.reset_index(drop=True)
+        return _yahoo_frame(ticker, splice(frozen, raw, cut))
+
+    return download
