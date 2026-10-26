@@ -22,7 +22,7 @@ writes an unlock record. The earlier phase-by-phase plan and status pages are ar
 | Overall overfitting audit (PBO, deflated Sharpe) | Done | `scripts/overfitting_audit.py` | 113 |
 | Blind human review of 50 agent cases | **Open:** the group fills in the answers | [agent_review/](agent_review/review_cases.md) | 113 |
 | 2024–2025 company-news source | Done: TickerTick, adopted with a reported limitation (× 4.8 denser than FNSPID) | [NEWS_2024_2025.md](NEWS_2024_2025.md) | 116–116d |
-| Final-test readiness: period switch, news adapters, report script | Done; the research layer's final-test mode is still to build | [FINAL_TEST_RUNBOOK.md](FINAL_TEST_RUNBOOK.md) | 117 |
+| Final-test readiness: period switch, news adapters, report script, research-layer final-test mode (rehearsed) | Done; only the plan-ladder rerun on 2024–2025 is still to build | [FINAL_TEST_RUNBOOK.md](FINAL_TEST_RUNBOOK.md) | 117, 118 |
 | Research freeze manifest | **Draft** `8d5a3c5c…`: owner review (to be regenerated once the research layer's final-test mode is built) | [FREEZE_MANIFEST.md](FREEZE_MANIFEST.md) | 113, 115 |
 | Final test 2024–2025 | **Locked** until the owner's unlock record | — | 42 |
 | Research app (eight pages, including the adopted book) | Done (work stream 2, plus the adopted-book page); deployed from the `deploy` branch | `app/research_app.py`, [app/README.md](../app/README.md) | — |
@@ -30,8 +30,8 @@ writes an unlock record. The earlier phase-by-phase plan and status pages are ar
 ## Open items
 
 - [ ] Group: complete `docs/agent_review/review_answers.csv` (claim support Y/P/N, own scores).
-- [ ] Build the research layer's final-test mode (step 1 of the [final-test runbook](FINAL_TEST_RUNBOOK.md)), with a
-      pre-registered rule for joining 2024–2025 prices to the frozen prices, and rehearse it on 2022–2023.
+- [ ] Plan-ladder rerun on 2024–2025 (step 8 of the [final-test runbook](FINAL_TEST_RUNBOOK.md)); optional, the
+      adopted book is the primary Goal 2 result.
 - [ ] Refit the bagged forecasters without Model B's 28 inert catalyst columns, as new
       labelled variants.
 - [ ] Plan ladder's Full System rung under the frozen Decision 36 policy: needs the controller

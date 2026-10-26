@@ -5747,3 +5747,27 @@ record.
   except identity fields.
 - **Intelligence and model inputs** for the events from 2023-07-01 (792 evidence events): in
   progress; the result is added below.
+
+### 118a. Rehearsal complete: the final-test path reproduces the frozen research data
+
+All on the final-test code path with the development end 2023-12-31; events from 2023-07-01
+are treated as "new" (792 evidence events):
+- **Intelligence for the new events only** (frozen code, pinned FinBERT, no catalyst
+  provider, offline from the archived SEC cache):
+  - all 17 tone columns and all 14 filing-metadata columns are identical to the frozen
+    features for all 792 events;
+  - among the catalyst columns only `evidence_available` differs: 13 events were in the
+    frozen 500-event Gemma pilot, and 1 was the event the scheduler must select. That one
+    now gets the unscheduled value, since no final-test event is catalyst-extracted.
+- **Final-test evaluation:**
+  - the published model inputs equal the frozen ones on all 29,071 rows, except identity
+    fields and the 13 pilot events;
+  - the frozen research predictions are kept unchanged, as excluded rows are never scored by
+    the research models.
+- **Binding:** `pipeline.sources._sources` opens the rehearsal workspace through
+  `final_test_binding.json`.
+- **R0:** the 2023 scores recomputed from that frame equal the stored R0 scores (3,558 rows,
+  maximum difference 0.0).
+
+The research-layer final-test mode is therefore ready; it runs on 2024–2025 data only after
+the owner's unlock record (`scripts/final_test_data.py`, `docs/FINAL_TEST_RUNBOOK.md`).
