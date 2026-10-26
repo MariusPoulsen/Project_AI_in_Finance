@@ -5538,3 +5538,51 @@ research receipt and the Decision 42 freeze record by name (`configs/research_v2
 `configs/phase6_*.json`), version strings stored with cached results (prompt, plan and schema
 versions), the fixed test fixtures (`tests/fixtures/phase1`) and this decision log, which is
 not rewritten.
+
+## 116. Pre-registered news calibration: Alpha Vantage against FNSPID on 2023 (owner's request, 2026-10-26)
+
+The position monitor (Decision 110d) needs company headlines during open trades. FNSPID
+ends in 2023, so the final test will use Alpha Vantage's `NEWS_SENTIMENT` (Decision 113).
+This calibration measures, before the unlock, how Alpha Vantage differs from FNSPID on the
+same companies and dates. It reads no 2024–2025 data and changes no frozen setting.
+
+**Design.**
+- **Window:** 2023-01-01 to 2023-06-30, inside FNSPID's dense coverage.
+- **Sample:** 20 of the 250 issuers, five from each quartile of FNSPID's company-specific
+  headline count in the window, drawn with seed 116.
+- **Requests:** one `NEWS_SENTIMENT` request per ticker for the whole window (limit 1,000,
+  sorted earliest first). A response with 1,000 items is truncated; such tickers are split
+  into two quarters with the spare requests. At most 25 requests (the free daily limit),
+  including one format probe on one ticker-week, which is used only to read the field layout.
+- **Same definitions for both sources:**
+  - *Company-specific:* the title names the company or its ticker in an exchange pattern
+    (the FNSPID matcher, `intelligence.headlines`).
+  - *Availability:* a stated time after midnight and at or before 15:00 on date D counts at
+    the close of the first session on or after D; any other stamp at the first session after
+    D (the conservative FNSPID rule, applied unchanged).
+  - *Tone:* pinned FinBERT net tone (positive minus negative) of the title, as in the triage.
+
+**Measures** (pooled over the 20 tickers, both sources on the same window):
+1. **Toned sessions (decisive):** ticker-sessions with at least one available
+   company-specific headline whose |net tone| ≥ 0.2. This is what feeds the monitor triage,
+   which passes a check when a headline is toned against the position.
+2. **Coverage:** share of ticker-weeks with at least one company-specific headline.
+3. **Volume:** median over tickers of the ratio of company-specific headline counts.
+4. **Overlap:** share of FNSPID company-specific headlines matched by an Alpha Vantage
+   headline on the same ticker within one day (title-word Jaccard ≥ 0.5).
+5. **Timestamps:** share of headlines with a stated time of day.
+6. **Capture budget:** requests needed for the 2024–2025 capture of all 250 tickers, from
+   the measured items per ticker and half-year at 1,000 items a request.
+
+**Rule.**
+- **Adopt unchanged** if the toned-session ratio (Alpha Vantage over FNSPID) lies within
+  [0.67, 1.5] and the coverage ratio is at least 0.8.
+- **Otherwise adopt with a reported limitation.** Alpha Vantage is still the only free
+  source covering both 2024 and 2025. The ratios are reported next to the final-test
+  result, and the monitor stays frozen: triage at ±0.2 and exit at adverse ≥ 5 and
+  persistence ≥ 5. No threshold is recalibrated.
+- **Capture plan:** the measured budget fixes how the 2024–2025 capture is split into
+  requests; it runs only after the owner's unlock record.
+
+**Guard.** The adapter refuses any request that ends after 2023-12-31 unless the decision
+log holds an owner unlock record citing the freeze manifest's SHA-256.
