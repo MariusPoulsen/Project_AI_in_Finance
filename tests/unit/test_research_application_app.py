@@ -100,3 +100,12 @@ def test_scanner_filters_to_an_empty_state_without_inventing_rows(service):
     app.slider[0].set_value(1.0).run()
     assert not app.exception
     assert any("No events match" in item.value for item in app.info)
+
+
+def test_adopted_book_page_renders_the_committed_summary(service):
+    app = AppTest.from_function(page, args=(service, "adopted_book", 20), default_timeout=60).run()
+    assert not app.exception, app.exception
+    assert app.title[0].value == "Adopted book"
+    labels = [metric.label for metric in app.metric]
+    assert "Sharpe, 2010–2017" in labels and "Max drawdown, 2010–2023" in labels
+    assert len(app.dataframe) >= 3

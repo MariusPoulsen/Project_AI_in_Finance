@@ -9,6 +9,7 @@ import streamlit as st
 from structural_break.app_ui import data, theme
 from structural_break.app_ui.context import KEY, AppContext
 from structural_break.app_ui.pages import (
+    adopted_book,
     methodology,
     model_lab,
     monitor,
@@ -48,6 +49,12 @@ def _pages() -> dict[str, st.Page]:
             title="Strategy Lab",
             icon=":material/candlestick_chart:",
             url_path="strategy",
+        ),
+        "book": st.Page(
+            adopted_book.render,
+            title="Adopted book",
+            icon=":material/trending_up:",
+            url_path="book",
         ),
         "monitor": st.Page(
             monitor.render,
@@ -105,7 +112,7 @@ def run(load: Callable[[], data.LoadOutcome] | None = None) -> None:
     navigation = st.navigation(
         {
             "Explore": [pages["overview"], pages["scanner"], pages["pair"]],
-            "Evaluate": [pages["model"], pages["strategy"]],
+            "Evaluate": [pages["model"], pages["strategy"], pages["book"]],
             "Trust": [pages["monitor"], pages["method"]],
         }
     )
