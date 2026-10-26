@@ -51,12 +51,14 @@ and restores local DuckDB views.
 
 ```shell
 python scripts/team.py app
+python scripts/team.py research-app
 python scripts/team.py check
 python scripts/team.py predict --pair KO__PEP
 python scripts/team.py backtest-inputs --pair KO__PEP --horizon 20
 ```
 
-The app browses accepted outputs and reports. `predict` reloads the actual saved
+The app browses accepted outputs and reports; `research-app` opens the full
+seven-page application (see [app/README.md](../app/README.md)). `predict` reloads the actual saved
 logistic A/B-both models, runs their original preprocessing and calibration, and
 checks every returned probability against the published prediction within
 `1e-12`. It writes a fresh CSV under `outputs/`. Omit `--pair` for all existing
