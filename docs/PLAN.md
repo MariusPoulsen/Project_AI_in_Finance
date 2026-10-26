@@ -23,7 +23,7 @@ writes an unlock record. The earlier phase-by-phase plan and status pages are ar
 | Blind human review of 50 agent cases | **Open:** the group fills in the answers | [agent_review/](agent_review/review_cases.md) | 113 |
 | 2024–2025 company-news source | Done: TickerTick, adopted with a reported limitation (× 4.8 denser than FNSPID) | [NEWS_2024_2025.md](NEWS_2024_2025.md) | 116–116d |
 | Final-test readiness: period switch, news adapters, report script | Done; the research layer's final-test mode is still to build | [FINAL_TEST_RUNBOOK.md](FINAL_TEST_RUNBOOK.md) | 117 |
-| Research freeze manifest | **Draft** `42ecc9ed…`: owner review | [FREEZE_MANIFEST.md](FREEZE_MANIFEST.md) | 113, 115 |
+| Research freeze manifest | **Draft** `8d5a3c5c…`: owner review (to be regenerated once the research layer's final-test mode is built) | [FREEZE_MANIFEST.md](FREEZE_MANIFEST.md) | 113, 115 |
 | Final test 2024–2025 | **Locked** until the owner's unlock record | — | 42 |
 | Streamlit app | Outside this workstream (the group) | `app` | — |
 
