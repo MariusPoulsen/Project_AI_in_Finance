@@ -22,7 +22,7 @@ writes an unlock record. The earlier phase-by-phase plan and status pages are ar
 | Overall overfitting audit (PBO, deflated Sharpe) | Done | `scripts/overfitting_audit.py` | 113 |
 | Blind human review of 50 agent cases | **Open:** the group fills in the answers | [agent_review/](agent_review/review_cases.md) | 113 |
 | 2024–2025 company-news source | **Open:** free Alpha Vantage key obtained; the 2022–2023 calibration is to be pre-registered | [NEWS_2024_2025.md](NEWS_2024_2025.md) | 113 |
-| Research freeze manifest | **Draft:** owner review | `scripts/freeze_manifest.py` | 113, 115 |
+| Research freeze manifest | **Draft** `42ecc9ed…`: owner review | [FREEZE_MANIFEST.md](FREEZE_MANIFEST.md) | 113, 115 |
 | Final test 2024–2025 | **Locked** until the owner's unlock record | — | 42 |
 | Streamlit app | Outside this workstream (the group) | `app` | — |
 

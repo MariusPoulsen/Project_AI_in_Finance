@@ -8,3 +8,4 @@
 *.csv text eol=lf
 *.txt text eol=lf
 *.pdf binary
+docs/freeze/*.json -text

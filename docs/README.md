@@ -9,6 +9,7 @@ Start with [the project README](../README.md). The active documentation is:
 | [Forecasting and the book](FORECASTING_AND_BOOK.md) | Goal 1 forecasters, Goal 2 book, overfitting audit, rebuild commands |
 | [Agent desk](AGENT_DESK.md) | The multi-agent layer and its position monitor |
 | [News for 2024–2025](NEWS_2024_2025.md) | Headline source for the final test |
+| [Freeze manifest](FREEZE_MANIFEST.md) | The draft research freeze and the unlock steps |
 | [Names](NAMES.md) | Old module, script, document and output names and their replacements |
 | [Research protocol](RESEARCH_PROTOCOL.md) / [runbook](RESEARCH_RUNBOOK.md) | The accepted research study: population, targets, models, jobs |
 | [Backtest runbook](BACKTEST_RUNBOOK.md) | Plan-ladder engine and the final-test gate |
