@@ -16,7 +16,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from structural_break.agents import debate_runner as selection
+from structural_break.book import selection
 from structural_break.agents import desk_runner as desk
 from structural_break.book import residual_sleeve as book
 from structural_break.pipeline.sources import _sources

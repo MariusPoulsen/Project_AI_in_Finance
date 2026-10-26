@@ -1,12 +1,10 @@
 import hashlib
 import json
 from datetime import UTC, datetime
-from pathlib import Path
 
 import pytest
 
 from structural_break.agents import debate as dv
-from structural_break.agents.budgets import BudgetPolicy, DurableAttemptJournal, ModelCap
 from structural_break.agents.contracts import (
     AgentInput,
     DataGates,
@@ -183,111 +181,5 @@ def test_prompt_shows_numbered_sentences_and_no_outcomes() -> None:
         dv.build_prompt("synthesis", _case(), {})  # missing predecessors
 
 
-@pytest.mark.parametrize(("risk", "status"), [("LOW", "CANDIDATE"), ("HIGH", "NO TRADE"), ("MEDIUM", "REVIEW")])
-def test_full_debate_reaches_the_controller(tmp_path: Path, risk: str, status: str) -> None:
-    script = Script(risk)
-    case = _case()
-    result = dv.run_debate(case, _clients(script), tmp_path)
-    assert result["decision"]["status"] == status
-    assert [model for model, _ in script.calls].count(dv.ADVOCATE_MODEL) == 4
-    assert (dv.SYNTHESIS_MODEL, "synthesis") in script.calls
-    assert (dv.VALIDATION_MODEL, "validation") in script.calls
-    assert dv.verify_result(result, case).status == status
-    # Rerunning replays the role cache without any provider call.
-    again = dv.run_debate(case, _clients(Script("HIGH")), tmp_path)
-    assert again["decision"] == result["decision"]
-
-
-def test_one_correction_then_valid(tmp_path: Path) -> None:
-    script = Script("LOW", {"validation": ['{"break_risk": "LOW"}']})
-    result = dv.run_debate(_case(), _clients(script), tmp_path)
-    validation = result["stages"][-1]
-    assert validation["status"] == "VALID" and len(validation["rejected"]) == 1
-    assert result["decision"]["status"] == "CANDIDATE"
-
-
-def test_failed_role_abstains_and_skips_downstream(tmp_path: Path) -> None:
-    bad = "not json"
-    script = Script("LOW", {"mean_reversion_opening": [bad] * (dv.CORRECTIONS + 1)})
-    result = dv.run_debate(_case(), _clients(script), tmp_path)
-    assert result["decision"]["status"] == "ABSTAIN"
-    assert result["decision"]["reason_codes"] == ["AGENT_FAILURE"]
-    assert result["stages"][2]["status"] == "SKIPPED"
-    assert all(role in dv.OPENINGS for _, role in script.calls)
-
-
-def test_daily_quota_pauses_instead_of_failing(tmp_path: Path) -> None:
-    class Daily(Script):
-        def __call__(self, url, payload, headers, timeout):
-            if dv.SYNTHESIS_MODEL in url:
-                body = {"error": {"details": [{"violations": [{"quotaId": "RequestsPerDay-FreeTier"}]}]}}
-                return 429, body
-            return super().__call__(url, payload, headers, timeout)
-
-    with pytest.raises(dv.PauseRequired):
-        dv.run_debate(_case(), _clients(Daily()), tmp_path)
-    # Openings and rebuttals were cached, so the resumed event does not resend them.
-    script = Script("LOW")
-    dv.run_debate(_case(), _clients(script), tmp_path)
-    assert [role for _, role in script.calls] == ["synthesis", "validation"]
-
-
-def test_unknown_coverage_never_calls_a_model(tmp_path: Path) -> None:
-    script = Script()
-    result = dv.run_debate(_case("UNKNOWN"), _clients(script), tmp_path)
-    assert result["decision"]["status"] == "ABSTAIN" and not script.calls
-
-
-def test_guard_charges_the_durable_journal_before_each_attempt(tmp_path: Path) -> None:
-    policy = BudgetPolicy(
-        allocation_id="test",
-        global_cap=100,
-        model_caps=tuple(
-            ModelCap(model=m, total=100, daily=100)
-            for m in (dv.ADVOCATE_MODEL, dv.SYNTHESIS_MODEL, dv.VALIDATION_MODEL)
-        ),
-    )
-    with DurableAttemptJournal(tmp_path / "journal", policy) as journal:
-        script = Script("LOW", {"structural_break_opening": [500]})
-        dv.run_debate(_case(), _clients(script, journal), tmp_path / "roles")
-        counts = journal.counts["by_model"]
-    # Six roles plus one server-error retry, every attempt charged.
-    assert sum(counts.values()) == 7 and counts[dv.ADVOCATE_MODEL] == 5
-
-
-def test_daily_cap_in_journal_pauses(tmp_path: Path) -> None:
-    policy = BudgetPolicy(
-        allocation_id="test",
-        global_cap=100,
-        model_caps=(
-            ModelCap(model=dv.ADVOCATE_MODEL, total=100, daily=100),
-            ModelCap(model=dv.SYNTHESIS_MODEL, total=100, daily=0),
-            ModelCap(model=dv.VALIDATION_MODEL, total=100, daily=100),
-        ),
-    )
-    with DurableAttemptJournal(tmp_path / "journal", policy) as journal:
-        with pytest.raises(dv.PauseRequired):
-            dv.run_debate(_case(), _clients(Script(), journal), tmp_path / "roles")
-
-
-def test_batch_runner_writes_results_and_resumes(tmp_path: Path) -> None:
-    import pandas as pd
-
-    from structural_break.agents import debate_runner as pa
-
-    case = _case()
-    dv.cv_write(tmp_path / "cases" / "evt_1.json", case.to_json())
-    pd.DataFrame(
-        [{"event_id": "evt_1", "year": 2015, "status": "DEBATE"}, {"event_id": "evt_2", "year": 2015, "status": "NO_RECENT_NEWS"}]
-    ).to_parquet(tmp_path / "inventory.parquet")
-    counts = pa.run(tmp_path, clients=_clients(Script("HIGH")), say=lambda m: None, passes=0)
-    assert counts == {"NO TRADE": 1}
-    assert pa.load_result(tmp_path, "evt_1")["decision"]["status"] == "NO TRADE"
-    assert pa.run(tmp_path, clients=_clients(Script()), say=lambda m: None, passes=0) == {}
-    table = pa.decisions(tmp_path)
-    assert dict(zip(table.event_id, table.status)) == {"evt_1": "NO TRADE", "evt_2": "NOT_DEBATED"}
-
-
-def test_policy_is_frozen_and_admits_selected_candidates() -> None:
-    assert dv.POLICY.status == "FROZEN"
+def test_processing_order_is_deterministic() -> None:
     assert cv.processing_order("evt_1") == cv.processing_order("evt_1")

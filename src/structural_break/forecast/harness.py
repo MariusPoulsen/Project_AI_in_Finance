@@ -240,7 +240,7 @@ def summarise(scored: pd.DataFrame, holdout: bool = False) -> dict[str, Any]:
 
 
 def load(args: argparse.Namespace) -> tuple[pd.DataFrame, dict[str, tuple[str, ...]], pd.DataFrame]:
-    from structural_break.pipeline.news_exit_results import EXIT, load_exits
+    from structural_break.pipeline.news_exit import EXIT, load_exits
 
     frame, base = pb.load_data(args.workspace_root, args.simulation)
     frame = frame.merge(

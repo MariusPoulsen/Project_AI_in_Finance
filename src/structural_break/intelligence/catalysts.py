@@ -49,16 +49,13 @@ from zoneinfo import ZoneInfo
 
 from structural_break.intelligence.extraction import (
     _CATEGORY_CUES,
-    EXTRACTION_SCHEMA_VERSION,
     CatalystResponse,
-    _result,
     validate_pack,
     validate_response,
 )
 
 ADAPTER_VERSION = "gemma-sentence-cite-v3.1"
 MODELS = ("gemma-4-26b-a4b-it",)
-TOKENS_PER_MINUTE = 16_000
 TOKEN_BUDGET = 14_500
 MAX_SENTENCE_CHARS = 600
 MIN_SENTENCE_CHARS = 8
@@ -77,20 +74,6 @@ RawTransport = Callable[[str, dict[str, Any], dict[str, str], float], tuple[int,
 
 class DailyQuotaExhausted(RuntimeError):
     """The model's free daily request quota is spent until midnight Pacific."""
-
-
-def pack_key(pack: Mapping[str, Any]) -> str:
-    """Identity of the prompt evidence: pair, exact chunks and leg coverage."""
-    clean = validate_pack(pack)
-    material = {
-        "pair_id": clean["pair_id"],
-        "coverage": {leg: clean["coverage"][leg]["status"] for leg in ("A", "B")},
-        "chunks": sorted(
-            (chunk["chunk_id"], hashlib.sha256(chunk["chunk_text"].encode()).hexdigest())
-            for chunk in clean["chunks"]
-        ),
-    }
-    return hashlib.sha256(json.dumps(material, sort_keys=True).encode()).hexdigest()
 
 
 def processing_order(key: str) -> str:
@@ -538,36 +521,3 @@ def extract_view(
     record.pop("_signatures", None)
     return record
 
-
-def event_extraction(pack: Mapping[str, Any], record: Mapping[str, Any]) -> dict[str, Any]:
-    """Expand a pack-level cached record to the v2 per-event extraction record."""
-    clean = validate_pack(pack)
-    response = (
-        CatalystResponse.model_validate(record["response"])
-        if record.get("response") is not None
-        else CatalystResponse(
-            event_type="UNKNOWN",
-            affected_leg="UNKNOWN",
-            direction="UNKNOWN",
-            materiality="UNKNOWN",
-            relationship_relevance="UNKNOWN",
-            extraction_confidence=None,
-            citations=[],
-        )
-    )
-    validate_response(response, clean)
-    identity = {
-        "evidence_hash": hashlib.sha256(
-            json.dumps(clean, sort_keys=True, separators=(",", ":")).encode()
-        ).hexdigest(),
-        "provider_name": "gemma",
-        "model_name": str(record["model"]),
-        "prompt_version": ADAPTER_VERSION,
-        "extraction_schema_version": EXTRACTION_SCHEMA_VERSION,
-        "provider_config_hash": hashlib.sha256(b'{"seed":42}').hexdigest(),
-        "synthetic": False,
-    }
-    identity["cache_identity"] = hashlib.sha256(
-        json.dumps(identity, sort_keys=True).encode()
-    ).hexdigest()
-    return _result(response, clean, identity, sorted(set(record["reasons"])), synthetic=False)

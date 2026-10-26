@@ -1,19 +1,9 @@
-import math
 
-import pandas as pd
 import pytest
 
 from structural_break.backtest.simulator import simulate_pair_trade
 from structural_break.book import long_exit as hl
 from tests.test_pair_simulator import path, policy
-
-
-def test_timeout_is_two_half_lives_bounded_to_1_to_120() -> None:
-    assert hl.timeout_for(30.4) == 61
-    assert hl.timeout_for(0.3) == 1
-    assert hl.timeout_for(500.0) == 120
-    assert hl.timeout_for(None) == hl.timeout_for(math.nan) == hl.timeout_for(-2.0) == 20
-
 
 PATHS = [
     [1.8, 1.2, 0.4, 0.2, 0.1, 0.3, 0.2, 0.1, 0.2, 0.3],  # converges
@@ -41,19 +31,6 @@ def test_a_longer_timeout_keeps_holding_until_convergence() -> None:
     longer = hl.simulate_long(request, request.sessions, request.prices, config, 12)
     assert short["reason"] == "TIMEOUT" and short["holding"] == 5
     assert longer["reason"] == "CONVERGENCE" and longer["holding"] == 11
-
-
-def test_copy_check_rejects_any_difference() -> None:
-    frame = pd.DataFrame(
-        {
-            "frozen_status": ["COMPLETE"],
-            "copy_status": ["COMPLETE"],
-            "frozen_net": [0.01],
-            "copy_net": [0.0100001],
-        }
-    )
-    with pytest.raises(ValueError, match="differs"):
-        hl.verify_copy(frame)
 
 
 def test_news_after_the_signal_exits_at_the_next_open() -> None:

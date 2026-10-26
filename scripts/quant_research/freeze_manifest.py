@@ -23,27 +23,15 @@ def git(*args: str) -> str:
     return subprocess.run(["git", *args], capture_output=True, text=True, check=True).stdout.strip()
 
 
-CODE = [
-    "src/structural_break/book/residual_sleeve.py",
-    "src/structural_break/book/portfolio.py",
-    "src/structural_break/book/trades.py",
-    "src/structural_break/book/costs.py",
-    "src/structural_break/book/policy_portfolio.py",
-    "src/structural_break/agents/debate_runner.py",
-    "src/structural_break/agents/desk_runner.py",
-    "src/structural_break/forecast/model_b.py",
-    "src/structural_break/agents/desk.py",
-    "src/structural_break/agents/debate.py",
-    "src/structural_break/agents/contracts.py",
-    "src/structural_break/agents/budgets.py",
-    "src/structural_break/decision/agent_policy.py",
-    "src/structural_break/intelligence/catalysts.py",
-    "src/structural_break/intelligence/headlines.py",
-    "src/structural_break/intelligence/sentiment.py",
-    "src/structural_break/backtest/contracts.py",
-    "scripts/agents/monitor_triage.py",
-    "scripts/quant_research/long_requests.py",
-]
+# Every live package of the book, the forecasters, the agent desk and their inputs, plus scripts.
+CODE = sorted(
+    str(p).replace("\\", "/")
+    for pattern in ("src/structural_break/pipeline/*.py", "src/structural_break/forecast/*.py",
+                    "src/structural_break/book/*.py", "src/structural_break/agents/*.py",
+                    "src/structural_break/decision/*.py", "src/structural_break/intelligence/*.py",
+                    "src/structural_break/backtest/*.py", "scripts/**/*.py")
+    for p in Path(".").glob(pattern)
+)
 DATA = [
     "outputs/p6_boosting2/scores.parquet",
     "outputs/p6_quant/scores__B+rule+ou__recent-bag5.parquet",

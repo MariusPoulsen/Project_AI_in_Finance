@@ -39,21 +39,8 @@ def test_mover_columns_follow_the_larger_abnormal_return() -> None:
     assert not frame.loc[1, "mover_fell"] and frame.loc[1, "mover_8k_1s"] == 0
 
 
-def test_skipping_losing_news_trades_is_a_positive_difference() -> None:
-    result = ex.filter_contrast(_frame(), "T6_mover_8k_1s_and_fell", "B0", (2006, 2015))
-    assert result["estimate_bps"] > 0 and result["skipped_share"] == 0.25
-    assert result["skipped_mean_net_bps"] < 0 < result["kept_mean_net_bps"]
-    assert result["p_one_sided"] < 0.05 and result["skipped_revert_rate"] == 0
-
-
 def test_bootstrap_reports_interval_se_and_one_sided_p() -> None:
     months = np.array(["2010-01", "2010-02", "2010-03", "2010-04"] * 10)
     stats = ex.bootstrap(np.full(40, 0.001), months)
     assert stats["estimate_bps"] == 10.0 and stats["p_one_sided"] == 0.0
 
-
-def test_variant_list_covers_every_block_both_populations_and_models() -> None:
-    variants = ex.variant_list()
-    filters = [name for name, (block, _) in ex.FILTERS.items() if block != "combined"]
-    assert len(variants) == 2 * len(filters) + 3 * len(ex.MODELS) == 53
-    assert {block for block, _, _ in variants} == set(ex.BLOCKS)

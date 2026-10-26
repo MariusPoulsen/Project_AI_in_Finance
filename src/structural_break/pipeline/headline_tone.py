@@ -27,7 +27,6 @@ from structural_break.config.paths import ProjectPaths
 from structural_break.intelligence import recent_news as rn
 from structural_break.pipeline.catalysts import _now
 
-VERSION = "sec-8k-headline-tone-v1"
 START, END = "2005-11-01", "2023-12-31"
 WINDOWS = 3
 SHARD = 400

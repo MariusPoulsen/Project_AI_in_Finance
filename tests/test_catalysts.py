@@ -1,10 +1,8 @@
 import hashlib
 import json
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import Any
 
-import pandas as pd
 import pytest
 
 from structural_break.intelligence import catalysts as cv
@@ -173,107 +171,9 @@ def test_token_pacing_waits_when_the_minute_budget_is_spent() -> None:
     assert sleeps and sleeps[0] >= 1.0
 
 
-def test_pack_key_ignores_event_identity_and_order_is_target_blind() -> None:
-    assert cv.pack_key(_pack("e1")) == cv.pack_key(_pack("e2"))
-    assert cv.pack_key(_pack()) != cv.pack_key(_pack(complete=False))
-    assert cv.processing_order("abc") == cv.processing_order("abc")
-
-
-def test_event_record_matches_v2_feature_contract() -> None:
-    record = cv.extract_view(_client([_ok(json.dumps(M_AND_A))]), _pack())
-    extraction = cv.event_extraction(_pack("other-event"), record)
-    assert extraction["event_id"] == "other-event" and extraction["status"] == "SUCCESS"
-    assert extraction["prompt_version"] == cv.ADAPTER_VERSION
-    missing = cv.event_extraction(_pack(), {"model": cv.MODELS[0], "response": None, "reasons": []})
-    assert missing["event_type"] == "UNKNOWN"
-
-
 def test_next_quota_reset_is_after_midnight_pacific() -> None:
     reset = cv.next_quota_reset(datetime(2026, 10, 17, 20, 0, tzinfo=UTC))
     assert reset == datetime(2026, 10, 18, 7, 5, tzinfo=UTC)
-
-
-def test_batch_runner_caches_resumes_and_pauses_for_daily_quota(tmp_path: Path) -> None:
-    checkpoints = tmp_path / "events"
-    checkpoints.mkdir()
-    for event_id in ("e1", "e2", "e3"):
-        pack = _pack(event_id, complete=event_id != "e3")
-        body = {
-            "event": {
-                "event_id": event_id,
-                "pair_id": "A__B",
-                "event_timestamp": pack["event_timestamp"],
-            },
-            "pack": pack,
-        }
-        (checkpoints / f"{event_id}.json").write_text(json.dumps(body))
-    output = tmp_path / "out"
-    index = cc.build_index(checkpoints, output, workers=1)
-    packs = cc.work_queue(index, {"e3"})
-    assert len(packs) == 2 and bool(packs.loc[0, "priority"])
-    day = {"error": {"details": [{"violations": [{"quotaId": "PerDay"}]}]}}
-    replies = [(429, day), _ok(json.dumps(M_AND_A)), _ok(json.dumps(M_AND_A))]
-    pauses: list[datetime] = []
-    counts = cc.run_batch(
-        checkpoints,
-        output,
-        packs,
-        cv.MODELS,
-        say=lambda message: None,
-        client_factory=lambda model: _client(replies),
-        wait_until=pauses.append,
-        in_flight=1,
-    )
-    assert counts == {"SUCCESS": 2} and len(pauses) == 1
-    assert cc.run_batch(checkpoints, output, packs, cv.MODELS, say=lambda m: None) == {}
-    summary = cc.status(output)
-    assert summary["status"] == {"SUCCESS": 2} and summary["percent_done"] == 100.0
-    assert summary["packs_last_hour"] == 2 and summary["state"]["phase"] == "finished"
-    assert "2 / 2 packs (100.0 %)" in cc.format_status(summary)
-    model_inputs = tmp_path / "model_inputs.parquet"
-    pd.DataFrame({"event_id": ["m1", "m2"], "evidence_event_id": ["e1", "e3"]}).to_parquet(
-        model_inputs
-    )
-    features = pd.read_parquet(cc.build_features(checkpoints, output, model_inputs))
-    assert list(features["event_id"]) == ["m1", "m2"]
-    assert features["full_event_type_M_AND_A"].tolist() == [1.0, 1.0]
-
-
-def test_transient_failure_is_retried_and_keeps_its_audit_trail(tmp_path: Path) -> None:
-    checkpoints = tmp_path / "events"
-    checkpoints.mkdir()
-    pack = _pack("e1")
-    body = {
-        "event": {"event_id": "e1", "pair_id": "A__B", "event_timestamp": pack["event_timestamp"]}
-    }
-    (checkpoints / "e1.json").write_text(json.dumps({**body, "pack": pack}))
-    output = tmp_path / "out"
-    packs = cc.work_queue(cc.build_index(checkpoints, output, workers=1), set())
-    failing = [(500, None)] * 7
-    cc.run_batch(
-        checkpoints,
-        output,
-        packs,
-        cv.MODELS,
-        say=lambda m: None,
-        client_factory=lambda model: _client(failing),
-        extra_passes=0,
-        in_flight=1,
-    )
-    key = str(packs.loc[0, "pack_key"])
-    assert cc.load_record(output, key)["reasons"] == ["PROVIDER_UNAVAILABLE"]
-    cc.run_batch(
-        checkpoints,
-        output,
-        packs,
-        cv.MODELS,
-        say=lambda m: None,
-        client_factory=lambda model: _client([_ok(json.dumps(M_AND_A))]),
-        in_flight=1,
-    )
-    record = cc.load_record(output, key)
-    assert record["status"] == "SUCCESS"
-    assert record["previous_attempts"][0]["reasons"] == ["PROVIDER_UNAVAILABLE"]
 
 
 def test_prompt_states_category_terms_and_cue_retry_names_them() -> None:
@@ -337,28 +237,3 @@ def test_server_errors_do_not_consume_the_token_budget() -> None:
     assert sorted(entry[1] for entry in client.window) == [0.0, 3000.0]
     assert client.statuses == {500: 1, 200: 1}
 
-
-def test_server_failed_packs_get_automatic_retry_passes(tmp_path: Path) -> None:
-    checkpoints = tmp_path / "events"
-    checkpoints.mkdir()
-    pack = _pack("e1")
-    body = {
-        "event": {"event_id": "e1", "pair_id": "A__B", "event_timestamp": pack["event_timestamp"]}
-    }
-    (checkpoints / "e1.json").write_text(json.dumps({**body, "pack": pack}))
-    output = tmp_path / "out"
-    packs = cc.work_queue(cc.build_index(checkpoints, output, workers=1), set())
-    replies = [(500, None)] * 7 + [_ok(json.dumps(M_AND_A))]
-    waits: list[float] = []
-    counts = cc.run_batch(
-        checkpoints,
-        output,
-        packs,
-        cv.MODELS,
-        say=lambda m: None,
-        client_factory=lambda model: _client(replies),
-        in_flight=1,
-        between_passes=waits.append,
-    )
-    assert waits == [600.0] and counts == {"UNKNOWN": 1, "SUCCESS": 1}
-    assert cc.load_record(output, str(packs.loc[0, "pack_key"]))["status"] == "SUCCESS"

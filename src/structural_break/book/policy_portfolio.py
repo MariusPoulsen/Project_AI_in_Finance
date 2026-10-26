@@ -20,13 +20,9 @@ The 2024-2025 final test is not read.
 
 from __future__ import annotations
 
-import argparse
-import json
 import math
-import sys
 from collections.abc import Sequence
 from datetime import date, datetime, timedelta
-from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -37,31 +33,14 @@ from structural_break.backtest.contracts import (
     PairTradeResult,
     canonical_sessions,
 )
-from structural_break.backtest.historical import build_historical_events
 from structural_break.backtest.portfolio import (
     DEVELOPMENT_END,
     PortfolioPolicy,
     PortfolioProposal,
-    simulate_portfolio,
 )
-from structural_break.backtest.production_policy import load_analysis_policies, load_headline
-from structural_break.backtest.simulator import simulate_pair_trade
-from structural_break.book import entry_vol as ev
-from structural_break.book.long_exit import simulate_long
-from structural_break.forecast import model_b as pb
-from structural_break.pipeline import news_filters as ex
-from structural_break.pipeline.news_exit import EMPTY, _times, headline_index
-from structural_break.pipeline.sources import _chunks, _sources, _spec
 
 PLAN_VERSION = "p6-portfolio-designs-v1"
 START, END = date(2010, 1, 1), date(2023, 12, 31)
-DESIGNS: dict[str, dict[str, Any]] = {
-    "P0_baseline0_frozen": {"population": "all", "exit": "frozen"},
-    "P1_model_frozen": {"population": "model", "exit": "frozen"},
-    "P2_model_news_exit": {"population": "model", "exit": "e3"},
-    "P3_model_news_exit_vix": {"population": "model", "exit": "e3", "vix": True},
-    "P4_model_news_exit_r1": {"population": "model", "exit": "e3", "r1": True},
-}
 TARGETS = {"frozen_25pct": 0.25, "sensitivity_10pct": 0.10}
 PERIODS = {"2010-2015": (2010, 2015), "2016-2021": (2016, 2021), "2022-2023": (2022, 2023)}
 TRADING_DAYS = 252
@@ -71,47 +50,6 @@ TOLERANCE = 1e-10
 # --------------------------------------------------------------------------- #
 # E3 news-exit trade results
 # --------------------------------------------------------------------------- #
-
-
-def news_exit_result(
-    request: Any, frozen: PairTradeResult, moments: Sequence[datetime], config: ExecutionConfig
-) -> PairTradeResult:
-    """The frozen result with its exit moved to the open after qualifying news (DECISIONS 60).
-
-    The research exit loop (verified against the frozen simulator) decides
-    whether and when the news exit fires; the entry, units and costs are the
-    frozen ones, so the portfolio ledger reconciles exactly.
-    """
-    out = simulate_long(request, request.sessions, request.prices, config, 20, moments)
-    if out["reason"] != "NEWS_EXIT":
-        if (
-            frozen.status == "COMPLETE"
-            and abs(float(out["net"]) - float(frozen.net_return or 0)) > TOLERANCE
-        ):
-            raise ValueError(f"Exit copy differs from the frozen result for {request.event_id}")
-        return frozen
-    index = int(out["holding"])
-    trigger, exit_session = request.sessions[index], request.sessions[index + 1]
-    bar = next(b for b in request.prices if b.session_date == exit_session.session_date)
-    exit_execution = frozen.entry.model_copy(  # type: ignore[union-attr]
-        update={
-            "session_date": exit_session.session_date,
-            "at": exit_session.open_at,
-            "price_a": bar.open_a,
-            "price_b": bar.open_b,
-        }
-    )
-    marks = tuple(m for m in frozen.marks if m.session_date <= trigger.session_date)
-    return frozen.model_copy(
-        update={
-            "exit": exit_execution,
-            "net_return": float(out["net"]),
-            "reason": "NEWS_EXIT",
-            "holding_sessions": index,
-            "marks": marks,
-            "trigger": None,
-        }
-    )
 
 
 # --------------------------------------------------------------------------- #
@@ -325,139 +263,6 @@ def research_portfolio(
 # --------------------------------------------------------------------------- #
 
 
-def load_inputs(args: argparse.Namespace) -> dict[str, Any]:
-    features = [
-        args.outputs / "p6_sec_features/timing_features.parquet",
-        args.outputs / "news_v1/news_features.parquet",
-        args.outputs / "news_v1/tone_features.parquet",
-    ]
-    frame, _ = ex.load(args.workspace_root, features, args.simulation)
-    frame = ev.derived(frame)
-    frame["vix_weight"] = ev.normalised(frame, ev.SIZING["Z3v_vix_proportional"](frame))
-    r1 = ex.FILTERS["R1_fresh_news_filter"][1](frame).fillna(False).astype(bool)
-    scores = pd.read_parquet(args.outputs / "p6_boosting2/scores.parquet")
-    scores = scores.loc[scores["variant"].eq("R0_xgb_fixed")].copy()
-    scores["selected"] = pb.selections(scores)
-    chosen = set(scores.loc[scores["role"].eq("test") & scores["selected"], "event_id"])
-    return {
-        "frame": frame.set_index("event_id"),
-        "model": chosen,
-        "r1": set(frame.loc[r1, "event_id"]),
-    }
-
-
-def build_trades(args: argparse.Namespace, inputs: dict[str, Any]) -> dict[str, Any]:
-    """Requests plus frozen and E3 results for every 2010-2023 Baseline 0 event."""
-    sources = _sources(args.workspace_root)
-    headline = load_headline(args.configs)
-    frame = inputs["frame"]
-    pairs = pd.read_parquet(
-        args.workspace_root / "universe/source_v1/pair_universe.parquet"
-    ).set_index("pair_id")
-    index = headline_index(pd.read_parquet(args.outputs / "headline_v1/headline_tone.parquet"))
-    sectors = sources.security_sectors()
-    requests: dict[str, Any] = {}
-    frozen: dict[str, PairTradeResult] = {}
-    e3: dict[str, PairTradeResult] = {}
-    for start, end in _chunks(START, END):
-        events, _, _ = build_historical_events(sources, _spec(sources, start, end))
-        print(f"{pb._now()} {len(events)} events {start}..{end}", flush=True)
-        for event in events:
-            request = event.request
-            event_id = event.state.event_id
-            if event_id not in frame.index:
-                continue
-            requests[event_id] = request
-            result = simulate_pair_trade(request, headline)
-            frozen[event_id] = result
-            if event_id in inputs["model"]:
-                pair = pairs.loc[request.pair_id]
-                long_leg = "leg_b_security_id" if request.signal_z > 0 else "leg_a_security_id"
-                short_leg = (
-                    "leg_a_security_id" if long_leg == "leg_b_security_id" else "leg_b_security_id"
-                )
-                long_rows = index.get(str(pair[long_leg]), EMPTY)
-                short_rows = index.get(str(pair[short_leg]), EMPTY)
-                moments = _times(long_rows, request.signal_at, long_rows["net"].le(-0.1)) + _times(
-                    short_rows, request.signal_at, short_rows["net"].ge(0.1)
-                )
-                e3[event_id] = news_exit_result(request, result, moments, headline)
-        del events
-    return {"requests": requests, "frozen": frozen, "e3": e3, "sectors": sectors}
-
-
-def check_against_research(trades: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]:
-    """Frozen and E3 nets must equal the stored Decision 59-62 simulations."""
-    stored = pd.concat(
-        pd.read_parquet(args.outputs / f"p6_sec_explore2/exits_{n}.parquet")
-        for n in ("explore", "confirm", "replicate")
-    ).set_index("event_id")
-    worst_frozen = worst_e3 = 0.0
-    for event_id, result in trades["e3"].items():
-        row = stored.loc[event_id]
-        if result.net_return is not None:
-            worst_e3 = max(
-                worst_e3, abs(result.net_return - float(row["E3_adverse_tone_either_leg|net"]))
-            )
-        base = trades["frozen"][event_id]
-        if base.net_return is not None:
-            worst_frozen = max(worst_frozen, abs(base.net_return - float(row["frozen_net"])))
-    if worst_e3 > 1e-9 or worst_frozen > 1e-9:
-        raise ValueError(
-            f"Trade results differ from stored simulations: {worst_frozen}, {worst_e3}"
-        )
-    return {"max_abs_frozen_difference": worst_frozen, "max_abs_e3_difference": worst_e3}
-
-
-def proposals_for(trades: dict[str, Any], event_ids: Sequence[str]) -> list[PortfolioProposal]:
-    sectors = trades["sectors"]
-    return [
-        PortfolioProposal(
-            request=trades["requests"][e],
-            decision_id=f"p6-portfolio:{e}",
-            decision_at=trades["requests"][e].signal_at,
-            sector_a=sectors.get(trades["requests"][e].leg_a, "UNKNOWN"),
-            sector_b=sectors.get(trades["requests"][e].leg_b, "UNKNOWN"),
-        )
-        for e in event_ids
-    ]
-
-
-def verify(
-    trades: dict[str, Any], args: argparse.Namespace, inputs: dict[str, Any]
-) -> dict[str, Any]:
-    """Unit weights and frozen results must reproduce ``simulate_portfolio``.
-
-    Checked on the 2016-2017 model trades.
-    """
-    analysis = load_analysis_policies(args.configs)
-    headline = load_headline(args.configs)
-    chosen = [
-        e
-        for e, r in trades["requests"].items()
-        if e in inputs["model"] and r.sessions[0].session_date.year in (2016, 2017)
-    ]
-    proposals = proposals_for(trades, chosen)
-    frozen = simulate_portfolio(tuple(proposals), analysis.portfolio, headline)
-    copy = research_portfolio(proposals, trades["frozen"], {}, analysis.portfolio, headline, 0.25)
-    frozen_close = [m.nav for m in frozen.marks if m.phase == "CLOSE"]
-    copy_close = copy["marks"]["nav"].tolist()
-    if len(frozen_close) != len(copy_close):
-        raise ValueError("Research portfolio has a different session path")
-    difference = max(
-        abs(a - b)
-        for a, b in zip(frozen_close, copy_close, strict=True)
-        if a is not None and b is not None
-    )
-    if difference > 1e-9:
-        raise ValueError(f"Research portfolio differs from the frozen portfolio by {difference}")
-    return {
-        "proposals": len(proposals),
-        "sessions": len(copy_close),
-        "max_abs_nav_difference": difference,
-    }
-
-
 # --------------------------------------------------------------------------- #
 # Metrics
 # --------------------------------------------------------------------------- #
@@ -501,79 +306,3 @@ def metrics(marks: pd.DataFrame) -> dict[str, Any]:
     result["nav_unknown"] = bool(marks["nav"].isna().any())
     _ = returns
     return result
-
-
-def run(args: argparse.Namespace) -> dict[str, Any]:
-    inputs = load_inputs(args)
-    trades = build_trades(args, inputs)
-    checks = {
-        "stored": check_against_research(trades, args),
-        "portfolio": verify(trades, args, inputs),
-    }
-    print(json.dumps(checks), flush=True)
-    analysis = load_analysis_policies(args.configs)
-    headline = load_headline(args.configs)
-    frame = inputs["frame"]
-    args.output.mkdir(parents=True, exist_ok=True)
-    summary: dict[str, Any] = {
-        "plan_version": PLAN_VERSION,
-        "decision": "DECISIONS 73",
-        "checks": checks,
-        "designs": {},
-    }
-    for design, spec in DESIGNS.items():
-        if spec["population"] == "all":
-            chosen = list(trades["requests"])
-        else:
-            chosen = [e for e in trades["requests"] if e in inputs["model"]]
-        if spec.get("r1"):
-            chosen = [e for e in chosen if e not in inputs["r1"]]
-        results = trades["e3"] if spec["exit"] == "e3" else trades["frozen"]
-        weights = (
-            {e: float(np.nan_to_num(frame.at[e, "vix_weight"], nan=1.0)) for e in chosen}
-            if spec.get("vix")
-            else {}
-        )
-        proposals = proposals_for(trades, chosen)
-        for label, target in TARGETS.items():
-            out = research_portfolio(
-                proposals, results, weights, analysis.portfolio, headline, target
-            )
-            stats = metrics(out["marks"])
-            counts = pd.Series(out["status"]).value_counts().to_dict()
-            stats["trade_status"] = {str(k): int(v) for k, v in counts.items()}
-            stats["proposals"] = len(proposals)
-            summary["designs"].setdefault(design, {})[label] = stats
-            out["marks"].to_parquet(args.output / f"nav_{design}_{label}.parquet", index=False)
-            f = stats["full"]
-            print(
-                f"{design:24s} {label:18s} CAGR {f['cagr']:+.2%} vol {f['volatility']:.2%}"
-                f" Sharpe {f['sharpe']:+.2f} maxDD {f['max_drawdown']:.1%}"
-                f" entered {counts.get('COMPLETE', 0)}",
-                flush=True,
-            )
-    summary["run_date"] = date.today().isoformat()
-    (args.output / "portfolios.json").write_text(
-        json.dumps(summary, indent=2, sort_keys=True, default=str) + "\n"
-    )
-    return summary
-
-
-def main(arguments: Sequence[str] | None = None) -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--workspace-root", type=Path, default=Path("data/team"))
-    parser.add_argument("--configs", type=Path, default=Path("configs"))
-    parser.add_argument("--outputs", type=Path, default=Path("outputs"))
-    parser.add_argument(
-        "--simulation",
-        type=Path,
-        default=Path("outputs/p6_improvement/walkforward/simulation_frozen_exit.parquet"),
-    )
-    parser.add_argument("--output", type=Path, default=Path("outputs/p6_portfolio"))
-    args = parser.parse_args(arguments)
-    run(args)
-    sys.stdout.flush()
-
-
-if __name__ == "__main__":
-    main()

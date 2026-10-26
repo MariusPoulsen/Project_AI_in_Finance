@@ -14,16 +14,13 @@ an explicit ``--env-file`` read into this process) and are never written.
 
 from __future__ import annotations
 
-import argparse
 import json
 import os
 import queue
-import sys
 import threading
 import time
 from collections import Counter
 from collections.abc import Callable, Sequence
-from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -31,10 +28,6 @@ from typing import Any
 import pandas as pd
 
 from structural_break.intelligence import catalysts as cv
-from structural_break.intelligence.event_features import (
-    EVENT_FEATURE_NAMES,
-    build_event_feature_frame,
-)
 
 FINAL_STATUSES = {"SUCCESS", "NONE"}
 RETRY_REASONS = {"PROVIDER_UNAVAILABLE", "INVALID_PROVIDER_PROTOCOL"}
@@ -71,44 +64,6 @@ def needs_work(
     if reasons & RETRY_REASONS:
         return True
     return retry_invalid and "INVALID_OR_UNGROUNDED_PROVIDER_RESPONSE" in reasons
-
-
-def build_index(checkpoints: Path, output: Path, workers: int = 8) -> pd.DataFrame:
-    """One row per stored event checkpoint: event, pair, pack key and chunk count."""
-    files = sorted(checkpoints.glob("*.json"))
-
-    def one(path: Path) -> dict[str, Any]:
-        record = json.loads(path.read_bytes())
-        pack = record["pack"]
-        return {
-            "file": path.name,
-            "event_id": record["event"]["event_id"],
-            "pair_id": record["event"]["pair_id"],
-            "event_timestamp": record["event"]["event_timestamp"],
-            "pack_key": cv.pack_key(pack),
-            "n_chunks": len(pack.get("chunks", [])),
-        }
-
-    with ThreadPoolExecutor(workers) as pool:
-        index = pd.DataFrame(list(pool.map(one, files, chunksize=64)))
-    if index["event_id"].duplicated().any():
-        raise ValueError("Duplicate event identities in the checkpoint directory")
-    output.mkdir(parents=True, exist_ok=True)
-    index.to_parquet(output / "index.parquet", index=False)
-    return index
-
-
-def work_queue(index: pd.DataFrame, priority_events: set[str]) -> pd.DataFrame:
-    """Distinct packs with one representative checkpoint, in processing order."""
-    packs = (
-        index.assign(priority=index["event_id"].isin(priority_events))
-        .sort_values(["pack_key", "file"])
-        .groupby("pack_key", sort=False)
-        .agg(file=("file", "first"), priority=("priority", "any"), events=("event_id", "size"))
-        .reset_index()
-    )
-    packs["order"] = packs["pack_key"].map(cv.processing_order)
-    return packs.sort_values(["priority", "order"], ascending=[False, True]).reset_index(drop=True)
 
 
 def load_env_file(path: Path) -> None:
@@ -352,104 +307,3 @@ def format_status(summary: dict[str, Any], log: Path | None = None) -> str:
         tail = log.read_text(encoding="utf-8", errors="replace").splitlines()[-3:]
         lines += ["  log:", *(f"    {line}" for line in tail)]
     return "\n".join(lines)
-
-
-def build_features(checkpoints: Path, output: Path, model_inputs: Path) -> Path:
-    """Full-coverage catalyst block for every model event, keyed by model event_id."""
-    index = pd.read_parquet(output / "index.parquet").set_index("event_id")
-    events = pd.read_parquet(model_inputs, columns=["event_id", "evidence_event_id"])
-    evidence_ids = events["evidence_event_id"].dropna().unique()
-    extractions, rows = [], []
-    for evidence_id in evidence_ids:
-        if evidence_id not in index.index:
-            continue
-        row = index.loc[evidence_id]
-        pack = json.loads((checkpoints / row["file"]).read_bytes())["pack"]
-        record = load_record(output, row["pack_key"]) or {
-            "model": cv.MODELS[0],
-            "response": None,
-            "reasons": ["NOT_YET_EXTRACTED"],
-        }
-        extraction = cv.event_extraction(pack, record)
-        extractions.append(extraction)
-        rows.append(
-            {
-                "event_id": evidence_id,
-                "pair_id": row["pair_id"],
-                "event_timestamp": extraction["event_timestamp"],
-            }
-        )
-    block = build_event_feature_frame(pd.DataFrame(rows), extractions, cv.ADAPTER_VERSION)
-    block = block.loc[:, ["event_id", *EVENT_FEATURE_NAMES]].rename(
-        columns={"event_id": "evidence_event_id"}
-        | {name: "full_" + name for name in EVENT_FEATURE_NAMES}
-    )
-    features = events.merge(block, on="evidence_event_id", how="left").drop(
-        columns="evidence_event_id"
-    )
-    path = output / "full_catalyst_features.parquet"
-    features.to_parquet(path, index=False)
-    return path
-
-
-def main(arguments: Sequence[str] | None = None) -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("index", "run", "status", "features"):
-        command = sub.add_parser(name)
-        command.add_argument("--output", type=Path, required=True)
-        if name != "status":
-            command.add_argument("--checkpoints", type=Path, required=True)
-        if name in {"run", "features"}:
-            command.add_argument("--model-inputs", type=Path, required=True)
-        if name == "status":
-            command.add_argument("--json", action="store_true")
-        if name == "run":
-            command.add_argument("--env-file", type=Path)
-            command.add_argument("--models", nargs="+", default=list(cv.MODELS))
-            command.add_argument("--retry-invalid", action="store_true")
-            command.add_argument("--limit", type=int)
-    args = parser.parse_args(arguments)
-
-    def say(message: str) -> None:
-        print(f"{_now()} {message}", flush=True)
-
-    if args.command == "index":
-        index = build_index(args.checkpoints, args.output)
-        say(f"indexed {len(index)} events, {index['pack_key'].nunique()} distinct packs")
-    elif args.command == "run":
-        if args.env_file:
-            load_env_file(args.env_file)
-        if not _credential():
-            sys.exit("No API key in the environment")
-        index = pd.read_parquet(args.output / "index.parquet")
-        priority = set(
-            pd.read_parquet(args.model_inputs, columns=["evidence_event_id"])["evidence_event_id"]
-            .dropna()
-            .astype(str)
-        )
-        packs = work_queue(index, priority)
-        packs.to_parquet(args.output / "queue.parquet", index=False)
-        counts = run_batch(
-            args.checkpoints,
-            args.output,
-            packs,
-            args.models,
-            retry_invalid=args.retry_invalid,
-            limit=args.limit,
-            say=say,
-        )
-        say(f"finished: {dict(counts)}")
-    elif args.command == "status":
-        summary = status(args.output)
-        if args.json:
-            print(json.dumps(summary, indent=2, sort_keys=True))
-        else:
-            print(format_status(summary, args.output / "run.log"))
-    else:
-        path = build_features(args.checkpoints, args.output, args.model_inputs)
-        say(f"wrote {path}")
-
-
-if __name__ == "__main__":
-    main()

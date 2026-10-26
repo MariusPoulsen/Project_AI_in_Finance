@@ -9,12 +9,9 @@ exactly against the variant's net return.
 
 from __future__ import annotations
 
-import argparse
-import json
 import math
 import pickle
 from collections.abc import Sequence
-from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -189,43 +186,3 @@ def load_cache(path: Path) -> dict[str, Any]:
     with open(path, "rb") as handle:
         cache: dict[str, Any] = pickle.load(handle)  # our own cache from trades.build
     return cache
-
-
-def main(arguments: Sequence[str] | None = None) -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--designs", type=Path, required=True, help="JSON {name: {scores, exit}}")
-    parser.add_argument("--configs", type=Path, default=Path("configs"))
-    parser.add_argument("--workspace-root", type=Path, default=Path("data/team"))
-    parser.add_argument("--output", type=Path, default=Path("outputs/p6_quant/portfolio"))
-    args = parser.parse_args(arguments)
-    from structural_break.pipeline.sources import _sources
-
-    sectors = _sources(args.workspace_root).security_sectors()
-    cache = load_cache(Path("outputs/p6_quant/requests.pkl"))
-    designs = json.loads(args.designs.read_text())
-    args.output.mkdir(parents=True, exist_ok=True)
-    summary: dict[str, Any] = {"plan_version": PLAN_VERSION, "run_date": date.today().isoformat()}
-    for name, spec in designs.items():
-        scores = pd.read_parquet(spec["scores"])
-        chosen = scores.loc[scores[spec.get("share", "top20")] & scores["year"].between(2010, 2023)]
-        selected = [e for e in chosen["event_id"] if e in cache]
-        settings = tuple(spec["exit"])
-        for label, target in pp.TARGETS.items():
-            out = run_design(cache, selected, settings, args.configs, target, sectors)
-            summary.setdefault(name, {})[label] = out["stats"]
-            out["marks"].to_parquet(args.output / f"nav_{name}_{label}.parquet", index=False)
-            f = out["stats"]["full"]
-            periods = out["stats"]["periods"]
-            print(
-                f"{name:30s} {label:18s} CAGR {f['cagr']:+.2%} vol {f['volatility']:.2%}"
-                f" Sharpe {f['sharpe']:+.2f} maxDD {f['max_drawdown']:.1%}"
-                f" | 10-15 {periods['2010-2015']['sharpe']:+.2f}"
-                f" 16-21 {periods['2016-2021']['sharpe']:+.2f}"
-                f" 22-23 {periods['2022-2023']['sharpe']:+.2f}",
-                flush=True,
-            )
-    (args.output / "summary.json").write_text(json.dumps(summary, indent=2, default=str) + "\n")
-
-
-if __name__ == "__main__":
-    main()

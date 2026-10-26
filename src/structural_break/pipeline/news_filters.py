@@ -22,12 +22,7 @@ execution policy, with calendar-month block bootstrap uncertainty.
 
 from __future__ import annotations
 
-import argparse
-import hashlib
-import json
-import sys
 from collections.abc import Callable, Sequence
-from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -39,17 +34,10 @@ from structural_break.intelligence.recent_tone import TONE_FEATURE_COLUMNS
 from structural_break.intelligence.timing import TIMING_FEATURE_COLUMNS
 from structural_break.pipeline.sources import _sources, load_frame
 from structural_break.pipeline.walkforward import (
-    TOP_SHARE,
     XGB_PARAMETERS,
-    allocation,
-    rolling_split,
 )
-from structural_break.research.evaluation import _estimator
-from structural_break.storage.files import write_bytes
 
 PLAN_VERSION = "p6-sec-explore-v1"
-FILTER_EXPLORE = (2006, 2015)
-MODEL_EXPLORE = (2010, 2015)
 CONFIRM = (2016, 2021)
 DRAWS, SEED, ALPHA, MIN_CONFIRM_YEARS = 2000, 5557, 0.05, 4
 BLOCKS = {
@@ -131,7 +119,6 @@ FILTERS["R1_fresh_news_filter"] = (
     lambda f: _is(f["mover_earnings_3s"]) | f["mover_tone_negative"].ge(0.2),
 )
 REPLICATE = (2022, 2023)
-REPLICATION_FILTER = "R1_fresh_news_filter"
 POPULATIONS = ("B0", "B1")
 MODELS: dict[str, dict[str, Any]] = {
     "M1_logistic_C0.1": {"family": "logistic", "params": {"C": 0.1}, "base": "B"},
@@ -178,114 +165,14 @@ def bootstrap(difference: np.ndarray, months: np.ndarray) -> dict[str, Any]:
     }
 
 
-def _years_positive(difference: pd.Series, years: pd.Series) -> dict[str, float]:
-    return {str(y): float(group.mean() * 1e4) for y, group in difference.groupby(years)}
-
-
 # --------------------------------------------------------------------------- #
 # Filters
 # --------------------------------------------------------------------------- #
 
 
-def filter_contrast(
-    frame: pd.DataFrame, name: str, population: str, span: tuple[int, int]
-) -> dict[str, Any]:
-    _, rule = FILTERS[name]
-    year = pd.to_datetime(frame["event_date"]).dt.year
-    rows = frame["frozen|status"].eq("COMPLETE") & year.between(*span)
-    if population == "B1":
-        rows &= frame["baseline1_eligible"].eq(True)
-    data = frame.loc[rows]
-    skip = rule(data).fillna(False).astype(bool)
-    net = data["frozen|net"].astype(float)
-    difference = -(net * skip)  # kept trades unchanged; a skipped trade earns 0 instead of net
-    stats = bootstrap(
-        difference.to_numpy(), pd.to_datetime(data["event_date"]).dt.strftime("%Y-%m").to_numpy()
-    )
-    labelled = data[TARGET].notna()
-    return stats | {
-        "skipped_share": float(skip.mean()),
-        "skipped_n": int(skip.sum()),
-        "skipped_mean_net_bps": float(net[skip].mean() * 1e4) if skip.any() else None,
-        "kept_mean_net_bps": float(net[~skip].mean() * 1e4) if (~skip).any() else None,
-        "all_mean_net_bps": float(net.mean() * 1e4),
-        "skipped_revert_rate": float(data.loc[skip & labelled, TARGET].mean())
-        if (skip & labelled).any()
-        else None,
-        "kept_revert_rate": float(data.loc[~skip & labelled, TARGET].mean())
-        if (~skip & labelled).any()
-        else None,
-        "per_year_bps": _years_positive(difference, pd.to_datetime(data["event_date"]).dt.year),
-    }
-
-
 # --------------------------------------------------------------------------- #
 # Walk-forward models
 # --------------------------------------------------------------------------- #
-
-
-def _columns(
-    base: tuple[str, ...], block: tuple[str, ...], interact: bool, frame: pd.DataFrame
-) -> tuple[pd.DataFrame, tuple[str, ...]]:
-    if not interact:
-        return frame, (*base, *block)
-    extra = frame.copy()
-    names = []
-    fell = extra["mover_fell"].astype(float)
-    for column in block:
-        for tag, weight in (("fell", fell), ("rose", 1.0 - fell)):
-            name = f"ix_{column}_{tag}"
-            extra[name] = extra[column].astype(float) * weight
-            names.append(name)
-    return extra, (*base, *block, *names)
-
-
-def model_allocations(
-    frame: pd.DataFrame,
-    columns: tuple[str, ...],
-    family: str,
-    params: dict[str, Any],
-    years: Sequence[int],
-) -> pd.Series:
-    """Top-20 % per-candidate allocations (Decision 45 walk-forward) for ``years``."""
-    result = pd.Series(np.nan, index=frame.index)
-    for year in years:
-        train, threshold_rows, test = rolling_split(frame, year)
-        estimator = _estimator(family, params, 42)
-        estimator.fit(train.loc[:, columns].astype(float), train[TARGET].astype(int))
-        both = pd.concat([threshold_rows, test])
-        scores = estimator.predict_proba(both.loc[:, columns].astype(float))[:, 1]
-        simulated = threshold_rows["frozen|status"].notna().to_numpy()
-        cut = float(np.quantile(scores[: len(threshold_rows)][simulated], 1.0 - TOP_SHARE))
-        test_scores = pd.Series(scores[len(threshold_rows) :], index=test.index)
-        priced = test["frozen|status"].notna()
-        result.loc[test.index[priced]] = allocation(
-            test_scores[priced] >= cut,
-            test.loc[priced, "frozen|status"],
-            test.loc[priced, "frozen|net"],
-        )
-    return result
-
-
-def model_contrast(
-    frame: pd.DataFrame,
-    block: str,
-    name: str,
-    columns: dict[str, tuple[str, ...]],
-    span: tuple[int, int],
-) -> dict[str, Any]:
-    spec = MODELS[name]
-    base = columns[spec["base"]]
-    years = list(range(span[0], span[1] + 1))
-    extended, variant = _columns(base, BLOCKS[block], bool(spec.get("interact")), frame)
-    left = model_allocations(extended, base, spec["family"], spec["params"], years)
-    right = model_allocations(extended, variant, spec["family"], spec["params"], years)
-    known = left.notna() & right.notna()
-    difference = (right - left)[known]
-    dates = pd.to_datetime(frame.loc[known, "event_date"])
-    return bootstrap(difference.to_numpy(), dates.dt.strftime("%Y-%m").to_numpy()) | {
-        "per_year_bps": _years_positive(difference, dates.dt.year),
-    }
 
 
 # --------------------------------------------------------------------------- #
@@ -306,153 +193,3 @@ def load(
         "B": tuple(report["models"]["logistic"]["B_both"]["feature_columns"]),
     }
     return add_mover_columns(frame), columns
-
-
-def variant_list() -> list[tuple[str, str, str]]:
-    """(block, kind, name) for every Decision 55 variant (the R1 filter is separate)."""
-    rows = [
-        (block, f"filter_{pop}", name)
-        for name, (block, _) in FILTERS.items()
-        if block != "combined"
-        for pop in POPULATIONS
-    ]
-    rows += [(block, "model", name) for block in BLOCKS for name in MODELS]
-    return rows
-
-
-def evaluate_variant(
-    frame: pd.DataFrame,
-    columns: dict[str, tuple[str, ...]],
-    block: str,
-    kind: str,
-    name: str,
-    filter_span: tuple[int, int],
-    model_span: tuple[int, int],
-) -> dict[str, Any]:
-    if kind.startswith("filter_"):
-        return filter_contrast(frame, name, kind.removeprefix("filter_"), filter_span)
-    return model_contrast(frame, block, name, columns, model_span)
-
-
-def explore(
-    frame: pd.DataFrame, columns: dict[str, tuple[str, ...]], say: Callable[[str], None]
-) -> dict[str, Any]:
-    results = []
-    for block, kind, name in variant_list():
-        say(f"explore {block} {kind} {name}")
-        stats = evaluate_variant(frame, columns, block, kind, name, FILTER_EXPLORE, MODEL_EXPLORE)
-        results.append({"block": block, "kind": kind, "name": name, **stats})
-    choices = {}
-    for block in BLOCKS:
-        candidates = [r for r in results if r["block"] == block and r.get("estimate") is not None]
-        positive = [r for r in candidates if r["estimate"] > 0]
-        best = max(positive or candidates, key=lambda r: r["t"])
-        choices[block] = {
-            "kind": best["kind"],
-            "name": best["name"],
-            "explore_t": best["t"],
-            "explore_estimate_bps": best["estimate_bps"],
-        }
-    return {
-        "plan_version": PLAN_VERSION,
-        "filter_years": FILTER_EXPLORE,
-        "model_years": MODEL_EXPLORE,
-        "variants": results,
-        "choices": choices,
-    }
-
-
-def confirm(
-    frame: pd.DataFrame, columns: dict[str, tuple[str, ...]], choices: dict[str, Any]
-) -> dict[str, Any]:
-    rows = {}
-    for block, choice in choices.items():
-        stats = evaluate_variant(
-            frame, columns, block, choice["kind"], choice["name"], CONFIRM, CONFIRM
-        )
-        years = stats.get("per_year_bps", {})
-        rows[block] = {**choice, **stats, "years_positive": sum(v > 0 for v in years.values())}
-    order = sorted(rows, key=lambda b: rows[b]["p_one_sided"])
-    running = 0.0
-    for rank, block in enumerate(order):
-        adjusted = min(1.0, max(running, (len(order) - rank) * rows[block]["p_one_sided"]))
-        running = adjusted
-        rows[block]["p_holm"] = adjusted
-        rows[block]["passes"] = bool(
-            adjusted < ALPHA
-            and rows[block]["estimate"] > 0
-            and rows[block]["years_positive"] >= MIN_CONFIRM_YEARS
-        )
-    return {"plan_version": PLAN_VERSION, "confirm_years": CONFIRM, "blocks": rows}
-
-
-def main(arguments: Sequence[str] | None = None) -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("stage", choices=("explore", "confirm", "replicate"))
-    parser.add_argument("--workspace-root", type=Path, required=True)
-    parser.add_argument("--features", type=Path, action="append", required=True)
-    parser.add_argument("--simulation", type=Path, required=True)
-    parser.add_argument("--output-dir", type=Path, required=True)
-    args = parser.parse_args(arguments)
-    say = lambda message: print(message, file=sys.stderr, flush=True)  # noqa: E731
-    frame, columns = load(args.workspace_root, args.features, args.simulation)
-    out = args.output_dir
-    if args.stage == "explore":
-        result = explore(frame, columns, say) | {"run_date": date.today().isoformat()}
-        body = (json.dumps(result, indent=2, sort_keys=True, default=str) + "\n").encode()
-        write_bytes(out / "exploration.json", body)
-        choices = (json.dumps(result["choices"], indent=2, sort_keys=True) + "\n").encode()
-        write_bytes(out / "choices.json", choices)
-        print(
-            json.dumps(
-                {
-                    "choices": result["choices"],
-                    "choices_sha256": hashlib.sha256(choices).hexdigest(),
-                }
-            )
-        )
-        return
-    if args.stage == "replicate":
-        rows = {
-            name: filter_contrast(frame, name, "B0", REPLICATE)
-            for name in (REPLICATION_FILTER, "T3_mover_earnings_3s", "S5_mover_negative_prob_0.2")
-        }
-        main_row = rows[REPLICATION_FILTER]
-        verdict = bool(main_row["estimate"] > 0 and main_row["p_one_sided"] < ALPHA)
-        result = {
-            "plan_version": PLAN_VERSION,
-            "years": REPLICATE,
-            "filters": rows,
-            "passes": verdict,
-            "run_date": date.today().isoformat(),
-        }
-        text = json.dumps(result, indent=2, sort_keys=True, default=str) + "\n"
-        write_bytes(out / "replication.json", text.encode())
-        summary = {"passes": verdict, "estimate_bps": main_row["estimate_bps"]}
-        print(json.dumps(summary | {"p": main_row["p_one_sided"]}))
-        return
-    choices_raw = (out / "choices.json").read_bytes()
-    result = confirm(frame, columns, json.loads(choices_raw)) | {
-        "choices_sha256": hashlib.sha256(choices_raw).hexdigest(),
-        "run_date": date.today().isoformat(),
-    }
-    write_bytes(
-        out / "confirmation.json",
-        (json.dumps(result, indent=2, sort_keys=True, default=str) + "\n").encode(),
-    )
-    print(
-        json.dumps(
-            {
-                block: {
-                    "passes": r["passes"],
-                    "estimate_bps": r["estimate_bps"],
-                    "p_holm": r["p_holm"],
-                }
-                for block, r in result["blocks"].items()
-            }
-        )
-    )
-
-
-if __name__ == "__main__":
-    main()

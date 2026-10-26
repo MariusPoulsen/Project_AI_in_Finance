@@ -495,6 +495,24 @@ def record_results(output: Path, decisions: Path) -> bool:
     return True
 
 
+# The adopted 8-K news exit (Decisions 59-62) and its stored per-event results.
+EXIT = "E3_adverse_tone_either_leg"
+
+
+def load_exits(output: Path) -> pd.DataFrame:
+    parts = [
+        pd.read_parquet(output / f"exits_{name}.parquet")
+        for name in ("explore", "confirm", "replicate")
+    ]
+    exits = pd.concat(parts, ignore_index=True)
+    if exits["event_id"].duplicated().any():
+        raise ValueError("Exit simulations overlap")
+    return exits.loc[
+        :, ["event_id", "frozen_status", "frozen_net", f"{EXIT}|status", f"{EXIT}|net"]
+    ]
+
+
+
 def main(arguments: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(

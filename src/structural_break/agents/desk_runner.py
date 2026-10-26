@@ -27,7 +27,6 @@ import numpy as np
 import pandas as pd
 
 from structural_break.agents import debate as dv
-from structural_break.agents import debate_runner as pa
 from structural_break.agents import desk as dk
 from structural_break.agents.budgets import BudgetPolicy, DurableAttemptJournal, ModelCap
 from structural_break.agents.contracts import (
@@ -37,12 +36,14 @@ from structural_break.agents.contracts import (
     QuantState,
     SourceChunk,
 )
+from structural_break.book import selection
 from structural_break.intelligence import catalysts as cv
 from structural_break.pipeline import catalysts as cc
 from structural_break.pipeline import news_features as nc
 from structural_break.pipeline.sources import _sources
 
 OUTPUT = Path("outputs/p6_desk")
+NEWS = Path("outputs/news_v1")
 HEADLINES = Path("data/external/fnspid/headlines.parquet")
 MAX_HEADLINES = 12
 # Decision 110b: the book can select with the original Model B (R0) or the best forecaster.
@@ -75,7 +76,7 @@ def design_trades(
     from structural_break.book import portfolio as qp
 
     cache = qp.load_cache(LONG_CACHE)
-    chosen = [e for e in pa.design_candidates(workspace, selector, chosen_events) if e not in (exclude or set())]
+    chosen = [e for e in selection.design_candidates(workspace, selector, chosen_events) if e not in (exclude or set())]
     sectors = _sources(workspace).security_sectors()
     prices = pd.read_parquet(workspace / "market/source_v1/prices.parquet",
                              columns=["ticker", "trading_date", "open", "high", "low", "close", "adj_close", "volume"])
@@ -141,6 +142,24 @@ def _headline_text(rows: pd.DataFrame, companies: dict[str, tuple[str, str]]) ->
     return "\n".join(lines)
 
 
+def describe_news(known: bool, leg_key: Any, record: dict[str, Any] | None, pack: Any) -> str:
+    if not known:
+        return "coverage unknown"
+    if not isinstance(leg_key, str):
+        return "no 8-K in the last three sessions"
+    if pack is None or not pack.get("chunks"):
+        return "an 8-K was filed but its text could not be parsed"
+    if record is None or record.get("status") == "UNKNOWN":
+        return "8-K filed; the extraction model could not classify it"
+    if record["status"] == "NONE":
+        return "8-K filed; classified as routine with no material news"
+    response = record["response"]
+    return (
+        f"8-K filed; classified as {response['event_type']}, {response['direction']}, "
+        f"{response['materiality']} materiality"
+    )
+
+
 class Sources:
     """Shared inputs for entry and monitor cases (all read-only, point in time)."""
 
@@ -149,14 +168,14 @@ class Sources:
         self.inputs = pd.read_parquet(workspace / "artifacts/research" / version / "model_inputs.parquet").set_index("event_id")
         self.pairs = pd.read_parquet(workspace / "universe/source_v1/pair_universe.parquet").set_index("pair_id")
         self.master = pd.read_parquet(workspace / "universe/source_v1/security_master.parquet").set_index("security_id")
-        scores = pd.read_parquet(pa.SCORES)
+        scores = pd.read_parquet(selection.SCORES)
         self.scores = scores[scores.variant.eq("R0_xgb_fixed")]
         self.headlines = pd.read_parquet(HEADLINES)
         self.headlines = self.headlines[self.headlines.specific & self.headlines.session.notna()]
         self.by_security = {s: g.sort_values(["session", "stamp"]) for s, g in self.headlines.groupby("security_id")}
         prices = pd.read_parquet(workspace / "market/source_v1/prices.parquet", columns=["trading_date"])
         self.sessions = pd.DatetimeIndex(sorted(pd.to_datetime(prices["trading_date"].unique())))
-        self.windows = pd.read_parquet(pa.NEWS / "windows.parquet").set_index(["event_id", "leg"])
+        self.windows = pd.read_parquet(NEWS / "windows.parquet").set_index(["event_id", "leg"])
 
     def companies(self, pair_id: str) -> tuple[dict[str, str], dict[str, tuple[str, str]]]:
         pair = self.pairs.loc[pair_id]
@@ -188,7 +207,7 @@ def build_entry(workspace: Path, output: Path = OUTPUT) -> dict[str, Any]:
     region = region_events(src)
     candidates: set[str] = set()
     for selector in SELECTORS:
-        candidates |= set(pa.design_candidates(workspace, selector))
+        candidates |= set(selection.design_candidates(workspace, selector))
     test = src.scores[src.scores.role.eq("test")].set_index("event_id")
     extra = sorted(candidates - set(region.event_id))
     region = pd.concat(
@@ -211,7 +230,7 @@ def build_entry(workspace: Path, output: Path = OUTPUT) -> dict[str, Any]:
             w = src.windows.loc[(event.event_id, leg.lower())] if (event.event_id, leg.lower()) in src.windows.index else None
             key = None if w is None else w["leg_key"]
             if isinstance(key, str):
-                path = pa.NEWS / "packs" / f"{key}.json"
+                path = NEWS / "packs" / f"{key}.json"
                 packs[leg] = (json.loads(path.read_bytes())["pack"] if path.exists() else None, key)
             heads = src.headlines_between(securities[leg], first, signal)
             counts[leg] = int(len(heads))
@@ -246,8 +265,8 @@ def build_entry(workspace: Path, output: Path = OUTPUT) -> dict[str, Any]:
         for leg in ("B", "A"):
             label = None
             if leg in packs:
-                label = pa._describe_news(True, packs[leg][1], cc.load_record(pa.NEWS, packs[leg][1]), packs[leg][0])
-            tone = nc.load_tone(pa.NEWS, packs[leg][1]) if leg in packs else None
+                label = describe_news(True, packs[leg][1], cc.load_record(NEWS, packs[leg][1]), packs[leg][0])
+            tone = nc.load_tone(NEWS, packs[leg][1]) if leg in packs else None
             tone_text = f"{tone['positive'] - tone['negative']:+.2f}" if tone and tone.get("status") == "OK" else "not available"
             text = "\n".join(
                 [
@@ -319,7 +338,6 @@ def build_entry(workspace: Path, output: Path = OUTPUT) -> dict[str, Any]:
 
 def build_monitor(workspace: Path, output: Path = OUTPUT) -> dict[str, Any]:
     """One check per open design trade and session with new company headlines."""
-    from structural_break.book import portfolio as qp
 
     src = Sources(workspace)
     results: dict[str, Any] = {}
@@ -739,7 +757,7 @@ def evaluate(workspace: Path = Path("data/team"), output: Path = OUTPUT, holdout
     trials, books = [], {}
     for selector in SELECTORS:
         table = tables[("desk", base_for[selector])].set_index("event_id")
-        members = set(pa.design_candidates(workspace, selector))
+        members = set(selection.design_candidates(workspace, selector))
         cands = table[table.index.isin(members)].copy()
         cands["ratio"] = (cands.p_agent / cands.p_base).fillna(1.0)
 
@@ -787,7 +805,7 @@ def evaluate(workspace: Path = Path("data/team"), output: Path = OUTPUT, holdout
             continue
         share = min(1.0, float(per_year.get(year - 1, 0)) / len(prior))
         chosen_full += list(now.event_id[now.p_agent >= prior.p_agent.quantile(1 - share)])
-    full_members = set(pa.design_candidates(workspace, "FULL", chosen_full))
+    full_members = set(selection.design_candidates(workspace, "FULL", chosen_full))
     fcands = full.set_index("event_id")
     fcands = fcands[fcands.index.isin(full_members)].copy()
     fcands["ratio"] = (fcands.p_agent / fcands.p_base).fillna(1.0)

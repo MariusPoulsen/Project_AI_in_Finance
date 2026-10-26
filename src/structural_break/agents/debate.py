@@ -16,10 +16,8 @@ import json
 import re
 import threading
 import time
-from collections.abc import Callable, Mapping, Sequence
-from concurrent.futures import ThreadPoolExecutor
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal, cast
 
@@ -29,16 +27,13 @@ from structural_break.agents.budgets import DurableAttemptJournal, fingerprint
 from structural_break.agents.contracts import (
     AdvocateReport,
     AgentInput,
-    AgentPolicy,
     Citation,
     Claim,
-    ControllerDecision,
     QuantReference,
     SynthesisReport,
     ValidationReport,
     validate_citations,
 )
-from structural_break.decision.agent_policy import decide, failure_decision, preflight
 from structural_break.intelligence import catalysts as cv
 from structural_break.intelligence.extraction import ProviderFailure
 
@@ -58,23 +53,7 @@ QUANT_FIELDS = (
     "beta_drift",
     "cointegration_pvalue",
 )
-POLICY = AgentPolicy(
-    policy_version="pairs-design-overlay-v1",
-    status="FROZEN",
-    # Candidates are already selected upstream by the frozen top-20 % rule, so the
-    # probability gates admit every candidate; only agent risk can veto.
-    no_trade_probability=0.0,
-    candidate_probability=1e-6,
-)
 CORRECTIONS = 2  # Decision 109a: as in Decision 49, up to two specific corrections
-
-
-def model_for(role: str) -> str:
-    if role == "synthesis":
-        return SYNTHESIS_MODEL
-    if role == "validation":
-        return VALIDATION_MODEL
-    return ADVOCATE_MODEL
 
 
 # --------------------------------------------------------------------------- #
@@ -671,80 +650,6 @@ def cv_write(path: Path, value: Mapping[str, Any]) -> None:
     temporary = path.with_suffix(f".{threading.get_ident()}.tmp")
     temporary.write_bytes(json.dumps(value, sort_keys=True).encode())
     temporary.replace(path)
-
-
-def run_debate(
-    case: Case, clients: Mapping[str, cv.ModelClient], cache: Path
-) -> dict[str, Any]:
-    """Six bounded roles (openings and rebuttals in parallel), then the controller."""
-    early = preflight(case.event, POLICY)
-    if early is not None and early.status != "REVIEW":
-        return _result(case, (), early)
-    stages: dict[str, dict[str, Any]] = {}
-
-    def layer(roles: Sequence[str], prior_roles: Sequence[str]) -> None:
-        if any(stages[name]["status"] != "VALID" for name in prior_roles):
-            for role in roles:
-                stages[role] = {"role": role, "status": "SKIPPED", "error": "UPSTREAM_FAILURE"}
-            return
-        prior = {name: stages[name]["raw"] for name in prior_roles}
-        with ThreadPoolExecutor(len(roles)) as pool:
-            futures = {
-                role: pool.submit(run_role, role, case, prior, clients[model_for(role)], cache)
-                for role in roles
-            }
-            for role, future in futures.items():
-                stages[role] = future.result()
-
-    layer(OPENINGS, ())
-    layer(REBUTTALS, OPENINGS)
-    layer(("synthesis",), (*OPENINGS, *REBUTTALS))
-    layer(("validation",), (*OPENINGS, *REBUTTALS, "synthesis"))
-    ordered = tuple(stages[role] for role in ROLES)
-    return _result(case, ordered, controller(case, ordered))
-
-
-def controller(case: Case, stages: Sequence[Mapping[str, Any]]) -> ControllerDecision:
-    """The v1 controller on resolved reports; any failed role ends in ABSTAIN."""
-    if len(stages) != len(ROLES) or any(stage["status"] != "VALID" for stage in stages):
-        return failure_decision(case.event, POLICY, "AGENT_FAILURE")
-    reports = [_report(stage) for stage in stages]
-    if validate_citations(case.event, reports):
-        return failure_decision(case.event, POLICY, "MECHANICAL_VALIDATION_FAILED")
-    return decide(case.event, POLICY, cast(ValidationReport, reports[-1]))
-
-
-def _report(stage: Mapping[str, Any]) -> AdvocateReport | SynthesisReport | ValidationReport:
-    role = stage["role"]
-    model = SynthesisReport if role == "synthesis" else ValidationReport if role == "validation" else AdvocateReport
-    return model.model_validate_json(json.dumps(stage["report"]))
-
-
-def _result(
-    case: Case, stages: Sequence[Mapping[str, Any]], decision: ControllerDecision
-) -> dict[str, Any]:
-    return {
-        "graph_version": GRAPH_VERSION,
-        "prompt_version": PROMPT_VERSION,
-        "event_id": case.event.event_id,
-        "case_sha256": case.digest,
-        "models": {role: model_for(role) for role in ROLES},
-        "stages": list(stages),
-        "decision": decision.model_dump(mode="json"),
-        "finished_at": datetime.now(UTC).isoformat(timespec="seconds"),
-    }
-
-
-def verify_result(result: Mapping[str, Any], case: Case) -> ControllerDecision:
-    """Replay the controller from stored stages; raise if anything differs."""
-    if result.get("case_sha256") != case.digest or result.get("prompt_version") != PROMPT_VERSION:
-        raise ValueError("Stored debate does not bind this case and prompt version")
-    stages = result["stages"]
-    early = preflight(case.event, POLICY)
-    expected = early if not stages else controller(case, stages)
-    if expected.model_dump(mode="json") != result["decision"]:
-        raise ValueError("Stored controller decision is not reproducible")
-    return expected
 
 
 Status = Literal["CANDIDATE", "REVIEW", "NO TRADE", "ABSTAIN"]

@@ -101,30 +101,3 @@ def trade_rate_bps(
         rate += share * min(half + impact + COMMISSION_BPS, CAP_BPS)
     return rate
 
-
-def impact_capped_fraction(
-    table: dict[tuple[str, pd.Timestamp], tuple[float, float, float]],
-    request: Any,
-    frozen: Any,
-    capital: float,
-    budget_bps: float,
-    cap: float = 0.10,
-) -> float | None:
-    """Largest NAV fraction (<= cap) keeping each leg's impact <= budget_bps (Decision 99)."""
-    if frozen.entry is None or frozen.position is None:
-        return None
-    day = pd.Timestamp(request.sessions[0].session_date)
-    gross_a = abs(frozen.position.units_a) * frozen.entry.price_a
-    gross_b = abs(frozen.position.units_b) * frozen.entry.price_b
-    total = gross_a + gross_b
-    fraction = cap
-    for ticker, gross in ((request.leg_a, gross_a), (request.leg_b, gross_b)):
-        values = table.get((str(ticker), day))
-        if values is None:
-            return None
-        _, vol, adv = values
-        if not (math.isfinite(vol) and math.isfinite(adv)) or adv <= 0 or vol <= 0:
-            return None
-        q_max = adv * (budget_bps / (IMPACT_Y * vol * 1e4)) ** 2
-        fraction = min(fraction, q_max / (capital * gross / total))
-    return fraction

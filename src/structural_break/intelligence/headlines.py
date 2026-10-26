@@ -119,23 +119,6 @@ def available_session(frame: pd.DataFrame, sessions: Iterable[pd.Timestamp]) -> 
     return result
 
 
-def window(
-    headlines: pd.DataFrame,
-    security_id: str,
-    first: pd.Timestamp,
-    last: pd.Timestamp,
-    *,
-    specific_only: bool = True,
-) -> pd.DataFrame:
-    """A company's headlines available at closes from ``first`` to ``last`` (inclusive)."""
-    rows = headlines[
-        headlines["security_id"].eq(security_id)
-        & headlines["session"].between(first, last)
-        & (headlines["specific"] | (not specific_only))
-    ]
-    return rows.sort_values(["session", "stamp"])
-
-
 def coverage(
     events: pd.DataFrame, headlines: pd.DataFrame, sessions: pd.DatetimeIndex, lookback: int = 3
 ) -> pd.DataFrame:
