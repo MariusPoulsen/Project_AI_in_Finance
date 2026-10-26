@@ -14,7 +14,8 @@ f["net"] = f.event_id.map(net); f["scale"] = f.spread_std / (1 + f.beta.abs())
 f["year"] = pd.to_datetime(f.event_date).dt.year
 f.to_parquet("outputs/p6_quant/adopted_exit_net.parquet", index=False)
 r1 = set(pd.read_parquet("outputs/p6_quant/r1_events.parquet").event_id)
-for tag, src in (("fa", "scores__B+rule+ou__recent"), ("fb", "scores__B__d45")):
+# F-a ranked the single-fit B+rule+ou, erased in the Decision 114 cleanup.
+for tag, src in (("fb", "scores__B__d45"),):
     s = f.merge(pd.read_parquet(f"outputs/p6_quant/{src}.parquet")[["event_id", "raw"]], on="event_id")
     s["ev"] = np.nan
     for Y in range(2011, 2024):

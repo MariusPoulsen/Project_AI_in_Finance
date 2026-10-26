@@ -1,23 +1,11 @@
 import pandas as pd, numpy as np, math, sys
 from pathlib import Path
-from sklearn.linear_model import LogisticRegression
 from structural_break.experiments import p6_boosting as pb
 frame, _ = pb.load_data(Path("data/team"), Path("outputs/p6_improvement/walkforward/simulation_frozen_exit.parquet"))
 ou = pd.read_parquet("outputs/p6_quant/ou_features.parquet")
 f = frame.merge(ou, on="event_id", how="left")
 year = pd.to_datetime(f.event_date).dt.year
-lg = lambda p: np.log(np.clip(p, 1e-4, 1 - 1e-4) / (1 - np.clip(p, 1e-4, 1 - 1e-4)))
-# Goal 1: OU alone with yearly logistic calibration (recent scheme)
-parts = []
-for Y in range(2010, 2024):
-    tr = f[f.supervised_eligible.eq(True) & f.y_revert_success.notna() & pd.to_datetime(f.horizon_end_date).lt(pd.Timestamp(Y, 1, 1)) & f.ou_p_label.notna()]
-    model = LogisticRegression().fit(lg(tr.ou_p_label.to_numpy())[:, None], tr.y_revert_success.astype(int))
-    te = f[year.eq(Y)]; prev = f[year.eq(Y - 1)]
-    raw = te.ou_p_label.fillna(te.ou_p_label.median()).to_numpy()
-    prob = model.predict_proba(lg(raw)[:, None])[:, 1]
-    cut20 = np.nanquantile(prev.ou_p_label, 0.8); cut10 = np.nanquantile(prev.ou_p_label, 0.9)
-    parts.append(pd.DataFrame({"event_id": te.event_id.to_numpy(), "year": Y, "raw": raw, "probability": prob, "top20": raw >= cut20, "top10": raw >= cut10}))
-pd.concat(parts).to_parquet("outputs/p6_quant/scores__OU-alone__recent.parquet", index=False)
+# The OU-alone forecaster (Decision 85) was erased in the Decision 114 cleanup.
 # Goal 2 candidate selections (exclude R1, as in C2-a)
 c2a = pd.read_parquet("outputs/p6_quant/select__c2a.parquet")
 r1_removed = pd.read_parquet("outputs/p6_quant/scores__B__d45.parquet")[["event_id", "top20"]].merge(c2a, on="event_id", suffixes=("_ra", ""))

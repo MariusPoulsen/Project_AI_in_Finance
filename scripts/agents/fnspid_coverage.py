@@ -48,7 +48,7 @@ windows = pd.read_parquet("outputs/news_v1/windows.parquet")
 eight_k = set(windows.loc[windows.leg_key.notna(), "event_id"])
 cov["eight_k"] = cov.event_id.isin(eight_k)
 cov["any_news"] = cov["any"] | cov["eight_k"]
-cov.to_parquet("outputs/p6_agents/fnspid_coverage.parquet", index=False)
+cov.to_parquet("outputs/p6_desk/fnspid_coverage.parquet", index=False)
 report = {
     "model_events": {"n": int(len(cov)), "any": float(cov["any"].mean()), "both": float(cov["both"].mean())},
     "candidates": {"n": int(cov.candidate.sum()), "any": float(cov.loc[cov.candidate, "any"].mean()), "both": float(cov.loc[cov.candidate, "both"].mean())},
@@ -59,4 +59,4 @@ report = {
     "median_headlines_when_any": float((cov.headlines_a + cov.headlines_b)[cov["any"]].median()),
 }
 print(json.dumps(report, indent=1, default=str))
-json.dump(report, open("outputs/p6_agents/fnspid_coverage.json", "w"), indent=1, default=str)
+json.dump(report, open("outputs/p6_desk/fnspid_coverage.json", "w"), indent=1, default=str)

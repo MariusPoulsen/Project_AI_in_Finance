@@ -47,20 +47,19 @@ row):
 | Model | AUC 2010–17 | AUC 2018–23 | PR-AUC 2018–23 | Log loss 2018–23 | Brier 2018–23 |
 |---|---|---|---|---|---|
 | Model A (prices only) | 0.684 | 0.711 | 0.204 | 0.2836 | 0.0791 |
-| OU theory alone (econometric, calibrated) | 0.716 | 0.700 | 0.175 | 0.2875 | 0.0802 |
 | Original Model B (Decision 45 XGBoost) | 0.692 | 0.718 | 0.207 | 0.2832 | 0.0790 |
-| Model B, recent training scheme | 0.700 | 0.717 | 0.206 | 0.2829 | 0.0789 |
-| B + peer, state, earnings, momentum | 0.716 | 0.730 | 0.214 | 0.2799 | 0.0785 |
-| + OU block | 0.735 | 0.733 | 0.216 | 0.2784 | 0.0782 |
-| **+ seed bagging (pre-registered Goal 1 model)** | **0.743** | **0.735** | **0.217** | **0.2780** | **0.0781** |
-| + track block (best observed, post-hoc) | 0.745 | 0.739 | 0.222 | 0.2765 | 0.0777 |
+| **B+rule+ou, bagged (pre-registered Goal 1 model)** | **0.743** | **0.735** | **0.217** | **0.2780** | **0.0781** |
+| B+rule+ou+track, bagged (best observed, post-hoc) | 0.745 | 0.739 | 0.222 | 0.2765 | 0.0777 |
+
+Only the headline models are kept (Decision 114). The intermediate steps (OU theory
+alone, the recent-scheme Model B, B+rule and the single-fit B+rule+ou) and the failed
+versions were erased; their results stay in Decisions 75a–94a.
 
 **Against the original Model B on 2018–2023** (month-block bootstrap):
 
 | Model | Log-loss gain | 95 % | p | AUC gain | p |
 |---|---|---|---|---|---|
 | Pre-registered Goal 1 model | +0.0053 | — | 0.002 | +0.017 | — |
-| B+rule step | +0.0034 | [+0.0005, +0.0062] | 0.007 | +0.012 | 0.002 |
 
 ![ROC curves, holdout](figures/quant/goal1_roc_holdout.png)
 ![Calibration, holdout](figures/quant/goal1_calibration_holdout.png)

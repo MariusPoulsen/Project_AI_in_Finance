@@ -103,14 +103,6 @@ MONITOR_BUDGET = BudgetPolicy(
 )
 
 
-MONITOR_31B = "gemma-4-31b-it"
-MONITOR_31B_BUDGET = BudgetPolicy(  # probe / optional monitor model with its own per-model quota
-    allocation_id="p6-desk-v3-monitor-31b",
-    global_cap=30_000,
-    model_caps=(ModelCap(model=MONITOR_31B, total=30_000, daily=9_000),),
-)
-
-
 def _now() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds")
 
@@ -462,23 +454,15 @@ def run(
     if limit is not None:
         names = names[:limit]
     own = journal is None and clients is None
-    use_31b = kind == "monitor" and dk.MONITOR_MODEL == MONITOR_31B
     if own:
         if kind == "entry":
             journal = DurableAttemptJournal(output / "journal", BUDGET).__enter__()
-        elif use_31b:
-            journal = DurableAttemptJournal(output / "journal_monitor_31b", MONITOR_31B_BUDGET).__enter__()
         else:
             journal = DurableAttemptJournal(output / "journal_monitor", MONITOR_BUDGET).__enter__()
     try:
         if clients is None:
             guard = dv.Guard(journal, {dv.VALIDATION_MODEL: 5.0})
             clients = dv.make_clients(cc._credential, guard)
-            if use_31b:
-                clients[MONITOR_31B] = cv.ModelClient(
-                    MONITOR_31B, credential=cc._credential, transport=guard.for_model(MONITOR_31B),
-                    token_budget=cv.TOKEN_BUDGET, max_output_tokens=3072, timeout=180.0,
-                )
         counts: Counter[str] = Counter()
         for number in range(passes + 1):
             todo = [n for n in names if load_result(output, kind, n) is None]
@@ -823,6 +807,15 @@ def evaluate(workspace: Path = Path("data/team"), output: Path = OUTPUT, holdout
                                 "with_monitor_checks": int(len(set(checks.event_id) & full_members)) if len(checks) else 0}
     report["trials"] = trials
     report["trial_count"] = len(trials)
+    # Decision 113: monthly excess returns of every trial book, for the overall overfitting audit.
+    monthly = {}
+    for (selector, q, size, rule), b in books.items():
+        frame = b.assign(m=pd.to_datetime(b.session_date).dt.strftime("%Y-%m"))
+        grouped = frame.groupby("m")
+        monthly[f"desk|{selector}|q{q}|size{size}|rule{rule}"] = (
+            grouped.daily_return.apply(lambda s: float(np.prod(1 + s))) / grouped.interest.apply(lambda s: float(np.prod(1 + s))) - 1
+        )
+    pd.DataFrame(monthly).to_parquet(output / "monthly_excess.parquet")
     winner = max(trials, key=lambda g: g["2010-2017"]["sharpe"])
     report["chosen"] = {k: winner.get(k) for k in ("selector", "q", "size", "rule")}
     if holdout:
@@ -851,7 +844,6 @@ def main(arguments: Sequence[str] | None = None) -> None:
     r.add_argument("--kind", choices=("entry", "monitor"), default="entry")
     r.add_argument("--limit", type=int)
     r.add_argument("--workers", type=int, default=4)
-    r.add_argument("--monitor-model", choices=(dk.MONITOR_MODEL, MONITOR_31B), default=dk.MONITOR_MODEL)
     r.add_argument("--output", type=Path, default=OUTPUT)
     sub.add_parser("status")
     sub.add_parser("evaluate").add_argument("--holdout", action="store_true")
@@ -868,7 +860,6 @@ def main(arguments: Sequence[str] | None = None) -> None:
         cc.load_env_file(args.env_file)
         if not cc._credential():
             sys.exit("No API key in the environment")
-        dk.MONITOR_MODEL = args.monitor_model
         say(f"finished: {dict(run(args.output, kind=args.kind, limit=args.limit, workers=args.workers, say=say))}")
     elif args.command == "evaluate":
         print(json.dumps(evaluate(holdout=args.holdout), indent=1, default=str))

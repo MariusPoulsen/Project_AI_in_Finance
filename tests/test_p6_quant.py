@@ -105,5 +105,14 @@ def test_ou_simulation_behaves_sensibly() -> None:
 def test_quant_param_variants_build_estimators() -> None:
     est = pq._estimator(pq.PARAMS["bag5"])
     assert isinstance(est, pq._Bag) and len(est.models) == 5
-    lgbm = pq._estimator({**pq.PARAMS["lgbm5"], "seeds": 1})
-    assert type(lgbm).__name__ == "LGBMClassifier"
+    assert set(pq.PARAMS) == {"base", "bag5"}
+
+
+def test_feature_sets_keep_only_the_headline_models() -> None:
+    from structural_break.experiments.p6_quant_ou import OU
+
+    blocks = ("peer", "state", "earnings", "momentum", "track")
+    available = ["b1", "a1", *(c for name in blocks for c in qf.BLOCKS[name]), *OU]
+    sets = pq.feature_sets({"B": ("b1",), "A": ("a1",)}, available)
+    assert list(sets) == ["B", "A", "B+rule+ou", "B+rule+ou+track"]
+    assert set(sets["B+rule+ou+track"]) - set(sets["B+rule+ou"]) == set(qf.BLOCKS["track"])

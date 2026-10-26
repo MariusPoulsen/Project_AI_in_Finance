@@ -7,7 +7,7 @@ from structural_break.experiments import p6_boosting as pb
 out = Path("docs/figures/quant")
 frame, _ = pb.load_data(Path("data/team"), Path("outputs/p6_improvement/walkforward/simulation_frozen_exit.parquet"))
 info = frame[["event_id", "supervised_eligible", "y_revert_success"]]
-specs = {"Original Model B": "B__d45", "OU theory alone": "OU-alone__recent", "B + new features": "B+rule__recent", "Goal 1 model (+OU, bagged)": "B+rule+ou__recent-bag5"}
+specs = {"Original Model B": "B__d45", "Goal 1 model (+OU, bagged)": "B+rule+ou__recent-bag5", "Best observed (+track, bagged)": "B+rule+ou+track__recent-bag5"}
 data = {}
 for label, n in specs.items():
     s = pd.read_parquet(f"outputs/p6_quant/scores__{n}.parquet").merge(info, on="event_id")

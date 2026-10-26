@@ -109,6 +109,7 @@ for number, (rule, band, stop) in enumerate(configs, start=1):
     print(f"{number:3d}/{len(configs)} {name:32s} 2010-2017 Sharpe {row['2010-2017']['sharpe']:+.3f} "
           f"hold {info['mean_holding']:.1f} blocked {info['blocked']}", flush=True)
 table = pd.DataFrame(rows)
+pd.DataFrame(monthly).to_parquet(out / "monthly_excess.parquet")  # Decision 113: overall audit
 if not holdout:
     base = table[(table.family == "fixed") & (table.value == 20) & (table.band == 1.0) & (table.stop == 5.0)]
     if abs(base["2010-2017"].iloc[0]["sharpe"] - 0.6122) > 0.001:

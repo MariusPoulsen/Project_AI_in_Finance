@@ -7,12 +7,9 @@ They read and write `outputs/p6_quant/`.
 
 | Script | Stage |
 |---|---|
-| `run_rc.py` | Decision 79 R-c, the return-regression ranking |
-| `rank_eval.py` | Decision 79 ranking comparison (`<start> <end>`) |
 | `tp_extend.py` | Decision 83 take-profit extension |
-| `stage_d.py` | Decision 85 OU-alone forecaster and Goal 2 selections |
-| `stage_f.py` | Decision 87 expected-value rankings |
+| `stage_d.py` | Decision 85 Goal 2 selections (the OU-alone forecaster was erased, Decision 114) |
+| `stage_f.py` | Decision 87 expected-value ranking (F-b; F-a erased, Decision 114) |
 | `eval_sel.py` | Per-candidate evaluation of selection files under the adopted exit |
-| `recal.py` | Decision 90 recalibration variants |
 | `cost_sens.py`, `leverage.py` | Sensitivities reported in `docs/P6_QUANT_RESEARCH.md` |
 | `figures.py` | Figures in `docs/figures/quant/` |

@@ -5375,3 +5375,64 @@ Paid use stays off. Candidates are scored first.
 **Pilot.** The first 20 entry cases in run order, then the first 20 monitor
 checks. At least 70 % must reach a valid analyst or monitor report;
 otherwise the run stops for a dated amendment, as in Decision 109.
+
+## 114. Model cleanup: only the headline models are kept (owner's request, 2026-10-26)
+
+The owner asked for a cleaner model comparison and chose the aggressive option:
+keep only the headline models and erase the rest completely (score files and
+the code that builds them). No label, return or holdout was read for this
+decision, and no result changes.
+
+**Kept.**
+
+| Model | Role |
+|---|---|
+| Baseline 0 and Baseline 1 | Plan ladder; frozen research artefacts (manifest `2266d696…`) |
+| Model A | Plan ladder; prices only |
+| Original Model B (R0, fixed XGBoost) | Selects the trades of the adopted book (Decision 110d) |
+| B+rule+ou, bagged | Pre-registered Goal 1 model (Decision 86b) |
+| B+rule+ou+track, bagged | Best observed forecaster, post-hoc (Decision 88b) |
+| Full model (best forecaster plus the v3 desk) | Goal 1 and Goal 2 comparison (Decision 110b–d) |
+| v3 desk and position monitor | The monitor exit is part of the book |
+
+**Erased.**
+- **Intermediate ladder steps:** OU theory alone, Model A and Model B under the recent
+  scheme, B+rule and the single-fit B+rule+ou.
+- **Failed or superseded forecasters:**
+  - the single-block models (B+peer, B+state, B+earnings, B+momentum, B+track);
+  - B+all (both schemes), B+all+ou, B+all+extra, B+all+coint;
+  - B+rule+extra, B+rule+ou+coint, B+rule+ou+intraday;
+  - the col05, slow, lgbm5 and blend versions;
+  - the recalibrated bag5 (Decision 90a);
+  - the return-regression ranking (Decision 79, R-c) and the F-a selection.
+- **The tuned versions of Decision 65** (V1–V6, for A and B): 280 task files. The
+  R0 task files are kept.
+- **Agent layers:**
+  - the v1 SEC catalyst-extraction outputs (`outputs/catalyst_v3`);
+  - the v2 debate outputs (`outputs/p6_agents`);
+  - the rejected gemma-4-31b monitor probe (outputs and runner code).
+- **Code:**
+  - the feature sets and parameter versions above (`p6_quant.feature_sets`, `PARAMS`);
+  - the extra and intraday feature blocks;
+  - the return-regression code;
+  - `scripts/quant_research/run_rc.py`, `rank_eval.py` and `recal.py`;
+  - the OU-alone part of `stage_d.py` and F-a in `stage_f.py`.
+- **Space freed:** about 189 MB.
+
+**Kept on purpose.**
+- **Inputs the book still reads:** `outputs/news_v1`, `outputs/headline_v1` and
+  `outputs/p6_improvement`, which feed the 8-K news exit, the desk cases and the
+  walk-forward frame.
+- **Code reused by v3:** `debate_v2.py`, `p6_agents.py` and `catalyst_v3.py`.
+- **The R0 runner:** `p6_boosting.py` still holds the tuning code, because R0 runs
+  through the same runner.
+- **Round-2 records:** `outputs/p6_coint` (features used by the round-2 record in
+  `p6_boosting2`).
+- **The FNSPID coverage files,** moved to `outputs/p6_desk`.
+
+**What does not change.**
+- **The decision record:** every erased model keeps its entry in this log.
+- **The trial counts** behind the deflated Sharpe ratio and PBO still include
+  the erased trials.
+- **The Goal 1 table** in `docs/P6_QUANT_RESEARCH.md` and its ROC figure now show
+  the headline models only.
