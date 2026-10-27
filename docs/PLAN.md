@@ -23,7 +23,7 @@ writes an unlock record. The earlier phase-by-phase plan and status pages are ar
 | Blind human review of 50 agent cases | **Open:** the group fills in the answers | [agent_review/](agent_review/review_cases.md) | 113 |
 | 2024–2025 company-news source | Done: TickerTick, adopted with a reported limitation (× 4.8 denser than FNSPID) | [NEWS_2024_2025.md](NEWS_2024_2025.md) | 116–116d |
 | Final-test readiness: period switch, news adapters, report script, research-layer final-test mode (rehearsed) | Done; only the plan-ladder rerun on 2024–2025 is still to build | [FINAL_TEST_RUNBOOK.md](FINAL_TEST_RUNBOOK.md) | 117, 118 |
-| Research freeze manifest | **Draft** `4c410439…`: owner review | [FREEZE_MANIFEST.md](FREEZE_MANIFEST.md) | 113, 115 |
+| Research freeze manifest | **Draft** `bd2727ef…`: owner review | [FREEZE_MANIFEST.md](FREEZE_MANIFEST.md) | 113, 115 |
 | Final test 2024–2025 | **Locked** until the owner's unlock record | — | 42 |
 | Research app (eight pages, including the adopted book) | Done (work stream 2, plus the adopted-book page); deployed from the `deploy` branch | `app/research_app.py`, [app/README.md](../app/README.md) | — |
 
