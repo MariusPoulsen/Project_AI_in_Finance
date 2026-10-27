@@ -1,0 +1,20 @@
+{
+ "schema_version": "app-results-v1",
+ "generated_at": "2026-10-27T12:21:47+00:00",
+ "commit": "50dd896",
+ "event_years": [
+  2010,
+  2023
+ ],
+ "final_test_included": false,
+ "unlock_record": "120. Owner final-test unlock record (2026-10-27)",
+ "freeze_manifest_sha256": "bd2727ef79afb5df82858b985dbbac74e895abf697eeefcf68a0f1409911aec1",
+ "files": {
+  "books_daily.parquet": "ec78f135a2756ca2c9f4e90930a4abbbfd73da88f6a390b9d9a15478fa60dd1d",
+  "curves.parquet": "416d728a5c24187f4d3f44deaf3558c0873630b13f5043ff43e56c6b7481d0a1",
+  "forecasts.parquet": "ae4c94575442a357c8f42e856494335eeb00b780547a322bb8e8b72cd1cc1c04",
+  "news.parquet": "bf467dee56e9e371ba2ec029ac685d38abcc0d6ba33c78330476940e0caf9ab9",
+  "summary.json": "6b07ddc384d542f551e4af316ff62774b16f1324254bd234ef21a5ba67d19093",
+  "trades.parquet": "7ffc1baacbbc32daa88397f70a237cba1caf06b83f8ed4c86f084a27d4107d38"
+ }
+}

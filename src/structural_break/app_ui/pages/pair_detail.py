@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
+from typing import Any
 
 import pandas as pd
 import streamlit as st
 
 from structural_break.app_ui import charts, components, theme
 from structural_break.app_ui.context import current
+from structural_break.app_ui.results import EXIT_LABELS, Results, event_table
 
 
 def render() -> None:
@@ -17,8 +19,9 @@ def render() -> None:
     protocol = service.protocol
     components.page_header(
         "Pair detail",
-        "The frozen spread of one business-peer pair, its monthly relationship tests, and "
-        "each divergence event with both models' probabilities and the reasons behind them.",
+        "The frozen spread of one business-peer pair, its monthly relationship tests, each "
+        "divergence with the headline forecasters' probabilities, and the adopted book's "
+        "trades on the pair.",
     )
     components.synthetic_banner(service.identity)
     pairs = service.pairs()
@@ -70,6 +73,10 @@ def render() -> None:
         first, last = state["trading_date"].min().date(), state["trading_date"].max().date()
         focus = st.session_state.get("sb_event")
         focus_row = events.loc[events["event_id"].eq(focus)] if focus else events.iloc[0:0]
+        if not len(focus_row) and focus and ctx.results is not None:
+            forecasts = ctx.results.tables["forecasts"]
+            hit = forecasts.loc[forecasts["event_id"].eq(focus), "event_date"]
+            focus_row = pd.DataFrame({"date": hit.to_numpy()})
         if len(focus_row):
             center = focus_row["date"].iloc[0].date()
             default = (
@@ -139,6 +146,9 @@ def render() -> None:
             )
 
     st.subheader("Divergence events")
+    if ctx.results is not None:
+        _headline_events(ctx.results, pair_id, events)
+        return
     if events.empty:
         components.empty_state("This pair has no published development events at this horizon.")
         return
@@ -264,3 +274,121 @@ def _event_panel(event_id: str, events: pd.DataFrame) -> None:
                 "UNKNOWN, never read as neutral tone or 'no catalyst'. Filing text itself is not "
                 "part of the group snapshot."
             )
+
+
+EVENT_COLUMNS: dict[str, Any] = {
+    "date": st.column_config.DateColumn("Date", format="D MMM YYYY"),
+    "period": "Period",
+    "p_r0": st.column_config.ProgressColumn(
+        "P(revert) R0", min_value=0.0, max_value=1.0, format="%.3f"
+    ),
+    "p_bag5": st.column_config.ProgressColumn(
+        "P(revert) bagged", min_value=0.0, max_value=1.0, format="%.3f"
+    ),
+    "p_track": st.column_config.ProgressColumn(
+        "P(revert) +track", min_value=0.0, max_value=1.0, format="%.3f"
+    ),
+    "p_full": st.column_config.ProgressColumn(
+        "P(revert) full model", min_value=0.0, max_value=1.0, format="%.3f"
+    ),
+    "traded": st.column_config.CheckboxColumn("Traded"),
+    "outcome": "Outcome",
+    "exit": "Book exit",
+    "trade_bps": st.column_config.NumberColumn("Trade gross (bps)", format="%+.1f"),
+}
+
+
+def _headline_events(results: Results, pair_id: str, research_events: pd.DataFrame) -> None:
+    table = event_table(results, pair_id)
+    if table.empty:
+        components.empty_state("This pair has no divergence scored walk-forward since 2010.")
+    else:
+        selection = st.dataframe(
+            table[["date", *list(EVENT_COLUMNS)[1:]]].assign(date=table["date"].dt.date),
+            hide_index=True,
+            width="stretch",
+            height=280,
+            on_select="rerun",
+            selection_mode="single-row",
+            key=f"pair_headline_{pair_id}",
+            column_config=EVENT_COLUMNS,
+        )
+        chosen = selection.selection.rows if selection else []
+        focus = st.session_state.get("sb_event")
+        if chosen:
+            row = table.iloc[chosen[0]]
+        elif focus in set(table["event_id"]):
+            row = table.loc[table["event_id"].eq(str(focus))].iloc[0]
+        else:
+            traded = table.loc[table["traded"]]
+            row = traded.iloc[0] if len(traded) else table.iloc[0]
+        st.markdown(f"#### Event on {row['date']:%d %B %Y}")
+        cols = st.columns(5)
+        cols[0].metric("R0 P(revert)", components.pct(row["p_r0"]))
+        cols[1].metric(
+            "Bagged P(revert)",
+            components.pct(row["p_bag5"]),
+            delta=f"{100 * (row['p_bag5'] - row['p_r0']):+.1f} pts vs R0",
+            delta_color="off",
+        )
+        cols[2].metric("+track P(revert)", components.pct(row["p_track"]))
+        cols[3].metric("Full model", components.pct(row["p_full"]))
+        cols[4].metric(
+            "Reverted (label)",
+            {"Reverted": "Yes", "Did not revert": "No"}.get(row["outcome"], "n/a"),
+        )
+        if row["traded"]:
+            st.markdown(
+                f'<span class="sb-chip">Traded by the adopted book</span>'
+                f'<span class="sb-chip">Exit: {row["exit"]}</span>'
+                f'<span class="sb-chip">Gross {row["trade_bps"]:+.1f} bps</span>',
+                unsafe_allow_html=True,
+            )
+        elif row["candidate"]:
+            st.caption(
+                "In R0's top 20 % but not entered: skipped by the book's news, mean-crossing or "
+                "cost filter, or by its capacity rules."
+            )
+        same_day = research_events.loc[
+            research_events["date"].dt.date.eq(pd.Timestamp(row["date"]).date())
+        ]
+        if len(same_day):
+            with st.expander("Why the research-layer models leaned this way (frozen A/B study)"):
+                _event_panel(str(same_day["event_id"].iloc[0]), research_events)
+    trades = results.tables["trades"]
+    part = trades.loc[trades["pair_id"].eq(pair_id)].sort_values("entry_date", ascending=False)
+    st.subheader("Trades of the adopted book on this pair")
+    if part.empty:
+        components.empty_state("The adopted book never traded this pair.")
+        return
+    st.dataframe(
+        part.assign(
+            gross_bps=1e4 * part["gross_return"],
+            exit_reason=part["exit_reason"].map(EXIT_LABELS).fillna(part["exit_reason"]),
+        )[
+            [
+                "entry_date",
+                "exit_date",
+                "long_leg",
+                "exit_reason",
+                "sessions",
+                "size_nav",
+                "gross_bps",
+            ]
+        ],
+        hide_index=True,
+        width="stretch",
+        column_config={
+            "entry_date": st.column_config.DateColumn("Entry", format="D MMM YYYY"),
+            "exit_date": st.column_config.DateColumn("Exit", format="D MMM YYYY"),
+            "long_leg": "Long",
+            "exit_reason": "Exit",
+            "sessions": st.column_config.NumberColumn("Sessions", format="%d"),
+            "size_nav": st.column_config.NumberColumn("Size (share of NAV)", format="percent"),
+            "gross_bps": st.column_config.NumberColumn("Gross (bps)", format="%+.1f"),
+        },
+    )
+    st.caption(
+        "Entry and exit at the close. Gross returns run from the entry close to the exit close "
+        "as a share of the trade's gross notional; the book charges costs separately."
+    )

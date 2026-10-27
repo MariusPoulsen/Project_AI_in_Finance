@@ -1,0 +1,284 @@
+{
+ "goal1": [
+  {
+   "model": "r0",
+   "label": "Original Model B (R0)",
+   "period": "2010\u20132017",
+   "roc_auc": 0.6917507893634698,
+   "pr_auc": 0.10667341174464419,
+   "log_loss": 0.21105067316453163,
+   "brier": 0.05290966066360888,
+   "base_rate": 0.056299782766111514,
+   "n": 11048
+  },
+  {
+   "model": "bag5",
+   "label": "B+rule+ou, bagged (pre-registered Goal 1 model)",
+   "period": "2010\u20132017",
+   "roc_auc": 0.7429427605855508,
+   "pr_auc": 0.14117768637612083,
+   "log_loss": 0.19802082035159596,
+   "brier": 0.05100406443412229,
+   "base_rate": 0.056299782766111514,
+   "n": 11048
+  },
+  {
+   "model": "track",
+   "label": "B+rule+ou+track, bagged (best observed)",
+   "period": "2010\u20132017",
+   "roc_auc": 0.7454066108535241,
+   "pr_auc": 0.14171402473866965,
+   "log_loss": 0.1981518553665608,
+   "brier": 0.05107709747214873,
+   "base_rate": 0.056299782766111514,
+   "n": 11048
+  },
+  {
+   "model": "full_base",
+   "label": "Desk region: bagged B+rule+ou alone",
+   "period": "2010\u20132017",
+   "roc_auc": 0.6450585002977024,
+   "pr_auc": 0.16393660108366087,
+   "log_loss": 0.3281148989329402,
+   "brier": 0.09259186958067635,
+   "base_rate": 0.10527683909539902,
+   "n": 3847
+  },
+  {
+   "model": "full",
+   "label": "Desk region: full model (bagged + agent desk)",
+   "period": "2010\u20132017",
+   "roc_auc": 0.6380578331575814,
+   "pr_auc": 0.1595380003650998,
+   "log_loss": 0.3353411410954462,
+   "brier": 0.09359745340467976,
+   "base_rate": 0.10527683909539902,
+   "n": 3847
+  },
+  {
+   "model": "r0",
+   "label": "Original Model B (R0)",
+   "period": "2018\u20132023",
+   "roc_auc": 0.7177881671479474,
+   "pr_auc": 0.20718998180178322,
+   "log_loss": 0.28323218709913994,
+   "brier": 0.07903224010614236,
+   "base_rate": 0.09168190127970749,
+   "n": 10940
+  },
+  {
+   "model": "bag5",
+   "label": "B+rule+ou, bagged (pre-registered Goal 1 model)",
+   "period": "2018\u20132023",
+   "roc_auc": 0.7353888821610042,
+   "pr_auc": 0.21703960470237704,
+   "log_loss": 0.27797474955523316,
+   "brier": 0.07805892744886707,
+   "base_rate": 0.09168190127970749,
+   "n": 10940
+  },
+  {
+   "model": "track",
+   "label": "B+rule+ou+track, bagged (best observed)",
+   "period": "2018\u20132023",
+   "roc_auc": 0.7388380295362279,
+   "pr_auc": 0.2219664849781949,
+   "log_loss": 0.27649213886791973,
+   "brier": 0.07770581569076795,
+   "base_rate": 0.09168190127970749,
+   "n": 10940
+  },
+  {
+   "model": "full_base",
+   "label": "Desk region: bagged B+rule+ou alone",
+   "period": "2018\u20132023",
+   "roc_auc": 0.6304432834003473,
+   "pr_auc": 0.2424155411645645,
+   "log_loss": 0.41112906602556015,
+   "brier": 0.12442030666508158,
+   "base_rate": 0.15140562248995984,
+   "n": 4980
+  },
+  {
+   "model": "full",
+   "label": "Desk region: full model (bagged + agent desk)",
+   "period": "2018\u20132023",
+   "roc_auc": 0.6282282472655695,
+   "pr_auc": 0.24009105424805013,
+   "log_loss": 0.41198978104890627,
+   "brier": 0.12458673680683166,
+   "base_rate": 0.15140562248995984,
+   "n": 4980
+  },
+  {
+   "model": "model_a",
+   "label": "Model A (prices only)",
+   "period": "2010\u20132017",
+   "roc_auc": 0.684,
+   "pr_auc": 0.107,
+   "log_loss": 0.2085,
+   "brier": 0.0524,
+   "base_rate": NaN,
+   "n": 0
+  },
+  {
+   "model": "model_a",
+   "label": "Model A (prices only)",
+   "period": "2018\u20132023",
+   "roc_auc": 0.711,
+   "pr_auc": 0.204,
+   "log_loss": 0.2836,
+   "brier": 0.0791,
+   "base_rate": NaN,
+   "n": 0
+  }
+ ],
+ "books": {
+  "adopted": {
+   "label": "Adopted book (R0 selection, monitor exit)",
+   "periods": {
+    "2010\u20132017": {
+     "sharpe": 0.813167506613614,
+     "cagr": 0.02913490857688772,
+     "cagr_with_cash": 0.030074269273858922,
+     "max_drawdown": -0.06909976793224581,
+     "volatility": 0.036120038345969274,
+     "turnover": 23.34739973318962,
+     "cost": 0.017965186623465593
+    },
+    "2018\u20132023": {
+     "sharpe": 0.5947938841811049,
+     "cagr": 0.023431018659754388,
+     "cagr_with_cash": 0.040966969346394766,
+     "max_drawdown": -0.0451488523220942,
+     "volatility": 0.04030506634683501,
+     "turnover": 23.109092562943314,
+     "cost": 0.01799016856112806
+    },
+    "2010\u20132023": {
+     "sharpe": 0.7127375392340681,
+     "cagr": 0.026687196378496925,
+     "cagr_with_cash": 0.03472721793738365,
+     "max_drawdown": -0.06909976793224581,
+     "volatility": 0.037964442905099476,
+     "turnover": 23.245297086993794,
+     "cost": 0.01797589012827328
+    }
+   }
+  },
+  "no_monitor": {
+   "label": "Same book without the monitor exit",
+   "periods": {
+    "2010\u20132017": {
+     "sharpe": 0.7990415648655439,
+     "cagr": 0.02855332192792681,
+     "cagr_with_cash": 0.029492150387717908,
+     "max_drawdown": -0.05864229770988638,
+     "volatility": 0.036047804899258296,
+     "turnover": 23.20572735113584,
+     "cost": 0.017722907313143847
+    },
+    "2018\u20132023": {
+     "sharpe": 0.4387200351112808,
+     "cagr": 0.018833110068420256,
+     "cagr_with_cash": 0.036289951604173476,
+     "max_drawdown": -0.06323118804290417,
+     "volatility": 0.04481932007766175,
+     "turnover": 22.546425398888193,
+     "cost": 0.017114457610652948
+    },
+    "2010\u20132023": {
+     "sharpe": 0.6216123533375101,
+     "cagr": 0.0243773963014835,
+     "cagr_with_cash": 0.03239918961977728,
+     "max_drawdown": -0.0632311880429044,
+     "volatility": 0.040036886946987316,
+     "turnover": 22.923249598171132,
+     "cost": 0.017462217193592804
+    }
+   }
+  },
+  "bag5": {
+   "label": "Best forecaster's selection (bagged B+rule+ou)",
+   "periods": {
+    "2010\u20132017": {
+     "sharpe": 0.3435601209095246,
+     "cagr": 0.011628748104425712,
+     "cagr_with_cash": 0.012552231887331233,
+     "max_drawdown": -0.07487553913992606,
+     "volatility": 0.03548608361135604,
+     "turnover": 22.82963430038831,
+     "cost": 0.01656766466582775
+    },
+    "2018\u20132023": {
+     "sharpe": 0.406036250150552,
+     "cagr": 0.0161324197220043,
+     "cagr_with_cash": 0.03354300089479523,
+     "max_drawdown": -0.06622335701941773,
+     "volatility": 0.04154000705126139,
+     "turnover": 24.517290104657548,
+     "cost": 0.01660596819933997
+    },
+    "2010\u20132023": {
+     "sharpe": 0.3716645277819739,
+     "cagr": 0.01355589585125161,
+     "cagr_with_cash": 0.02149301258801395,
+     "max_drawdown": -0.11353966406949567,
+     "volatility": 0.038192151840358506,
+     "turnover": 23.552709998469595,
+     "cost": 0.016584075804973102
+    }
+   }
+  },
+  "full": {
+   "label": "Full model's selection (bagged + agent desk)",
+   "periods": {
+    "2010\u20132017": {
+     "sharpe": 0.3810926323149809,
+     "cagr": 0.013111061851184713,
+     "cagr_with_cash": 0.014035857706427901,
+     "max_drawdown": -0.06720108032248662,
+     "volatility": 0.035869807080288876,
+     "turnover": 22.54899141646758,
+     "cost": 0.016124533137967703
+    },
+    "2018\u20132023": {
+     "sharpe": 0.25022341351121874,
+     "cagr": 0.01068513174479735,
+     "cagr_with_cash": 0.02800333194226745,
+     "max_drawdown": -0.06625619715177733,
+     "volatility": 0.04686529200783341,
+     "turnover": 25.357260007619615,
+     "cost": 0.017713048372024507
+    },
+    "2010\u20132023": {
+     "sharpe": 0.31358029459859993,
+     "cagr": 0.012070960570927713,
+     "cagr_with_cash": 0.019996830672575516,
+     "max_drawdown": -0.1138788031891742,
+     "volatility": 0.0409377544889876,
+     "turnover": 23.75219337673118,
+     "cost": 0.016805132084075518
+    }
+   }
+  }
+ },
+ "trades": {
+  "count": 2472,
+  "by_reason": {
+   "NEWS_EXIT": 876,
+   "TIMEOUT": 742,
+   "CONVERGENCE": 733,
+   "MONITOR": 121
+  }
+ },
+ "review": {
+  "cases": 50,
+  "claims": 190,
+  "confirmed": 290,
+  "partly": 0,
+  "rejected": 0,
+  "answered": 290,
+  "rows": 290
+ }
+}

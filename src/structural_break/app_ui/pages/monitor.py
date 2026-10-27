@@ -5,10 +5,12 @@ from __future__ import annotations
 from typing import Any
 
 import pandas as pd
+import plotly.graph_objects as go
 import streamlit as st
 
-from structural_break.app_ui import charts, components
+from structural_break.app_ui import charts, components, theme
 from structural_break.app_ui.context import current
+from structural_break.app_ui.results import Results
 
 INVENTORY_COLUMNS: dict[str, Any] = {
     "bundle": "Saved bundle",
@@ -30,11 +32,12 @@ def render() -> None:
         "Data and model monitor",
         "What the results rest on: exact data and model identities, sample sizes per period, "
         "how much SEC evidence was actually available, how features shift over time, and the "
-        "health of every saved model.",
+        "health of every saved model and of the agent desk.",
     )
     components.synthetic_banner(identity)
     st.subheader("Versions")
     versions = {
+        **_result_versions(ctx.results),
         "Data source": {
             "workspace": "Accepted workspace (read in memory)",
             "bundle": "Exported app bundle",
@@ -48,15 +51,13 @@ def render() -> None:
         "Explanations": identity.explanation_status,
         "Protocol": service.protocol.get("version"),
         "Bundle identity": identity.bundle_id,
-        "Final test": "Locked (2024–2025 not loaded)",
-        "Multi-agent Full System": "Not run (Decision 40)",
     }
     st.dataframe(
         pd.DataFrame({"Item": list(versions), "Value": [str(v) for v in versions.values()]}),
         hide_index=True,
         width="stretch",
     )
-    st.subheader(f"Samples per period, {horizon} sessions")
+    st.subheader(f"Samples per period, research layer, {horizon} sessions")
     cohorts = service.cohorts(horizon)
     if cohorts.empty:
         components.empty_state("No cohort record is published.")
@@ -113,9 +114,11 @@ def render() -> None:
         components.chart(charts.drift(rows, feature_label(feature)), key="drift")
         st.caption(
             "Yearly distribution of the feature across all events; marker colour shows the "
-            "research period (grey fit, gold calibration, teal assessment)."
+            "research period (grey fit, gold calibration, teal assessment). The research "
+            "layer's events end in 2023."
         )
-    st.subheader("Saved model inventory")
+    _headline_health(ctx.results)
+    st.subheader("Research-layer model inventory (frozen A/B study)")
     st.dataframe(
         service.inventory(horizon),
         hide_index=True,
@@ -123,6 +126,148 @@ def render() -> None:
         column_config=INVENTORY_COLUMNS,
     )
     st.caption(
-        "Three horizons × two families × five variants = thirty bundles. The agent layer's "
-        "failure and abstention rates are not shown because the Full System was not run."
+        "Three horizons × two families × five variants = thirty bundles of the frozen research "
+        "study (Decisions 36–45). The headline forecasters and the agent desk are listed above."
     )
+
+
+FORECASTER_INVENTORY = [
+    ("Original Model B (R0)", "Fixed XGBoost, Decision 45", "Selects the adopted book's trades"),
+    (
+        "B+rule+ou, bagged",
+        "Five XGBoost seeds, feature subsampling, Decision 86b",
+        "Pre-registered Goal 1 model",
+    ),
+    (
+        "B+rule+ou+track, bagged",
+        "As above plus track record, Decision 88b",
+        "Best observed, post-hoc",
+    ),
+    (
+        "Full model",
+        "Bagged base plus entry-agent scores, Decisions 110b–c, 119",
+        "Reported, not adopted",
+    ),
+]
+DESK_HEALTH = [
+    ("Entry agents (pair news analyst, bull/bear debate, risk judge)", 6485, 31),
+    ("Position monitor (after the FinBERT triage)", 7937, 4),
+]
+
+
+def _result_versions(results: Results | None) -> dict[str, object]:
+    if results is None:
+        return {"Headline results": "Not in this deployment"}
+    manifest = results.manifest
+    return {
+        "Headline results export": f"{manifest.get('commit')} ({manifest.get('generated_at')})",
+        "Scored event years": "–".join(str(y) for y in manifest.get("event_years", [])),
+        "Freeze manifest SHA-256": manifest.get("freeze_manifest_sha256"),
+        "Final-test unlock": manifest.get("unlock_record") or "No unlock record",
+        "Final test": "Included" if results.final_included else "Unlocked, results pending",
+        "Agent desk": "Run (Decisions 109–110); monitor exit adopted, entry scores reported",
+    }
+
+
+def _headline_health(results: Results | None) -> None:
+    st.subheader("Headline forecasters")
+    if results is None:
+        components.empty_state("The headline results are not in this deployment.")
+        return
+    forecasts = results.tables["forecasts"]
+    counts = forecasts.groupby("year").agg(
+        events=("event_id", "size"), labelled=("labelled", "sum"), traded=("traded", "sum")
+    )
+    rows = []
+    for (name, method, role), column in zip(
+        FORECASTER_INVENTORY, ["p_r0", "p_bag5", "p_track", "p_full"], strict=True
+    ):
+        scored = forecasts[column].notna()
+        years = forecasts.loc[scored, "year"]
+        rows.append(
+            {
+                "Model": name,
+                "Method": method,
+                "Role": role,
+                "Years scored": f"{int(years.min())}–{int(years.max())}" if len(years) else "none",
+                "Events scored": int(scored.sum()),
+            }
+        )
+    st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
+    st.caption(
+        "Every forecaster is refitted walk-forward each year on earlier years only; the full "
+        "model has a score only where the entry agents read the event."
+    )
+    figure = go.Figure()
+    figure.add_trace(
+        go.Bar(
+            x=counts.index, y=counts["events"], name="Scored divergences", marker_color="#9AA5B1"
+        )
+    )
+    figure.add_trace(
+        go.Bar(
+            x=counts.index,
+            y=counts["traded"],
+            name="Traded by the book",
+            marker_color=theme.MODEL_B,
+        )
+    )
+    figure.update_layout(theme.layout(height=280, barmode="overlay", xaxis={"dtick": 1}))
+    components.chart(figure, key="headline_years")
+
+    st.subheader("Agent desk health")
+    st.dataframe(
+        pd.DataFrame(
+            [
+                {
+                    "Agent": agent,
+                    "Cases sent": sent,
+                    "Abstained or failed": failed,
+                    "Abstention rate": failed / sent,
+                }
+                for agent, sent, failed in DESK_HEALTH
+            ]
+        ),
+        hide_index=True,
+        width="stretch",
+        column_config={
+            "Abstention rate": st.column_config.NumberColumn(format="percent"),
+        },
+    )
+    review = results.summary.get("review", {})
+    if review.get("answered"):
+        st.caption(
+            f"Development cases. Human review (Decision 113): {review['cases']} blind cases and "
+            f"{review['claims']} cited claims; {review['confirmed']} of {review['answered']} "
+            "answers confirm the agents. Language models never set a trade by themselves: the "
+            "monitor's scores pass a fixed rule (adverse ≥ 5 and persistence ≥ 5)."
+        )
+    news = results.tables["news"]
+    if len(news):
+        st.subheader("Company news coverage")
+        figure = go.Figure()
+        for source, color in (("FNSPID", theme.MODEL_A), ("TickerTick", theme.MODEL_B)):
+            part = news[news["source"].eq(source)]
+            if part.empty:
+                continue
+            figure.add_trace(
+                go.Scatter(
+                    x=pd.PeriodIndex(part["month"], freq="M").to_timestamp(),
+                    y=part["headlines"] / 250,
+                    name=source,
+                    mode="lines",
+                    line={"color": color, "width": 1.6},
+                )
+            )
+        figure.update_layout(
+            theme.layout(
+                height=300,
+                yaxis={"title": "Company-specific headlines per ticker", "type": "log"},
+            )
+        )
+        components.chart(figure, key="news_coverage")
+        st.caption(
+            "Monthly company-specific headlines per ticker (log scale). FNSPID is the development "
+            "source and ends in 2023; TickerTick covers the final test: its bulk file to 25 May "
+            "2025, then a much thinner live-API archive."
+        )

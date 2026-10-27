@@ -1,12 +1,11 @@
 # Read-only research apps
 
 Two Streamlit entry points read the same accepted outputs. Neither downloads
-sources, calls a language model, fits a model or writes analytical results, and
-neither can open the locked 2024–2025 final test.
+sources, calls a language model, fits a model or writes analytical results.
 
 | Entry point | What it is |
 |---|---|
-| `research_app.py` | The full research application (PLAN P7, work stream 2): seven pages, charts, explanations, backtest results. Use this for demos and the deployed site. |
+| `research_app.py` | The full research application: eight pages with the headline forecasters (Goal 1), the trading book (Goal 2), the agent desk, the final test and the frozen research layer. Use this for demos and the deployed site. |
 | `streamlit_app.py` | The minimal verified two-page view (model comparison, event scores). Unchanged. |
 | `reference_streamlit_app.py` | The original Scanner/Pair Detail for the recorded v1 workspace. See the [reference archive](../docs/archive/README.md). |
 
@@ -20,18 +19,23 @@ uv run --frozen streamlit run app/research_app.py
 
 | Page | What it answers |
 |---|---|
-| Overview | The question, the spread picture with entry/convergence/stop bands, and the predeclared primary A-vs-B result in plain words, with its interval and denominators. |
-| Scanner | Every scored divergence: filter by date, research period, business group, ACTIVE status, minimum Model B probability or pair; select a row to open it; download as CSV. |
-| Pair detail | Rebased prices, the frozen z-score with bands and event markers, ACTIVE shading, monthly hedge-ratio history and diagnostics; per event, both models' probabilities, an exact feature-contribution chart (linear SHAP / TreeSHAP of the saved models) and the SEC evidence available at the close, with UNKNOWN kept explicit. |
-| Model Lab | All ten bundles per horizon: ablation ladder, B − A intervals, reliability, ROC and precision–recall curves, predeclared slices, global drivers, tuning folds and calibrators, full metrics table. |
-| Strategy Lab | The Phase 6 four-rung ladder: selected/priced/unpriced counts, net bps, NAV and drawdown, threshold and cost/borrow sensitivity, paired calendar-month bootstrap, rejected-trade (counterfactual) analysis, limitations. Full System shown as not run. |
-| Data and model monitor | Every data/model identity, samples per period, events per year, SEC coverage and UNKNOWN rates by year, feature drift, the saved-model inventory. |
-| Methodology | Model card: target, chronology, features, models, evaluation, limitations, intended use, data/privacy/security. |
+| Overview | The question, the spread picture, both goals' headline answers (the pre-registered forecaster against R0; the adopted book's Sharpe and CAGR) and the frozen A/B result the programme started from. |
+| Scanner | Every divergence scored walk-forward from 2010: R0, bagged and +track probabilities (and the full model where the agents read the event), whether the adopted book traded it, its exit and gross return; filters and CSV download. Falls back to the research layer's A/B scanner when no results are deployed. |
+| Pair detail | Rebased prices, the frozen z-score with bands, ACTIVE shading and hedge-ratio history; each event with the headline probabilities and its trade; the research layer's exact feature contributions where available; every trade of the adopted book on the pair. |
+| Model Lab | The headline forecasters by test period (metrics, ROC and calibration curves, AUC by year, the full model against its base), then the frozen A/B study with all its tabs (ablation ladder, curves, slices, drivers, tuning, metrics). |
+| Strategy Lab | The book's design ladder from trading every divergence to the adopted book, the four books compared (adopted, without the monitor, the best forecaster's and the full model's selections), exits and the monitor, every trade; then the frozen plan ladder with all its tabs. |
+| Adopted book | The design, results by period, the final-test section (filled once the 2024–2025 run is published), monthly returns, the overfitting audit, the agent desk and news coverage. |
+| Data and model monitor | Every data/model identity (including the results export, freeze manifest and unlock record), research-layer samples, SEC coverage and feature drift, the headline forecasters, agent-desk health, company-news coverage and the research-layer inventory. |
+| Methodology | Model card: goals, chronology, target, headline forecasters, agent desk, trading book, the research layer, limitations, intended use, data/privacy/security. |
 
 Every page has a "Data and model versions behind this page" expander, and every
 loading, empty, pending and failed-verification state has its own message.
 
 ### Where the data comes from
+
+**Headline results** (`demo/results/`): the forecasters' walk-forward scores, curves and metrics, the four books' daily values and statistics, the adopted book's trades, news coverage and, once published, the final-test report. Written by `python scripts/export_results.py` from a checkout whose `outputs/` holds the development results (2010–2023) or the final-test results (2010–2025); every file is checked against `manifest.json` on each load. Without them the results pages say so and the Scanner shows the research layer.
+
+**Research layer** (the frozen A/B study, spreads and explanations):
 
 The app looks, in order, for:
 
