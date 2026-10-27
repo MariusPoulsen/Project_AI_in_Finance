@@ -1,5 +1,5 @@
 {
- "created": "2026-10-26T23:32:24+00:00",
+ "created": "2026-10-27T04:48:52+00:00",
  "decisions": "Decisions 100-115 in docs/DECISIONS.md",
  "design": {
   "agent_desk": {
@@ -89,9 +89,9 @@
   "scripts/agents/monitor_triage.py": "4f6e9f76b0d4ac81b37c3d8ffc9fdfc4ff97cfa7d0789acae4e886b09aa02dc8",
   "scripts/agents/news_calibration.py": "afbe1ad8a6fed5a73bf6f75e8bc110cc037ac96e5921c0295ce5a2f6bd1479be",
   "scripts/agents/review_export.py": "108bc749d1a6748f7cd986a60d34f83dd4465f0e3e01233fd35e7ea661cf7cda",
-  "scripts/export_book_summary.py": "6c1f0ad2a577e74ccd2e7b03d2f3addadf12c978f83b08a614c3caa94fb5da32",
+  "scripts/export_book_summary.py": "c90b45f43093f95681c38952844e885c2056a6fbd10d786f47931e82c69c1d67",
   "scripts/final_test_data.py": "0e0cc182f30f496ff46954e86a1ef3dd333163ca13b7ff4608452d590d24cb0a",
-  "scripts/final_test_report.py": "8cad21dd05777c2c9900927e47532128f32e184e5da672b4bc8766ba8b7a80ff",
+  "scripts/final_test_report.py": "d33f2ea7c54bea9b7f974d030fafee153e7e862851bf3e9bca1796955bda4873",
   "scripts/freeze_manifest.py": "43d3007f1e1846c44fb3458ec614959cb76db1bc4cba331016bea940b5d6a994",
   "scripts/init_db.py": "cbe606a30839f2702ed24671e62e7e114c327b07e7fa6510c7fd76fb1507293e",
   "scripts/inspect_relationships.py": "ea4a6cfd409bf43cd54337ce6fa346f87ce35e8f4503f91ed7287ef1b566ef1f",
@@ -106,7 +106,7 @@
   "src/structural_break/agents/contracts.py": "d387436e1cad599f4d82bbb155c08a07dd89d21109fd216055e3a551299ce187",
   "src/structural_break/agents/debate.py": "9b91fe24a2dcc332037ce6e847a070fd816d95e0f06f589fed4df3781267a9a9",
   "src/structural_break/agents/desk.py": "cd059fcbda0d595ac97b3ae5a58fac49b0f0f0ee6bbe53f93005c54dbb5803ff",
-  "src/structural_break/agents/desk_runner.py": "1478c311a8e56244d1f4abbcf398cef62778127dd5668fdda7a7011b31b9cf1f",
+  "src/structural_break/agents/desk_runner.py": "b709df31aa1779f97cbbd1ba62a267bf3780bc34eff1246a9042052a66415b06",
   "src/structural_break/backtest/__init__.py": "702bc24002c9a8fac74fe4962dd6f359c151f5d83679c064b5ac0d9693c08b14",
   "src/structural_break/backtest/analysis.py": "8c8feb9d8684e1b4aa10ecd9cd883b76875ab1b442a0397d04236794e80050c2",
   "src/structural_break/backtest/cli.py": "0945762a6c285c45c1b50ca286c1c5395bb3280de7a247c8ee9deb3198cc66b2",
@@ -132,7 +132,7 @@
   "src/structural_break/book/__init__.py": "3ca2d9522ba737d1ec89e22b0efdd45bfedbe90a6ea8ce48af1f8dfcbcb33d7a",
   "src/structural_break/book/costs.py": "e03ff23253342cfc70011434bf594f3b962ed0b336378676c7734a57bc5e2029",
   "src/structural_break/book/long_exit.py": "3ae1d5ee158eac36d4458ec79807ebe4f567f35452e1e8c90f47a8be2da387ab",
-  "src/structural_break/book/policy_portfolio.py": "5bedf1238afb09e177cc1d452bbbfb75dc99c766684f50845fc5fe5579b97f19",
+  "src/structural_break/book/policy_portfolio.py": "f1152b69aeca325f017e3084afed019fdc865cdeb805468f9c8e540171675d5d",
   "src/structural_break/book/portfolio.py": "bd9369683ecdda4f739cc78fea5bf462f1bc9cc826475c47e481acf1af91511a",
   "src/structural_break/book/residual_sleeve.py": "99c3afb07e16bc23660dfdb7f4a5aa2c2108aed753a7291ecc43532ab17fe58d",
   "src/structural_break/book/selection.py": "5eea90f026b8bae88d206ca403f2e95098686885880ac992d41020284b13e460",
@@ -194,7 +194,7 @@
  "git": {
   "branch": "p6/agent-layer",
   "clean": true,
-  "commit": "3339ff8882c444541a74781d09bcb509f28b6331"
+  "commit": "1437e7b41d994abaa7ba3d180d283d68078d8b2c"
  },
  "manifest_version": "p6-research-freeze-v1",
  "missing_files": [],

@@ -902,6 +902,49 @@ def desk_book(
     return legs
 
 
+def full_model(
+    workspace: Path = Path("data/team"), output: Path = OUTPUT
+) -> tuple[pd.DataFrame, list[str]]:
+    """The full model (Decisions 110b-c, 119): desk features on the bagged B+rule+ou base.
+
+    Returns the region table with ``p_base`` (the bagged forecaster, walk-forward calibrated)
+    and ``p_agent`` (base plus agent features), and the full model's selection: as many events
+    per year as the bagged model's top 20 %, cut at the previous year's ``p_agent`` quantile;
+    years without an agent forecast fall back to the bagged model's own selection. The same
+    computation as ``evaluate``, kept separate so that function stays unchanged.
+    """
+    src_inputs = pd.read_parquet(
+        workspace
+        / "artifacts/research"
+        / _sources(workspace).binding.evaluation.version
+        / "model_inputs.parquet",
+        columns=["event_id", "y_revert_success", "event_date"],
+    ).set_index("event_id")
+    raw = entry_features(output, "desk")
+    raw["y"] = src_inputs.loc[raw.event_id, "y_revert_success"].to_numpy()
+    raw = raw.dropna(subset=["y"]).reset_index(drop=True)
+    raw["y"] = raw.y.astype(int)
+    table = raw.assign(base_score=base_scores(BASES["B+rule+ou"], raw.event_id, raw.score)).dropna(
+        subset=["base_score"]
+    )
+    table = table.reset_index(drop=True)
+    table["p_base"] = walk_forward(table, False, "base_score")
+    table["p_agent"] = walk_forward(table, True, "base_score")
+    flags = pd.read_parquet("outputs/book/scores__B+rule+ou__recent-bag5.parquet")
+    per_year = flags.groupby("year").top20.sum()
+    best_top = flags.loc[flags.top20.astype(bool)]
+    chosen: list[str] = []
+    for year in sorted(flags.year.unique()):
+        now = table[(table.year == year) & table.p_agent.notna()]
+        prior = table[(table.year == year - 1) & table.p_agent.notna()]
+        if len(now) == 0 or len(prior) < 50:
+            chosen += list(best_top.loc[best_top.year == year, "event_id"])
+            continue
+        share = min(1.0, float(per_year.get(year - 1, 0)) / len(prior))
+        chosen += list(now.event_id[now.p_agent >= prior.p_agent.quantile(1 - share)])
+    return table, chosen
+
+
 def evaluate(
     workspace: Path = Path("data/team"), output: Path = OUTPUT, holdout: bool = False
 ) -> dict[str, Any]:

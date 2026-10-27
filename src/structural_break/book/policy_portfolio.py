@@ -110,12 +110,27 @@ def research_portfolio(
         if unknown_at is None:
             unknown_at = at
 
+    def last_leg_close(event_id: str, day: date, leg: str) -> float | None:
+        """The leg's latest close strictly before ``day`` (no look-ahead)."""
+        earlier = [d for d in bars[event_id] if d < day]
+        for d in sorted(earlier, reverse=True):
+            value = getattr(bars[event_id][d], f"close_{leg}")
+            if value is not None:
+                return float(value)
+        return None
+
     def quote(position: dict[str, Any], day: date, phase: str) -> tuple[float, float] | None:
         bar = bars[position["event_id"]].get(day)
         if bar is None:
             return None
         a = bar.open_a if phase == "OPEN" else bar.close_a
         b = bar.open_b if phase == "OPEN" else bar.close_b
+        # Decision 119a: a single missing price on a held leg is marked at that leg's previous
+        # close instead of making the whole book's value unknown for the rest of the run.
+        if a is None:
+            a = last_leg_close(position["event_id"], day, "a")
+        if b is None:
+            b = last_leg_close(position["event_id"], day, "b")
         return None if a is None or b is None else (a, b)
 
     def values(day: date, phase: str, at: datetime) -> tuple[float, float]:
