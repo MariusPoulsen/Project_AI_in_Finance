@@ -5842,3 +5842,19 @@ adopted book, monitor exit included):
 This replaces the "about 0.39" reported in Decision 110d, which was measured on books that
 stopped trading in 2018. The conclusion is unchanged: the R0 selection gives the best book.
 These are post-hoc development numbers; the final test reports all of them once on 2024–2025.
+
+## 120. Owner final-test unlock record (2026-10-27)
+
+I, the owner, have reviewed the research freeze manifest and unlock the 2024–2025 final test
+for this manifest only: SHA-256 `bd2727ef79afb5df82858b985dbbac74e895abf697eeefcf68a0f1409911aec1`.
+
+- The manifest pins commit `1437e7b`. The final test runs on a checkout whose code, configs
+  and scripts are identical to that commit; only documents differ (this record, the review
+  answers and the regenerated manifest).
+- Written by Claude Code at the owner's explicit instruction ("do the unlock", 2026-10-27).
+- Before the unlock, the group completed the blind review of 50 agent cases (Decision 113):
+  all 190 cited claims and all 50 overall judgements were confirmed (Y), and the group's
+  scores agree with the agents' scores (`docs/agent_review/review_answers.csv`). The review
+  was done on development cases only, so it says nothing about 2024–2025.
+- From here on, every parameter is the frozen one. Any change made after a 2024–2025 result
+  is seen is a new, separately labelled experiment, and the first result is reported as is.

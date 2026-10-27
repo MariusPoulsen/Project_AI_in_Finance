@@ -37,17 +37,17 @@ an estimate), **Owner** or **Group** (a person's action).
 ## Setting up the final-test checkout
 
 ```powershell
-git worktree add ..inal_test <frozen commit>          # the commit pinned by the freeze manifest
-robocopy data	eam ..inal_test\data	eam /E          # the frozen workspace
-robocopy <archive>\sec_metadata\source_v3 ..inal_test\data	eam\sec_metadata\source_v3 /E
-cd ..inal_test                                          # every later command runs here
+git worktree add ..\final_test <frozen commit>          # the commit pinned by the freeze manifest
+robocopy data\team ..\final_test\data\team /E          # the frozen workspace
+robocopy <archive>\sec_metadata\source_v3 ..\final_test\data\team\sec_metadata\source_v3 /E
+cd ..\final_test                                          # every later command runs here
 ```
 
 `outputs/` starts empty in that checkout, so the development results cannot be overwritten. Copy the cached
 LLM answers so only 2024–2025 cases are sent to the models:
 
 ```powershell
-robocopy outputsgent_desk ..inal_test\outputsgent_desk /E /XF *_inventory.parquet monthly_excess.parquet
+robocopy outputs\agent_desk ..\final_test\outputs\agent_desk /E /XF *_inventory.parquet monthly_excess.parquet
 ```
 
 ## Unlock record template
