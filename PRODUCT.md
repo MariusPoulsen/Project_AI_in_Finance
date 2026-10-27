@@ -8,9 +8,10 @@ web
 
 ## Users
 
-Project teammates and academic assessors need clear findings, explanations and
-drill-downs. Diagnostic detail must remain accessible without overwhelming the
-first view. Confirmed by the owner on 2026-10-27.
+Project teammates and academic assessors need visible comparisons, diagnostics
+and drill-downs. Model-specific conclusions and interpretation belong in the
+report. The app presents measurements and fixed forecasting/book rules. Updated
+by the owner on 2026-10-27.
 
 ## Product Purpose
 
@@ -58,7 +59,7 @@ application checklist is docs/archive/PHASE_PLAN.md, P7.
 ## Product Principles
 
 1. A better forecast and a better trading book answer different questions.
-2. Explain a finding before exposing its diagnostic detail.
+2. Lead with charts, comparison tables and diagnostics; keep conclusions in the report.
 3. Show model role, cohort, period and provenance wherever comparisons need them.
-4. Report negative findings, UNKNOWN evidence and missing artifacts honestly.
+4. Expose diagnostic measurements, UNKNOWN evidence and missing artifacts honestly.
 5. Make a useful investigation possible without learning the repository layout.

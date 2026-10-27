@@ -2,6 +2,41 @@
 
 final result: passed
 
+## Latest refinement: comparisons, diagnostics and fixed rules
+
+The owner's follow-up explicitly removes model-specific narrative conclusions
+from the interface; interpretation stays in the report. This content instruction
+overrides the generated mock's explanatory model paragraph and portfolio bridge.
+
+Current evidence: `.design/qa/forecast-comparison-only.png` and
+`forecast-rules-only.png` (1487 × 1058), `portfolio-comparison-only.png`
+(1487 × 1058), `overview-comparison-final.png` (1280 × 720), and
+`overview-comparison-mobile.png` (390 × 844). Captures use density 1. The source
+dark mock and revised forecast screenshot were viewed together; typography,
+chart/record alignment, colors and native controls remain in the selected world.
+
+Removed the selected-model essay, winner/selector messages, portfolio argument,
+single-book headline metrics and reference-model verdict banner. Overview now
+compares all four forecasters and both exit policies. Portfolio statistics for
+both policies precede the chart. Coverage and selection diagnostics are tables;
+the fixed forecast and book rules are separate tables, also accessible through
+Rules and definitions. Export identities, cohort scope and missing-data states
+remain visible without interpretive conclusions.
+
+The inspection found the overview portfolio headers too wide; shortened display
+labels and a cash-basis caption resolve that in the confirmation capture. Native
+data tables retain internal scrolling for supplementary columns and narrow
+screens; the 390 px document width equals the viewport. Forecast and book rule
+disclosures were opened and their thresholds checked. Console errors: none in
+the fresh final session. One fix batch and one desktop/mobile confirmation pass;
+no outstanding P0/P1/P2 findings in these views.
+
+Latest validation: 27 relevant UI tests pass, Ruff check/format and mypy pass,
+and the Impeccable detector reports no findings. The previous six integrity tests
+cover the unchanged service. This revision changes presentation only.
+
+The sections below record the initial implementation and its earlier captures.
+
 ## Visual truth and comparison setup
 
 The owner selected the second displayed revised image (Signal Catalogue), a dark

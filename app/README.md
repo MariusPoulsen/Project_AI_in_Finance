@@ -21,11 +21,11 @@ uv run --frozen streamlit run app/research_app.py
 
 | Page | What it answers |
 |---|---|
-| Overview | Two findings: the preregistered OU forecaster improves ranking, while R0 remains the adopted book selector. Shows the common period, cohort and limitations. |
-| Forecasting | Model A, R0, B+rule+ou bag5 and the post-hoc +track variant. Shared period/metric controls, point estimates, model roles, explanations and CSV export. |
+| Overview | All four forecasters and both book exit policies, with a shared period selector and fixed-rule tables. |
+| Forecasting | Model A, R0, B+rule+ou bag5 and the post-hoc +track variant. Shared period/metric controls, point estimates, model roles, diagnostics, fixed rules and CSV export. |
 | Portfolio | Adopted R0 + monitor versus the same book without the monitor. Period-aligned statistics, NAV/drawdown, return-basis labels, costs and exports. |
 | Evidence and diagnostics | Export availability, agent coverage and abstentions, overfitting audit, news-source shift and presentation hashes. |
-| Methods | Current targets, model roles, book design, chronology, limitations, and the distinction between forecast quality and returns. |
+| Rules and definitions | Fixed forecasting/book rules, model registry, metric definitions and chronology. Interpretive conclusions belong in the report. |
 | Scanner | Every scored divergence: filter by date, research period, business group, ACTIVE status, minimum Model B probability or pair; select a row to open it; download as CSV. |
 | Pair detail | Rebased prices, the frozen z-score with bands and event markers, ACTIVE shading, monthly hedge-ratio history and diagnostics; per event, both models' probabilities, an exact feature-contribution chart (linear SHAP / TreeSHAP of the saved models) and the SEC evidence available at the close, with UNKNOWN kept explicit. |
 | Accepted model study (reference) | Earlier ten-bundle A/B study: ablations, calibration, ROC/PR, SHAP, slices, folds and uncertainty. These are not current walk-forward predictions. |

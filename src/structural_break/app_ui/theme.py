@@ -82,7 +82,6 @@ button:focus-visible, a:focus-visible, input:focus-visible {{
 .sb-records .selected {{ background:#1C2938; }}
 .sb-records .selected td:first-child {{ border-left:1px solid {MODEL_B}; }}
 .sb-records .role {{ display:block; font-size:0.8rem; color:{MUTED}; margin-top:0.25rem; }}
-.sb-finding {{ max-width:68ch; font-size:1.04rem; line-height:1.6; }}
 .sb-table-scroll {{ overflow-x:auto; }}
 .sb-footer {{ margin-top:1.5rem; padding-top:0.8rem; border-top:1px solid {GRID};
   color:{MUTED}; font-size:0.82rem; }}

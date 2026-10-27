@@ -196,6 +196,14 @@ scroll choreography or new frontend dependency.
 
 ## Implementation and acceptance after direction selection
 
+Owner refinement on 2026-10-27: remove model-specific narrative and outcome
+conclusions from the app; keep those in the report. The overview now compares
+every retained forecaster and both exit policies. Forecast and book pages lead
+with measurements, and fixed rules have their own tables. Coverage, overfitting
+and source diagnostics use structured tables. Removed the earlier model-study
+verdict banner as well. Model identities and roles remain visible in comparisons
+and the registry; no research results or rules were recomputed or changed.
+
 - Isolate current presentation contracts/services from the earlier bundle;
   version and validate the compact export, model roles, cohorts and periods.
 - Replace the visual shell and navigation; implement both primary comparison

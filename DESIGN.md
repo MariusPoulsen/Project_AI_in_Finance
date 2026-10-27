@@ -11,15 +11,16 @@ planes; avoid grids of metric cards. IBM Plex Sans is the existing product face;
 IBM Plex Sans Condensed gives app-sized headings a distinct, readable voice.
 Tabular numerals align measurements. No invented chart observations or intervals.
 
-Navigation follows the reader's questions: findings, forecasting, portfolio,
+Navigation follows the reader's questions: comparisons, forecasting, portfolio,
 investigation, evidence. The current walk-forward summary and earlier accepted
 study are separately identified. Metric and period selection apply to the whole
 comparison. Model role accompanies the name; post-hoc stays post-hoc. Reading a
 summary must work even when the earlier bundle is absent. Missing data has an
 explicit explanation rather than an invented result or an empty plot.
 
-The signature is a shared measurement axis beside model records, followed by a
-short explanation and a bridge to the other research goal. The portfolio page
+The signature is a shared measurement axis beside model records, followed by
+diagnostics and fixed rule tables. Interpretive conclusions stay in the report;
+model names and roles stay in comparisons, legends and the registry. The portfolio page
 uses the same period for its statistics and curves. Source identity and the
 snapshot's final-test lock are always accessible.
 

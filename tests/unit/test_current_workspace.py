@@ -44,7 +44,7 @@ def test_forecast_model_selection_and_period_keep_roles_and_denominator():
     app = AppTest.from_function(page, args=("forecasting:render",), default_timeout=45).run()
     assert app.selectbox[1].value == "B_rule_ou"
     app.selectbox[1].set_value("B_rule_ou_track").run()
-    assert any("Post-hoc" in caption.value for caption in app.caption)
+    assert any("Post-hoc" in item.value for item in app.markdown)
     app.selectbox[0].select_index(1).run()
     assert any("11,048 matched" in caption.value for caption in app.caption)
     assert app.selectbox[1].value == "B_rule_ou_track"
@@ -54,11 +54,11 @@ def test_forecast_model_selection_and_period_keep_roles_and_denominator():
 
 def test_book_period_updates_both_statistics_and_export_scope():
     app = AppTest.from_function(page, args=("portfolio:render",), default_timeout=45).run()
-    assert app.metric[0].value == "0.595"
-    assert app.metric[1].value == "4.10%"
+    assert app.dataframe[0].value["Sharpe (excess cash)"].tolist() == ["0.595", "0.439"]
+    assert app.dataframe[0].value["CAGR with cash"].tolist() == ["4.10%", "3.63%"]
     app.selectbox[0].select_index(1).run()
-    assert app.metric[0].value == "0.813"
-    assert app.metric[1].value == "3.01%"
+    assert app.dataframe[0].value["Sharpe (excess cash)"].tolist() == ["0.813", "0.799"]
+    assert app.dataframe[0].value["CAGR with cash"].tolist() == ["3.01%", "2.95%"]
     assert not app.error and not app.exception
 
 

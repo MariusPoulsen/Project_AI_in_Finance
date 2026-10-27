@@ -64,7 +64,7 @@ def _pages() -> dict[str, st.Page]:
         "evidence": st.Page(
             workspace.evidence, title="Evidence and diagnostics", url_path="evidence"
         ),
-        "method": st.Page(workspace.methods, title="Methods", url_path="methodology"),
+        "method": st.Page(workspace.methods, title="Rules and definitions", url_path="methodology"),
         "reference_method": st.Page(
             _reference(methodology.render), title="Reference protocol", url_path="reference-methods"
         ),

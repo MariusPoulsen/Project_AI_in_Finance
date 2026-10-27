@@ -46,14 +46,6 @@ def render() -> None:
         help="Exploratory subset: no separate uncertainty interval is fitted for it.",
     )
     comparison = service.comparison(horizon, active_only=active)
-    headline = service.headline(horizon, family)
-    tone, sentence = service.verdict(headline)
-    if not active:
-        components.verdict_box(
-            f"{FAMILY_LABELS[family].split(' (')[0]}: B (all SEC evidence) vs A",
-            sentence,
-            tone,
-        )
     tabs = st.tabs(
         [
             "Ablation ladder",

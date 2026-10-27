@@ -10,7 +10,7 @@ from structural_break.app_ui import components, theme
 from structural_break.app_ui.pages import workspace
 from structural_break.services.research_summary import ADOPTED, COMPARATOR
 
-LABELS = {ADOPTED: "R0 + monitor", COMPARATOR: "R0 without monitor"}
+LABELS = {ADOPTED: "With monitor", COMPARATOR: "Without monitor"}
 
 
 def curves(daily: pd.DataFrame, drawdown: bool) -> go.Figure:
@@ -47,9 +47,7 @@ def curves(daily: pd.DataFrame, drawdown: bool) -> go.Figure:
 def render() -> None:
     components.page_header(
         "Compare portfolio returns",
-        "R0 selects the trades. "
-        "Compare the adopted position-monitor exits with the same book "
-        "without them, after saved trading costs.",
+        "Exit-policy statistics, NAV and drawdown after saved trading costs.",
     )
     svc = workspace.service()
     if svc is None:
@@ -62,26 +60,14 @@ def render() -> None:
             "Curve", ["NAV", "Drawdown"], default="NAV", key="sb_book_curve"
         )
     stats = svc.book_stats(period)
-    adopted = stats.iloc[0]
     st.caption(f"{period} · costs included · Sharpe in excess of cash")
-    metrics = st.columns(4)
-    metrics[0].metric("Sharpe · excess cash", f"{adopted['sharpe']:.3f}")
-    metrics[1].metric("CAGR · with cash", components.pct(adopted["cagr_with_cash"], 2))
-    metrics[2].metric("Max drawdown · excess cash", components.pct(adopted["max_drawdown"], 2))
-    metrics[3].metric("Trading costs · annualized", components.pct(adopted["cost"], 2))
     drawdown = view == "Drawdown"
     daily = svc.curves(period, drawdown=drawdown)
-    components.chart(curves(daily, drawdown), key="adopted_curves")
-    st.caption(
-        "Curves include cash interest and rebase on the close preceding this period "
-        "(initial capital 1 for 2010). Curve drawdown therefore differs from the reported "
-        "excess-cash maximum drawdown. No final-test sessions are loaded."
-    )
-    st.subheader("Same period. Two exit policies.")
+    st.subheader("Exit-policy comparison")
     displayed = pd.DataFrame(
         [
             {
-                "Book": LABELS[row["Book"]],
+                "Exit policy": LABELS[row["Book"]],
                 "Sharpe (excess cash)": f"{row['sharpe']:.3f}",
                 "CAGR with cash": components.pct(row["cagr_with_cash"], 2),
                 "CAGR excluding cash": components.pct(row["cagr"], 2),
@@ -92,20 +78,13 @@ def render() -> None:
         ]
     )
     st.dataframe(displayed, hide_index=True, width="stretch")
+    components.chart(curves(daily, drawdown), key="adopted_curves")
     st.caption(
-        "Saved backtest point estimates, not a guarantee that the monitor improves "
-        "future returns. Reused development periods and model selection limit inference."
+        "Curves include cash interest; statistics labelled excess cash exclude it. "
+        "NAV rebases on the preceding close (initial capital 1 for 2010)."
     )
-    with st.expander("Execution, sizing, exits and cash assumptions"):
-        st.dataframe(
-            pd.DataFrame(svc.summary.design, columns=["Part", "Saved choice"]),
-            hide_index=True,
-            width="stretch",
-        )
-        st.write(
-            "R0 eligibility uses the previous year's cutoff, not a threshold fitted "
-            "to the current test year's outcomes (Decision 110d)."
-        )
+    with st.expander("Book rules"):
+        st.table(workspace.book_rules(svc))
     with st.expander("Download the displayed comparison"):
         st.download_button(
             "Download book statistics",
@@ -119,19 +98,7 @@ def render() -> None:
             file_name="book-drawdown.csv" if drawdown else "book-nav.csv",
             mime="text/csv",
         )
-    audit = svc.summary.audit
-    st.markdown("**How much confidence is warranted?**")
-    st.write(
-        f"{audit.trials} tracked designs; PBO {audit.pbo:.2f}. Confirmation deflated "
-        f"Sharpe {audit.dsr_2018_2023['132']:.2f}, below 0.95 (2018–2023). "
-        "The final test remains locked in this snapshot. These results do not establish alpha."
-    )
-    st.divider()
-    st.markdown("**Why use R0 rather than the best forecaster?**")
-    st.write(
-        "Improved forecasting did not produce the best trade selection. Entry-agent "
-        "scores were not adopted; the position monitor is used for exits."
-    )
+    workspace.link("evidence", "Open selection and coverage diagnostics")
     workspace.link("forecast", "Compare the forecasting evidence")
     workspace.link("strategy", "Open the earlier plan-ladder benchmark")
     workspace.provenance(svc)

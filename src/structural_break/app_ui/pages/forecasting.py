@@ -98,8 +98,7 @@ def records(rows: pd.DataFrame, selected: str, metric: str) -> None:
 def render() -> None:
     components.page_header(
         "Compare reversion forecasts",
-        "The preregistered OU model improves "
-        "ranking; the original R0 model still selects the book.",
+        "Matched cohorts, shared metric scales and model diagnostics.",
     )
     svc = workspace.service()
     if svc is None:
@@ -135,11 +134,8 @@ def render() -> None:
         st.subheader("Matched point estimates")
         components.chart(points(rows, metric, selected), key="current_forecast_points")
         st.caption("Shared metric scale · point estimates only · no uncertainty export")
-    st.divider()
-    model = next(m for m in svc.manifest.models if m.id == selected)
-    st.subheader(model.name)
-    st.caption(model.role)
-    st.write(model.explanation)
+    with st.expander("Forecasting rules"):
+        st.table(workspace.forecast_rules())
     with st.expander("Forecast diagnostics and limitations"):
         st.write(
             "Current-model per-event predictions, calibration curves, ROC/PR arrays, "
@@ -151,10 +147,6 @@ def render() -> None:
             "and SHAP values must not be interpreted as explanations of this model."
         )
         workspace.link("model", "Inspect the earlier accepted model study")
-    st.caption(
-        "Full model: the entry desk was evaluated on a separately selected subset. "
-        "It is not a fifth matched-population forecaster in this table."
-    )
     with st.expander("All forecast metrics and CSV export"):
         shown = rows.drop(columns="id").assign(
             Period=period,
@@ -168,5 +160,5 @@ def render() -> None:
             file_name=f"forecast-{svc.manifest.cohorts[period].id}.csv",
             mime="text/csv",
         )
-    workspace.portfolio_bridge(svc, period)
+    workspace.link("book", "Compare portfolio returns")
     workspace.provenance(svc)
