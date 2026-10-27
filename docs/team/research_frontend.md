@@ -123,6 +123,12 @@ Three independent concept images will ground the visual choice. They illustrate
 layout, not a working application or computed new research results. The selected
 direction will then be implemented in real Streamlit widgets and Plotly charts.
 
+The three concepts were generated and displayed independently in the order above.
+They are saved with their exact prompts under `.impeccable/mocks/decision/`.
+Generated chart shapes are illustrative, not exported observations; implementation
+must draw charts from verified data rather than copy those plotted shapes.
+The owner's direction selection is pending. No application code has changed.
+
 ## Implementation and acceptance after direction selection
 
 - Isolate current presentation contracts/services from the earlier bundle;

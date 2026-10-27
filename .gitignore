@@ -40,3 +40,4 @@ htmlcov/
 # Generated UI audit captures and design concepts
 /.design/
 /.impeccable/mocks/
+/.impeccable/questions/
