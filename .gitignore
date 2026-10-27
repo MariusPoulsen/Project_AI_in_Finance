@@ -36,3 +36,7 @@ htmlcov/
 
 # The exported app bundle (about 44 MB) is committed only on the deploy branch.
 /demo/app_bundle/
+
+# Generated UI audit captures and design concepts
+/.design/
+/.impeccable/mocks/
