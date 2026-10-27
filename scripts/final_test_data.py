@@ -24,11 +24,30 @@ from pathlib import Path
 from structural_break import periods
 from structural_break.config.paths import ProjectPaths
 
-WORKSPACE = Path("data/team")
+WORKSPACE = Path("data/team").resolve()  # absolute: manifests record paths relative to it
 FROZEN_EVALUATION = "research_evaluation_16a431c4fea73ffd35f56062"  # the accepted h20 evaluation
 STATE = WORKSPACE / "final_test_state.json"
 SPLICE_CUT = date(2023, 12, 29)  # last frozen session
 NEW_EVENTS = date(2024, 1, 1)
+# Tickers the live source no longer serves at all: the frozen rows are kept through the cut and
+# no later rows are added, so the development history is unchanged and the issuer simply has
+# no final-test sessions.
+FROZEN_ONLY = {"QRVO": "Yahoo removed the whole history after the October 2026 delisting"}
+
+
+def _frozen_only(download, frozen_raw: Path):  # type: ignore[no-untyped-def]
+    import pandas as pd
+
+    from structural_break.research.final_test import YAHOO_NAMES, _yahoo_frame
+
+    def wrapped(tickers, start, end, **kwargs):  # type: ignore[no-untyped-def]
+        if tickers[0] not in FROZEN_ONLY:
+            return download(tickers, start, end, **kwargs)
+        rows = pd.read_parquet(frozen_raw / f"{tickers[0]}.parquet")
+        rows = rows.loc[pd.to_datetime(rows["trading_date"]).dt.date.le(SPLICE_CUT)]
+        return _yahoo_frame(tickers[0], rows.loc[:, list(YAHOO_NAMES) + ["trading_date"]])
+
+    return wrapped
 
 
 def _state() -> dict[str, str]:
@@ -70,7 +89,7 @@ def market(archive: Path, rehearsal: bool) -> None:
         WORKSPACE / "market/source_v1",
         protocol.data_start,
         protocol.development_end,
-        downloader=splice_downloader(frozen / "raw", SPLICE_CUT),
+        downloader=_frozen_only(splice_downloader(frozen / "raw", SPLICE_CUT), frozen / "raw"),
     )
     _save(market=str(manifest["data_snapshot_id"]))
     print("market", manifest["data_snapshot_id"], manifest["price_rows"], "rows")

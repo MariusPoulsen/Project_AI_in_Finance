@@ -8,10 +8,12 @@ import streamlit as st
 
 from structural_break.app_ui import components
 from structural_break.app_ui.context import current, open_pair
+from structural_break.app_ui.results import event_table
 from structural_break.services.research_application import PARTITION_ORDER, ScannerFilters
 
 
-def render() -> None:
+def research_render() -> None:
+    """The research layer's A/B scanner, shown when no headline results are deployed."""
     ctx = current()
     service, horizon = ctx.service, ctx.horizon
     protocol = service.protocol
@@ -138,5 +140,161 @@ def render() -> None:
             "Probabilities": f"calibrated {protocol['primary_family']} A and "
             "B_{protocol['primary_b_variant']}",
             "Bundle": service.identity.bundle_id,
+        }
+    )
+
+
+SCORE_MODELS = {
+    "p_r0": "Original Model B (R0)",
+    "p_bag5": "B+rule+ou, bagged",
+    "p_track": "B+rule+ou+track, bagged",
+}
+PERIODS = {
+    "selection": "Selection (2010–2017)",
+    "holdout": "Holdout (2018–2023)",
+    "final test": "Final test (2024–2025)",
+}
+
+
+def render() -> None:
+    ctx = current()
+    if ctx.results is None:
+        research_render()
+        return
+    components.page_header(
+        "Scanner",
+        "Every fresh divergence scored walk-forward from 2010, with each headline forecaster's "
+        "calibrated probability that the gap closes and whether the adopted book traded it. "
+        "Select a row to open the pair.",
+    )
+    components.synthetic_banner(ctx.service.identity)
+    events = event_table(ctx.results)
+    first, last = int(events["year"].min()), int(events["year"].max())
+    with st.container(border=True):
+        top = st.columns([2, 2, 3])
+        years = top[0].slider("Event years", first, last, (max(first, last - 1), last))
+        periods = top[1].multiselect(
+            "Period",
+            [p for p in PERIODS if p in set(events["period"])],
+            format_func=lambda p: PERIODS[p],
+        )
+        groups = top[2].multiselect("Business groups", sorted(events["group"].dropna().unique()))
+        bottom = st.columns([2, 2, 2, 2])
+        model = bottom[0].selectbox(
+            "Filter on", list(SCORE_MODELS), format_func=lambda m: SCORE_MODELS[m]
+        )
+        minimum = bottom[1].slider("Minimum probability", 0.0, 1.0, 0.0, 0.01)
+        query = bottom[2].text_input("Pair contains", placeholder="e.g. KO or KO__PEP")
+        traded_only = bottom[3].toggle(
+            "Traded by the adopted book",
+            help="Events the R0 selection picked and the book entered, after its filters.",
+        )
+    mask = events["year"].between(*years) & events[model].fillna(0).ge(minimum)
+    if periods:
+        mask &= events["period"].isin(periods)
+    if groups:
+        mask &= events["group"].isin(groups)
+    if query:
+        mask &= events["pair"].str.upper().str.contains(query.strip().upper(), regex=False)
+    if traded_only:
+        mask &= events["traded"]
+    rows = events.loc[mask].reset_index(drop=True)
+    if rows.empty:
+        components.empty_state(
+            "No events match these filters. Widen the years, add a period or lower the minimum "
+            "probability."
+        )
+        return
+    labelled = rows[rows["outcome"].ne("Unlabelled")]
+    cols = st.columns(4)
+    cols[0].metric("Events", components.count(len(rows)))
+    cols[1].metric("Pairs", components.count(rows["pair"].nunique()))
+    cols[2].metric(
+        "Observed reversion rate",
+        components.pct(labelled["outcome"].eq("Reverted").mean() if len(labelled) else None),
+    )
+    cols[3].metric(
+        "Traded by the book",
+        components.count(int(rows["traded"].sum())),
+        help="Mean gross return of these trades: "
+        + components.bps(rows["trade_bps"].mean() / 1e4 if rows["traded"].any() else None),
+    )
+    display = rows.assign(date=rows["date"].dt.date, period=rows["period"].map(PERIODS))[
+        [
+            "date",
+            "pair",
+            "period",
+            "z_at_event",
+            "p_r0",
+            "p_bag5",
+            "traded",
+            "outcome",
+            "exit",
+            "trade_bps",
+            "p_track",
+            "p_full",
+            "candidate",
+            "group",
+        ]
+    ]
+    selection = st.dataframe(
+        display,
+        hide_index=True,
+        width="stretch",
+        height=460,
+        on_select="rerun",
+        selection_mode="single-row",
+        key="scanner_table",
+        column_config={
+            "date": st.column_config.DateColumn("Date", format="D MMM YYYY"),
+            "pair": "Pair",
+            "group": "Business group",
+            "period": "Period",
+            "z_at_event": st.column_config.NumberColumn("z at event", format="%.2f"),
+            "p_r0": st.column_config.ProgressColumn(
+                "P(revert) R0", min_value=0.0, max_value=1.0, format="%.3f"
+            ),
+            "p_bag5": st.column_config.ProgressColumn(
+                "P(revert) bagged", min_value=0.0, max_value=1.0, format="%.3f"
+            ),
+            "p_track": st.column_config.ProgressColumn(
+                "P(revert) +track", min_value=0.0, max_value=1.0, format="%.3f"
+            ),
+            "p_full": st.column_config.ProgressColumn(
+                "P(revert) full model", min_value=0.0, max_value=1.0, format="%.3f"
+            ),
+            "candidate": st.column_config.CheckboxColumn("R0 top 20 %"),
+            "traded": st.column_config.CheckboxColumn("Traded"),
+            "outcome": "Outcome",
+            "exit": "Book exit",
+            "trade_bps": st.column_config.NumberColumn("Trade gross (bps)", format="%+.1f"),
+        },
+    )
+    chosen = selection.selection.rows if selection else []
+    if chosen:
+        row = rows.iloc[chosen[0]]
+        st.success(f"Selected {row['pair']} on {row['date']:%d %b %Y}.")
+        if st.button("Open pair detail", type="primary", icon=":material/open_in_new:"):
+            open_pair(str(row["pair"]), str(row["event_id"]))
+    st.download_button(
+        "Download these rows (CSV)",
+        rows.to_csv(index=False).encode(),
+        file_name="scanner.csv",
+        mime="text/csv",
+        icon=":material/download:",
+    )
+    st.caption(
+        "Probabilities are walk-forward: each year is scored by a model fitted only on earlier "
+        "years, so they are out of sample from 2010. The full model has a score only for events "
+        "the entry agents read. Outcomes are the forecasting label (reverted inside ±0.5 before "
+        "±3 within 20 sessions); the book trades with its own exits, so a trade can earn money "
+        "on an event that did not revert, and the reverse. Trade returns are gross, close to "
+        "close, before the book's costs."
+    )
+    components.provenance(
+        {
+            "Results export": f"{ctx.results.manifest.get('commit')} "
+            f"({ctx.results.manifest.get('generated_at')})",
+            "Forecasters": ", ".join(SCORE_MODELS.values()),
         }
     )

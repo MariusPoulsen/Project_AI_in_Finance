@@ -8,6 +8,26 @@ from structural_break.config.loader import load_config
 from structural_break.config.models import ProjectConfig
 from structural_break.config.paths import ProjectPaths
 
+REPOSITORY_DECISIONS = (Path(__file__).resolve().parents[1] / "docs/DECISIONS.md").resolve()
+
+
+@pytest.fixture(autouse=True)
+def final_test_locked_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    # The repository's decision log holds the owner's unlock record (Decision 120). Tests see
+    # the locked gate for that log; a test that writes its own log gets the real check.
+    from structural_break import periods
+
+    real = periods.unlock_record
+
+    def unlock_record(
+        decisions: Path = periods.DECISIONS, manifest: Path = periods.MANIFEST
+    ) -> str | None:
+        if Path(decisions).resolve() == REPOSITORY_DECISIONS:
+            return None
+        return real(decisions, manifest)
+
+    monkeypatch.setattr(periods, "unlock_record", unlock_record)
+
 
 @pytest.fixture
 def preserve_main_module() -> Iterator[None]:

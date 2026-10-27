@@ -5842,3 +5842,48 @@ adopted book, monitor exit included):
 This replaces the "about 0.39" reported in Decision 110d, which was measured on books that
 stopped trading in 2018. The conclusion is unchanged: the R0 selection gives the best book.
 These are post-hoc development numbers; the final test reports all of them once on 2024–2025.
+
+## 120. Owner final-test unlock record (2026-10-27)
+
+I, the owner, have reviewed the research freeze manifest and unlock the 2024–2025 final test
+for this manifest only: SHA-256 `bd2727ef79afb5df82858b985dbbac74e895abf697eeefcf68a0f1409911aec1`.
+
+- The manifest pins commit `1437e7b`. The final test runs on a checkout whose code, configs
+  and scripts are identical to that commit; only documents differ (this record, the review
+  answers and the regenerated manifest).
+- Written by Claude Code at the owner's explicit instruction ("do the unlock", 2026-10-27).
+- Before the unlock, the group completed the blind review of 50 agent cases (Decision 113):
+  all 190 cited claims and all 50 overall judgements were confirmed (Y), and the group's
+  scores agree with the agents' scores (`docs/agent_review/review_answers.csv`). The review
+  was done on development cases only, so it says nothing about 2024–2025.
+- From here on, every parameter is the frozen one. Any change made after a 2024–2025 result
+  is seen is a new, separately labelled experiment, and the first result is reported as is.
+
+## 120a. Final-test run: data gaps and one code fix, recorded before any 2024–2025 result (2026-10-27)
+
+Recorded while the final-test data were being built and before any 2024–2025 label, score or
+return was read. None of these changes a development result.
+
+- **QRVO prices.** Yahoo no longer serves any QRVO history (Qorvo was delisted in early
+  October 2026; Alpha Vantage's last bar is 2026-10-05, and its full daily series is premium
+  only). The frozen market code would then drop QRVO entirely, including its 2015–2023
+  history. Instead the splice keeps QRVO's frozen rows through 2023-12-29 and adds no later
+  rows (`FROZEN_ONLY` in `scripts/final_test_data.py`): the 2010–2023 prices are identical to
+  the frozen capture, and QRVO's seven pairs have no 2024–2025 events. Reported as a
+  limitation.
+- **Catalyst scheduler gate.** `research.scheduling.build_catalyst_schedule` refused event
+  years after 2023 with a hard-coded bound instead of reading the unlock gate (missed by the
+  2022–2023 rehearsal). The bound now reads `periods.data_end()`; a schedule whose events end
+  by 2023 records the same policy as before, so development schedules are byte-identical. The
+  final test has no catalyst provider, so the schedule's one pilot event gets no extraction.
+  This is the only change to `src/` after the freeze (commit `1437e7b`).
+- **Company news.** No TickerTick bulk file newer than 2025-05-26 exists. January 2024 to
+  25 May 2025 come from that bulk file (`tickers_direct`, 1.6 million stories for the 250
+  tickers); 26 May to 31 December 2025 from the live API with the frozen query (`tt:`) and
+  spacing, starting each ticker from a story dated just after 2025-12-31 (the API's `last`
+  parameter accepts any story id) instead of paging back from today
+  (`scripts/final_test_news.py`). The live API keeps a much thinner archive: about 7
+  company-specific headlines per ticker-month in June–December 2025 against about 250 in the
+  bulk months and 8 in FNSPID 2018–2023. The monitor's thresholds are unchanged.
+- **Cash rate.** The 13-week T-bill series (Yahoo ^IRX) is extended through 2025 in the
+  final-test checkout; its overlap with the frozen file matches exactly.

@@ -1,164 +1,247 @@
-"""The adopted trading book and the full model (Decisions 105-117), from demo/book/."""
+"""The adopted trading book (Decisions 105-120): design, results by period and the final test."""
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
 from typing import Any
 
 import pandas as pd
-import plotly.graph_objects as go
 import streamlit as st
 
-from structural_break.app_ui import components, theme
+from structural_break.app_ui import components, result_charts
+from structural_break.app_ui.context import current
+from structural_break.app_ui.results import BOOKS, Results, period_label
 
-SUMMARY = Path("demo/book")
-COLORS = {
-    "Adopted book (with monitor exit)": theme.MODEL_B,
-    "Same book without the monitor exit": theme.MODEL_A,
+DESIGN = [
+    (
+        "Selection",
+        "Original Model B (R0), top 20 % of each test year by the previous year's cutoff, after "
+        "the R1 fresh-news filter, a 120-session mean-crossing filter and the most-expensive-"
+        "fifth cost filter",
+    ),
+    (
+        "Execution and size",
+        "Signal and trade at the close; 7.5 % of NAV per entry; pairs gross cap 100 %",
+    ),
+    (
+        "Exits",
+        "Take profit at |z| ≤ 1.0, no z-score stop; time stop of 1.5 half-lives (10–40 sessions, "
+        "20 when unknown); 8-K adverse-tone news exit; agent monitor exit (adverse ≥ 5 and "
+        "persistence ≥ 5)",
+    ),
+    ("Residual sleeve", "PCA residual reversal, λ 0.25, trading a tenth of the gap each day"),
+    ("Risk", "4 % volatility target on 60 sessions; hard 200 % book gross cap"),
+    (
+        "Costs",
+        "Per stock: half spread by liquidity tier, square-root impact and commission, at $10m",
+    ),
+    ("Cash", "Interest at the 13-week T-bill minus 0.25 %; Sharpe is in excess of it"),
+]
+DESK = {
+    "entry_scored": 6485,
+    "entry_abstained": 31,
+    "monitor_checks": 21333,
+    "monitor_after_triage": 7937,
+    "monitor_scored": 7933,
+}
+STATS_COLUMNS: dict[str, Any] = {
+    "label": "Book",
+    "period": "Years",
+    "sharpe": st.column_config.NumberColumn("Sharpe", format="%.3f"),
+    "cagr": st.column_config.NumberColumn("CAGR", format="percent"),
+    "cagr_with_cash": st.column_config.NumberColumn("CAGR with cash", format="percent"),
+    "max_drawdown": st.column_config.NumberColumn("Max drawdown", format="percent"),
+    "turnover": st.column_config.NumberColumn("Turnover (×/yr)", format="%.1f"),
+    "cost": st.column_config.NumberColumn("Costs (/yr)", format="percent"),
+}
+FINAL_BOOK_COLUMNS: dict[str, Any] = {
+    "book": "Book",
+    "sharpe": st.column_config.NumberColumn("Sharpe", format="%.3f"),
+    "cagr": st.column_config.NumberColumn("CAGR", format="percent"),
+    "cagr_with_cash": st.column_config.NumberColumn("CAGR with cash", format="percent"),
+    "maxdd": st.column_config.NumberColumn("Max drawdown", format="percent"),
+    "turnover": st.column_config.NumberColumn("Turnover (×/yr)", format="%.1f"),
+    "cost": st.column_config.NumberColumn("Costs (/yr)", format="percent"),
+}
+FINAL_MODEL_COLUMNS: dict[str, Any] = {
+    "model": "Model",
+    "roc_auc": st.column_config.NumberColumn("ROC AUC", format="%.3f"),
+    "pr_auc": st.column_config.NumberColumn("PR AUC", format="%.3f"),
+    "log_loss": st.column_config.NumberColumn("Log loss", format="%.4f"),
+    "brier": st.column_config.NumberColumn("Brier", format="%.4f"),
+    "n": st.column_config.NumberColumn("Events", format="%d"),
 }
 
 
-@st.cache_data(show_spinner=False)
-def _load(root: str) -> tuple[dict[str, Any], pd.DataFrame] | None:
-    folder = Path(root)
-    if not (folder / "summary.json").is_file() or not (folder / "book_daily.parquet").is_file():
-        return None
-    summary = json.loads((folder / "summary.json").read_text(encoding="utf-8"))
-    return summary, pd.read_parquet(folder / "book_daily.parquet")
-
-
-def _curves(daily: pd.DataFrame) -> go.Figure:
-    figure = go.Figure()
-    for name, color in COLORS.items():
-        figure.add_trace(
-            go.Scatter(
-                x=daily["session_date"],
-                y=daily[name],
-                name=name,
-                line={"color": color, "width": 1.8},
-                hovertemplate="%{x|%d %b %Y}<br>%{y:.3f}<extra></extra>",
-            )
+def _final_test(report: dict[str, Any] | None, results: Results) -> None:
+    st.subheader("Final test, 2024–2025")
+    if report is None:
+        sha = str(results.manifest.get("freeze_manifest_sha256") or "")[:12]
+        components.verdict_box(
+            "Unlocked, results pending",
+            " The owner unlocked the final test on 27 October 2026 (Decision 120) for the "
+            f"freeze manifest {sha}…. The frozen code and design run once on 2024–2025; this "
+            "section fills in when that run is published. Nothing is retuned after it.",
+            "unavailable",
         )
-    figure.add_vline(
-        x=pd.Timestamp("2018-01-01"), line={"color": theme.MUTED, "dash": "dot", "width": 1}
+        return
+    components.verdict_box(
+        "Opened once on the frozen design",
+        f" {report.get('unlock_record', 'Owner unlock record')}; freeze manifest "
+        f"{str(report.get('manifest_sha256', ''))[:12]}…. Every parameter is the frozen one.",
+        "inconclusive",
     )
-    figure.update_layout(
-        theme.layout(height=340, yaxis={"title": "Value (start 1.0, with cash interest)"})
+    goal2 = pd.DataFrame([{"book": k, **v} for k, v in report.get("goal2", {}).items()])
+    if len(goal2):
+        st.markdown("**Goal 2: the books on 2024–2025**")
+        st.dataframe(
+            goal2[list(FINAL_BOOK_COLUMNS)],
+            hide_index=True,
+            width="stretch",
+            column_config=FINAL_BOOK_COLUMNS,
+        )
+    goal1 = pd.DataFrame([{"model": k, **v} for k, v in report.get("goal1", {}).items()])
+    if len(goal1):
+        st.markdown("**Goal 1: the forecasters on 2024–2025**")
+        st.dataframe(
+            goal1[list(FINAL_MODEL_COLUMNS)],
+            hide_index=True,
+            width="stretch",
+            column_config=FINAL_MODEL_COLUMNS,
+        )
+    for note in report.get("notes", []):
+        st.markdown(f"- {note}")
+
+
+def news_density(news: pd.DataFrame) -> pd.DataFrame:
+    """Company-specific headlines per ticker and month, by source and year."""
+    if news.empty:
+        return news
+    frame = news.assign(year=news["month"].str[:4].astype(int))
+    grouped = frame.groupby(["source", "year"]).agg(
+        headlines=("headlines", "sum"), months=("month", "nunique")
     )
-    return figure
+    grouped["per_ticker_month"] = grouped["headlines"] / (250 * grouped["months"])
+    return grouped.reset_index()
 
 
 def render() -> None:
+    ctx = current()
+    results = ctx.results
     components.page_header(
         "Adopted book",
-        "The trading book chosen on 2010–2017 and confirmed once on 2018–2023: the original "
-        "Model B "
-        "selects the trades, and the agent desk's position monitor can close them early.",
+        "The trading book chosen on 2010–2017, confirmed once on 2018–2023 and tested once on "
+        "2024–2025: the original Model B selects the trades, and the agent desk's position "
+        "monitor can close them early.",
     )
-    root = Path.cwd() / SUMMARY
-    loaded = _load(str(root))
-    if loaded is None:
+    if results is None:
         components.empty_state(
-            "No book summary was found in demo/book. Create it with "
-            "`python scripts/export_book_summary.py`."
+            "The book results are not in this deployment. Export them with "
+            "`python scripts/export_results.py`."
         )
         return
-    summary, daily = loaded
-    stats = summary["stats"]["Adopted book (with monitor exit)"]
-    columns = st.columns(4)
-    for column, (label, period) in zip(
-        columns,
+    stats = results.book_stats()
+    adopted = stats[stats["book"].eq("adopted")].set_index("period")
+    span = "2010–2025" if "2010–2025" in adopted.index else "2010–2023"
+    cards: list[tuple[str, str, str | None]] = [
+        ("Sharpe, 2010–2017", f"{adopted.at['2010–2017', 'sharpe']:.2f}", "Selection years"),
         (
-            ("Sharpe, 2010–2017", "2010–2017 (selection)"),
-            ("Sharpe, 2018–2023", "2018–2023 (holdout)"),
-            ("CAGR with cash, 2010–2023", "2010–2023"),
-            ("Max drawdown, 2010–2023", "2010–2023"),
+            "Sharpe, 2018–2023",
+            f"{adopted.at['2018–2023', 'sharpe']:.2f}",
+            "Holdout, opened once per stage",
         ),
-        strict=True,
-    ):
-        s = stats[period]
-        value = {
-            "Sharpe, 2010–2017": f"{s['sharpe']:.2f}",
-            "Sharpe, 2018–2023": f"{s['sharpe']:.2f}",
-            "CAGR with cash, 2010–2023": components.pct(s["cagr_with_cash"]),
-            "Max drawdown, 2010–2023": components.pct(s["max_drawdown"]),
-        }[label]
-        column.metric(label, value)
-    components.chart(_curves(daily), key="book_curves")
+    ]
+    if "2024–2025" in adopted.index:
+        cards.append(
+            ("Sharpe, 2024–2025", f"{adopted.at['2024–2025', 'sharpe']:.2f}", "Final test")
+        )
+    cards += [
+        (f"CAGR with cash, {span}", components.pct(adopted.at[span, "cagr_with_cash"]), None),
+        (f"Max drawdown, {span}", components.pct(adopted.at[span, "max_drawdown"]), None),
+    ]
+    for column, (label, value, note) in zip(st.columns(len(cards)), cards, strict=True):
+        column.metric(label, value, help=note)
+    daily = results.tables["books_daily"]
+    components.chart(result_charts.book_values(daily, ["adopted", "no_monitor"]), key="book_curves")
     st.caption(
-        "The dotted line marks the start of the 2018–2023 holdout. Final test 2024–2025 locked."
+        "Values include cash interest; Sharpe ratios are in excess of it. The dotted line marks "
+        "the start of the 2018–2023 holdout"
+        + (", the shaded band the 2024–2025 final test." if results.final_included else ".")
     )
+
+    _final_test(results.final_test, results)
 
     st.subheader("Design")
+    st.table(pd.DataFrame(DESIGN, columns=["Part", "Choice"]).set_index("Part"))
+
+    st.subheader("Results by period")
+    table = stats[stats["book"].isin(["adopted", "no_monitor"])].copy()
+    table["period"] = table["period"].map(period_label)
+    table["label"] = table["book"].map(
+        {"adopted": "With monitor exit", "no_monitor": "Without monitor exit"}
+    )
     st.dataframe(
-        pd.DataFrame(summary["design"], columns=["Part", "Choice"]),
-        hide_index=True,
-        width="stretch",
+        table[list(STATS_COLUMNS)], hide_index=True, width="stretch", column_config=STATS_COLUMNS
+    )
+    st.caption(
+        f"The {BOOKS['bag5'].lower()} and the {BOOKS['full'].lower()} are compared in the "
+        "Strategy Lab, with the design ladder and every trade."
+    )
+    st.page_link(
+        ctx.pages["strategy"], label="Open the Strategy Lab", icon=":material/candlestick_chart:"
     )
 
-    st.subheader("Both books by period")
-    rows = []
-    for name, periods in summary["stats"].items():
-        for period, s in periods.items():
-            rows.append(
-                {
-                    "Book": name,
-                    "Period": period,
-                    "Sharpe": round(s["sharpe"], 3),
-                    "CAGR": components.pct(s["cagr"]),
-                    "CAGR with cash": components.pct(s["cagr_with_cash"]),
-                    "Max drawdown": components.pct(s["max_drawdown"]),
-                    "Turnover (x/yr)": round(s["turnover"], 1),
-                    "Costs (/yr)": components.pct(s["cost"], 2),
-                }
-            )
-    st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
+    st.subheader("Monthly returns of the adopted book")
+    components.chart(result_charts.monthly_heatmap(daily, "adopted"), key="book_months")
 
-    if "comparison" in summary:
-        st.subheader("Same book, other selections")
-        st.dataframe(
-            pd.DataFrame(
-                [
-                    {
-                        "Selection": name,
-                        **{f"Sharpe {p}": round(v["sharpe"], 3) for p, v in periods.items()},
-                        "CAGR 2010–2023": components.pct(periods["2010-2023"]["cagr"]),
-                    }
-                    for name, periods in summary["comparison"].items()
-                ]
-            ),
-            hide_index=True,
-            width="stretch",
-        )
-        st.caption(
-            "The R0 selection is the adopted book; the best forecaster's and the full model's "
-            "selections use the same exits, sizing, sleeve and risk (Decision 119a)."
-        )
-
-    st.subheader("Goal 1: reversion forecasters")
-    st.dataframe(pd.DataFrame(summary["goal1"]), hide_index=True, width="stretch")
-
-    audit = summary["audit"]
     components.verdict_box(
         "Overfitting audit (Decision 113)",
-        f" Across {audit['trials']} tracked designs the probability of backtest overfitting is "
-        f"{audit['pbo']:.2f}, and the book's deflated Sharpe ratio is "
-        f"{audit['dsr_2010_2023']['132']:.2f} for 2010–2023 ({audit['dsr_2018_2023']['132']:.2f} for "  # noqa: E501
-        "2018–2023), below the usual 0.95 bar. The 2024–2025 final test is the clean test.",
+        " Across 132 tracked designs the probability of backtest overfitting is 0.54, and the "
+        "book's deflated Sharpe ratio is 0.86 for 2010–2023 (0.65 for 2018–2023), below the "
+        "usual 0.95 bar. After correcting for the number of designs tried, the development "
+        "Sharpe is not significantly different from luck; the 2024–2025 final test is the "
+        "clean test.",
         "inconclusive",
     )
 
-    desk, news = summary["desk"], summary["news"]
     st.subheader("Agent desk")
-    st.markdown(
-        f"- **Entry agents** (pair news analyst, bull/bear debate, risk judge): {desk['entry_scored']:,} "  # noqa: E501
-        f"events scored, {desk['entry_abstained']} abstained. Their scores did not improve the forecast "  # noqa: E501
-        "or the book, so they are reported but not used.\n"
-        f"- **Position monitor:** a FinBERT triage sent {desk['monitor_after_triage']:,} of "
-        f"{desk['monitor_checks']:,} checks to the model; {desk['monitor_scored']:,} were scored. A trade "  # noqa: E501
-        "closes when the monitor rates new news adverse 5 and persistent 5 (Decision 110d).\n"
-        f"- **News for 2024–2025:** {news['source_2024_2025']}, which is about "
-        f"{news['toned_session_ratio']:.1f}× denser than the development source (Decision {news['decision']})."  # noqa: E501
-    )
-    st.caption(summary["decisions"])
+    review = results.summary.get("review", {})
+    lines = [
+        f"- **Entry agents** (pair news analyst, bull/bear debate, risk judge): "
+        f"{DESK['entry_scored']:,} development events scored, {DESK['entry_abstained']} "
+        "abstained. Their scores did not improve the forecast or the book, so they are "
+        "reported (the full model) but not used.",
+        f"- **Position monitor:** a FinBERT triage sent {DESK['monitor_after_triage']:,} of "
+        f"{DESK['monitor_checks']:,} development checks to the model; "
+        f"{DESK['monitor_scored']:,} were scored. A trade closes when the monitor rates new "
+        "news adverse 5 and persistent 5 (Decision 110d).",
+    ]
+    if review.get("answered"):
+        lines.append(
+            f"- **Human review** (Decision 113): the group checked {review['cases']} blind "
+            f"cases with {review['claims']} cited claims; {review['confirmed']} of "
+            f"{review['answered']} answers confirm the agents, {review['partly']} partly, "
+            f"{review['rejected']} reject."
+        )
+    st.markdown("\n".join(lines))
+    density = news_density(results.tables["news"])
+    if len(density):
+        st.markdown("**Company-specific headlines per ticker and month, by source**")
+        st.dataframe(
+            density.pivot(index="year", columns="source", values="per_ticker_month").reset_index(),
+            hide_index=True,
+            width="stretch",
+            column_config={
+                "year": st.column_config.NumberColumn("Year", format="%d"),
+                "FNSPID": st.column_config.NumberColumn("FNSPID (development)", format="%.1f"),
+                "TickerTick": st.column_config.NumberColumn(
+                    "TickerTick (final test)", format="%.1f"
+                ),
+            },
+        )
+        st.caption(
+            "FNSPID ends in 2023. For 2024–2025 the monitor reads TickerTick (Decision 116d): "
+            "its bulk file covers January 2024 to 25 May 2025 and is far denser than FNSPID; the "
+            "live API used from 26 May 2025 keeps a much thinner archive, close to FNSPID's "
+            "density. No threshold was changed for either."
+        )
+    st.caption("Decisions 105–120 in docs/DECISIONS.md")
