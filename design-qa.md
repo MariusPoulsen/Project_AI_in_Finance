@@ -136,3 +136,38 @@ P0/P1/P2 findings in the tested views.
 - [x] Independent data availability, byte identities and fail-closed states.
 - [x] Working controls, saved-result exports, diagnostics and reference views.
 - [x] Bounded visual comparison and relevant local validation.
+
+## Consolidated models and navigation — 27 October
+
+Removed the parallel accepted-study menu and global horizon switch. Seven views
+now contain the useful comparison, policy, monitoring and methodology tools.
+Removed five orphaned presentation modules. The underlying reproduction services
+and immutable research artifacts remain available to explicit batch workflows.
+
+Forecasting lists both baselines, four population forecasters and Full. Baselines
+have Policy cells, not invented probability metrics. Full has Regional cells and
+a matched desk-base disclosure. Saved confirmation ROC/reliability figures are
+hash-bound. Portfolio includes the corrected bagged-selector and Full books from
+Decision 119a; missing daily curves and cash-growth statistics stay unavailable.
+The policy benchmark is explicitly 2022–2023 with next-open/fixed-cap execution.
+
+Event and pair views exclude old fitted scores and SHAP explanations. Evidence
+contains registry counts, source coverage with full annual denominators, feature
+distributions and current catalogue; Rules contains current cards/chronology,
+cutoffs, metric definitions and data limitations. No model-specific conclusion
+was added.
+
+Browser inspection used the actual Streamlit preview: seven navigation links,
+seven model records, four saved book rows, working disclosures and period/metric
+controls. Laptop overview tables were widened after the first inspection.
+Desktop document width equals 1280 px; mobile document width equals its 390 px
+viewport, with bounded table scrolling and the native navigation drawer.
+Screenshots are under `.design/qa/consolidated-*.png`. The existing dark palette,
+type and reduced-motion feedback remain intact.
+
+Validation: 27 focused app/integrity tests passed; two additional denominator/lock
+tests passed. The subsequent overview-label change passed both missing-registry
+shell tests. Ruff and strict mypy pass; Impeccable detector returns no findings.
+This is a development snapshot, not a new scientific acceptance or final-test
+publication. The current per-event output directory is not on this machine's
+project checkouts; exact source paths/portable exports are still required.

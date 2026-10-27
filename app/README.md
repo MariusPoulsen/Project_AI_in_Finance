@@ -1,119 +1,77 @@
-# Read-only research apps
+# Read-only research applications
 
-The full app presents the current walk-forward research and the earlier accepted
-study as separate views. Browsing never downloads sources, calls a language
-model, fits a model, or writes analytical results. The committed presentation
-snapshot excludes 2024–2025 outcomes and reports its final-test state as locked.
-
-| Entry point | What it is |
-|---|---|
-| `research_app.py` | Dark research workspace: current forecasting and portfolio comparisons, investigation, evidence and clearly labelled reference-study tools. Use this for the deployed site. |
-| `streamlit_app.py` | The minimal verified two-page view (model comparison, event scores). Unchanged. |
-| `reference_streamlit_app.py` | The original Scanner/Pair Detail for the recorded v1 workspace. See the [reference archive](../docs/archive/README.md). |
-
-## Full research application
+The deployed research workspace presents saved development outputs through 2023.
+Browsing does not download, fit, call an LLM, write analytical results or unlock
+final-test outcomes. Model-specific interpretation belongs in the academic report.
 
 ```shell
-python scripts/team.py research-app          # after `team.py setup` with group-v2.zip
-# or
 uv run --frozen streamlit run app/research_app.py
+# On an imported team snapshot:
+python scripts/team.py research-app
 ```
 
-| Page | What it answers |
+| View | Contents |
 |---|---|
-| Overview | All four forecasters and both book exit policies, with a shared period selector and fixed-rule tables. |
-| Forecasting | Model A, R0, B+rule+ou bag5 and the post-hoc +track variant. Shared period/metric controls, point estimates, model roles, diagnostics, fixed rules and CSV export. |
-| Portfolio | Adopted R0 + monitor versus the same book without the monitor. Period-aligned statistics, NAV/drawdown, return-basis labels, costs and exports. |
-| Evidence and diagnostics | Export availability, agent coverage and abstentions, overfitting audit, news-source shift and presentation hashes. |
-| Rules and definitions | Fixed forecasting/book rules, model registry, metric definitions and chronology. Interpretive conclusions belong in the report. |
-| Scanner | Every scored divergence: filter by date, research period, business group, ACTIVE status, minimum Model B probability or pair; select a row to open it; download as CSV. |
-| Pair detail | Rebased prices, the frozen z-score with bands and event markers, ACTIVE shading, monthly hedge-ratio history and diagnostics; per event, both models' probabilities, an exact feature-contribution chart (linear SHAP / TreeSHAP of the saved models) and the SEC evidence available at the close, with UNKNOWN kept explicit. |
-| Accepted model study (reference) | Earlier ten-bundle A/B study: ablations, calibration, ROC/PR, SHAP, slices, folds and uncertainty. These are not current walk-forward predictions. |
-| Plan-ladder benchmark (reference) | Earlier strategy ladder, costs, sensitivities and uncertainty. Its unrun Full System rung is distinct from the current separately evaluated desk. |
-| Reference data health / protocol | Earlier study identities, coverage, drift and frozen model card. |
+| Overview | Seven models/policies and four book variants, with shared period selection. |
+| Forecasting | Four matched population forecasters; deterministic baseline outcomes; Full's matched desk comparison; saved ROC/calibration figures, definitions and CSV export. |
+| Portfolio | R0 with/without monitor, bagged-forecaster and Full books; available NAV/drawdown; frozen policy benchmark, costs, thresholds, paired bootstrap and withheld trades. |
+| Event explorer | Fixed-20 registry inputs, ACTIVE status and observed outcomes, filters and CSV export. |
+| Pair detail | Saved prices, spread bands, monthly relationship diagnostics and point-in-time SEC evidence. |
+| Evidence and diagnostics | Availability, source coverage, event counts, feature distributions, agent coverage, selection diagnostics and source identities. |
+| Rules and definitions | Current model families/inputs, chronology, fixed forecast/book rules, metrics and limitations. |
 
-Scanner and Pair Detail are explicitly labelled as the earlier accepted study.
-Current per-event predictions, calibration arrays and uncertainty have not been
-exported; the app does not invent them or reuse earlier scores under new names.
-Each data source has independent missing/failed verification states and provenance.
+Baseline 0/1 are deterministic policies, not calibrated probability models. Full
+forecasting uses the selected top-40% desk region with its matched logistic base.
+The four current books share development periods; two have daily curves exported.
+The frozen policy benchmark uses 2022–2023, next-open execution and a fixed
+20-session cap, separately identified from current book results.
 
-### Where the data comes from
+There is no earlier-study menu or horizon switch. Underlying registry views never
+show superseded fitted probabilities or explanations as current predictions.
+Current per-event scores/SHAP and additional book curves remain explicitly absent
+until a reviewed saved-output export supplies them.
 
-Current pages load `demo/book/summary.json`, `book_daily.parquet` and their
-versioned `presentation.json` manifest. `SB_RESEARCH_SUMMARY` can select another
-directory (relative paths resolve from the repository, not the launch directory).
-Both artifact hashes, dates, model identities and required measurements are
-checked before display. Cache identity includes every file's bytes. These hashes
-identify presentation bytes; they do not replace scientific acceptance checks.
+## Presentation data
 
-To register an updated **development-only** book export explicitly:
+`demo/book/presentation.json` pins the summary, daily NAV, seven-model catalogue
+and saved confirmation diagnostic figures by SHA-256. `SB_RESEARCH_SUMMARY`
+selects an explicit alternative directory. All bytes participate in cache
+identity; invalid data is withheld. These hashes identify presentation bytes,
+not scientific acceptance. See [the export contract](../docs/FRONTEND_WORKSPACE.md).
 
 ```shell
+python scripts/export_research_diagnostics.py --outputs-root PATH_TO_OUTPUTS
 python scripts/export_research_presentation.py
 ```
 
-Review the cohort metadata and role/source mappings when changing the export.
-The app never invokes this writer. Final-test publication needs its own authorized
-presentation update; this manifest deliberately accepts only the locked state.
+These explicit writers export development results into this checkout. They never
+fit a model or modify the source output directories. Without an outputs path,
+only published rounded selection-period desk values are included. Final-test
+publication requires a separate authorized export/schema update.
 
-Reference-study pages load lazily and look, in order, for:
+Registry and policy diagnostics use `SB_APP_BUNDLE`, then `demo/app_bundle`, then
+an explicitly accepted workspace (`SB_WORKSPACE_ROOT`, default `data/research_v2`).
+Those files are independently checked and load only when needed. Missing registry
+files do not hide the current forecast/book summaries. Pair histories cover the
+bundle's showcase subset; unavailable histories remain marked unavailable.
 
-1. `SB_APP_BUNDLE`: a checksummed **app bundle** directory (see below).
-2. `demo/app_bundle/`: a bundle committed for the deployed demo.
-3. The accepted workspace (`SB_WORKSPACE_ROOT`, default `data/research_v2`),
-   read in memory, plus any official Phase 6 experiments under
-   `SB_EXPERIMENTS_ROOT` (default `.acceptance/`). Experiments from another
-   generation are skipped.
-
-An app bundle holds compact presentation tables derived only from accepted
-outputs: published reports, stored predictions, saved native models (for exact
-explanations) and verified Phase 6 experiment manifests. Every file is SHA-256
-checked on read. Export never writes into the workspace and refuses rows after
-`development_end`.
+To export an existing accepted snapshot for registry/policy investigation:
 
 ```shell
-# From the workspace imported with team.py setup (+ the owner's .acceptance/ results):
 python scripts/team.py app-bundle --output outputs/app-bundles/v2
-# Equivalent explicit form; --pair keeps a pair among the showcase subset:
-uv run --frozen structural-break-app export --workspace-root data/team \
-  --experiments-root .acceptance --showcase-pairs 40 --pair KO__PEP \
-  --output outputs/app-bundles/v2
 uv run --frozen structural-break-app verify --bundle outputs/app-bundles/v2
-SB_APP_BUNDLE=outputs/app-bundles/v2 uv run --frozen streamlit run app/research_app.py
 ```
 
-A bundle carries daily pair history only for the showcase pairs (to stay around
-10–20 MB); the other pairs still show their events and scores. Opening the app on
-the full workspace shows every pair.
+The synthetic bundle command remains available for offline development. Its
+invented registry data is labelled synthetic and cannot replace the separately
+verified current summary. See [team setup](../docs/GROUP_QUICKSTART.md).
 
-### Synthetic preview (no snapshot needed)
+## Streamlit Community Cloud
 
-```shell
-uv run --frozen structural-break-app synthetic --output outputs/app-bundles/synthetic
-SB_APP_BUNDLE=outputs/app-bundles/synthetic uv run --frozen streamlit run app/research_app.py
-```
-
-Every ticker, price, label and result in that reference bundle is **invented**. It runs the
-project's real matched evaluation on fake events so the interface can be built
-and tested without the snapshot. Each page shows a red banner and the bundle is
-marked `synthetic: true`. Never present it as a finding. This setting changes only
-the reference study; it does not replace the separately loaded current summary.
-
-## Deploying to Streamlit Community Cloud
-
-1. Include the verified `demo/book/` presentation files for the current comparisons.
-   Export a real reference bundle (above) and copy it to `demo/app_bundle/` on a branch.
-   It is generated data, so whether it lives on `main` or a separate demo
-   branch is the repository owner's decision.
-2. On [share.streamlit.io](https://share.streamlit.io), create an app from the
-   GitHub repository: branch with the bundle, main file `app/research_app.py`.
-3. Under **Advanced settings**, choose **Python 3.11** (the project does not
-   support 3.12). Dependencies install from `uv.lock` / `requirements.txt`.
-4. No secrets are needed: the app makes no API calls. If you keep the bundle
-   elsewhere in the repository, set `SB_APP_BUNDLE` to its path in the app's
-   secrets (top-level secrets are exposed as environment variables).
-
-Theme and fonts come from `.streamlit/config.toml` in the repository root.
+Use the reviewed branch with `demo/book` and `demo/app_bundle`, main file
+`app/research_app.py`, Python 3.11 and the committed requirements/lockfile. No
+provider secrets are needed. Theme/fonts use `.streamlit/config.toml`. The
+frontend PR targets `deploy`; publishing and final-test changes are separate.
 
 ## Minimal verified view
 

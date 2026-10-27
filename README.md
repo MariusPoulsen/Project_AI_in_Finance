@@ -33,13 +33,13 @@ workspace. `structural-break-backtest` runs the plan-ladder backtests (below).
 
 ## Research application
 
-`app/research_app.py` is the full read-only application (PLAN P7): Overview,
-Scanner, Pair detail, Model Lab, Strategy Lab, Data and model monitor, and
-Methodology. It shows the spread with its entry/convergence/stop bands, both
-models' calibrated probabilities for every development event, exact feature
-contributions of the saved models (linear SHAP for logistic, TreeSHAP for
-XGBoost), the full A/B ablation ladder with paired intervals, the Phase 6
-backtest ladder, SEC coverage and data/model provenance on every page.
+`app/research_app.py` is the read-only research workspace: Overview, Forecasting,
+Portfolio, Event explorer, Pair detail, Evidence and diagnostics, and Rules and
+definitions. It compares the current models and books, shows saved diagnostics
+and fixed rules, and exposes underlying registry inputs without substituting
+superseded model scores. The 20-session forecast target is fixed; portfolio
+exits follow the adaptive book rules. See [app/README.md](app/README.md) and the
+[presentation contract](docs/FRONTEND_WORKSPACE.md) for sources and export gaps.
 
 ```shell
 python scripts/team.py research-app                       # on the imported snapshot

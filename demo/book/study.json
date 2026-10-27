@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "models": [
+    {
+      "id": "BASELINE_0",
+      "Model": "Baseline 0",
+      "Role": "Deterministic benchmark",
+      "Family": "Rule",
+      "Inputs": "Every fresh divergence",
+      "Training": "No fitting",
+      "Scope": "Policy cohort",
+      "Status": "Probability metrics not applicable"
+    },
+    {
+      "id": "BASELINE_1",
+      "Model": "Baseline 1",
+      "Role": "Deterministic benchmark",
+      "Family": "Rule",
+      "Inputs": "Econometrically ACTIVE",
+      "Training": "Monthly relationship tests",
+      "Scope": "Policy cohort",
+      "Status": "Probability metrics not applicable"
+    },
+    {
+      "id": "A",
+      "Model": "Model A",
+      "Role": "Price reference",
+      "Family": "Fixed XGBoost",
+      "Inputs": "Quantitative prices and relationship",
+      "Training": "Annual walk-forward · Decision 45",
+      "Scope": "Matched population",
+      "Status": "Published metrics"
+    },
+    {
+      "id": "R0",
+      "Model": "Model B / R0",
+      "Role": "Book selector",
+      "Family": "Fixed XGBoost",
+      "Inputs": "Quantitative + SEC metadata/tone",
+      "Training": "Annual walk-forward · Decision 45",
+      "Scope": "Matched population",
+      "Status": "Published metrics"
+    },
+    {
+      "id": "B_rule_ou",
+      "Model": "B+rule+ou · bag5",
+      "Role": "Preregistered forecaster",
+      "Family": "XGBoost · 5 seeds",
+      "Inputs": "B + peer/state/earnings/momentum + OU",
+      "Training": "Annual walk-forward; OOF calibration",
+      "Scope": "Matched population",
+      "Status": "Published metrics"
+    },
+    {
+      "id": "B_rule_ou_track",
+      "Model": "B+rule+ou+track · bag5",
+      "Role": "Post-hoc variant",
+      "Family": "XGBoost · 5 seeds",
+      "Inputs": "B+rule+ou + historical pair/stock track record",
+      "Training": "Annual walk-forward; OOF calibration",
+      "Scope": "Matched population",
+      "Status": "Published metrics"
+    },
+    {
+      "id": "FULL",
+      "Model": "Full model",
+      "Role": "Agent-augmented forecaster",
+      "Family": "Walk-forward logistic stack",
+      "Inputs": "Bagged base logit + entry-desk scores and missingness",
+      "Training": "Earlier labelled region years only",
+      "Scope": "Desk region · matched base comparator",
+      "Status": "Separate regional comparison"
+    }
+  ],
+  "regional": [
+    {
+      "Model": "Desk base · no agent scores",
+      "Period": "2011–2017",
+      "ROC AUC": 0.64,
+      "Brier score": 0.0917,
+      "Log loss": null,
+      "Events": null,
+      "Source": "Decision 110d · rounded · top-40% region"
+    },
+    {
+      "Model": "Full model",
+      "Period": "2011–2017",
+      "ROC AUC": 0.631,
+      "Brier score": 0.0928,
+      "Log loss": null,
+      "Events": null,
+      "Source": "Decision 110d · rounded · same region as desk base"
+    }
+  ],
+  "sources": {
+    "Published regional comparison": "docs/DECISIONS.md §110d"
+  },
+  "availability": [
+    {
+      "Diagnostic": "Walk-forward metrics",
+      "Status": "Available",
+      "Scope": "Four matched forecasters"
+    },
+    {
+      "Diagnostic": "ROC and reliability figures",
+      "Status": "Available",
+      "Scope": "Published 2018–2023 plots"
+    },
+    {
+      "Diagnostic": "Full-model metrics",
+      "Status": "Regional records only",
+      "Scope": "Desk subset; see period and denominator"
+    },
+    {
+      "Diagnostic": "Current per-event scores / SHAP / tuning receipts",
+      "Status": "Not exported",
+      "Scope": "No substitution from older models"
+    },
+    {
+      "Diagnostic": "Book statistics",
+      "Status": "Available",
+      "Scope": "Four books; Decision 119a correction"
+    },
+    {
+      "Diagnostic": "Daily NAV",
+      "Status": "Two books exported",
+      "Scope": "R0 with/without monitor"
+    }
+  ]
+}

@@ -17,7 +17,10 @@ SOURCE = Path(__file__).resolve().parents[2] / "demo/book"
 
 @pytest.fixture
 def snapshot(tmp_path):
-    for name in ("summary.json", "presentation.json", "book_daily.parquet"):
+    for name in (
+        "presentation.json",
+        *json.loads((SOURCE / "presentation.json").read_text())["files"],
+    ):
         shutil.copyfile(SOURCE / name, tmp_path / name)
     return tmp_path
 
@@ -91,3 +94,22 @@ def test_nonfinite_or_missing_forecast_does_not_become_zero(snapshot):
     reseal(snapshot, file.name)
     with pytest.raises(ValueError):
         read_summary(snapshot)
+
+
+def test_catalogue_preserves_baseline_and_full_scope_without_inventing_scores(snapshot):
+    svc = read_summary(snapshot)
+    rows = svc.forecast_comparison(next(iter(PERIODS))).set_index("id")
+    assert rows.loc[["BASELINE_0", "BASELINE_1", "FULL"], "ROC AUC"].isna().all()
+    assert "not applicable" in rows.loc["BASELINE_0", "Status"]
+    assert "region" in rows.loc["FULL", "Scope"]
+    assert {r["Model"] for r in svc.study.regional} == {"Desk base · no agent scores", "Full model"}
+
+
+def test_corrected_books_include_best_forecaster_and_full_without_synthetic_cash_growth(snapshot):
+    svc = read_summary(snapshot)
+    rows = svc.book_comparison(next(iter(PERIODS)))
+    assert len(rows) == 4
+    assert rows.iloc[2]["sharpe"] == pytest.approx(0.4060362502)
+    assert rows.iloc[3]["sharpe"] == pytest.approx(0.2502234135)
+    assert rows.iloc[2:]["cagr_with_cash"].isna().all()
+    assert set(svc.daily.columns) == {"session_date", *svc.summary.stats}

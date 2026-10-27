@@ -53,7 +53,13 @@ def main() -> None:
         "final_test": "locked",
         "files": {
             name: hashlib.sha256((folder / name).read_bytes()).hexdigest()
-            for name in ("summary.json", "book_daily.parquet")
+            for name in (
+                "summary.json",
+                "book_daily.parquet",
+                "study.json",
+                "roc.png",
+                "calibration.png",
+            )
         },
         "models": [
             {
@@ -77,7 +83,7 @@ def main() -> None:
                 "definition": definition,
             },
         },
-        "source": "demo/book export; docs/FORECASTING_AND_BOOK.md; Decisions 105–117. "
+        "source": "demo/book export; docs/FORECASTING_AND_BOOK.md; Decisions 105–119a. "
         "Development periods were reused during research; not an untouched final test.",
         "precision": "Forecast metrics are rounded published point estimates. "
         "Per-event current-model predictions, uncertainty and calibration arrays "

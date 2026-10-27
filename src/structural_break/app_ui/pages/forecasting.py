@@ -8,9 +8,10 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from structural_break.app_ui import components, theme
+from structural_break.app_ui import components, data, theme
 from structural_break.app_ui.pages import workspace
 from structural_break.services.research_summary import METRICS
+from structural_break.services.workspace_diagnostics import baseline_outcomes
 
 HELP = {
     "ROC AUC": "Ranking: how often a reversion scores above a non-reversion. Higher is better; "
@@ -57,7 +58,7 @@ def points(rows: pd.DataFrame, metric: str, selected: str) -> go.Figure:
     span = max(hi - lo, 0.001)
     figure.update_layout(
         theme.layout(
-            height=330,
+            height=440,
             showlegend=False,
             margin={"l": 130, "r": 55, "t": 15, "b": 55},
             xaxis={
@@ -79,11 +80,17 @@ def points(rows: pd.DataFrame, metric: str, selected: str) -> go.Figure:
 def records(rows: pd.DataFrame, selected: str, metric: str) -> None:
     secondary = "Log loss" if metric != "Log loss" else "Brier score"
     digits = METRICS[metric][2]
+
+    def measurement(row: pd.Series, name: str, places: int) -> str:
+        if pd.notna(row[name]):
+            return f"{row[name]:.{places}f}"
+        return "Policy" if str(row["id"]).startswith("BASELINE") else "Regional"
+
     body = "".join(
         "<tr" + (' class="selected"' if row["id"] == selected else "") + ">"
         f'<td>{html.escape(row["Model"])}<span class="role">{html.escape(row["Role"])}</span></td>'
-        f'<td class="number">{row[metric]:.{digits}f}</td>'
-        f'<td class="number">{row[secondary]:.4f}</td></tr>'
+        f'<td class="number">{measurement(row, metric, digits)}</td>'
+        f'<td class="number">{measurement(row, secondary, 4)}</td></tr>'
         for _, row in rows.iterrows()
     )
     st.markdown(
@@ -120,33 +127,66 @@ def render() -> None:
     workspace.cohort_line(svc, period)
     st.caption(HELP[metric])
     rows = svc.forecasts(period)
+    comparison = svc.forecast_comparison(period)
+    catalogue = svc.catalogue()
     chart_column, table_column = st.columns([1.1, 1], gap="large")
     with table_column:
         selected = st.selectbox(
             "Inspect a model",
-            list(rows["id"]),
-            index=2,
-            format_func=lambda key: str(rows.set_index("id").loc[key, "Model"]),
+            list(catalogue["id"]),
+            index=4,
+            format_func=lambda key: str(catalogue.set_index("id").loc[key, "Model"]),
             key="sb_forecast_model",
         )
-        records(rows, selected, metric)
+        records(comparison, selected, metric)
     with chart_column:
         st.subheader("Matched point estimates")
         components.chart(points(rows, metric, selected), key="current_forecast_points")
         st.caption("Shared metric scale · point estimates only · no uncertainty export")
+    st.caption(
+        "Baseline policies do not issue probabilities. Full uses a selected desk region; "
+        "its metrics belong in the matched comparison below."
+    )
+    with st.expander("Baseline selection and observed outcomes"):
+        outcome = data.registry()
+        if outcome.service is None:
+            st.info("The policy-outcome export is unavailable.")
+        else:
+            st.caption(
+                "Frozen policy benchmark · 2022–2023 · separate from annual walk-forward scores"
+            )
+            st.dataframe(baseline_outcomes(outcome.service), hide_index=True, width="stretch")
+    with st.expander("Full model · matched entry-desk region", expanded=selected == "FULL"):
+        st.caption(
+            "R0 top-40% region · compare the logistic desk base with the same base plus "
+            "agent features. Selection-period rows begin in 2011."
+        )
+        regional = pd.DataFrame(svc.study.regional)
+        requested = "2018–2023" if period.startswith("2018") else "2011–2017"
+        regional = regional.loc[regional["Period"].eq(requested)]
+        if regional.empty:
+            st.info("Exact regional metrics for this period have not been exported.")
+        else:
+            st.dataframe(regional, hide_index=True, width="stretch")
+    with st.expander("ROC and calibration · saved confirmation diagnostics"):
+        st.caption("2018–2023 · four population forecasters · saved research figures")
+        columns = st.columns(2)
+        for column, name in zip(columns, ("roc.png", "calibration.png"), strict=True):
+            if name in svc.manifest.files:
+                column.image(str(svc.root / name), width="stretch")
     with st.expander("Forecasting rules"):
         st.table(workspace.forecast_rules())
     with st.expander("Forecast diagnostics and limitations"):
         st.write(
-            "Current-model per-event predictions, calibration curves, ROC/PR arrays, "
+            "Current-model per-event predictions, ROC/PR arrays, "
             "SHAP values and matched uncertainty intervals are not in this export. "
             "The point plot above compares published metrics; it is not a ROC curve."
         )
         st.write(
-            "The event explorer contains the earlier accepted study. Its probabilities "
-            "and SHAP values must not be interpreted as explanations of this model."
+            "The event explorer exposes registry inputs and observed outcomes. "
+            "It does not substitute superseded model scores for current predictions."
         )
-        workspace.link("model", "Inspect the earlier accepted model study")
+        st.dataframe(catalogue.drop(columns="id"), hide_index=True, width="stretch")
     with st.expander("All forecast metrics and CSV export"):
         shown = rows.drop(columns="id").assign(
             Period=period,

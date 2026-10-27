@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import timedelta
 
 import pandas as pd
 import streamlit as st
 
 from structural_break.app_ui import charts, components, theme
 from structural_break.app_ui.context import current
+from structural_break.services.workspace_diagnostics import registry_events
 
 
 def render() -> None:
@@ -18,7 +19,7 @@ def render() -> None:
     components.page_header(
         "Pair detail",
         "The frozen spread of one business-peer pair, its monthly relationship tests, and "
-        "each divergence event with both models' probabilities and the reasons behind them.",
+        "each divergence event with point-in-time inputs and observed outcomes.",
     )
     components.synthetic_banner(service.identity)
     pairs = service.pairs()
@@ -54,14 +55,15 @@ def render() -> None:
         f"{int(info['assessment_events_n'])} in assessment</span>",
         unsafe_allow_html=True,
     )
-    events = service.pair_events(horizon, pair_id)
+    events = registry_events(service)
+    events = events.loc[events.pair_id.eq(pair_id)]
     with st.spinner("Loading the frozen pair history…"):
         series = service.pair_series(pair_id)
 
     if series is None or series.state.empty:
         components.empty_state(
             "Daily prices and spread history for this pair are not in this demo bundle (it carries "
-            "a showcase subset to stay small). Its events and explanations are still listed below; "
+            "a showcase subset to stay small). Its registry events are still listed below; "
             "the full workspace shows every pair."
         )
     else:
@@ -83,11 +85,9 @@ def render() -> None:
         )
         start, end = window
         in_window = state.loc[state["trading_date"].dt.date.between(start, end)]
-        window_events = events.loc[events["date"].dt.date.between(start, end)]
         components.chart(
             charts.spread_bands(
                 in_window,
-                window_events,
                 entry=float(protocol["entry_z"]),
                 success=float(protocol["success_z"]),
                 adverse=float(protocol["adverse_z"]),
@@ -142,125 +142,31 @@ def render() -> None:
     if events.empty:
         components.empty_state("This pair has no published development events at this horizon.")
         return
-    table = events[
-        ["event_id", "date", "research_partition", "baseline1_eligible", "p_A", "p_B", "outcome"]
-    ].copy()
-    table["date"] = table["date"].dt.date
+    table = events.drop(columns=["y_revert_success"])
+    st.caption(
+        "Current walk-forward event probabilities and SHAP values have not been exported. "
+        "Registry inputs below do not substitute an older model's predictions."
+    )
+    st.dataframe(table.drop(columns="event_id"), hide_index=True, width="stretch")
+    options = list(table.event_id)
     focus = st.session_state.get("sb_event")
-    selection = st.dataframe(
-        table.drop(columns=["event_id"]),
-        hide_index=True,
-        width="stretch",
-        height=260,
-        on_select="rerun",
-        selection_mode="single-row",
-        key=f"pair_events_{pair_id}",
-        column_config={
-            "date": st.column_config.DateColumn("Date", format="D MMM YYYY"),
-            "research_partition": "Period",
-            "baseline1_eligible": st.column_config.CheckboxColumn("ACTIVE"),
-            "p_A": st.column_config.ProgressColumn(
-                "P(revert) A", min_value=0.0, max_value=1.0, format="%.3f"
-            ),
-            "p_B": st.column_config.ProgressColumn(
-                "P(revert) B", min_value=0.0, max_value=1.0, format="%.3f"
-            ),
-            "outcome": "Outcome",
-        },
+    event_id = st.selectbox(
+        "Inspect event",
+        options,
+        index=options.index(focus) if focus in options else 0,
+        format_func=lambda key: str(table.set_index("event_id").loc[key, "date"])[:10],
     )
-    rows = selection.selection.rows if selection else []
-    if rows:
-        event_id = str(table.iloc[rows[0]]["event_id"])
-    elif focus in set(table["event_id"]):
-        event_id = str(focus)
-    else:
-        explained = set(
-            service.data(horizon).contribution_totals.get("event_id", pd.Series(dtype=str))
+    st.subheader("SEC evidence available at event close")
+    evidence = service.evidence(horizon, event_id)
+    if evidence:
+        st.dataframe(
+            pd.DataFrame({"Field": list(evidence), "Value": [str(v) for v in evidence.values()]}),
+            hide_index=True,
+            width="stretch",
         )
-        candidates = table.loc[table["event_id"].isin(explained), "event_id"]
-        event_id = str(candidates.iloc[0] if len(candidates) else table.iloc[0]["event_id"])
-    _event_panel(event_id, events)
-
-
-def _event_panel(event_id: str, events: pd.DataFrame) -> None:
-    ctx = current()
-    service, horizon = ctx.service, ctx.horizon
-    protocol = service.protocol
-    row = events.loc[events["event_id"].eq(event_id)].iloc[0]
-    event_date: date = row["date"].date()
-    st.markdown(f"#### Event on {event_date:%d %B %Y}")
-    cols = st.columns(4)
-    cols[0].metric("Model A P(revert)", components.pct(row["p_A"]))
-    cols[1].metric(
-        "Model B P(revert)",
-        components.pct(row["p_B"]),
-        delta=f"{100 * (row['p_B'] - row['p_A']):+.1f} pts vs A",
-        delta_color="off",
+    else:
+        st.info("No evidence fields are exported for this event.")
+    st.caption(
+        "Unavailable, unscheduled and invalid evidence remains UNKNOWN, "
+        "never neutral tone or confirmed absence."
     )
-    cols[2].metric("Outcome", row["outcome"])
-    cols[3].metric("Period", str(row["research_partition"]).capitalize())
-    if row["research_partition"] == "fit":
-        st.caption("Fit-period probabilities are in-sample: the models were trained on this event.")
-    family = protocol["primary_family"]
-    choice = st.radio(
-        "Explain",
-        [
-            f"{family}_B_{protocol['primary_b_variant']}",
-            f"{family}_A",
-            "xgboost_B_both",
-            "xgboost_A",
-        ],
-        horizontal=True,
-        format_func=lambda key: {
-            "logistic_B_both": "Logistic B (all SEC)",
-            "logistic_A": "Logistic A",
-            "xgboost_B_both": "XGBoost B (all SEC)",
-            "xgboost_A": "XGBoost A",
-        }.get(key, key),
-    )
-    explanation = service.explanation(horizon, event_id, choice)
-    left, right = st.columns([3, 2])
-    with left:
-        if explanation is None:
-            components.empty_state(
-                "Explanations are stored for assessment-period events and showcase pairs only. "
-                + (
-                    ""
-                    if service.identity.explanation_status == "AVAILABLE"
-                    else service.identity.explanation_status
-                )
-            )
-        else:
-            st.markdown(
-                f"Starting from the average event (log-odds {explanation['base']:+.2f}), these "
-                f"features move the score to {explanation['margin']:+.2f}."
-            )
-            components.chart(charts.waterfall(explanation), key=f"waterfall_{event_id}_{choice}")
-            st.caption(
-                "Exact additive decomposition of the saved model's margin "
-                + (
-                    "(coefficient × standardised feature, i.e. linear SHAP against the "
-                    "fitting-period mean). "
-                    if choice.startswith("logistic")
-                    else "(native XGBoost TreeSHAP). "
-                )
-                + f"Raw probability {components.pct(explanation['raw_probability'])}; after "
-                "sigmoid "
-                f"calibration {components.pct(explanation['calibrated_probability'])}."
-            )
-    with right:
-        st.markdown("**SEC evidence available at the event close**")
-        evidence = service.evidence(horizon, event_id)
-        if not evidence:
-            components.empty_state("No evidence fields for this event.")
-        else:
-            st.dataframe(
-                pd.DataFrame({"Field": list(evidence), "Value": list(evidence.values())}),
-                hide_index=True,
-                width="stretch",
-            )
-            st.caption(
-                "UNKNOWN means the evidence was unavailable, unscheduled or invalid. It is kept as "
-                "UNKNOWN, never read as neutral tone or 'no catalyst'. Filing text itself is not "
-                "part of the group snapshot."
-            )

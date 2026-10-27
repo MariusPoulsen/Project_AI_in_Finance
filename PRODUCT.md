@@ -35,13 +35,13 @@ it does not execute orders.
   where comparable published data actually exists.
 - Baseline 0 and Baseline 1 remain plan-ladder trading benchmarks, not invented
   probabilistic forecasts.
-- Goal 2 presents the adopted R0-selected book, its no-monitor comparator, and
-  clearly distinguished plan-ladder and reported model-selection comparisons.
+- Goal 2 presents the adopted R0-selected book, its no-monitor comparator, the bagged-forecaster and Full-model books, and
+  the separately scoped frozen policy benchmark.
 - Retain event scanning, pair diagnostics, source evidence, agent explanations,
   coverage, methodology, and export of displayed results as the underlying data
   allows. Never imply a legacy event score belongs to a newer model.
-- Keep selection (2010–2017), development confirmation (2018–2023), the earlier
-  accepted 2022–2023 study, and final-test results in their own named cohorts.
+- Keep selection (2010–2017), development confirmation (2018–2023), the separately scoped
+  2022–2023 policy benchmark, and final-test results in named cohorts.
 - Final-test publication follows the owner's exact freeze and unlock process.
   Missing or locked results are explicit, never synthesized from documentation.
 - Preserve registered artifacts, all scientific definitions, and Claude's
@@ -63,3 +63,13 @@ application checklist is docs/archive/PHASE_PLAN.md, P7.
 3. Show model role, cohort, period and provenance wherever comparisons need them.
 4. Expose diagnostic measurements, UNKNOWN evidence and missing artifacts honestly.
 5. Make a useful investigation possible without learning the repository layout.
+
+## Current information architecture
+
+Seven views: Overview, Forecasting, Portfolio, Event explorer, Pair detail,
+Evidence and diagnostics, Rules and definitions. No parallel accepted-study menu
+or global horizon control. Forecasts use the fixed 20-session target; book exits
+use their adaptive 10–40-session cap. Model metadata includes both baselines and
+Full. Full forecast metrics stay paired with the matched desk base, never with
+the full-population forecasters. Registry investigation excludes old fitted
+probabilities and explanations. Missing current exports remain explicitly missing.

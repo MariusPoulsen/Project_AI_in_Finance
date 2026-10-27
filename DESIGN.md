@@ -12,8 +12,8 @@ IBM Plex Sans Condensed gives app-sized headings a distinct, readable voice.
 Tabular numerals align measurements. No invented chart observations or intervals.
 
 Navigation follows the reader's questions: comparisons, forecasting, portfolio,
-investigation, evidence. The current walk-forward summary and earlier accepted
-study are separately identified. Metric and period selection apply to the whole
+investigation, evidence. Current walk-forward results lead each goal. The frozen policy benchmark is
+inside Portfolio with its distinct cohort and execution assumptions. Metric and period selection apply to the whole
 comparison. Model role accompanies the name; post-hoc stays post-hoc. Reading a
 summary must work even when the earlier bundle is absent. Missing data has an
 explicit explanation rather than an invented result or an empty plot.
@@ -41,4 +41,15 @@ on small screens. Keep tables bounded with their own scroll where necessary;
 important labels also appear as plain text. Preserve native focus and tooltips,
 add a visible accent focus outline, and use color together with labels/markers.
 Minimum body size 14 px; page title about 30 px. One theme across every page,
-including reference-study charts, empty states and diagnostics.
+including policy-benchmark charts, empty states and diagnostics.
+
+## Consolidated comparison workspace
+
+Use full-width overview tables so metric columns remain visible on laptops.
+Forecasting lists seven models/policies beside the shared axis for the four
+probabilistic population models. Policy and Regional cells are explicit scope
+labels, never invented scores. Full has a matched-region disclosure; baseline
+outcomes and saved ROC/reliability figures are adjacent diagnostics. Portfolio
+compares four saved books, with daily curves shown only where exported.
+Monitoring belongs to Evidence; model cards and fixed methodology belong to
+Rules. No historical-study navigation or obsolete horizon selector.

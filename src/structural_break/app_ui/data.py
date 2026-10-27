@@ -79,6 +79,14 @@ def load_summary(root: Path = PROJECT_ROOT) -> SummaryOutcome:
         )
 
 
+def registry() -> LoadOutcome:
+    """Verified underlying event registry; consumers use only its fixed h20 fields."""
+    override = st.session_state.get("_sb_registry_outcome")
+    if isinstance(override, LoadOutcome):
+        return override
+    return load(resolve_source())
+
+
 def resolve_source(root: Path = PROJECT_ROOT) -> DataSource:
     explicit = os.environ.get("SB_APP_BUNDLE")
     if explicit:

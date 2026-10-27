@@ -9,7 +9,7 @@ from __future__ import annotations
 import hashlib
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -101,6 +101,15 @@ class ResearchSummary(_Contract):
     desk: Desk
     news: News
     decisions: str
+    comparison: dict[str, dict[str, dict[str, float]]] = Field(default_factory=dict)
+
+
+class StudyExport(_Contract):
+    schema_version: Literal[1]
+    models: list[dict[str, str]]
+    regional: list[dict[str, str | float | int | None]]
+    sources: dict[str, str]
+    availability: list[dict[str, str]]
 
 
 @dataclass(frozen=True)
@@ -109,6 +118,59 @@ class ResearchSummaryService:
     summary: ResearchSummary
     daily: pd.DataFrame
     snapshot_id: str
+    study: StudyExport
+    root: Path
+
+    def catalogue(self) -> pd.DataFrame:
+        return pd.DataFrame(self.study.models)
+
+    def forecast_comparison(self, period: str) -> pd.DataFrame:
+        rows = self.forecasts(period).set_index("id")
+        records = []
+        for model in self.study.models:
+            key = model["id"]
+            record: dict[str, Any] = {
+                "id": key,
+                "Model": model["Model"],
+                "Role": model["Role"],
+                "Scope": model["Scope"],
+                "Status": model["Status"],
+                **{metric: None for metric in METRICS},
+            }
+            if key in rows.index:
+                record.update({str(k): v for k, v in rows.loc[key].to_dict().items()})
+                record["Scope"] = self.manifest.cohorts[period].id
+            records.append(record)
+        return pd.DataFrame(records)
+
+    def book_comparison(self, period: str) -> pd.DataFrame:
+        rows = self.book_stats(period)
+        rows["Selection"] = "Model B / R0"
+        rows["Monitor"] = ["On", "Off"]
+        source_period = f"{PERIODS[period][0]}-{PERIODS[period][1]}"
+        extra = []
+        for source, label in (
+            ("best forecaster (bag5, monitor)", "B+rule+ou · bag5"),
+            ("full model (FULL, monitor)", "Full model"),
+        ):
+            values = self.summary.comparison.get(source, {}).get(source_period)
+            if values is None:
+                raise ValueError("Missing current book comparison")
+            extra.append(
+                {
+                    "Book": label + " + monitor",
+                    "Selection": label,
+                    "Monitor": "On",
+                    "sharpe": values["sharpe"],
+                    "cagr": values["cagr"],
+                    "cagr_with_cash": None,
+                    "max_drawdown": values["maxdd"],
+                    "volatility": values["vol"],
+                    "turnover": values["turnover"],
+                    "cost": values["cost"],
+                }
+            )
+        return pd.DataFrame([*rows.to_dict(orient="records"), *extra])
 
     def forecasts(self, period: str) -> pd.DataFrame:
         """One matched population per period; do not infer missing model scores."""
@@ -155,13 +217,62 @@ def read_summary(folder: Path) -> ResearchSummaryService:
     """Verify bounded presentation bytes before parsing, with no analytical writes."""
     manifest_bytes = (folder / "presentation.json").read_bytes()
     manifest = PresentationManifest.model_validate_json(manifest_bytes)
-    if set(manifest.files) != {"summary.json", "book_daily.parquet"}:
+    required = {"summary.json", "book_daily.parquet", "study.json"}
+    if not required <= set(manifest.files) or not set(manifest.files) <= required | {
+        "roc.png",
+        "calibration.png",
+    }:
         raise ValueError("Unexpected presentation artifacts")
     for name, expected in manifest.files.items():
         actual = hashlib.sha256((folder / name).read_bytes()).hexdigest()
         if actual != expected:
             raise ValueError("Presentation artifact hash mismatch")
     summary = ResearchSummary.model_validate_json((folder / "summary.json").read_bytes())
+    study = StudyExport.model_validate_json((folder / "study.json").read_bytes())
+    if [m["id"] for m in study.models] != [
+        "BASELINE_0",
+        "BASELINE_1",
+        "A",
+        "R0",
+        "B_rule_ou",
+        "B_rule_ou_track",
+        "FULL",
+    ]:
+        raise ValueError("Unexpected study catalogue")
+    seen: set[tuple[str, str]] = set()
+    regional_counts: dict[str, list[int | float | str | None]] = {}
+    for record in study.regional:
+        if record["Period"] not in {"2011–2017", "2018–2023"}:
+            raise ValueError("Invalid regional period")
+        if record["Model"] not in {"Desk base · no agent scores", "Full model"}:
+            raise ValueError("Unexpected regional model")
+        identity = (str(record["Period"]), str(record["Model"]))
+        if identity in seen:
+            raise ValueError("Duplicate regional measurement")
+        seen.add(identity)
+        regional_counts.setdefault(identity[0], []).append(record["Events"])
+        for metric in ("ROC AUC", "Brier score", "Log loss"):
+            measurement = record[metric]
+            if measurement is None and metric == "Log loss":
+                continue
+            if not isinstance(measurement, (float, int)) or not np.isfinite(measurement):
+                raise ValueError("Invalid regional measurement")
+            if measurement < 0 or (metric != "Log loss" and measurement > 1):
+                raise ValueError("Regional measurement out of range")
+    if any(len(counts) != 2 or counts[0] != counts[1] for counts in regional_counts.values()):
+        raise ValueError("Regional comparison must retain a matched denominator")
+    if set(summary.comparison) != {
+        "adopted (R0, monitor)",
+        "best forecaster (bag5, monitor)",
+        "full model (FULL, monitor)",
+    }:
+        raise ValueError("Incomplete current book selection comparison")
+    for books in summary.comparison.values():
+        if set(books) != {"2010-2017", "2018-2023", "2010-2023"}:
+            raise ValueError("Invalid comparison book periods")
+        for book_values in books.values():
+            if not all(np.isfinite(v) for v in book_values.values()):
+                raise ValueError("Invalid comparison book metrics")
     if [m.id for m in manifest.models] != ["A", "R0", "B_rule_ou", "B_rule_ou_track"]:
         raise ValueError("Unexpected retained model roster")
     if set(manifest.cohorts) != set(PERIODS):
@@ -209,13 +320,17 @@ def read_summary(folder: Path) -> ResearchSummaryService:
         if not dates.dt.year.between(start, end).any():
             raise ValueError("Missing book period")
     return ResearchSummaryService(
-        manifest, summary, daily, hashlib.sha256(manifest_bytes).hexdigest()
+        manifest, summary, daily, hashlib.sha256(manifest_bytes).hexdigest(), study, folder
     )
 
 
 def artifact_identity(folder: Path) -> tuple[str, ...]:
     """Cache by every file's bytes: changed data cannot reuse an earlier verification."""
+    manifest = PresentationManifest.model_validate_json((folder / "presentation.json").read_bytes())
+    allowed = {"summary.json", "book_daily.parquet", "study.json", "roc.png", "calibration.png"}
+    if not set(manifest.files) <= allowed:
+        raise ValueError("Unexpected presentation artifacts")
     return tuple(
         hashlib.sha256((folder / name).read_bytes()).hexdigest()
-        for name in ("presentation.json", "summary.json", "book_daily.parquet")
+        for name in ("presentation.json", *sorted(manifest.files))
     )

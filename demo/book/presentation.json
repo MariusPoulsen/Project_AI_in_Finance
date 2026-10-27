@@ -2,8 +2,11 @@
   "schema_version": 1,
   "final_test": "locked",
   "files": {
-    "summary.json": "275702a209417393b70b01afd36b3b22222bc67d845171de0c238bf0ab43e774",
-    "book_daily.parquet": "d8ac51de40d85f31a23c9e7d6ceea9a83331f2e25c7a1708cbf5ea0f664fe186"
+    "summary.json": "565cadf5ea276586af170d4371f4af63239bbe7c7771d422d1db4156c6f394d3",
+    "book_daily.parquet": "d8ac51de40d85f31a23c9e7d6ceea9a83331f2e25c7a1708cbf5ea0f664fe186",
+    "study.json": "781d463e814e1bd2c0057781af2f1381bce3b47eed881d6f503dadaa142e5c08",
+    "roc.png": "d77a1d4edb4bdc96734a8ddb06bad2589d09d023c0e452d1a59a31c4a23ba9dd",
+    "calibration.png": "831e897eddbb95258aacc4685ec4dd2a4116b25fc50d946b8e409bb6c55e8c7c"
   },
   "models": [
     {
@@ -47,6 +50,6 @@
       "definition": "Fresh |z| >= 2 divergence; convergence to |z| <= 0.5 within 20 sessions before |z| >= 3. Matched labelled walk-forward events."
     }
   },
-  "source": "demo/book export; docs/FORECASTING_AND_BOOK.md; Decisions 105–117. Development periods were reused during research; not an untouched final test.",
+  "source": "demo/book export; docs/FORECASTING_AND_BOOK.md; Decisions 105–119a. Development periods were reused during research; not an untouched final test.",
   "precision": "Forecast metrics are rounded published point estimates. Per-event current-model predictions, uncertainty and calibration arrays are not included. Hashes identify presentation bytes, not scientific acceptance."
 }

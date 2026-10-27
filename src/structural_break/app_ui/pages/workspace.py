@@ -7,6 +7,7 @@ import streamlit as st
 
 from structural_break.app_ui import components, data
 from structural_break.services.research_summary import PERIODS, ResearchSummaryService
+from structural_break.services.workspace_diagnostics import registry_coverage, registry_events
 
 DEFAULT_PERIOD = next(iter(PERIODS))
 
@@ -47,6 +48,11 @@ def provenance(svc: ResearchSummaryService) -> None:
         st.caption(svc.manifest.precision)
         st.caption(f"Presentation snapshot SHA-256: {svc.snapshot_id}")
         st.dataframe(
+            pd.DataFrame(svc.study.sources.items(), columns=["Source", "Identity"]),
+            hide_index=True,
+            width="stretch",
+        )
+        st.dataframe(
             pd.DataFrame(
                 [
                     {"Artifact": name, "SHA-256": digest}
@@ -65,7 +71,9 @@ def forecast_rules() -> pd.DataFrame:
             ("Success", "Reach |z| ≤ 0.5 before |z| ≥ 3"),
             ("Horizon", "20 trading sessions"),
             ("Failure barrier", "|z| ≥ 3 before convergence"),
-            ("Comparison", "Same labelled events and period for every model"),
+            ("Population comparison", "Same labelled events and period for the four forecasters"),
+            ("Baselines", "Deterministic selection policies; no probability forecast"),
+            ("Full comparison", "Matched top-40% desk region; separate from population metrics"),
         ],
         columns=["Rule", "Definition"],
     )
@@ -110,42 +118,56 @@ def render() -> None:
         return
     period = period_control("sb_overview_period")
     cohort_line(svc, period)
-    left, right = st.columns(2, gap="large")
+    left, right = st.container(), st.container()
     with left:
         st.subheader("Forecasting")
-        rows = svc.forecasts(period).drop(columns="id")
+        rows = svc.forecast_comparison(period).drop(columns="id")
+        for metric, digits in (("ROC AUC", 3), ("Brier score", 4)):
+            rows[metric] = [
+                f"{value:.{digits}f}"
+                if pd.notna(value)
+                else "Regional"
+                if model == "Full model"
+                else "Policy"
+                for value, model in zip(rows[metric], rows["Model"], strict=True)
+            ]
         st.dataframe(
             rows[["Model", "Role", "ROC AUC", "Brier score"]],
             hide_index=True,
             width="stretch",
             column_config={
-                "ROC AUC": st.column_config.NumberColumn(format="%.3f"),
-                "Brier score": st.column_config.NumberColumn(format="%.4f"),
+                "ROC AUC": st.column_config.TextColumn(),
+                "Brier score": st.column_config.TextColumn(),
             },
+        )
+        st.caption(
+            "Policy = deterministic selection. Regional = matched desk subset; "
+            "open Forecasting for the separate comparison."
         )
         link("forecast", "Open forecast comparison")
         with st.expander("Forecasting rules"):
             st.table(forecast_rules())
     with right:
         st.subheader("Portfolio")
-        stats = svc.book_stats(period)
+        stats = svc.book_comparison(period)
         st.dataframe(
             pd.DataFrame(
                 [
                     {
-                        "Exit policy": "With monitor" if index == 0 else "Without monitor",
+                        "Selection": row["Selection"],
+                        "Monitor": row["Monitor"],
                         "Sharpe · excess cash": round(row["sharpe"], 3),
-                        "CAGR · with cash": components.pct(row["cagr_with_cash"], 2),
+                        "CAGR · excluding cash": components.pct(row["cagr"], 2),
                         "Max DD · excess cash": components.pct(row["max_drawdown"], 2),
                     }
-                    for index, (_, row) in enumerate(stats.iterrows())
+                    for _, row in stats.iterrows()
                 ]
             ),
             hide_index=True,
             width="stretch",
             column_config={
                 "Sharpe · excess cash": st.column_config.NumberColumn("Sharpe", format="%.3f"),
-                "CAGR · with cash": st.column_config.TextColumn("CAGR + cash"),
+                "CAGR · excluding cash": st.column_config.TextColumn("CAGR excl. cash"),
                 "Max DD · excess cash": st.column_config.TextColumn("Max DD"),
             },
         )
@@ -166,28 +188,7 @@ def evidence() -> None:
         return
     st.subheader("Export availability")
     st.dataframe(
-        pd.DataFrame(
-            [
-                (
-                    "Four retained forecasters",
-                    "Rounded matched-cohort metrics",
-                    "2010–17 / 2018–23",
-                ),
-                ("Two book exit policies", "Saved statistics and daily NAV", "2010–2023"),
-                (
-                    "Current event predictions / calibration",
-                    "Not exported",
-                    "Current walk-forward study",
-                ),
-                (
-                    "Full model + entry desk",
-                    "Separately selected desk subset",
-                    "No full-population row",
-                ),
-                ("Final test", "Locked", "2024–2025 outcomes not loaded"),
-            ],
-            columns=["Evidence", "Availability", "Scope"],
-        ),
+        pd.DataFrame(svc.study.availability),
         hide_index=True,
         width="stretch",
     )
@@ -246,8 +247,44 @@ def evidence() -> None:
         hide_index=True,
         width="stretch",
     )
+    with st.expander("Registry, source coverage and feature distributions"):
+        outcome = data.registry()
+        if outcome.service is None:
+            st.info("The underlying registry diagnostics export is unavailable.")
+        else:
+            registry = outcome.service
+            events = registry_events(registry)
+            st.caption(
+                "Underlying fixed-20-session registry; counts differ from the matched "
+                "annual walk-forward scoring cohort. No superseded scores are exposed."
+            )
+            st.dataframe(
+                events.groupby(events.date.dt.year)
+                .agg(Events=("event_id", "size"), Pairs=("pair_id", "nunique"))
+                .reset_index(names="Year"),
+                hide_index=True,
+                width="stretch",
+            )
+            st.dataframe(registry_coverage(registry), hide_index=True, width="stretch")
+            features = registry.drift_features(20)
+            if features:
+                feature = st.selectbox("Feature distribution", features)
+                distribution = registry.drift(20, feature)
+                if not distribution.empty:
+                    st.dataframe(
+                        distribution.drop(columns="period", errors="ignore"),
+                        hide_index=True,
+                        width="stretch",
+                    )
+            components.provenance(
+                {
+                    "Registry": registry.identity.registry_version,
+                    "Bundle": registry.identity.bundle_id,
+                }
+            )
+    with st.expander("Current model inventory"):
+        st.dataframe(svc.catalogue().drop(columns="id"), hide_index=True, width="stretch")
     provenance(svc)
-    link("monitor", "Inspect reference-study data health")
 
 
 def methods() -> None:
@@ -264,9 +301,7 @@ def methods() -> None:
     st.table(book_rules(svc))
     with st.expander("Model registry"):
         st.dataframe(
-            pd.DataFrame(
-                [{"Model": model.name, "Role": model.role} for model in svc.manifest.models]
-            ),
+            svc.catalogue().drop(columns="id"),
             hide_index=True,
             width="stretch",
         )
@@ -295,7 +330,12 @@ def methods() -> None:
                 [
                     ("Selection", "2010–2017"),
                     ("Development confirmation", "2018–2023"),
-                    ("Reference-study assessment", "2022–2023; separate models and calibration"),
+                    ("Policy benchmark", "2022–2023; next-open execution, fixed 20-session cap"),
+                    (
+                        "Model fitting",
+                        "Expanding earlier years; transformations fitted within training",
+                    ),
+                    ("Full region", "R0 top 40%; same regional rows for base and agent stack"),
                     ("Final test", "2024–2025; locked in this snapshot"),
                     ("VIX", "Previous NYSE session"),
                     ("SEC evidence", "Admissible by event close; missing evidence remains UNKNOWN"),
@@ -303,12 +343,30 @@ def methods() -> None:
                 columns=["Scope", "Definition"],
             )
         )
+    with st.expander("Data limits and research safeguards"):
+        st.table(
+            pd.DataFrame(
+                [
+                    (
+                        "Universe",
+                        "Frozen surviving-issuer roster and current business classifications",
+                    ),
+                    ("Prices", "Retrospective Yahoo adjustments; not a vintage investable feed"),
+                    ("Historical text", "Modern pretrained text models applied retrospectively"),
+                    ("Missing evidence", "UNKNOWN retained; unscheduled extraction is not no-news"),
+                    (
+                        "Development reuse",
+                        "Selection and confirmation periods were already observed",
+                    ),
+                    (
+                        "App operation",
+                        "Saved outputs only; no fitting, downloads or provider calls",
+                    ),
+                ],
+                columns=["Item", "Definition"],
+            )
+        )
     provenance(svc)
-    link("strategy", "Open reference strategy ladder")
-
-
-def reference_notice() -> None:
-    st.info("Reference study · 2022–2023 assessment · separate from current walk-forward outputs.")
 
 
 def footer() -> None:

@@ -1,4 +1,4 @@
-"""Strategy Lab: would the forecasts have paid after frozen costs? (Phase 6 results)."""
+"""Frozen policy benchmark presented within the portfolio workspace."""
 
 from __future__ import annotations
 
@@ -6,8 +6,7 @@ import pandas as pd
 import streamlit as st
 
 from structural_break.app_ui import charts, components
-from structural_break.app_ui.context import current
-from structural_break.services.research_application import RUNG_LABELS
+from structural_break.services.research_application import RUNG_LABELS, ResearchApplicationService
 
 LADDER_COLUMNS = {
     "label": "Strategy rung",
@@ -49,31 +48,27 @@ def _ladder_table(rows: pd.DataFrame) -> pd.DataFrame:
     return table.rename(columns=LADDER_COLUMNS)
 
 
-def render() -> None:
-    ctx = current()
-    service, horizon = ctx.service, ctx.horizon
-    components.page_header(
-        "Strategy Lab",
-        "The same frozen execution engine and cost policy applied to every rung: trade every "
-        "divergence, only ACTIVE relationships, or only events a model rates likely to revert. "
-        "These are post-hoc development results on 2022–2023, not the locked final test.",
+def render_benchmark(service: ResearchApplicationService) -> None:
+    horizon = 20
+    st.caption(
+        "Frozen policy benchmark · 2022–2023 · next-open entry · fixed 20-session cap. "
+        "The model A/B scores here belong to the frozen benchmark, not the current "
+        "annual walk-forward comparison above."
     )
-    components.synthetic_banner(service.identity)
     summary = service.strategy(horizon)
     if not summary:
         components.empty_state(
-            "No verified Phase 6 experiment is attached for this horizon. Run "
-            "`structural-break-backtest p6-acceptance` and re-export the bundle with "
-            "`--experiments-root .acceptance`, or open the app on the workspace that holds them."
+            "No verified policy benchmark is attached to this snapshot. "
+            "Ask the project owner for an export containing the saved benchmark."
         )
         return
     headline = summary["headline"]
     rungs = service.strategy_rungs(horizon, "HEADLINE")
+    rungs = rungs.loc[rungs["rung"].isin(["BASELINE_0", "BASELINE_1", "MODEL_A", "MODEL_B"])].copy()
     st.markdown(
         f'<span class="sb-chip">Model threshold {float(headline["threshold"]):.2f}</span>'
         f'<span class="sb-chip">Execution policy {headline["execution_config_version"]}</span>'
-        f'<span class="sb-chip">{summary["event_count"]} events</span>'
-        '<span class="sb-chip">Full System: not run (Decision 40)</span>',
+        f'<span class="sb-chip">{summary["event_count"]} events</span>',
         unsafe_allow_html=True,
     )
     cols = st.columns(4)
@@ -122,6 +117,8 @@ def render() -> None:
     )
     with tabs[0]:
         nav = service.strategy_nav(horizon)
+        if not nav.empty:
+            nav = nav.loc[nav.rung.isin(by_rung.index)]
         if nav.empty:
             components.empty_state("No portfolio marks are published for this experiment.")
         else:
@@ -130,6 +127,7 @@ def render() -> None:
                 charts.nav_chart(nav, "drawdown", "Drawdown", percent=True), key="drawdown"
             )
             portfolios = service.strategy_portfolios(horizon)
+            portfolios = portfolios.loc[portfolios.rung.isin(by_rung.index)]
             table = portfolios.reindex(
                 columns=[
                     "label",
@@ -168,6 +166,8 @@ def render() -> None:
             )
     with tabs[1]:
         thresholds = service.strategy_thresholds(horizon)
+        if not thresholds.empty:
+            thresholds = thresholds.loc[thresholds.rung.isin(by_rung.index)]
         if thresholds.empty:
             components.empty_state("No threshold sensitivities are published.")
         else:
@@ -183,10 +183,7 @@ def render() -> None:
                     "mean_net_bps": st.column_config.NumberColumn("Mean net (bps)", format="%+.1f")
                 },
             )
-            st.caption(
-                "Selection counts are the binding fact: at higher thresholds the models select "
-                "almost nothing."
-            )
+            st.caption("Threshold sensitivities use the same saved benchmark and cohort.")
     with tabs[2]:
         rung = (
             st.segmented_control(
@@ -254,7 +251,7 @@ def render() -> None:
                     f"{components.count(rung_info.get('not_selected_priced_n'))}, "
                     f"mean counterfactual net "
                     f"{components.bps(rung_info.get('not_selected_mean_net_return'))}. "
-                    "A good filter rejects trades that would have lost money."
+                    "Counterfactual outcomes are development diagnostics."
                 )
             withheld = service.strategy_trades(horizon, rung, "WITHHELD")
             with st.expander(f"Withheld events ({len(withheld)})"):
@@ -266,14 +263,10 @@ def render() -> None:
                     width="stretch",
                 )
     with tabs[5]:
-        for item in summary.get("limitations", []):
-            st.markdown(f"- {item}")
-        st.markdown(
-            "- Model selections are tiny at the headline threshold, so no A-versus-B economic "
-            "comparison supports a conclusion.\n"
-            "- 2022–2023 was already observed during development; these are not final-test "
-            "results.\n"
-            "- The multi-agent Full System rung is deferred and not run."
+        st.caption(
+            "Post-hoc development benchmark. Distinct execution and score generations "
+            "must not be compared as a matched current-book experiment. "
+            "Missing or unpriced trades are never treated as zero returns."
         )
     components.provenance(
         {
