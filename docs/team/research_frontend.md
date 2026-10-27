@@ -129,6 +129,47 @@ Generated chart shapes are illustrative, not exported observations; implementati
 must draw charts from verified data rather than copy those plotted shapes.
 The owner's direction selection is pending. No application code has changed.
 
+### Revised directions after owner feedback
+
+The owner preferred the editorial and comparison concepts (displayed 2 and 3),
+but found them too generic. They requested taste-skill as additional guidance.
+Installed `taste-skill@taste-skill` version 2.1.5 from Leonxlnx/taste-skill and
+read its app-screen workflow. The existing Streamlit stack and code-first path
+remain the implementation constraints. Generated tool sessions stay ignored.
+
+Taste's analytics/light achromatic-ledger direction (seed 1801923934) supplies
+readable comparison rows and restrained measurement typography; its markets/dark
+data-terminal direction (seed 1332665716) supplies a quiet dark plot surface.
+These are supporting constraints, not a substitute for a product-specific layout.
+
+The Impeccable bolder reroll retains seed `4be07542` and suspends the original
+assigned direction. All six new challengers were assessed for product clarity:
+
+- Cassette j-card leads as **Duplex Record**: two research halves joined by a
+  common spine, with explicit forecast and portfolio identities. The literal
+  cassette motif is excluded. Risk: keep the two halves readable on narrow screens.
+- Saville catalogue becomes **Signal Catalogue**: a dominant scientific plot and
+  aligned, fully named model records. No cryptic catalogue codes or album props.
+  Risk: dark plotting and closely spaced curves require strong contrast.
+- Darkroom exposure sheets become **Exposure Desk**: shared measurement axes,
+  point estimates and a side-by-side explanation of target and book rules.
+  Risk: avoid dense instrument-like diagrams that misrepresent the research.
+- Timetable slide rack declined: raked text and lateral scanning reduce readability.
+- Convention thumbnail catalogue declined: tiny dense labels obstruct assessor use.
+- Airport yellow wayfinding declined: saturated signage overwhelms the evidence.
+
+The three revised images were generated and displayed independently in the order
+Duplex Record, Signal Catalogue, Exposure Desk. Each exact prompt and its local
+PNG are saved under `.impeccable/mocks/decision/`; this folder is not committed.
+No direction has yet been approved. No application code has changed.
+
+Generated drawings are layout references, not analytical evidence. Before coding,
+remove invented confidence whiskers and Gaussian drawings in Duplex Record;
+do not label the post-hoc ROC curve preregistered in Signal Catalogue; and omit
+Exposure Desk's misleading z-axis placements of time/news exits. Plot exact
+verified observations and point estimates only, and keep titles at app scale.
+Unavailable curve/uncertainty exports remain explicitly unavailable.
+
 ## Implementation and acceptance after direction selection
 
 - Isolate current presentation contracts/services from the earlier bundle;
