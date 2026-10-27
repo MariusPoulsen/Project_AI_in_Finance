@@ -115,6 +115,27 @@ def render() -> None:
             )
     st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
 
+    if "comparison" in summary:
+        st.subheader("Same book, other selections")
+        st.dataframe(
+            pd.DataFrame(
+                [
+                    {
+                        "Selection": name,
+                        **{f"Sharpe {p}": round(v["sharpe"], 3) for p, v in periods.items()},
+                        "CAGR 2010–2023": components.pct(periods["2010-2023"]["cagr"]),
+                    }
+                    for name, periods in summary["comparison"].items()
+                ]
+            ),
+            hide_index=True,
+            width="stretch",
+        )
+        st.caption(
+            "The R0 selection is the adopted book; the best forecaster's and the full model's "
+            "selections use the same exits, sizing, sleeve and risk (Decision 119a)."
+        )
+
     st.subheader("Goal 1: reversion forecasters")
     st.dataframe(pd.DataFrame(summary["goal1"]), hide_index=True, width="stretch")
 

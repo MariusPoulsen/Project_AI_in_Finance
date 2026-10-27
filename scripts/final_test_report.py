@@ -4,9 +4,13 @@
     python scripts/final_test_report.py               # 2024-2025, only after the owner's unlock
 
 Goal 1: ROC-AUC, PR-AUC, log loss and Brier of the original Model B (R0), the pre-registered
-bagged B+rule+ou and the best observed B+rule+ou+track, on the labelled events of the years.
-Goal 2: the adopted book (Decision 110d) and the same book without the monitor exit: Sharpe
-in excess of cash, CAGR with and without cash, maximum drawdown, turnover and costs.
+bagged B+rule+ou and the best observed B+rule+ou+track, on the labelled events of the years;
+and (Decision 119) the full model, the bagged B+rule+ou plus the agent desk's entry scores,
+against its own base on the desk's region events.
+Goal 2: the adopted book (Decision 110d), the same book without the monitor exit, and
+(Decision 119) the same book construction with the best forecaster's and the full model's
+selections: Sharpe in excess of cash, CAGR with and without cash, maximum drawdown, turnover
+and costs.
 Writes outputs/final_test/<label>.json and prints the tables.
 """
 
@@ -41,6 +45,22 @@ def goal1(years: tuple[int, int]) -> dict[str, dict[str, Any]]:
             pd.read_parquet(Path("outputs/book") / f"{name}.parquet"), frame, exits
         )
         out[label] = harness.forecast_metrics(scored, years)
+    # Decision 119: the full model against its own base, on the region events with a forecast.
+    from sklearn.metrics import average_precision_score, brier_score_loss, log_loss, roc_auc_score
+
+    table, _ = desk.full_model(WORKSPACE)
+    part = table[table.year.between(*years)].dropna(subset=["p_base", "p_agent"])
+    for label, column in (
+        ("Desk region: bagged B+rule+ou alone (walk-forward calibrated)", "p_base"),
+        ("Desk region: full model (bagged B+rule+ou + agent desk)", "p_agent"),
+    ):
+        out[label] = {
+            "roc_auc": float(roc_auc_score(part.y, part[column])),
+            "pr_auc": float(average_precision_score(part.y, part[column])),
+            "log_loss": float(log_loss(part.y, part[column])),
+            "brier": float(brier_score_loss(part.y, part[column])),
+            "n": int(len(part)),
+        }
     return out
 
 
@@ -66,10 +86,21 @@ def goal2(years: tuple[int, int]) -> dict[str, dict[str, Any]]:
     hit = pd.DataFrame(checks).query("adverse >= 5 and persistence >= 5")
     exits = hit.sort_values("session").groupby("event_id").session.first().dt.date.to_dict()
     out = {}
-    for label, legs in (
+    _, chosen_full = desk.full_model(WORKSPACE)
+    books = (
         ("adopted book (with monitor exit)", desk.desk_book(WORKSPACE, {}, set(), exits)),
         ("same book without the monitor exit", desk.desk_book(WORKSPACE, {}, set(), {})),
-    ):
+        # Decision 119: the same construction, only the selection differs.
+        (
+            "best forecaster's selection",
+            desk.desk_book(WORKSPACE, {}, set(), exits, "B+rule+ou__recent-bag5"),
+        ),
+        (
+            "full model's selection",
+            desk.desk_book(WORKSPACE, {}, set(), exits, "FULL", chosen_full),
+        ),
+    )
+    for label, legs in books:
         b = book.run_book(
             panels,
             w,
