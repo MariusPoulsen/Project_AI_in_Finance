@@ -1,0 +1,30 @@
+[server]
+headless = true
+runOnSave = false
+
+[browser]
+gatherUsageStats = false
+
+[client]
+toolbarMode = "minimal"
+
+[theme]
+base = "light"
+primaryColor = "#0E7C6B"
+backgroundColor = "#F6F7F9"
+secondaryBackgroundColor = "#ECEFF3"
+textColor = "#172033"
+redColor = "#B3261E"
+yellowColor = "#C8A23A"
+greenColor = "#0E7C6B"
+blueColor = "#3D5A80"
+font = "IBM Plex Sans:https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap, sans-serif"
+headingFont = "IBM Plex Sans Condensed:https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600&display=swap, sans-serif"
+codeFont = "IBM Plex Mono:https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&display=swap, monospace"
+baseRadius = "small"
+borderColor = "#D5DAE1"
+showWidgetBorder = true
+chartCategoricalColors = ["#5B6B82", "#0E7C6B", "#C8A23A", "#B3261E", "#3D5A80", "#8C6BB1", "#7A8C99"]
+
+[theme.sidebar]
+backgroundColor = "#EDF0F3"

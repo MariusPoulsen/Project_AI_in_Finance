@@ -6,7 +6,8 @@ research system, including finance/econometrics, ML, NLP/agents, backtesting,
 software engineering, tests, UI, deployment support and technical run documentation.
 The user owns the final academic report and presentation/video.
 
-The authorized primary workflow is research v2. Complete its actual feature/model
+The authorized primary workflow is the accepted research study (generation identity
+"research v2"; see docs/NAMES.md). Complete its actual feature/model
 and independent-verification gates before promoting it to GitHub `main`. Promotion
 changes the default workflow; it does not overwrite the original experiment sources,
 protocol, artifacts or Git history. Pending results must remain pending, and Model B
@@ -22,8 +23,8 @@ Before substantial work, read in this order:
 1. `docs/DECISIONS.md` — canonical decisions, including the v2 amendments and promotion;
    overrides conflicting or stale wording elsewhere.
 2. The active work/gate in `docs/PLAN.md`.
-3. For primary research, `docs/RESEARCH_V2_PROTOCOL.md` and the relevant section of
-   `docs/RESEARCH_V2_RUNBOOK.md`; otherwise only the relevant specification(s).
+3. For primary research, `docs/RESEARCH_PROTOCOL.md` and the relevant section of
+   `docs/RESEARCH_RUNBOOK.md`; otherwise only the relevant specification(s).
 
 Use `docs/specs/README.md` to find component specifications. Original experiment runbooks in `docs/archive/reference/`
 and configurations remain reference contracts; their old dates/populations are not
@@ -31,6 +32,9 @@ the primary v2 defaults. Do not parse the archival PDFs when Markdown equivalent
 
 ## Architecture and workflow constraints
 
+- Code map: `research`, `econometrics`, `ml`, `intelligence` (the accepted study);
+  `backtest` (plan ladder); `pipeline` (book inputs, `pipeline.build_inputs`); `forecast`;
+  `book`; `agents` (the desk). Renamed modules and kept identities: `docs/NAMES.md`.
 - Use the modular Python monolith; do not add FastAPI/microservices without an
   authorized architecture change. Streamlit is presentation only; domain logic
   belongs in packages/services. Keep orchestration imports acyclic.

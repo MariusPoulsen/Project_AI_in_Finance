@@ -402,6 +402,7 @@ A polished UI without backend logic in pages app/
 | Scanner | ScannerService | No. |
 | Pair Detail | PairService + DecisionService | No. |
 | Strategy Lab | StrategyLabService | No. |
+| Strategy Lab: Research experiments | ResearchExperimentsService (within StrategyLabService) | No. |
 | Model & Data Monitor | MonitorService | No. |
 | Methodology / Model Card | MethodologyService | No. |
 | Optional Investigate action | InvestigationService | Cache only unless later promoted by batch job. |

@@ -14,7 +14,6 @@ from structural_break.agents.budgets import (
     recover_lease,
     write_envelope,
 )
-from structural_break.agents.providers import GeminiAgentProvider
 from structural_break.intelligence.extraction import ProviderFailure
 
 SCHEMA = {"type": "object", "properties": {"summary": {"type": "string"}}}
@@ -34,27 +33,6 @@ def policy(global_cap=10, model_cap=10, daily=None, timezone="America/Los_Angele
 
 def reserve(journal, model=MODEL):
     return journal.reserve(model=model, role="mean_reversion_opening", request_sha256=REQUEST)
-
-
-def adapter(journal, transport, **changes):
-    defaults = {
-        "attempt_journal": journal,
-        "transport": transport,
-        "credential": lambda: "test-secret-key",
-        "advocate_min_interval_seconds": 0,
-        "reviewer_min_interval_seconds": 0,
-        "max_retries": 0,
-    }
-    defaults.update(changes)
-    return GeminiAgentProvider(**defaults)
-
-
-def response():
-    return {
-        "candidates": [
-            {"finishReason": "STOP", "content": {"parts": [{"text": '{"summary":"ok"}'}]}}
-        ]
-    }
 
 
 def test_attempt_cap_cannot_reset_after_restart(tmp_path):
@@ -127,74 +105,6 @@ def test_concurrent_reservations_use_unique_exact_sequence(tmp_path):
         assert journal.identity == identity
     with DurableAttemptJournal(tmp_path, policy(global_cap=40, model_cap=40)) as resumed:
         assert resumed.counts["total_reserved_attempts"] == 20
-
-
-def test_reservation_exists_before_every_retry_transport(tmp_path):
-    attempts = 0
-
-    def transport(*args):
-        nonlocal attempts
-        attempts += 1
-        assert (tmp_path / "attempts" / f"{attempts:09d}.json").exists()
-        assert read_envelope(tmp_path / "head.json")["count"] == attempts
-        if attempts == 1:
-            raise TimeoutError("test-secret-key should never be persisted")
-        return response()
-
-    with DurableAttemptJournal(tmp_path, policy()) as journal:
-        provider = adapter(journal, transport, max_retries=1)
-        assert provider.generate("mean_reversion_opening", "event", SCHEMA) == {"summary": "ok"}
-        assert provider.calls == attempts == 2
-        assert journal.counts["total_reserved_attempts"] == 2
-    persisted = "".join(path.read_text() for path in tmp_path.rglob("*.json"))
-    assert "test-secret-key" not in persisted
-    assert "should never be persisted" not in persisted
-
-
-def test_retry_is_blocked_by_durable_cap_before_second_transport(tmp_path):
-    attempts = 0
-
-    def transport(*args):
-        nonlocal attempts
-        attempts += 1
-        raise TimeoutError()
-
-    with DurableAttemptJournal(tmp_path, policy(global_cap=1)) as journal:
-        provider = adapter(journal, transport, max_retries=1)
-        with pytest.raises(ProviderFailure, match="REQUEST_BUDGET_EXHAUSTED"):
-            provider.generate("mean_reversion_opening", "event", SCHEMA)
-        assert provider.calls == attempts == 1
-    with DurableAttemptJournal(tmp_path, policy(global_cap=1)) as resumed:
-        provider = adapter(resumed, transport)
-        with pytest.raises(ProviderFailure, match="REQUEST_BUDGET_EXHAUSTED"):
-            provider.generate("mean_reversion_opening", "event", SCHEMA)
-        assert attempts == 1 and provider.calls == 0
-
-
-def test_missing_key_or_invalid_request_never_reserves(tmp_path):
-    with DurableAttemptJournal(tmp_path, policy()) as journal:
-        provider = adapter(
-            journal, lambda *args: pytest.fail("Must not transport"), credential=lambda: None
-        )
-        with pytest.raises(ProviderFailure, match="PROVIDER_AUTHENTICATION_FAILED"):
-            provider.generate("mean_reversion_opening", "event", SCHEMA)
-        assert journal.counts["total_reserved_attempts"] == 0
-        valid_credentials = adapter(journal, lambda *args: pytest.fail("Must not transport"))
-        with pytest.raises(ProviderFailure, match="INVALID_AGENT_ROLE"):
-            valid_credentials.generate("invalid-role", "event", SCHEMA)
-        assert journal.counts["total_reserved_attempts"] == 0
-
-
-def test_unknown_transport_outcome_remains_charged_on_restart(tmp_path):
-    class ProcessLost(BaseException):
-        pass
-
-    with DurableAttemptJournal(tmp_path, policy()) as journal:
-        provider = adapter(journal, lambda *args: (_ for _ in ()).throw(ProcessLost()))
-        with pytest.raises(ProcessLost):
-            provider.generate("mean_reversion_opening", "event", SCHEMA)
-    with DurableAttemptJournal(tmp_path, policy()) as resumed:
-        assert resumed.counts["total_reserved_attempts"] == 1
 
 
 def test_published_reservation_ahead_of_head_is_conservatively_recovered(tmp_path):

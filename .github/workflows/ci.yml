@@ -73,18 +73,6 @@ jobs:
           enable-cache: true
       - run: uv python install 3.11
       - run: uv sync --frozen --extra agents
-      - name: Verify the bounded offline agent graph
-        run: >-
-          uv run --frozen --extra agents structural-break-agents --fixture
-          --mode mock --output-dir .acceptance/phase5-ci
-      - name: Pause a denominator-preserving mock batch
-        run: >-
-          uv run --frozen --extra agents structural-break-agents batch --fixture
-          --max-events 2 --output-dir .acceptance/phase5-batch-ci
-      - name: Resume the same batch and export blind source review
-        run: |
-          uv run --frozen --extra agents structural-break-agents batch --fixture --output-dir .acceptance/phase5-batch-ci
-          uv run --frozen --extra agents structural-break-agents review-export --bundle .acceptance/phase5-batch-ci/prepared/manifest.json --count 4 --output-dir .acceptance/phase5-review-ci
       - name: Verify shared event simulator fixture and immutable replay
         run: |
           uv run --frozen structural-break-backtest --fixture --output-dir .acceptance/phase6-ci

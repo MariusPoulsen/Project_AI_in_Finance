@@ -24,7 +24,17 @@ def uv_command() -> list[str]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "command", choices=("setup", "app", "check", "predict", "backtest-inputs", "export")
+        "command",
+        choices=(
+            "setup",
+            "app",
+            "research-app",
+            "app-bundle",
+            "check",
+            "predict",
+            "backtest-inputs",
+            "export",
+        ),
     )
     parser.add_argument("--snapshot", type=Path)
     parser.add_argument("--sha256", help="SHA-256 supplied with the shared snapshot")
@@ -47,6 +57,8 @@ def main(argv: list[str] | None = None) -> int:
         parser.error(
             "export requires the owner's accepted --workspace-root and a new --output FILE.zip"
         )
+    if args.command == "app-bundle" and args.output is None:
+        parser.error("app-bundle requires a new --output directory outside the workspace")
     if args.command == "backtest-inputs" and args.pair is None:
         parser.error("backtest-inputs requires --pair, for example KO__PEP")
     uv = uv_command()
@@ -60,7 +72,7 @@ def main(argv: list[str] | None = None) -> int:
         )
     run = [*uv, "run", "--frozen"]
     options = ["--project-root", str(root), "--workspace-root", str(workspace)]
-    if args.command == "app":
+    if args.command in {"app", "research-app"}:
         subprocess.run(
             [*run, "structural-break-team", "check", *options],
             cwd=root,
@@ -68,8 +80,25 @@ def main(argv: list[str] | None = None) -> int:
             check=True,
         )
         environment["SB_WORKSPACE_ROOT"] = str(workspace)
+        environment.setdefault("SB_EXPERIMENTS_ROOT", str(root / ".acceptance"))
+        script = "app/research_app.py" if args.command == "research-app" else "app/streamlit_app.py"
         return subprocess.run(
-            [*run, "python", "-m", "streamlit", "run", "app/streamlit_app.py"],
+            [*run, "python", "-m", "streamlit", "run", script],
+            cwd=root,
+            env=environment,
+        ).returncode
+    if args.command == "app-bundle":
+        return subprocess.run(
+            [
+                *run,
+                "structural-break-app",
+                "export",
+                *options,
+                "--experiments-root",
+                str(root / ".acceptance"),
+                "--output",
+                str(args.output.resolve()),
+            ],
             cwd=root,
             env=environment,
         ).returncode

@@ -484,6 +484,7 @@ Every evaluation output should be keyed by experiment_id containing data snapsho
 | Robustness controls    | Sector/year/market-stress filters; cost/borrow scenario selector.                                                 |
 | Trade/event table      | Sortable event-level entry/exit, status, P(revert), break risk, return, exit reason and links to Pair Detail.     |
 | Experiment manifest    | Frozen dates, thresholds, model/policy versions, cost assumptions, data snapshot.                                 |
+| Research experiments   | Exploratory sublayer (Section 19.2): every pre-registered experiment, its verdict, effect sizes and diagnostics.   |
 
 ## 19.1 Visual honesty
 
@@ -491,6 +492,37 @@ Every evaluation output should be keyed by experiment_id containing data snapsho
 - Show event counts next to performance metrics.
 - Do not hide variants with fewer/missing agent-coverage events; show coverage.
 - Separate validation sensitivity charts from final-test headline results.
+
+## 19.2 Research experiments sublayer
+
+A tab of Strategy Lab, labelled **exploratory**, for the pre-registered
+experiments in DECISIONS 43–59 and later (model and trading improvements,
+walk-forward replications, SEC timing, recent news, FinBERT tone, half-life
+exits, explore-then-confirm rounds). It never mixes with the frozen headline
+ladder or the final-test results.
+
+| **Panel**              | **Content**                                                                                                  |
+|------------------------|--------------------------------------------------------------------------------------------------------------|
+| Experiment registry    | One row per experiment: decision number, question, pre-registration commit, years used, status (passed, failed, inconclusive, pending, not run). |
+| Effect-size plot       | Point estimate and 95 % interval per experiment/variant against the pre-registered threshold, with N and months. |
+| Per-year view          | Yearly differences for decision and reference years, with the "better in k of n years" rule marked.          |
+| Explore-confirm funnel | Variants explored → choice per family (with checksum) → confirmation result after the Holm correction.       |
+| Filter diagnostics     | Skipped versus kept trades: share, mean net return and reversion rate.                                       |
+| Exit diagnostics       | Exit-reason mix (convergence, stop, timeout, news exit) and holding time per exit variant.                   |
+| Extraction quality     | Coverage and validity of the Gemma and FinBERT runs (valid share, rejected, unknown, server failures).        |
+
+**Data contract.** A batch export step collects each experiment's result file
+(for example `walk_forward.json`, `exploration.json`, `confirmation.json`)
+into versioned summaries under `artifacts/research/experiments/<experiment>/`
+with a manifest of checksums and the decision and commit that produced them.
+The page reads only those summaries through `ResearchExperimentsService`
+(part of `StrategyLabService`); it never recomputes, refits or calls a
+provider. The summaries are small enough to ship in the group snapshot.
+
+**Honesty rules.** Show every variant, including failures and the full
+exploration table; state how many variants were tried; mark choices made after
+seeing results as post-hoc; show 2022–2023 rows as already-seen development
+data; never label an exploratory result as a final-test result.
 
 # 20. Storage schemas, functions, and artefacts
 

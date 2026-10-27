@@ -76,7 +76,7 @@ Full instructions: `docs/GROUP_QUICKSTART.md`.
 
 1. `AGENTS.md`: binding rules for every agent in this repo.
 2. `docs/DECISIONS.md`: canonical decisions. These override any other document.
-3. `docs/RESEARCH_V2_PROTOCOL.md`: the scientific protocol.
+3. `docs/RESEARCH_PROTOCOL.md`: the scientific protocol.
 4. `docs/GROUP_QUICKSTART.md`: snapshot workflow.
 5. Your work stream's specification (section 5 below).
 
@@ -137,50 +137,40 @@ stop and ask the human.
 - New dependencies: `uv add <pkg>` (updates `uv.lock`; mention it in the PR).
   CI runs without network; tests must use small deterministic fixtures, never the
   snapshot or paid/LLM APIs.
-- Avoid editing `docs/DECISIONS.md`, `docs/RESEARCH_V2_PROTOCOL.md`,
-  `docs/STATUS.md` and `docs/PLAN.md` (merge-conflict hotspots and Marius's
+- Avoid editing `docs/DECISIONS.md`, `docs/RESEARCH_PROTOCOL.md`,
+  `docs/PLAN.md` (merge-conflict hotspots and Marius's
   canonical record). Put your notes in `docs/team/<stream>.md` instead; Marius
   folds accepted decisions into the canonical docs.
 
 ## 5. Work streams
 
-Your human will tell you which one is theirs. `docs/PLAN.md` is the authoritative
-checklist: each stream below maps onto a PLAN phase, and its open checkboxes and
-acceptance gate define "done". Start by producing a short written plan against
-those checkboxes (in `docs/team/<stream>.md`) and confirm it with your human before
-large changes. PLAN status and checkboxes are updated only when a gate truly passes.
+Your human will tell you which one is theirs. [PLAN.md](PLAN.md) lists every component with
+its status and the open items. Start by producing a short written plan (in
+`docs/team/<stream>.md`) and confirm it with your human before large changes. The detailed
+original checklists (for example the full app, P7, and hardening, P8) are in
+[archive/PHASE_PLAN.md](archive/PHASE_PLAN.md).
 
-### WS1: Gradient boosting, tuning and cross-validation
-PLAN phase: none yet (exploratory research on top of the frozen v2 protocol; a
-methodology change needs a new authorized experiment).
+**Finished streams** (results in [FORECASTING_AND_BOOK.md](FORECASTING_AND_BOOK.md) and
+[AGENT_DESK.md](AGENT_DESK.md)):
+- *Gradient boosting, tuning and cross-validation:* the fixed XGBoost Model B (R0) stays the
+  selection model; tuned families did not beat it (Decision 66); the bagged B+rule+ou is the
+  pre-registered Goal 1 forecaster (Decisions 75–94).
+- *Backtesting framework:* the plan-ladder engine (`backtest`) and the adopted trading book
+  (`book`, Decision 110d).
+- *Predictions and results analysis:* the Goal 1 and Goal 2 tables and figures in
+  `docs/figures/quant/`.
+- *Agents:* the agent desk (`agents`), evaluated in Decision 110d.
 
-Goal: find out whether better-tuned tree models, or better validation and
-calibration, change the A-versus-B conclusion, without breaking the matched design.
-
-Starting points: `src/structural_break/research/evaluation.py`
-(`_estimator`, `evaluate_matched_models`), `configs/research_v2.yaml`
-(`logistic_c`, `xgb_candidates`, tuning years), snapshot feature tables via
-`structural_break.collaboration.queries.existing_predictions`.
-
-First task: **build an exploratory experiment harness** (for example
-`src/structural_break/experiments/`) that loads the snapshot's per-horizon
-model-input table, runs a configured estimator/grid/CV scheme for A and every B
-ablation with identical budgets, and writes config + metrics + predictions to
-`outputs/ws1/<experiment_id>/`. It must refuse 2024-2025 rows and must not write
-into the workspace. Reproduce the canonical logistic/XGBoost numbers first as a
-sanity check.
-
-Ideas: larger but equal-budget XGBoost grids, early stopping on forward folds;
-LightGBM / CatBoost / HistGradientBoosting; monotone constraints; more
-walk-forward folds (e.g. 2014-2019) with horizon purging; isotonic vs sigmoid
-vs no calibration; class-imbalance handling; stability of chosen hyperparameters
-across folds; SHAP/permutation importance of B's SEC features; learning curves.
+**Open for the group:**
+- the blind human review of 50 agent cases: fill in
+  [agent_review/review_answers.csv](agent_review/review_answers.csv) (no coding needed);
+- the Streamlit app (below).
 
 ### WS2: Frontend / Streamlit app
-PLAN phase: **P7** (full Streamlit research application).
+Status: **open** (the group).
 
 Goal: turn the minimal read-only app (`app/streamlit_app.py`, currently "Model
-comparison" and "Event scores") into the full research application (PLAN.md P7).
+comparison" and "Event scores") into the full research application (the Streamlit app in PLAN.md).
 
 Starting points: `app/streamlit_app.py`, `app/reference_streamlit_app.py`
 (older Scanner/Pair Detail), `src/structural_break/services/research_app.py`,
@@ -191,61 +181,10 @@ Ideas: Scanner (current divergences with A/B probabilities); Pair Detail
 events and outcomes); Model comparison with reliability diagrams, ROC/PR, B-A
 paired bootstrap interval, ablation ladder; slice explorer (year, business group,
 sector, ACTIVE); source-coverage monitor (UNKNOWN rates); methodology/model card
-page; Strategy Lab page that will read WS3's outputs. Every displayed number
+page; Strategy Lab page that reads the book's outputs (`outputs/book/`, `outputs/agent_desk/`). Every displayed number
 shows its model/data version. Cache by version identifier; handle
 empty/pending/error states; add app smoke tests. Optional later: Streamlit
 Community Cloud deployment from a small demo snapshot.
-
-### WS3: Backtesting framework
-PLAN phase: **P6** (backtesting framework, experiment freeze, final evaluation).
-
-Goal: one shared execution engine that turns events and model selections into
-simulated trades and returns, for all strategy rungs, on development data only.
-
-Starting points: the merged Phase 6 foundation in `src/structural_break/backtest/`
-(fixed-share event engine, five-rung ladder, 12 cost/borrow scenarios, robustness
-slices, calendar-month bootstrap, portfolio fixture; CLI `structural-break-backtest`,
-runbook `docs/BACKTEST_RUNBOOK.md`, DECISIONS sections 30-31). It is tested only on
-synthetic fixtures and its production policies are still DRAFT. Also
-`docs/specs/05_BACKTESTING_EVALUATION.md`, `configs/backtest.yaml` (costs are still
-`null`) and `python scripts/team.py backtest-inputs --pair X --horizon 20`.
-Extend this code rather than starting over.
-
-Ideas: connect the engine to real snapshot inputs for all 736 pairs (the export
-command is currently per-pair; add an all-pairs path); beta-weighted long/short
-legs; close-signal / next-open execution; convergence, adverse-stop and timeout
-exits consistent with the labels; transaction cost and borrow assumptions with a
-sensitivity grid (document sources); event-level return/MAE/MFE/holding period;
-portfolio simulation with exposure and turnover; rungs Baseline 0 (all raw
-crossings), Baseline 1 (econometrically valid), Model A selected (p >= 0.65),
-Model B selected; Full System waits for the agents. Freeze execution
-assumptions in writing before looking at 2022-2023 returns.
-
-### WS4: Predictions and results analysis
-PLAN phase: supports the v2 reporting gates and P6 predictive metrics; no own phase.
-
-Goal: understand where and why B differs from A, and produce clean, traceable
-tables and figures for the group.
-
-Starting points: `python scripts/team.py predict` (omit `--pair` for all events;
-`--horizon 10/30`), `existing_predictions(...)`, the published reports.
-
-Ideas: error analysis by business group, year, ACTIVE status, coverage level;
-calibration/reliability plots; where B helps/hurts and whether that tracks SEC
-coverage; logistic coefficients for B's SEC block; case studies of individual
-events with their SEC evidence metadata; denominators and positive counts for
-every table; all ten bundles and all three horizons reported (no cherry-picking).
-
-### WS5 (optional): Agents and human annotation
-PLAN phase: **P5** (multi-agent investigation and decision controller).
-
-The merged Phase 5 foundation in `src/structural_break/agents/` (CLI
-`structural-break-agents`, runbook `docs/PHASE5_RUNBOOK.md`, DECISIONS sections
-28-29) has bounded LLM agents and a deterministic controller plus a 50-case blinded
-SEC review export with zero human annotations so far. Whether the multi-agent
-layer is completed is still undecided. A group member can complete the blind
-annotations (no coding needed). Live LLM work needs a personal free Google AI Studio key in
-`.env` (never committed); paid APIs stay disabled.
 
 ## 6. When you are unsure
 

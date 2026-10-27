@@ -1,6 +1,6 @@
 > **Original experiment reference.** These instructions describe the recorded
 > 28-pair source/config generations. Use their original workspace and freeze;
-> the active expanded workflow is in [the v2 runbook](../../RESEARCH_V2_RUNBOOK.md).
+> the active expanded workflow is in [the v2 runbook](../../RESEARCH_RUNBOOK.md).
 > Commands below use the explicit reference CLI.
 
 # Econometric history runbook

@@ -6,8 +6,8 @@ commands, process IDs, benchmark limitations and acceptance records describe
 prior attempts. They are historical records, not current launch instructions or
 proof of completed features, fitted results or promotion.
 
-Use the [current runbook](../RESEARCH_V2_RUNBOOK.md) for active commands,
-[status](../STATUS.md) for remaining gates and [decisions](../DECISIONS.md) for
+Use the [current runbook](../RESEARCH_RUNBOOK.md) for active commands,
+[status](PHASE_STATUS.md) for remaining gates and [decisions](../DECISIONS.md) for
 canonical amendments. All original narrative and immutable identities below
 are retained; only Markdown link destinations are adjusted for this archive
 directory and the corresponding historical snapshots. The original runbook byte SHA-256 is
@@ -18,7 +18,7 @@ directory and the corresponding historical snapshots. The original runbook byte 
 # Research v2 batch runbook
 
 This is the separately versioned experiment authorized on 2026-10-06. Read
-[the frozen protocol](RESEARCH_V2_PROTOCOL_HISTORY.md) before interpreting its results.
+[the frozen protocol](RESEARCH_PROTOCOL_HISTORY.md) before interpreting its results.
 The default workspace is `data/research_v2`, with its own DuckDB database,
 immutable sources, pair caches, evidence batches and fitted models. The original
 P4 workspace and its 2024–2025 outcome lock remain in place.
@@ -266,7 +266,7 @@ speed. The guard preserves short sentences and word-rich lines without merging
 table rows, but cannot certify narrative semantics. Record raw offsets,
 full-source token denominators and discarded/unscored coverage; no eligible text
 means UNKNOWN. The proof and limitations are in
-[the protocol amendment](RESEARCH_V2_PROTOCOL_HISTORY.md#fit-input-preprocessing-amendment).
+[the protocol amendment](RESEARCH_PROTOCOL_HISTORY.md#fit-input-preprocessing-amendment).
 Production receipt `finbert_quality_v2_plan_acceptance.json` confirms these
 counts: 8,292 raw physical-line windows, 1,259 eligible/scored and 7,033 excluded;
 legacy has 8,720 raw newline-plus-punctuation windows. Both retain the same

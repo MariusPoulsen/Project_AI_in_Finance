@@ -21,7 +21,15 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-research = ["scikit-learn>=1.7,<2", "xgboost>=3,<4", "shap>=0.48,<1", "mlflow>=3,<4"]
+research = [
+    "scikit-learn>=1.7,<2",
+    "xgboost>=3,<4",
+    "shap>=0.48,<1",
+    "mlflow>=3,<4",
+    "lightgbm>=4.5,<5",
+    "catboost>=1.2,<2",
+    "optuna>=4,<5",
+]
 agents = ["litellm>=1.70,<2", "langgraph>=1,<2"]
 nlp = ["torch>=2.6,<3", "transformers>=4.48,<5"]
 app = ["streamlit>=1.45,<2", "plotly>=6,<7"]
@@ -30,9 +38,9 @@ app = ["streamlit>=1.45,<2", "plotly>=6,<7"]
 structural-break = "structural_break.cli:main"
 structural-break-research = "structural_break.research.cli:main"
 structural-break-reference = "structural_break.services.foundation:main"
-structural-break-agents = "structural_break.agents.cli:main"
 structural-break-backtest = "structural_break.backtest.cli:main"
 structural-break-team = "structural_break.collaboration.cli:main"
+structural-break-app = "structural_break.app_bundle.cli:main"
 
 [dependency-groups]
 dev = ["pytest>=8,<10", "pytest-socket>=0.7,<1", "pytest-xdist>=3.6,<4", "ruff>=0.11,<1", "mypy>=1.15,<2", "types-PyYAML>=6", "pandas-stubs>=2.2,<3"]
@@ -66,7 +74,7 @@ files = ["src", "scripts", "app"]
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-module = ["pyarrow", "pyarrow.*", "yfinance", "exchange_calendars", "exchange_calendars.*", "statsmodels", "statsmodels.*", "matplotlib", "matplotlib.*", "sklearn", "sklearn.*", "xgboost", "xgboost.*", "shap", "shap.*", "mlflow", "mlflow.*", "scipy", "scipy.*", "streamlit", "streamlit.*", "plotly", "plotly.*", "joblib", "joblib.*"]
+module = ["pyarrow", "pyarrow.*", "yfinance", "exchange_calendars", "exchange_calendars.*", "statsmodels", "statsmodels.*", "matplotlib", "matplotlib.*", "sklearn", "sklearn.*", "xgboost", "xgboost.*", "shap", "shap.*", "mlflow", "mlflow.*", "scipy", "scipy.*", "streamlit", "streamlit.*", "plotly", "plotly.*", "joblib", "joblib.*", "catboost", "catboost.*", "lightgbm", "lightgbm.*", "optuna", "optuna.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

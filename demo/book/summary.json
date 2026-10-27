@@ -1,0 +1,165 @@
+{
+ "design": [
+  [
+   "Selection",
+   "Original Model B (R0), top 20 % of each test year, after the R1 fresh-news, mean-crossing and cost filters"
+  ],
+  [
+   "Execution and size",
+   "Signal and trade at the close; 7.5 % of NAV per entry; pairs gross cap 100 %"
+  ],
+  [
+   "Exits",
+   "Take profit at |z| \u2264 1.0, no z-score stop; time stop of 1.5 half-lives (10\u201340 sessions); 8-K adverse-tone news exit; agent monitor exit (adverse \u2265 5 and persistence \u2265 5)"
+  ],
+  [
+   "Residual sleeve",
+   "PCA residual reversal, \u03bb 0.25, trading speed 0.10"
+  ],
+  [
+   "Risk",
+   "4 % volatility target (60 sessions); hard 200 % gross cap"
+  ],
+  [
+   "Cash",
+   "Interest at the 13-week T-bill minus 0.25 %; Sharpe in excess of it"
+  ]
+ ],
+ "stats": {
+  "Adopted book (with monitor exit)": {
+   "2010\u20132017 (selection)": {
+    "sharpe": 0.813167506613614,
+    "cagr": 0.02913490857688772,
+    "cagr_with_cash": 0.030074269273858922,
+    "max_drawdown": -0.06909976793224581,
+    "volatility": 0.036120038345969274,
+    "turnover": 23.34739973318962,
+    "cost": 0.017965186623465593
+   },
+   "2018\u20132023 (holdout)": {
+    "sharpe": 0.5947938841811049,
+    "cagr": 0.023431018659754388,
+    "cagr_with_cash": 0.040966969346394766,
+    "max_drawdown": -0.0451488523220942,
+    "volatility": 0.04030506634683501,
+    "turnover": 23.109092562943314,
+    "cost": 0.01799016856112806
+   },
+   "2010\u20132023": {
+    "sharpe": 0.7127375392340681,
+    "cagr": 0.026687196378496925,
+    "cagr_with_cash": 0.03472721793738365,
+    "max_drawdown": -0.06909976793224581,
+    "volatility": 0.037964442905099476,
+    "turnover": 23.245297086993794,
+    "cost": 0.01797589012827328
+   }
+  },
+  "Same book without the monitor exit": {
+   "2010\u20132017 (selection)": {
+    "sharpe": 0.7990415648655439,
+    "cagr": 0.02855332192792681,
+    "cagr_with_cash": 0.029492150387717908,
+    "max_drawdown": -0.05864229770988638,
+    "volatility": 0.036047804899258296,
+    "turnover": 23.20572735113584,
+    "cost": 0.017722907313143847
+   },
+   "2018\u20132023 (holdout)": {
+    "sharpe": 0.4387200351112808,
+    "cagr": 0.018833110068420256,
+    "cagr_with_cash": 0.036289951604173476,
+    "max_drawdown": -0.06323118804290417,
+    "volatility": 0.04481932007766175,
+    "turnover": 22.546425398888193,
+    "cost": 0.017114457610652948
+   },
+   "2010\u20132023": {
+    "sharpe": 0.6216123533375101,
+    "cagr": 0.0243773963014835,
+    "cagr_with_cash": 0.03239918961977728,
+    "max_drawdown": -0.0632311880429044,
+    "volatility": 0.040036886946987316,
+    "turnover": 22.923249598171132,
+    "cost": 0.017462217193592804
+   }
+  }
+ },
+ "goal1": [
+  {
+   "model": "Model A (prices only, original scheme)",
+   "AUC 2010-17": 0.684,
+   "PR 2010-17": 0.107,
+   "LL 2010-17": 0.2085,
+   "Brier 2010-17": 0.0524,
+   "AUC 2018-23": 0.711,
+   "PR 2018-23": 0.204,
+   "LL 2018-23": 0.2836,
+   "Brier 2018-23": 0.0791
+  },
+  {
+   "model": "Original Model B",
+   "AUC 2010-17": 0.692,
+   "PR 2010-17": 0.107,
+   "LL 2010-17": 0.2111,
+   "Brier 2010-17": 0.0529,
+   "AUC 2018-23": 0.718,
+   "PR 2018-23": 0.207,
+   "LL 2018-23": 0.2832,
+   "Brier 2018-23": 0.079
+  },
+  {
+   "model": "B+rule+ou, bagged (pre-registered Goal 1 model)",
+   "AUC 2010-17": 0.743,
+   "PR 2010-17": 0.141,
+   "LL 2010-17": 0.198,
+   "Brier 2010-17": 0.051,
+   "AUC 2018-23": 0.735,
+   "PR 2018-23": 0.217,
+   "LL 2018-23": 0.278,
+   "Brier 2018-23": 0.0781
+  },
+  {
+   "model": "B+rule+ou+track, bagged (best observed, post-hoc)",
+   "AUC 2010-17": 0.745,
+   "PR 2010-17": 0.142,
+   "LL 2010-17": 0.1982,
+   "Brier 2010-17": 0.0511,
+   "AUC 2018-23": 0.739,
+   "PR 2018-23": 0.222,
+   "LL 2018-23": 0.2765,
+   "Brier 2018-23": 0.0777
+  }
+ ],
+ "audit": {
+  "trials": 132,
+  "pbo": 0.539044289044289,
+  "dsr_2010_2023": {
+   "132": 0.862975082503417,
+   "300": 0.8172117463064004,
+   "500": 0.7865043599825916
+  },
+  "dsr_2018_2023": {
+   "132": 0.6523645202928557,
+   "300": 0.6080159852531856,
+   "500": 0.5813915055004709
+  },
+  "rank": 7
+ },
+ "desk": {
+  "entry_scored": 6485,
+  "entry_abstained": 31,
+  "monitor_checks": 21333,
+  "monitor_after_triage": 7937,
+  "monitor_scored": 7933,
+  "monitor_abstained": 4,
+  "decision": "110d"
+ },
+ "news": {
+  "source_2024_2025": "TickerTick",
+  "toned_session_ratio": 4.83,
+  "coverage_ratio": 1.9,
+  "decision": "116d"
+ },
+ "decisions": "Decisions 105-117 in docs/DECISIONS.md"
+}

@@ -12,6 +12,8 @@ from typing import Annotated, Literal, Self, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from structural_break import periods
+
 Identifier = Annotated[str, Field(min_length=1, max_length=200)]
 ShortText = Annotated[str, Field(min_length=1, max_length=1200)]
 SHA256 = Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
@@ -250,8 +252,8 @@ class AgentInput(FrozenModel):
     def admissible_development_sources(self) -> Self:
         if self.event_timestamp.utcoffset() is None:
             raise ValueError("Event timestamp must have an explicit timezone")
-        if self.event_timestamp.astimezone(UTC).year >= 2024:
-            raise ValueError("Phase 5 development inputs cannot open the locked final-test period")
+        if self.event_timestamp.astimezone(UTC).date() > periods.data_end():
+            raise ValueError("Agent inputs cannot open the locked final-test period")
         if self.leg_a_security_id == self.leg_b_security_id:
             raise ValueError("Pair securities must be distinct")
         if len({source.chunk_id for source in self.evidence}) != len(self.evidence):

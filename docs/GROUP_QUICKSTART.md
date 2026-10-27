@@ -13,10 +13,10 @@ manifests are retained.
 - **v2 is accepted** (DECISIONS 34), and the official `group-v2.zip` is the
   snapshot to use. The earlier `group-v2-provisional.zip` is superseded; do
   not use it.
-- **Phase 6 backtesting** (`src/structural_break/backtest/`,
+- **Plan-ladder backtesting** (`src/structural_break/backtest/`,
   `structural-break-backtest`) runs on the imported accepted workspace under
   frozen execution policies. See [BACKTEST_RUNBOOK.md](BACKTEST_RUNBOOK.md) and
-  [P6_DEVELOPMENT_RESULTS.md](P6_DEVELOPMENT_RESULTS.md).
+  [archive/DEVELOPMENT_RESULTS.md](archive/DEVELOPMENT_RESULTS.md).
 
 Coding agents: give your agent [GROUP_AGENT_BRIEF.md](GROUP_AGENT_BRIEF.md) first.
 Keep per-stream notes in [docs/team/](team/README.md).
@@ -51,12 +51,14 @@ and restores local DuckDB views.
 
 ```shell
 python scripts/team.py app
+python scripts/team.py research-app
 python scripts/team.py check
 python scripts/team.py predict --pair KO__PEP
 python scripts/team.py backtest-inputs --pair KO__PEP --horizon 20
 ```
 
-The app browses accepted outputs and reports. `predict` reloads the actual saved
+The app browses accepted outputs and reports; `research-app` opens the full
+seven-page application (see [app/README.md](../app/README.md)). `predict` reloads the actual saved
 logistic A/B-both models, runs their original preprocessing and calibration, and
 checks every returned probability against the published prediction within
 `1e-12`. It writes a fresh CSV under `outputs/`. Omit `--pair` for all existing
