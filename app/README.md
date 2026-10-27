@@ -1,12 +1,13 @@
 # Read-only research apps
 
-Two Streamlit entry points read the same accepted outputs. Neither downloads
-sources, calls a language model, fits a model or writes analytical results, and
-neither can open the locked 2024–2025 final test.
+The full app presents the current walk-forward research and the earlier accepted
+study as separate views. Browsing never downloads sources, calls a language
+model, fits a model, or writes analytical results. The committed presentation
+snapshot excludes 2024–2025 outcomes and reports its final-test state as locked.
 
 | Entry point | What it is |
 |---|---|
-| `research_app.py` | The full research application (PLAN P7, work stream 2): seven pages, charts, explanations, backtest results. Use this for demos and the deployed site. |
+| `research_app.py` | Dark research workspace: current forecasting and portfolio comparisons, investigation, evidence and clearly labelled reference-study tools. Use this for the deployed site. |
 | `streamlit_app.py` | The minimal verified two-page view (model comparison, event scores). Unchanged. |
 | `reference_streamlit_app.py` | The original Scanner/Pair Detail for the recorded v1 workspace. See the [reference archive](../docs/archive/README.md). |
 
@@ -20,20 +21,42 @@ uv run --frozen streamlit run app/research_app.py
 
 | Page | What it answers |
 |---|---|
-| Overview | The question, the spread picture with entry/convergence/stop bands, and the predeclared primary A-vs-B result in plain words, with its interval and denominators. |
+| Overview | Two findings: the preregistered OU forecaster improves ranking, while R0 remains the adopted book selector. Shows the common period, cohort and limitations. |
+| Forecasting | Model A, R0, B+rule+ou bag5 and the post-hoc +track variant. Shared period/metric controls, point estimates, model roles, explanations and CSV export. |
+| Portfolio | Adopted R0 + monitor versus the same book without the monitor. Period-aligned statistics, NAV/drawdown, return-basis labels, costs and exports. |
+| Evidence and diagnostics | Export availability, agent coverage and abstentions, overfitting audit, news-source shift and presentation hashes. |
+| Methods | Current targets, model roles, book design, chronology, limitations, and the distinction between forecast quality and returns. |
 | Scanner | Every scored divergence: filter by date, research period, business group, ACTIVE status, minimum Model B probability or pair; select a row to open it; download as CSV. |
 | Pair detail | Rebased prices, the frozen z-score with bands and event markers, ACTIVE shading, monthly hedge-ratio history and diagnostics; per event, both models' probabilities, an exact feature-contribution chart (linear SHAP / TreeSHAP of the saved models) and the SEC evidence available at the close, with UNKNOWN kept explicit. |
-| Model Lab | All ten bundles per horizon: ablation ladder, B − A intervals, reliability, ROC and precision–recall curves, predeclared slices, global drivers, tuning folds and calibrators, full metrics table. |
-| Strategy Lab | The Phase 6 four-rung ladder: selected/priced/unpriced counts, net bps, NAV and drawdown, threshold and cost/borrow sensitivity, paired calendar-month bootstrap, rejected-trade (counterfactual) analysis, limitations. Full System shown as not run. |
-| Data and model monitor | Every data/model identity, samples per period, events per year, SEC coverage and UNKNOWN rates by year, feature drift, the saved-model inventory. |
-| Methodology | Model card: target, chronology, features, models, evaluation, limitations, intended use, data/privacy/security. |
+| Accepted model study (reference) | Earlier ten-bundle A/B study: ablations, calibration, ROC/PR, SHAP, slices, folds and uncertainty. These are not current walk-forward predictions. |
+| Plan-ladder benchmark (reference) | Earlier strategy ladder, costs, sensitivities and uncertainty. Its unrun Full System rung is distinct from the current separately evaluated desk. |
+| Reference data health / protocol | Earlier study identities, coverage, drift and frozen model card. |
 
-Every page has a "Data and model versions behind this page" expander, and every
-loading, empty, pending and failed-verification state has its own message.
+Scanner and Pair Detail are explicitly labelled as the earlier accepted study.
+Current per-event predictions, calibration arrays and uncertainty have not been
+exported; the app does not invent them or reuse earlier scores under new names.
+Each data source has independent missing/failed verification states and provenance.
 
 ### Where the data comes from
 
-The app looks, in order, for:
+Current pages load `demo/book/summary.json`, `book_daily.parquet` and their
+versioned `presentation.json` manifest. `SB_RESEARCH_SUMMARY` can select another
+directory (relative paths resolve from the repository, not the launch directory).
+Both artifact hashes, dates, model identities and required measurements are
+checked before display. Cache identity includes every file's bytes. These hashes
+identify presentation bytes; they do not replace scientific acceptance checks.
+
+To register an updated **development-only** book export explicitly:
+
+```shell
+python scripts/export_research_presentation.py
+```
+
+Review the cohort metadata and role/source mappings when changing the export.
+The app never invokes this writer. Final-test publication needs its own authorized
+presentation update; this manifest deliberately accepts only the locked state.
+
+Reference-study pages load lazily and look, in order, for:
 
 1. `SB_APP_BUNDLE`: a checksummed **app bundle** directory (see below).
 2. `demo/app_bundle/`: a bundle committed for the deployed demo.
@@ -70,14 +93,16 @@ uv run --frozen structural-break-app synthetic --output outputs/app-bundles/synt
 SB_APP_BUNDLE=outputs/app-bundles/synthetic uv run --frozen streamlit run app/research_app.py
 ```
 
-Every ticker, price, label and result in it is **invented**. It runs the
+Every ticker, price, label and result in that reference bundle is **invented**. It runs the
 project's real matched evaluation on fake events so the interface can be built
 and tested without the snapshot. Each page shows a red banner and the bundle is
-marked `synthetic: true`. Never present it as a finding.
+marked `synthetic: true`. Never present it as a finding. This setting changes only
+the reference study; it does not replace the separately loaded current summary.
 
 ## Deploying to Streamlit Community Cloud
 
-1. Export a real bundle (above) and copy it to `demo/app_bundle/` on a branch.
+1. Include the verified `demo/book/` presentation files for the current comparisons.
+   Export a real reference bundle (above) and copy it to `demo/app_bundle/` on a branch.
    It is generated data, so whether it lives on `main` or a separate demo
    branch is the repository owner's decision.
 2. On [share.streamlit.io](https://share.streamlit.io), create an app from the

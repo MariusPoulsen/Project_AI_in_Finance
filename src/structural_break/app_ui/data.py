@@ -23,6 +23,11 @@ from structural_break.config.models import RuntimeSettings
 from structural_break.config.paths import ProjectPaths
 from structural_break.research.primary import PrimaryNotReadyError, primary_versions
 from structural_break.services.research_application import ResearchApplicationService
+from structural_break.services.research_summary import (
+    ResearchSummaryService,
+    artifact_identity,
+    read_summary,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
@@ -38,6 +43,40 @@ class LoadOutcome:
     status: Literal["ready", "pending", "failed"]
     service: ResearchApplicationService | None = None
     message: str = ""
+
+
+@dataclass(frozen=True)
+class SummaryOutcome:
+    status: Literal["ready", "pending", "failed"]
+    service: ResearchSummaryService | None = None
+    message: str = ""
+
+
+@st.cache_resource(show_spinner=False, max_entries=2)
+def _summary(location: str, identity: tuple[str, ...]) -> ResearchSummaryService:
+    del identity
+    return read_summary(Path(location))
+
+
+def load_summary(root: Path = PROJECT_ROOT) -> SummaryOutcome:
+    explicit = Path(os.environ.get("SB_RESEARCH_SUMMARY", "demo/book"))
+    folder = explicit if explicit.is_absolute() else root / explicit
+    try:
+        identity = artifact_identity(folder)
+        return SummaryOutcome("ready", _summary(str(folder.resolve()), identity))
+    except FileNotFoundError:
+        return SummaryOutcome(
+            "pending",
+            message="The current research presentation snapshot "
+            "is not available. Ask the project owner for the demo/book export.",
+        )
+    except Exception:  # noqa: BLE001 - fail closed without exposing paths or internals
+        return SummaryOutcome(
+            "failed",
+            message="The current presentation files do not match "
+            "their manifest or data contract. Results are withheld. Ask the "
+            "project owner to verify and re-export the presentation snapshot.",
+        )
 
 
 def resolve_source(root: Path = PROJECT_ROOT) -> DataSource:

@@ -170,6 +170,30 @@ Exposure Desk's misleading z-axis placements of time/news exits. Plot exact
 verified observations and point estimates only, and keep titles at app scale.
 Unavailable curve/uncertainty exports remain explicitly unavailable.
 
+### Selected direction and working implementation
+
+On 2026-10-27 the owner selected revised image 2, the dark Signal Catalogue,
+and requested stronger UX plus motion using taste and Impeccable. A single refined
+image was generated before implementation, preserving that selected direction.
+`DESIGN.md` records the durable dark system and motion budget.
+
+The working app now defaults to the two current research goals. Forecasting
+offers four metrics, two matched periods, four retained models and explicit model
+roles. Portfolio statistics and curves follow the selected period. Diagnostics
+explain missing exports, abstentions, selection risk and the news-source shift.
+Earlier Scanner, Pair Detail, accepted model diagnostics and plan-ladder tools
+remain accessible with explicit reference-study labels and scoped horizon controls.
+
+The compact current summary has an explicit presentation manifest and typed
+read-only service; file hashes participate in cache identity. Current views work
+without the earlier bundle. No scientific parameters, accepted artifacts, freeze
+manifest, final-test gates or analytical jobs were changed. The snapshot is
+development-only; final-test publication remains a separate authorized update.
+
+Motion uses quick control color/selection feedback and native disclosure behavior,
+with a reduced-motion alternative. No loaders, chart-value animation, autoplay,
+scroll choreography or new frontend dependency.
+
 ## Implementation and acceptance after direction selection
 
 - Isolate current presentation contracts/services from the earlier bundle;

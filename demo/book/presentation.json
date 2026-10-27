@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "final_test": "locked",
+  "files": {
+    "summary.json": "275702a209417393b70b01afd36b3b22222bc67d845171de0c238bf0ab43e774",
+    "book_daily.parquet": "d8ac51de40d85f31a23c9e7d6ceea9a83331f2e25c7a1708cbf5ea0f664fe186"
+  },
+  "models": [
+    {
+      "id": "A",
+      "source_name": "Model A (prices only, original scheme)",
+      "name": "Model A",
+      "role": "Price reference",
+      "explanation": "Quantitative price features. The reference for the incremental SEC comparison."
+    },
+    {
+      "id": "R0",
+      "source_name": "Original Model B",
+      "name": "Model B / R0",
+      "role": "Adopted book selector",
+      "explanation": "Original fixed-XGBoost Model B adds SEC evidence to prices. R0 still selects trades."
+    },
+    {
+      "id": "B_rule_ou",
+      "source_name": "B+rule+ou, bagged (pre-registered Goal 1 model)",
+      "name": "B+rule+ou · bag5",
+      "role": "Preregistered forecaster",
+      "explanation": "Adds the reversion rule and Ornstein–Uhlenbeck features, bagged over five seeds. The preregistered Goal 1 choice; improved forecasting did not select a better book."
+    },
+    {
+      "id": "B_rule_ou_track",
+      "source_name": "B+rule+ou+track, bagged (best observed, post-hoc)",
+      "name": "B+rule+ou+track · bag5",
+      "role": "Post-hoc best observed",
+      "explanation": "Adds pair-track features. Best observed point estimates, chosen after inspection; not an independent confirmation of model selection."
+    }
+  ],
+  "cohorts": {
+    "2018–2023 · confirmation": {
+      "id": "walk-forward-labelled-2018-2023",
+      "n": 10940,
+      "definition": "Fresh |z| >= 2 divergence; convergence to |z| <= 0.5 within 20 sessions before |z| >= 3. Matched labelled walk-forward events."
+    },
+    "2010–2017 · selection": {
+      "id": "walk-forward-labelled-2010-2017",
+      "n": 11048,
+      "definition": "Fresh |z| >= 2 divergence; convergence to |z| <= 0.5 within 20 sessions before |z| >= 3. Matched labelled walk-forward events."
+    }
+  },
+  "source": "demo/book export; docs/FORECASTING_AND_BOOK.md; Decisions 105–117. Development periods were reused during research; not an untouched final test.",
+  "precision": "Forecast metrics are rounded published point estimates. Per-event current-model predictions, uncertainty and calibration arrays are not included. Hashes identify presentation bytes, not scientific acceptance."
+}
