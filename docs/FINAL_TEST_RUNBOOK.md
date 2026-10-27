@@ -29,8 +29,9 @@ an estimate), **Owner** or **Group** (a person's action).
 | 3 | Forecasters refitted walk-forward through 2025 | **Ready** | `python -m structural_break.forecast.model_b_scores`; `python -m structural_break.forecast.harness run --specs B+rule+ou B+rule+ou+track --schemes recent:bag5` |
 | 4 | Company headlines 2024–2025 | **Ready** | TickerTick (Decision 116d): the 2025-05-26 bulk file, then the live API from 26 May 2025; see [NEWS_2024_2025.md](NEWS_2024_2025.md) |
 | 5 | Monitor cases, FinBERT triage and the Gemma monitor run | **Ready** | the desk reads FNSPID up to 2023 and `data/external/news_final/headlines.parquet` for the unlocked years; `desk_runner build-monitor`, `scripts/agents/monitor_triage.py`, `desk_runner run --kind monitor` (about 1,100 calls, within the free tier) |
-| 6 | Adopted book and the same book without the monitor exit | **Ready** (rehearsed on 2022–2023) | `python scripts/final_test_report.py` (refuses while locked; `--rehearsal` runs 2022–2023) |
-| 7 | Goal 1 and Goal 2 report, opened once | **Ready** (same script) | AUC, PR-AUC, log loss, Brier; Sharpe, CAGR with and without cash, drawdown, turnover, costs |
+| 5b | Entry agents on the 2024–2025 region events (for the full model, Decision 119) | **Ready** | `desk_runner build-entry`, `desk_runner run --kind entry --env-file …` (about 1,500–2,000 calls; development answers are reused) |
+| 6 | Adopted book, the same book without the monitor exit, the best forecaster's book and the full model's book | **Ready** (rehearsed on 2022–2023) | `python scripts/final_test_report.py` (refuses while locked; `--rehearsal` runs 2022–2023) |
+| 7 | Goal 1 and Goal 2 report, opened once | **Ready** (same script) | R0, the two bagged models and the full model against its base: AUC, PR-AUC, log loss, Brier; Sharpe, CAGR with and without cash, drawdown, turnover, costs |
 | 8 | Plan ladder (Baseline 0, Baseline 1, Model A, Model B) under the frozen Decision 36 policy | **Build** with step 1 | `structural-break-backtest` on the final-test workspace, after `final-test-gate` |
 
 ## Setting up the final-test checkout
@@ -42,7 +43,12 @@ robocopy <archive>\sec_metadata\source_v3 ..inal_test\data	eam\sec_metadata\sou
 cd ..inal_test                                          # every later command runs here
 ```
 
-`outputs/` starts empty in that checkout, so the development results cannot be overwritten.
+`outputs/` starts empty in that checkout, so the development results cannot be overwritten. Copy the cached
+LLM answers so only 2024–2025 cases are sent to the models:
+
+```powershell
+robocopy outputsgent_desk ..inal_test\outputsgent_desk /E /XF *_inventory.parquet monthly_excess.parquet
+```
 
 ## Unlock record template
 
