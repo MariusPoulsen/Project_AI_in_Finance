@@ -5771,3 +5771,90 @@ are treated as "new" (792 evidence events):
 
 The research-layer final-test mode is therefore ready; it runs on 2024–2025 data only after
 the owner's unlock record (`scripts/final_test_data.py`, `docs/FINAL_TEST_RUNBOOK.md`).
+
+## 119. Pre-registered additions to the final-test report: the best-model book and the full model (owner's request, 2026-10-27)
+
+Before the unlock, the owner asked that the final test also report the best forecaster's
+book and the full model.
+
+**Goal 1, the full model.**
+- *Model:* the bagged B+rule+ou probability plus the agent desk's entry scores (explains_move,
+  persistence, relationship_change, their product, no-news and abstain indicators) in the
+  walk-forward logistic model of Decisions 110b–c.
+- *Data:* the desk's region events (top 40 % of each year by the R0 threshold rule) with
+  labels.
+- *Fit:* refitted each year on all earlier labelled region events.
+- *Reported against:* the same logistic model without the agent scores (its own base), with
+  ROC-AUC, PR-AUC, log loss and Brier on 2024–2025.
+- This needs the entry agents on the 2024–2025 region events: the frozen desk, prompts
+  `pairs-desk-prompts-v3.1`, free tier, about 1,500–2,000 calls. Development results are
+  reused from the cache.
+
+**Goal 2, two more books**, built exactly like the adopted book (close execution, 7.5 % per
+entry, the adopted exits including the monitor exit at adverse ≥ 5 and persistence ≥ 5, the
+residual sleeve, the 4 % volatility target, the 200 % cap). Only the selection differs:
+- *best forecaster's selection:* the bagged B+rule+ou top 20 % of each year, after the R1,
+  mean-crossing and cost filters;
+- *full model's selection:* the Decision 110c rule. As many events per year as the bagged
+  model's top 20 %, ranked by the full model and cut at the previous year's quantile, after
+  the same filters.
+- *Monitor coverage:* the monitor covers trades of the R0 and bagged selections, as in
+  development. Trades that only the full model selects have no monitor checks, which is also
+  how Decision 110c evaluated them.
+
+**Development reference** (Decision 110d, 2010–2017 Sharpe): both of these selections reached
+about 0.39, against 0.81 for the adopted R0 book.
+
+All four books and the five forecasters are reported once, side by side. None of them
+replaces the adopted book.
+
+### 119a. Correction found in the rehearsal: one missing price froze the comparison books; corrected development results
+
+**The bug.**
+- The 2022–2023 rehearsal of the extended report showed identical results for the best
+  forecaster's book and the full model's book, with almost no pair trades.
+- The cause was the allocation engine (`book.policy_portfolio.research_portfolio`). A
+  bagged-model trade on ES/XEL, entered 2018-05-25, had no XEL opening price on 2018-06-08.
+  The engine then marked the whole book's value as unknown and, being fail-closed, refused
+  every later entry: 1,394 candidates from 2018 to 2023.
+- The R0 design never holds a position with a missing mark (all 2,472 trades complete), so
+  the adopted book was never affected.
+
+**Fix.** A single missing price on a held leg is marked at that leg's latest earlier close (no
+look-ahead), instead of making the book's value unknown for the rest of the run. A lifecycle
+termination (delisting) still fails closed.
+
+**Checks.**
+- The R0 design's statuses are unchanged (2,472 complete, 244 capacity-rejected, 100
+  pair-already-open).
+- `scripts/verify_book.py` reproduces the Decision 110d book bit for bit.
+- The bagged design now completes 2,605 trades instead of 1,365.
+
+**Corrected development results** (Sharpe in excess of cash; the same construction as the
+adopted book, monitor exit included):
+
+| Selection | 2010–2017 | 2018–2023 | 2010–2023 | CAGR 2010–2023 |
+|---|---|---|---|---|
+| R0, the adopted book | 0.813 | 0.595 | 0.713 | +2.67 % |
+| Best forecaster (bagged B+rule+ou) | 0.344 | 0.406 | 0.372 | +1.36 % |
+| Full model (bagged + agent desk) | 0.381 | 0.250 | 0.314 | +1.21 % |
+
+This replaces the "about 0.39" reported in Decision 110d, which was measured on books that
+stopped trading in 2018. The conclusion is unchanged: the R0 selection gives the best book.
+These are post-hoc development numbers; the final test reports all of them once on 2024–2025.
+
+## 120. Owner final-test unlock record (2026-10-27)
+
+I, the owner, have reviewed the research freeze manifest and unlock the 2024–2025 final test
+for this manifest only: SHA-256 `bd2727ef79afb5df82858b985dbbac74e895abf697eeefcf68a0f1409911aec1`.
+
+- The manifest pins commit `1437e7b`. The final test runs on a checkout whose code, configs
+  and scripts are identical to that commit; only documents differ (this record, the review
+  answers and the regenerated manifest).
+- Written by Claude Code at the owner's explicit instruction ("do the unlock", 2026-10-27).
+- Before the unlock, the group completed the blind review of 50 agent cases (Decision 113):
+  all 190 cited claims and all 50 overall judgements were confirmed (Y), and the group's
+  scores agree with the agents' scores (`docs/agent_review/review_answers.csv`). The review
+  was done on development cases only, so it says nothing about 2024–2025.
+- From here on, every parameter is the frozen one. Any change made after a 2024–2025 result
+  is seen is a new, separately labelled experiment, and the first result is reported as is.

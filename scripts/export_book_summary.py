@@ -96,7 +96,9 @@ def main() -> None:
             "coverage_ratio": 1.90,
             "decision": "116d",
         },
-        "decisions": "Decisions 105-117 in docs/DECISIONS.md",
+        # Decision 119a: the same book construction with the other selections (development).
+        "comparison": json.loads(Path("outputs/checks/books_dev.json").read_text()),
+        "decisions": "Decisions 105-119 in docs/DECISIONS.md",
     }
     (OUT / "summary.json").write_text(json.dumps(summary, indent=1, default=float))
     print(f"wrote {OUT} ({sum(p.stat().st_size for p in OUT.iterdir()) / 1e6:.2f} MB)")
