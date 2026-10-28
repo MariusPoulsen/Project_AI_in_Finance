@@ -1,28 +1,17 @@
-"""Model Lab: the headline forecasters (Goal 1), then the frozen A/B research study."""
+"""Model Lab: the headline reversion forecasters of Goal 1, scored walk-forward."""
 
 from __future__ import annotations
 
 from typing import Any
 
+import numpy as np
 import pandas as pd
+import plotly.graph_objects as go
 import streamlit as st
 
-from structural_break.app_ui import charts, components, result_charts, theme
+from structural_break.app_ui import components, result_charts, theme
 from structural_break.app_ui.context import current
-from structural_break.app_ui.results import MODEL_NOTES, MODELS, Results, period_label
-from structural_break.services.research_application import VARIANT_LABELS
-
-FAMILY_LABELS = {
-    "logistic": "Logistic regression (primary)",
-    "xgboost": "XGBoost (secondary family)",
-}
-DIMENSIONS = {
-    "year": "Year",
-    "sector": "Sector",
-    "business_group": "Business group",
-    "ACTIVE": "ACTIVE at event",
-}
-
+from structural_break.app_ui.results import MODEL_NOTES, MODELS, period_label
 
 HEADLINE = ["model_a", "r0", "bag5", "track"]
 CURVES = ["r0", "bag5", "track"]
@@ -35,6 +24,41 @@ METRIC_COLUMNS: dict[str, Any] = {
     "base_rate": st.column_config.NumberColumn("Base rate", format="percent"),
     "n": st.column_config.NumberColumn("Events", format="%d"),
 }
+YEARS = {"2010–2017": (2010, 2017), "2018–2023": (2018, 2023), "2024–2025": (2024, 2025)}
+SETTINGS = [
+    (
+        "Original Model B (R0)",
+        "Model A's 36 quantitative features plus SEC 8-K timing, FinBERT tone and catalyst "
+        "fields (the research layer's B, all SEC evidence)",
+        "XGBoost: depth 3, 400 trees, learning rate 0.03, min child weight 20, λ 10; one seed",
+        "Decision 45 split: trains on labels that ended before year Y−1",
+    ),
+    (
+        "B+rule+ou, bagged",
+        "R0's features plus the peer, state, earnings and momentum blocks and the structural "
+        "OU prior (about 170 features)",
+        "The same XGBoost with column subsample 0.5 and row subsample 0.8, averaged over five "
+        "seeds",
+        "Recent: trains on every label that ended before year Y",
+    ),
+    (
+        "B+rule+ou+track, bagged",
+        "As above plus the pair's and stock's earlier reversion record",
+        "As above",
+        "Recent",
+    ),
+    (
+        "Full model",
+        "The bagged B+rule+ou probability plus the entry agents' scores",
+        "Walk-forward logistic stack on the desk region (Decisions 110b–c)",
+        "Recent",
+    ),
+]
+
+
+def _labelled(forecasts: pd.DataFrame, years: tuple[int, int]) -> pd.DataFrame:
+    part = forecasts[forecasts["labelled"] & forecasts["y"].notna()]
+    return part[part["year"].between(*years)]
 
 
 @st.cache_data(show_spinner=False)
@@ -53,8 +77,131 @@ def _by_year(forecasts: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def headline_forecasters(results: Results | None) -> None:
-    st.subheader("Headline forecasters (Goal 1)")
+@st.cache_data(show_spinner=False)
+def _pr_curves(forecasts: pd.DataFrame, period: str) -> pd.DataFrame:
+    from sklearn.metrics import precision_recall_curve
+
+    part = _labelled(forecasts, YEARS[period])
+    rows = []
+    for key in CURVES:
+        precision, recall, _ = precision_recall_curve(part["y"], part[f"raw_{key}"])
+        pick = np.unique(np.linspace(0, len(recall) - 1, min(len(recall), 250)).astype(int))
+        rows += [
+            {"model": key, "recall": float(r), "precision": float(p)}
+            for r, p in zip(recall[pick], precision[pick], strict=True)
+        ]
+    return pd.DataFrame(rows)
+
+
+@st.cache_data(show_spinner=False)
+def _calibration_fit(forecasts: pd.DataFrame) -> pd.DataFrame:
+    """Logistic recalibration of each model's probability: slope 1 and intercept 0 are ideal."""
+    from sklearn.linear_model import LogisticRegression
+
+    rows = []
+    for period, years in YEARS.items():
+        part = _labelled(forecasts, years)
+        if part.empty or part["y"].nunique() < 2:
+            continue
+        for key in CURVES:
+            p = np.clip(part[f"p_{key}"].to_numpy(float), 1e-6, 1 - 1e-6)
+            logit = np.log(p / (1 - p)).reshape(-1, 1)
+            fit = LogisticRegression(C=1e6).fit(logit, part["y"].astype(int))
+            rows.append(
+                {
+                    "label": MODELS[key],
+                    "period": period_label(period),
+                    "slope": float(fit.coef_[0][0]),
+                    "intercept": float(fit.intercept_[0]),
+                    "mean_predicted": float(p.mean()),
+                    "observed": float(part["y"].mean()),
+                }
+            )
+    return pd.DataFrame(rows)
+
+
+@st.cache_data(show_spinner=False)
+def _by_group(forecasts: pd.DataFrame, period: str) -> pd.DataFrame:
+    from sklearn.metrics import roc_auc_score
+
+    rows = []
+    for group, part in _labelled(forecasts, YEARS[period]).groupby("business_group"):
+        if part["y"].nunique() < 2 or part["y"].sum() < 5:
+            continue
+        rows.append(
+            {
+                "group": group,
+                "events": len(part),
+                "reverted": int(part["y"].sum()),
+                "auc_r0": float(roc_auc_score(part["y"], part["raw_r0"])),
+                "auc_bag5": float(roc_auc_score(part["y"], part["raw_bag5"])),
+            }
+        )
+    frame = pd.DataFrame(rows)
+    if frame.empty:
+        return frame
+    frame["difference"] = frame["auc_bag5"] - frame["auc_r0"]
+    return frame.sort_values("difference").reset_index(drop=True)
+
+
+def _pr_figure(rows: pd.DataFrame, base_rate: float) -> go.Figure:
+    figure = go.Figure()
+    for key in CURVES:
+        part = rows[rows["model"].eq(key)]
+        figure.add_trace(
+            go.Scatter(
+                x=part["recall"],
+                y=part["precision"],
+                mode="lines",
+                name=MODELS[key],
+                line={"color": theme.FORECASTER_COLORS[key], "width": 2},
+                hovertemplate="Recall %{x:.2f}<br>Precision %{y:.2f}<extra></extra>",
+            )
+        )
+    figure.add_hline(y=base_rate, line={"color": theme.MUTED, "dash": "dash", "width": 1})
+    figure.update_layout(
+        theme.layout(
+            height=360,
+            xaxis={"title": "Recall", "range": [0, 1]},
+            yaxis={"title": "Precision", "range": [0, 1]},
+        )
+    )
+    return figure
+
+
+def _group_figure(rows: pd.DataFrame) -> go.Figure:
+    figure = go.Figure(
+        go.Bar(
+            y=rows["group"],
+            x=rows["difference"],
+            orientation="h",
+            customdata=rows[["events", "auc_r0", "auc_bag5"]],
+            marker_color=[theme.MODEL_B if v >= 0 else theme.ADVERSE for v in rows["difference"]],
+            hovertemplate="%{y}<br>AUC bagged − R0 %{x:+.3f}<br>%{customdata[0]} events, "
+            "R0 %{customdata[1]:.3f}, bagged %{customdata[2]:.3f}<extra></extra>",
+        )
+    )
+    figure.add_vline(x=0, line={"color": theme.INK, "width": 1})
+    figure.update_layout(
+        theme.layout(
+            height=max(320, 22 * len(rows) + 80),
+            xaxis={"title": "ROC AUC, bagged B+rule+ou − R0"},
+            margin={"l": 260},
+        )
+    )
+    return figure
+
+
+def render() -> None:
+    ctx = current()
+    results = ctx.results
+    components.page_header(
+        "Model Lab",
+        "The reversion forecasters of Goal 1, each refitted every year from 2010 on earlier "
+        "years only and scored on the same labelled events. Unfavourable results are shown as "
+        "prominently as favourable ones.",
+    )
+    components.synthetic_banner(ctx.service.identity)
     if results is None:
         components.empty_state(
             "The headline results are not in this deployment. Export them with "
@@ -62,7 +209,8 @@ def headline_forecasters(results: Results | None) -> None:
         )
         return
     metrics = results.metrics()
-    periods = [p for p in ("2010–2017", "2018–2023", "2024–2025") if p in results.periods]
+    forecasts = results.tables["forecasts"]
+    periods = [p for p in YEARS if p in results.periods]
     default = periods[-1]
     period = (
         st.segmented_control(
@@ -100,12 +248,16 @@ def headline_forecasters(results: Results | None) -> None:
     tabs = st.tabs(
         [
             "Comparison",
-            "Discrimination and calibration",
+            "Discrimination",
+            "Calibration",
             "By year",
+            "By business group",
             "Full model and agent desk",
+            "Settings",
             "All metrics",
         ]
     )
+    legend = [(MODELS[m], theme.FORECASTER_COLORS[m]) for m in CURVES]
     with tabs[0]:
         left, right = st.columns(2)
         with left:
@@ -129,17 +281,15 @@ def headline_forecasters(results: Results | None) -> None:
         )
         st.markdown("\n".join(f"- **{MODELS[m]}**: {MODEL_NOTES[m]}" for m in HEADLINE))
         st.caption(
-            "Every model is refitted walk-forward: each test year is scored by a model trained "
-            "only on earlier years, with the same labelled events in every row. On 2018–2023 the "
-            "pre-registered model beats R0 by 0.0053 in log loss (month-block bootstrap "
-            "p = 0.002) and by 0.017 in AUC. Model A's walk-forward scores were erased in "
-            "Decision 114: its metrics are kept, its curves are not."
+            "On 2018–2023 the pre-registered model beats R0 by 0.0053 in log loss (month-block "
+            "bootstrap p = 0.002) and by 0.017 in AUC. Model A's walk-forward scores were "
+            "erased in Decision 114: its metrics are kept, its curves are not. Where it "
+            "started: the frozen research study (Decisions 36–45) found no established "
+            "difference between Model A and the SEC-evidence variants of Model B on 2022–2023; "
+            "R0 is that study's Model B refitted walk-forward."
         )
     with tabs[1]:
-        components.legend(
-            [(MODELS[m], theme.FORECASTER_COLORS[m]) for m in CURVES]
-            + [("Reference (diagonal)", theme.GRID)]
-        )
+        components.legend([*legend, ("Reference (chance or base rate)", theme.GRID)])
         left, right = st.columns(2)
         with left:
             st.markdown(f"**ROC curve, {period}**")
@@ -147,18 +297,43 @@ def headline_forecasters(results: Results | None) -> None:
                 result_charts.roc(results.tables["curves"], period, CURVES), key="g1_roc"
             )
         with right:
-            st.markdown(f"**Calibration, {period}**")
-            components.chart(
-                result_charts.calibration(results.tables["curves"], period, CURVES),
-                key="g1_cal",
-            )
+            st.markdown(f"**Precision–recall, {period}**")
+            labelled = _labelled(forecasts, YEARS[period])
+            base_rate = float(labelled["y"].mean()) if len(labelled) else 0.0
+            components.chart(_pr_figure(_pr_curves(forecasts, period), base_rate), key="g1_pr")
         st.caption(
-            "Calibration points are deciles of the predicted probability; they sit on the "
-            "diagonal when predictions match observed reversion rates. Probabilities are "
-            "calibrated walk-forward on earlier years only."
+            "Divergences that revert are rare (the dashed line is the base rate), so precision–"
+            "recall shows how cleanly each model ranks the few that do; ROC weighs both classes "
+            "equally."
         )
     with tabs[2]:
-        table = _by_year(results.tables["forecasts"])
+        components.legend([*legend, ("Perfect calibration", theme.GRID)])
+        st.markdown(f"**Reliability, {period}**")
+        components.chart(
+            result_charts.calibration(results.tables["curves"], period, CURVES), key="g1_cal"
+        )
+        st.markdown("**Calibration slope and intercept**")
+        st.dataframe(
+            _calibration_fit(forecasts),
+            hide_index=True,
+            width="stretch",
+            column_config={
+                "label": "Model",
+                "period": "Years",
+                "slope": st.column_config.NumberColumn("Slope", format="%.2f"),
+                "intercept": st.column_config.NumberColumn("Intercept", format="%+.2f"),
+                "mean_predicted": st.column_config.NumberColumn("Mean predicted", format="percent"),
+                "observed": st.column_config.NumberColumn("Observed", format="percent"),
+            },
+        )
+        st.caption(
+            "Probabilities are Platt-calibrated each year on the previous three years' "
+            "out-of-fold scores only. The slope and intercept come from regressing the outcome "
+            "on each model's log-odds: slope 1 and intercept 0 are perfect. A slope below 1 "
+            "means the predictions are too spread out, above 1 too cautious."
+        )
+    with tabs[3]:
+        table = _by_year(forecasts)
         if table.empty:
             components.empty_state("No yearly results are available.")
         else:
@@ -168,7 +343,31 @@ def headline_forecasters(results: Results | None) -> None:
                 "(2010–2017) from the holdout (2018–2023)"
                 + ("; the second marks the final test." if table["year"].max() >= 2024 else ".")
             )
-    with tabs[3]:
+    with tabs[4]:
+        groups = _by_group(forecasts, period)
+        if groups.empty:
+            components.empty_state("Too few reverting events per business group in these years.")
+        else:
+            components.chart(_group_figure(groups), key="g1_groups")
+            st.dataframe(
+                groups.sort_values("events", ascending=False),
+                hide_index=True,
+                width="stretch",
+                column_config={
+                    "group": "Business group",
+                    "events": st.column_config.NumberColumn("Events", format="%d"),
+                    "reverted": st.column_config.NumberColumn("Reverted", format="%d"),
+                    "auc_r0": st.column_config.NumberColumn("AUC R0", format="%.3f"),
+                    "auc_bag5": st.column_config.NumberColumn("AUC bagged", format="%.3f"),
+                    "difference": st.column_config.NumberColumn("Difference", format="%+.3f"),
+                },
+            )
+            st.caption(
+                "Descriptive: with about 40 groups and few reversions in each, some groups "
+                "favour either model by chance; none was selected after the fact. Groups with "
+                "fewer than five reversions are left out."
+            )
+    with tabs[5]:
         desk = metrics[metrics["model"].isin(["full_base", "full"])]
         if desk.empty:
             components.empty_state("No agent-desk forecasts are available.")
@@ -189,7 +388,19 @@ def headline_forecasters(results: Results | None) -> None:
                 "the forecast slightly worse (Brier +0.00104, 95 % [+0.00034, +0.00189], "
                 "Decision 110b); the full model is reported, not adopted."
             )
-    with tabs[4]:
+    with tabs[6]:
+        st.table(
+            pd.DataFrame(
+                SETTINGS, columns=["Model", "Features", "Learner", "Training window"]
+            ).set_index("Model")
+        )
+        st.caption(
+            "No hyperparameter is tuned per year: tuning and other boosting libraries did not "
+            "improve the forecast on the selection years (Decisions 66, 70, 86), so every model "
+            "keeps the fixed XGBoost settings. Each test year's model is fitted on earlier years "
+            "only; selections use the previous year's out-of-sample score cutoff."
+        )
+    with tabs[7]:
         st.dataframe(
             metrics[["period", *METRIC_COLUMNS]],
             hide_index=True,
@@ -204,232 +415,10 @@ def headline_forecasters(results: Results | None) -> None:
             icon=":material/download:",
             key="g1_download",
         )
-
-
-def render() -> None:
-    ctx = current()
-    service, horizon = ctx.service, ctx.horizon
-    protocol = service.protocol
-    components.page_header(
-        "Model Lab",
-        "Every forecaster scored on the same events. First the headline walk-forward "
-        "forecasters of Goal 1, refitted each year from 2010; below them the frozen research "
-        "study that compared Model A with SEC-evidence variants of Model B on 2022–2023. "
-        "Unfavourable results are shown as prominently as favourable ones.",
-    )
-    components.synthetic_banner(service.identity)
-    headline_forecasters(ctx.results)
-    st.divider()
-    st.subheader("Research layer: the frozen A/B study, 2022–2023")
-    st.caption(
-        "The pre-registered research study that defined Model B: the 20-session label, A's 36 "
-        "quantitative features and the SEC evidence blocks (8-K metadata, FinBERT tone, Gemma "
-        "catalysts), compared with calibrated logistic and XGBoost models on 2022–2023. It "
-        "found no established difference between A and B. The headline R0 above is this "
-        "Model B (all SEC evidence) refitted walk-forward with a fixed XGBoost (Decision 45); "
-        "the later walk-forward variants erased in Decision 114 are not shown anywhere."
-    )
-    controls = st.columns([3, 2])
-    family = (
-        controls[0].segmented_control(
-            "Model family",
-            list(FAMILY_LABELS),
-            default=protocol["primary_family"],
-            format_func=lambda f: FAMILY_LABELS[f],
-        )
-        or protocol["primary_family"]
-    )
-    active = controls[1].toggle(
-        "ACTIVE events only",
-        help="Exploratory subset: no separate uncertainty interval is fitted for it.",
-    )
-    comparison = service.comparison(horizon, active_only=active)
-    headline = service.headline(horizon, family)
-    tone, sentence = service.verdict(headline)
-    if not active:
-        components.verdict_box(
-            f"{FAMILY_LABELS[family].split(' (')[0]}: B (all SEC evidence) vs A",
-            sentence,
-            tone,
-        )
-    tabs = st.tabs(
-        [
-            "Ablation ladder",
-            "Discrimination and calibration",
-            "Where B differs",
-            "What drives the models",
-            "Tuning and calibration",
-            "All metrics",
-        ]
-    )
-    with tabs[0]:
-        left, right = st.columns(2)
-        with left:
-            st.markdown("**Brier loss by evidence block**")
-            components.chart(charts.ladder(comparison, family), key="ladder")
-        with right:
-            st.markdown(
-                "**B − A difference"
-                + (" (point estimate only)**" if active else " with 95% quarter-block interval**")
-            )
-            components.chart(charts.delta_forest(comparison, family), key="forest")
-        st.caption(
-            "Each B variant adds one block of SEC evidence to A's identical quantitative columns. "
-            "Rows with UNKNOWN evidence stay in both models' samples. Intervals resample whole "
-            "calendar quarters (eight blocks), so they are a temporal sensitivity, not a precise "
-            "confidence interval."
-        )
-    with tabs[1]:
-        if active:
-            st.info(
-                "Curves use all assessment events; switch off the ACTIVE filter to compare "
-                "like with like."
-            )
-        cohort = service.cohorts(horizon)
-        prevalence = None
-        if len(cohort):
-            assessed = cohort.loc[cohort["period"].eq("assessment")]
-            prevalence = float(assessed["success_rate"].iloc[0]) if len(assessed) else None
-        components.legend(
-            [(VARIANT_LABELS[v], theme.VARIANT_COLORS[v]) for v in VARIANT_LABELS]
-            + [("Reference (diagonal or base rate)", theme.GRID)]
-        )
-        cols = st.columns(3)
-        for col, kind, title in (
-            (cols[0], "reliability", "Reliability (equal-count bins)"),
-            (cols[1], "roc", "ROC curve"),
-            (cols[2], "pr", "Precision–recall"),
-        ):
-            with col:
-                st.markdown(f"**{title}**")
-                rows = service.curves(horizon, kind, family)
-                if rows.empty:
-                    components.empty_state("No assessment curve is available.")
-                else:
-                    components.chart(charts.curve(rows, kind, prevalence), key=f"curve_{kind}")
-        st.caption(
-            "Reliability points sit on the diagonal when predicted probabilities match observed "
-            "reversion rates. The dashed precision–recall line is the assessment base rate."
-        )
-    with tabs[2]:
-        cols = st.columns([2, 3])
-        dimension = cols[0].selectbox(
-            "Slice by", list(DIMENSIONS), format_func=lambda d: DIMENSIONS[d]
-        )
-        variant = cols[1].selectbox(
-            "B variant",
-            [v for v in VARIANT_LABELS if v != "A"],
-            index=3,
-            format_func=lambda v: VARIANT_LABELS[v],
-        )
-        rows = service.slices(horizon, dimension or "year", family, variant or "B_both")
-        if rows.empty:
-            components.empty_state("No slices are available for this selection.")
-        else:
-            components.chart(charts.slice_bars(rows), key="slices")
-            st.dataframe(
-                rows,
-                hide_index=True,
-                width="stretch",
-                column_config={
-                    "brier": st.column_config.NumberColumn("B Brier", format="%.4f"),
-                    "roc_auc": st.column_config.NumberColumn("B AUC", format="%.3f"),
-                    "delta_brier_B_minus_A": st.column_config.NumberColumn(
-                        "Δ Brier B − A", format="%+.5f"
-                    ),
-                },
-            )
-            st.caption(
-                "Slices are predeclared and descriptive. With small groups and many slices, some "
-                "will favour B by chance; none is selected after the fact."
-            )
-    with tabs[3]:
-        explained = service.identity.explanation_status
-        cols = st.columns(2)
-        for col, variant in ((cols[0], "A"), (cols[1], "B_both")):
-            with col:
-                st.markdown(f"**{VARIANT_LABELS[variant]}**")
-                rows = service.importance(horizon, family, variant)
-                if rows.empty:
-                    components.empty_state(f"Feature contributions are unavailable. {explained}")
-                    continue
-                components.chart(charts.importance_bars(rows, family), key=f"imp_{variant}")
-        blocks = service.block_importance(horizon, family, "B_both")
-        if len(blocks):
-            sec_share = float(blocks.loc[blocks["block"].str.startswith("SEC"), "share"].sum())
-            st.metric(
-                "Share of Model B's attribution from SEC evidence blocks", components.pct(sec_share)
-            )
-        st.caption(
-            "Mean absolute contribution of each feature to the saved model's margin on assessment "
-            "events (linear SHAP for logistic, TreeSHAP for XGBoost). Slate bars are quantitative "
-            "features, teal bars are SEC evidence. Attribution describes the model, not causation."
-        )
-    with tabs[4]:
-        variant = st.selectbox(
-            "Model",
-            list(VARIANT_LABELS),
-            index=4,
-            format_func=lambda v: VARIANT_LABELS[v],
-            key="tuning_variant",
-        )
-        tuning = service.tuning(horizon, family, variant or "B_both")
-        if tuning.empty:
-            components.empty_state("No tuning record is published for this bundle.")
-        else:
-            st.dataframe(tuning, hide_index=True, width="stretch")
-        inventory = service.inventory(horizon)
-        from structural_break.app_ui.pages.monitor import INVENTORY_COLUMNS
-
-        st.dataframe(
-            inventory.loc[inventory["bundle"].str.startswith(family)],
-            hide_index=True,
-            width="stretch",
-            column_config=INVENTORY_COLUMNS,
-        )
-        st.caption(
-            f"Candidates are chosen by mean Brier on forward folds "
-            f"{', '.join(map(str, protocol['tuning_years']))}, "
-            "with each fold's full target window purged at its boundary. Calibration is fitted on "
-            f"{str(protocol['calibration_start'])[:4]}–{str(protocol['calibration_end'])[:4]} "
-            "only. "
-            "Reload error confirms the saved model reproduces its published probabilities."
-        )
-    with tabs[5]:
-        st.dataframe(
-            comparison,
-            hide_index=True,
-            width="stretch",
-            column_config={
-                name: st.column_config.NumberColumn(name, format="%.4f")
-                for name in (
-                    "brier",
-                    "log_loss",
-                    "roc_auc",
-                    "pr_auc",
-                    "pair_balanced_brier",
-                    "issuer_balanced_brier",
-                )
-            }
-            | {
-                name: st.column_config.NumberColumn(name, format="%+.5f")
-                for name in ("delta_brier_B_minus_A", "ci_low", "ci_high")
-            },
-        )
-        st.download_button(
-            "Download metrics (CSV)",
-            comparison.to_csv(index=False).encode(),
-            file_name=f"model_comparison_h{horizon}.csv",
-            mime="text/csv",
-            icon=":material/download:",
-        )
     components.provenance(
         {
-            f"Evaluation (h{horizon})": service.identity.evaluations.get(horizon),
-            "Primary comparison": f"calibrated {protocol['primary_family']} "
-            "B_{protocol['primary_b_variant']} vs A at {protocol['primary_horizon']} sessions",
-            "Bootstrap": f"{protocol['bootstrap_replicates']} calendar-quarter resamples, seed "
-            "{protocol['seed']}",
-            "Bundle": service.identity.bundle_id,
+            "Results export": f"{results.manifest.get('commit')} "
+            f"({results.manifest.get('generated_at')})",
+            "Scored event years": "–".join(str(y) for y in results.manifest["event_years"]),
         }
     )

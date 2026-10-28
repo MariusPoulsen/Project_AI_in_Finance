@@ -130,7 +130,7 @@ def render() -> None:
         "- **Book:** a PCA residual-reversal sleeve, a 4 % volatility target, a hard 200 % "
         "gross cap and T-bill interest on cash; Sharpe ratios are in excess of cash."
     )
-    st.subheader("Research layer: the frozen A/B study")
+    st.subheader("Where it started: the frozen A/B study")
     report = service.data(horizon).report
     columns = report["models"].get("logistic", {}).get("B_both", {}).get("feature_columns", [])
     blocks = pd.Series([feature_block(c) for c in columns]).value_counts()

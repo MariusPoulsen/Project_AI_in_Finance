@@ -118,17 +118,6 @@ def render() -> None:
             "layer's events end in 2023."
         )
     _headline_health(ctx.results)
-    st.subheader("Research-layer model inventory (frozen A/B study)")
-    st.dataframe(
-        service.inventory(horizon),
-        hide_index=True,
-        width="stretch",
-        column_config=INVENTORY_COLUMNS,
-    )
-    st.caption(
-        "Three horizons × two families × five variants = thirty bundles of the frozen research "
-        "study (Decisions 36–45). The headline forecasters and the agent desk are listed above."
-    )
 
 
 FORECASTER_INVENTORY = [

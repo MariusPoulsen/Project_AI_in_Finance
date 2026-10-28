@@ -14,6 +14,8 @@ import exchange_calendars as xcals
 import pandas as pd
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from structural_break import periods
+
 Identifier = Annotated[str, Field(min_length=1, max_length=200)]
 Ticker = Annotated[str, Field(pattern=r"^[A-Z0-9][A-Z0-9.-]{0,19}$")]
 SHA256 = Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
@@ -52,22 +54,27 @@ def utc(value: datetime) -> datetime:
 
 
 def development_date(value: date) -> None:
-    if not date(2004, 1, 1) <= value <= date(2023, 12, 31):
+    if not date(2004, 1, 1) <= value <= periods.data_end():
         raise ValueError("Execution inputs are development-only; 2024+ remains locked")
+
+
+def _calendar_end() -> date:
+    # 15 days past the last readable date (2024-01-15 while the final test is locked).
+    return periods.data_end() + timedelta(days=15)
 
 
 @lru_cache(maxsize=1)
 def _development_calendar() -> pd.DataFrame:
     # One calendar avoids rebuilding the exchange schedule per historical event.
     # Padding covers next-open admissibility near both development boundaries.
-    calendar = xcals.get_calendar("XNYS", start="2003-12-01", end="2024-01-15")
+    calendar = xcals.get_calendar("XNYS", start="2003-12-01", end=_calendar_end().isoformat())
     return cast(pd.DataFrame, calendar.schedule)
 
 
 @lru_cache(maxsize=128)
 def canonical_sessions(start: date, end: date) -> tuple[tuple[date, datetime, datetime], ...]:
     """Local deterministic exchange calendar; no market downloads."""
-    if start > end or start < date(2003, 12, 1) or end > date(2024, 1, 15):
+    if start > end or start < date(2003, 12, 1) or end > _calendar_end():
         raise ValueError("Requested session range lies outside the bounded development calendar")
     schedule = _development_calendar().loc[pd.Timestamp(start) : pd.Timestamp(end)]
     return tuple(

@@ -15,6 +15,7 @@ from typing import Annotated, Any, Literal, Self, cast
 
 from pydantic import Field, model_validator
 
+from structural_break import periods
 from structural_break.backtest.contracts import (
     SHA256,
     BoundedNumber,
@@ -501,7 +502,7 @@ def simulate_portfolio(
             following = canonical_sessions(day, day + timedelta(days=14))
             if len(following) < 2:
                 raise ValueError("Incomplete position has no bounded next development session")
-            if policy.mode == "DEVELOPMENT" and following[1][0] > DEVELOPMENT_END:
+            if policy.mode == "DEVELOPMENT" and following[1][0] > periods.data_end():
                 # Accepted history ends before the locked final test: positions still
                 # open stay unresolved and no terminal NAV is claimed or constructed.
                 for position in held.values():
