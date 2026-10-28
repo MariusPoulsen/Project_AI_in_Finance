@@ -1,12 +1,13 @@
-"""Overview: the question, the spread picture, and the predeclared answer."""
+"""Overview: the question, the spread picture, the two goals' answers and how they fit."""
 
 from __future__ import annotations
 
 import pandas as pd
 import streamlit as st
 
-from structural_break.app_ui import charts, components, theme
+from structural_break.app_ui import charts, components, result_charts, theme
 from structural_break.app_ui.context import current
+from structural_break.app_ui.results import Results
 
 ARCHITECTURE = """
 digraph {
@@ -16,22 +17,90 @@ digraph {
         color="#D5DAE1", fillcolor="#FFFFFF", fontcolor="#172033"];
   edge [color="#9AA5B1", arrowsize=0.6];
   prices [label="Daily prices\\n250 issuers · VIX"];
-  sec [label="SEC EDGAR filings\\n(public)"];
-  econ [label="Econometric engine\\nmonthly Engle–Granger,\\nfrozen z-score"];
+  sec [label="SEC EDGAR filings\\n8-K timing · FinBERT tone"];
+  news [label="Company headlines\\nFNSPID · TickerTick"];
+  econ [label="Econometric engine\\nmonthly Engle–Granger,\\nfrozen z-score, OU prior"];
   events [label="Fresh divergences\\n|z| ≥ 2"];
-  quant [label="Quantitative features\\nspread · relationship ·\\nmarket · liquidity"];
-  text [label="SEC evidence\\n8-K metadata · FinBERT tone ·\\nGemma catalysts (UNKNOWN kept)"];
-  a [label="Model A\\nlogistic / XGBoost", fillcolor="#EEF1F5"];
-  b [label="Model B\\nA + SEC blocks", fillcolor="#E3F2EF"];
-  cal [label="Sigmoid calibration\\n2020–2021"];
-  eval [label="Paired assessment\\n2022–2023"];
-  bt [label="Strategy ladder\\nfrozen costs"];
-  prices -> econ -> events -> quant;
-  sec -> text;
-  quant -> a; quant -> b; text -> b;
-  a -> cal; b -> cal; cal -> eval; cal -> bt;
+  feats [label="Features\\nspread · peers · state ·\\nearnings · momentum · OU"];
+  fc [label="Walk-forward forecasters\\nR0 · bagged B+rule+ou ·\\n+track (refit each year)",
+      fillcolor="#E3F2EF"];
+  desk [label="Agent desk\\nentry agents · position\\nmonitor (Gemma)", fillcolor="#EEF1F5"];
+  book [label="Trading book\\nR0 top 20 % · exits ·\\nresidual sleeve · risk", fillcolor="#E3F2EF"];
+  eval [label="Selection 2010–2017\\nholdout 2018–2023\\nfinal test 2024–2025"];
+  prices -> econ -> events -> feats -> fc;
+  sec -> feats;
+  news -> desk;
+  fc -> book; desk -> book; fc -> desk;
+  fc -> eval; book -> eval;
 }
 """
+
+
+def _goals(ctx_results: Results | None) -> None:
+    if ctx_results is None:
+        components.empty_state(
+            "The headline results are not in this deployment. Export them with "
+            "`python scripts/export_results.py`."
+        )
+        return
+    metrics = {(m["model"], m["period"]): m for m in ctx_results.summary["goal1"]}
+    stats = {
+        (key, period): values
+        for key, book in ctx_results.summary["books"].items()
+        for period, values in book["periods"].items()
+    }
+    final = "2024–2025" in ctx_results.periods
+    test = "2024–2025" if final else "2018–2023"
+    role = "final test" if final else "holdout"
+    left, right = st.columns(2)
+    with left:
+        st.markdown("#### Goal 1: forecast which divergences revert")
+        if ("bag5", test) in metrics and ("r0", test) in metrics:
+            best, base = metrics[("bag5", test)], metrics[("r0", test)]
+            cols = st.columns(2)
+            cols[0].metric(
+                f"ROC AUC, {test} ({role})",
+                f"{best['roc_auc']:.3f}",
+                delta=f"{best['roc_auc'] - base['roc_auc']:+.3f} vs original Model B",
+            )
+            cols[1].metric(
+                f"Log loss, {test}",
+                f"{best['log_loss']:.4f}",
+                delta=f"{best['log_loss'] - base['log_loss']:+.4f}",
+                delta_color="inverse",
+            )
+        st.markdown(
+            "The pre-registered model (bagged B+rule+ou) adds peer displacement, the earnings "
+            "calendar, momentum and a structural Ornstein–Uhlenbeck prior to the original Model "
+            "B, and forecast reversion better on both development periods (2010–2017 and "
+            "2018–2023). The agent desk's entry scores did not add to it."
+        )
+    with right:
+        st.markdown("#### Goal 2: the best long-run book after costs")
+        if ("adopted", test) in stats:
+            book = stats[("adopted", test)]
+            span = "2010–2025" if ("adopted", "2010–2025") in stats else "2010–2023"
+            cols = st.columns(2)
+            cols[0].metric(f"Sharpe, {test} ({role})", f"{book['sharpe']:.2f}")
+            cols[1].metric(
+                f"CAGR with cash, {span}",
+                components.pct(stats[("adopted", span)]["cagr_with_cash"]),
+            )
+        st.markdown(
+            "Better forecasts did not select better trades. The adopted book keeps the original "
+            "Model B's selection and earns its edge from how trades are run: wider take profit, "
+            "a half-life time stop, trading at the close, risk targeting and the agent monitor "
+            "exit."
+        )
+    daily = ctx_results.tables["books_daily"]
+    components.chart(
+        result_charts.book_values(daily, ["adopted", "bag5"], height=280), key="overview_book"
+    )
+    st.caption(
+        "The adopted book against the same book built on the best forecaster's selection. "
+        "Values include cash interest. Dotted line: start of the 2018–2023 holdout"
+        + ("; shaded: the 2024–2025 final test." if ctx_results.final_included else ".")
+    )
 
 
 def render() -> None:
@@ -41,9 +110,9 @@ def render() -> None:
     components.page_header(
         "Structural-break detector",
         "When two business-peer stocks drift apart, does the gap close or has the "
-        "relationship broken? Model A answers from prices alone; Model B also reads the "
-        "companies' SEC filings. This page shows the frozen answer on 2022–2023 events "
-        "that neither model was fitted or calibrated on.",
+        "relationship broken? The project forecasts which divergences revert (Goal 1) and "
+        "builds the best long-run trading book from them after costs (Goal 2). Every choice "
+        "was made on 2010–2017, confirmed once on 2018–2023 and tested once on 2024–2025.",
     )
     components.synthetic_banner(service.identity)
 
@@ -72,49 +141,31 @@ def render() -> None:
             [
                 (f"±{protocol['entry_z']:g} divergence (event)", theme.ENTRY),
                 (f"±{protocol['success_z']:g} reversion (success)", theme.MODEL_B),
-                (f"±{protocol['adverse_z']:g} adverse stop (failure)", theme.ADVERSE),
+                (f"±{protocol['adverse_z']:g} adverse (failure)", theme.ADVERSE),
                 ("Shaded: relationship not ACTIVE", theme.INACTIVE),
             ]
         )
         st.caption(
-            f"An event is a fresh crossing of ±{protocol['entry_z']:g}. It succeeds if the "
-            f"spread returns inside ±{protocol['success_z']:g} before reaching "
-            f"±{protocol['adverse_z']:g}, within {horizon} trading sessions."
+            f"An event is a fresh crossing of ±{protocol['entry_z']:g}. The forecasting target "
+            f"is a success if the spread returns inside ±{protocol['success_z']:g} before "
+            f"reaching ±{protocol['adverse_z']:g}, within {horizon} trading sessions. The book "
+            "trades with its own exits (take profit at ±1.0, a time stop of 1.5 half-lives)."
         )
+
+    st.subheader("The answers")
+    _goals(ctx.results)
 
     headline = service.headline(horizon)
     tone, sentence = service.verdict(headline)
-    title = {
-        "favours_b": "Model B forecasts better",
-        "favours_a": "Model A forecasts better",
-        "inconclusive": "No established difference between A and B",
-        "unavailable": "Comparison unavailable",
-    }[tone]
-    st.subheader(f"Predeclared primary result, {horizon} sessions")
-    components.verdict_box(title, sentence, tone)
-    cols = st.columns(4)
-    cols[0].metric("Model A Brier loss", components.fmt(headline.a_brier))
-    cols[1].metric("Model B Brier loss", components.fmt(headline.b_brier))
-    cols[2].metric(
-        "Difference, B − A",
-        f"{headline.delta:+.5f}" if headline.delta is not None else "n/a",
-        help="Negative favours Model B. The interval below comes from a calendar-quarter block "
-        f"bootstrap over {headline.quarter_blocks} quarters: few blocks, so treat it as a "
-        "sensitivity rather than a precise confidence interval.",
-    )
-    if headline.interval:
-        cols[2].caption(f"95% interval {headline.interval[0]:+.4f} to {headline.interval[1]:+.4f}")
-    cols[3].metric(
-        "Assessment events",
-        components.count(headline.n),
-        help=f"{components.count(headline.positives)} reverted "
-        f"({components.pct(headline.positives / headline.n if headline.n else None)}).",
-    )
-    st.caption(
-        f"Calibrated {headline.family} models. ROC AUC: A {components.fmt(headline.a_auc, 3)}, "
-        f"B {components.fmt(headline.b_auc, 3)}. A constant fitting-period base rate scores "
-        f"Brier {components.fmt(headline.prevalence_brier)}. Better forecasts do not by "
-        "themselves mean trading profit; see the Strategy Lab."
+    st.subheader("Where the study started")
+    components.verdict_box(
+        "The frozen A/B study: no established difference",
+        f" Model A (prices only) against the research-layer Model B (plus SEC filings), "
+        f"calibrated logistic, 2022–2023: Brier {components.fmt(headline.a_brier)} against "
+        f"{components.fmt(headline.b_brier)} on {components.count(headline.n)} events. "
+        + sentence
+        + " The programme that followed added new information and changed how trades are run.",
+        tone,
     )
 
     counts = service.universe_counts(horizon)
@@ -123,23 +174,37 @@ def render() -> None:
     cols[0].metric("Business-peer pairs", components.count(counts["pairs"]))
     cols[1].metric("Issuers", components.count(counts["issuers"]))
     cols[2].metric("Business groups", components.count(counts["groups"]))
-    cols[3].metric("Development events", components.count(counts["events"]))
+    scored = len(ctx.results.tables["forecasts"]) if ctx.results is not None else counts["events"]
+    cols[3].metric(
+        "Scored divergences",
+        components.count(scored),
+        help="Fresh divergences scored walk-forward from 2010 (the research layer counts "
+        f"{components.count(counts['events'])} development events from 2006).",
+    )
     st.markdown("**How the pipeline fits together**")
     st.graphviz_chart(ARCHITECTURE, width="stretch")
     st.markdown(
-        "**Where to go next.** Browse every scored divergence in the Scanner, open any pair "
-        "to see why a model leaned one way, compare all ten model bundles in the Model Lab, "
-        "or check whether the forecasts would have paid after costs in the Strategy Lab."
+        "**Where to go next.** Compare the forecasters in the Model Lab, see how the book was "
+        "built and every trade in the Strategy Lab, read the adopted book and the final test, "
+        "or browse every scored divergence in the Scanner."
     )
     links = st.columns(4)
-    links[0].page_link(ctx.pages["scanner"], label="Open the Scanner", icon=":material/radar:")
-    links[1].page_link(ctx.pages["model"], label="Compare models", icon=":material/science:")
-    links[2].page_link(
+    links[0].page_link(ctx.pages["model"], label="Model Lab", icon=":material/science:")
+    links[1].page_link(
         ctx.pages["strategy"], label="Strategy Lab", icon=":material/candlestick_chart:"
     )
-    links[3].page_link(ctx.pages["method"], label="How it works", icon=":material/menu_book:")
+    links[2].page_link(ctx.pages["book"], label="Adopted book", icon=":material/trending_up:")
+    links[3].page_link(ctx.pages["scanner"], label="Scanner", icon=":material/radar:")
     components.provenance(
         {
+            "Results export": (
+                f"{ctx.results.manifest.get('commit')} ({ctx.results.manifest.get('generated_at')})"
+                if ctx.results is not None
+                else "not available"
+            ),
+            "Freeze manifest": (
+                ctx.results.manifest.get("freeze_manifest_sha256") if ctx.results else None
+            ),
             "Primary research generation": service.identity.primary_version,
             f"Evaluation (h{horizon})": service.identity.evaluations.get(horizon),
             "Bundle": service.identity.bundle_id,

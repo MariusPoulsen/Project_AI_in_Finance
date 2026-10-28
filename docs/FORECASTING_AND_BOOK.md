@@ -272,7 +272,7 @@ Gârleanu–Pedersen partial trading cut costs by about 85 %.
 # rebuild features, OU, R1, costs and residual targets and compare with the stored files
 .venv\Scripts\python.exe -m structural_break.pipeline.build_inputs verify --sec-metadata SEC_METADATA_FOLDER
 # rebuild the adopted book and compare with its saved fingerprint
-.venv\Scripts\python.exe scriptserify_book.py
+.venv\Scripts\python.exe scripts\verify_book.py
 # forecaster specs (selection years; add --holdout to confirm)
 .venv\Scripts\python.exe -m structural_break.forecast.harness run --specs B+rule+ou B+rule+ou+track --schemes recent:bag5
 .venv\Scripts\python.exe -m structural_break.forecast.harness summary

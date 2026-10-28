@@ -1,11 +1,15 @@
-"""Model Lab: the matched A/B ladder, curves, slices, drivers and tuning."""
+"""Model Lab: the headline forecasters (Goal 1), then the frozen A/B research study."""
 
 from __future__ import annotations
 
+from typing import Any
+
+import pandas as pd
 import streamlit as st
 
-from structural_break.app_ui import charts, components
+from structural_break.app_ui import charts, components, result_charts, theme
 from structural_break.app_ui.context import current
+from structural_break.app_ui.results import MODEL_NOTES, MODELS, Results, period_label
 from structural_break.services.research_application import VARIANT_LABELS
 
 FAMILY_LABELS = {
@@ -20,17 +24,211 @@ DIMENSIONS = {
 }
 
 
+HEADLINE = ["model_a", "r0", "bag5", "track"]
+CURVES = ["r0", "bag5", "track"]
+METRIC_COLUMNS: dict[str, Any] = {
+    "label": "Model",
+    "roc_auc": st.column_config.NumberColumn("ROC AUC", format="%.3f"),
+    "pr_auc": st.column_config.NumberColumn("PR AUC", format="%.3f"),
+    "log_loss": st.column_config.NumberColumn("Log loss", format="%.4f"),
+    "brier": st.column_config.NumberColumn("Brier", format="%.4f"),
+    "base_rate": st.column_config.NumberColumn("Base rate", format="percent"),
+    "n": st.column_config.NumberColumn("Events", format="%d"),
+}
+
+
+@st.cache_data(show_spinner=False)
+def _by_year(forecasts: pd.DataFrame) -> pd.DataFrame:
+    from sklearn.metrics import roc_auc_score
+
+    rows = []
+    labelled = forecasts[forecasts["labelled"] & forecasts["y"].notna()]
+    for year, part in labelled.groupby("year"):
+        if part["y"].nunique() < 2:
+            continue
+        row: dict[str, float] = {"year": float(str(year))}
+        for key in CURVES:
+            row[key] = float(roc_auc_score(part["y"], part[f"raw_{key}"]))
+        rows.append(row)
+    return pd.DataFrame(rows)
+
+
+def headline_forecasters(results: Results | None) -> None:
+    st.subheader("Headline forecasters (Goal 1)")
+    if results is None:
+        components.empty_state(
+            "The headline results are not in this deployment. Export them with "
+            "`python scripts/export_results.py`."
+        )
+        return
+    metrics = results.metrics()
+    periods = [p for p in ("2010–2017", "2018–2023", "2024–2025") if p in results.periods]
+    default = periods[-1]
+    period = (
+        st.segmented_control(
+            "Test years", periods, default=default, format_func=period_label, key="g1_period"
+        )
+        or default
+    )
+    rows = metrics[metrics["period"].eq(period)].set_index("model")
+    cols = st.columns(4)
+    if {"bag5", "r0"} <= set(rows.index):
+        best, base = rows.loc["bag5"], rows.loc["r0"]
+        cols[0].metric(
+            "ROC AUC, pre-registered model",
+            f"{best['roc_auc']:.3f}",
+            delta=f"{best['roc_auc'] - base['roc_auc']:+.3f} vs R0",
+        )
+        cols[1].metric(
+            "Log loss",
+            f"{best['log_loss']:.4f}",
+            delta=f"{best['log_loss'] - base['log_loss']:+.4f} vs R0",
+            delta_color="inverse",
+        )
+        cols[2].metric(
+            "Brier",
+            f"{best['brier']:.4f}",
+            delta=f"{best['brier'] - base['brier']:+.4f} vs R0",
+            delta_color="inverse",
+        )
+        cols[3].metric(
+            "Labelled events",
+            components.count(best["n"]),
+            help=f"Base rate {components.pct(best['base_rate'])}: the share of divergences that "
+            "reverted to |z| ≤ 0.5 within 20 sessions before |z| ≥ 3.",
+        )
+    tabs = st.tabs(
+        [
+            "Comparison",
+            "Discrimination and calibration",
+            "By year",
+            "Full model and agent desk",
+            "All metrics",
+        ]
+    )
+    with tabs[0]:
+        left, right = st.columns(2)
+        with left:
+            st.markdown("**ROC AUC by test period (higher is better)**")
+            components.chart(
+                result_charts.metric_bars(metrics, "roc_auc", "ROC AUC", HEADLINE), key="g1_auc"
+            )
+        with right:
+            st.markdown("**Log loss by test period (lower is better)**")
+            components.chart(
+                result_charts.metric_bars(metrics, "log_loss", "Log loss", HEADLINE),
+                key="g1_ll",
+            )
+        st.dataframe(
+            rows.reindex([m for m in HEADLINE if m in rows.index]).reset_index()[
+                list(METRIC_COLUMNS)
+            ],
+            hide_index=True,
+            width="stretch",
+            column_config=METRIC_COLUMNS,
+        )
+        st.markdown("\n".join(f"- **{MODELS[m]}**: {MODEL_NOTES[m]}" for m in HEADLINE))
+        st.caption(
+            "Every model is refitted walk-forward: each test year is scored by a model trained "
+            "only on earlier years, with the same labelled events in every row. On 2018–2023 the "
+            "pre-registered model beats R0 by 0.0053 in log loss (month-block bootstrap "
+            "p = 0.002) and by 0.017 in AUC. Model A's walk-forward scores were erased in "
+            "Decision 114: its metrics are kept, its curves are not."
+        )
+    with tabs[1]:
+        components.legend(
+            [(MODELS[m], theme.FORECASTER_COLORS[m]) for m in CURVES]
+            + [("Reference (diagonal)", theme.GRID)]
+        )
+        left, right = st.columns(2)
+        with left:
+            st.markdown(f"**ROC curve, {period}**")
+            components.chart(
+                result_charts.roc(results.tables["curves"], period, CURVES), key="g1_roc"
+            )
+        with right:
+            st.markdown(f"**Calibration, {period}**")
+            components.chart(
+                result_charts.calibration(results.tables["curves"], period, CURVES),
+                key="g1_cal",
+            )
+        st.caption(
+            "Calibration points are deciles of the predicted probability; they sit on the "
+            "diagonal when predictions match observed reversion rates. Probabilities are "
+            "calibrated walk-forward on earlier years only."
+        )
+    with tabs[2]:
+        table = _by_year(results.tables["forecasts"])
+        if table.empty:
+            components.empty_state("No yearly results are available.")
+        else:
+            components.chart(result_charts.yearly(table, "ROC AUC"), key="g1_years")
+            st.caption(
+                "One point per test year. The dotted line separates the selection years "
+                "(2010–2017) from the holdout (2018–2023)"
+                + ("; the second marks the final test." if table["year"].max() >= 2024 else ".")
+            )
+    with tabs[3]:
+        desk = metrics[metrics["model"].isin(["full_base", "full"])]
+        if desk.empty:
+            components.empty_state("No agent-desk forecasts are available.")
+        else:
+            st.dataframe(
+                desk[["period", *METRIC_COLUMNS]],
+                hide_index=True,
+                width="stretch",
+                column_config={"period": "Test years", **METRIC_COLUMNS},
+            )
+            st.markdown(
+                f"- **{MODELS['full']}**: {MODEL_NOTES['full']}\n"
+                f"- **{MODELS['full_base']}**: {MODEL_NOTES['full_base']}"
+            )
+            st.caption(
+                "Both rows use only the events the entry agents scored (the desk region), so the "
+                "comparison is like with like. On the selection years the agent features made "
+                "the forecast slightly worse (Brier +0.00104, 95 % [+0.00034, +0.00189], "
+                "Decision 110b); the full model is reported, not adopted."
+            )
+    with tabs[4]:
+        st.dataframe(
+            metrics[["period", *METRIC_COLUMNS]],
+            hide_index=True,
+            width="stretch",
+            column_config={"period": "Test years", **METRIC_COLUMNS},
+        )
+        st.download_button(
+            "Download metrics (CSV)",
+            metrics.to_csv(index=False).encode(),
+            file_name="forecaster_metrics.csv",
+            mime="text/csv",
+            icon=":material/download:",
+            key="g1_download",
+        )
+
+
 def render() -> None:
     ctx = current()
     service, horizon = ctx.service, ctx.horizon
     protocol = service.protocol
     components.page_header(
         "Model Lab",
-        "All ten saved model bundles for this horizon, scored on the same 2022–2023 "
-        "assessment events with identical features, folds, tuning budget and calibration. "
+        "Every forecaster scored on the same events. First the headline walk-forward "
+        "forecasters of Goal 1, refitted each year from 2010; below them the frozen research "
+        "study that compared Model A with SEC-evidence variants of Model B on 2022–2023. "
         "Unfavourable results are shown as prominently as favourable ones.",
     )
     components.synthetic_banner(service.identity)
+    headline_forecasters(ctx.results)
+    st.divider()
+    st.subheader("Research layer: the frozen A/B study, 2022–2023")
+    st.caption(
+        "The pre-registered research study that defined Model B: the 20-session label, A's 36 "
+        "quantitative features and the SEC evidence blocks (8-K metadata, FinBERT tone, Gemma "
+        "catalysts), compared with calibrated logistic and XGBoost models on 2022–2023. It "
+        "found no established difference between A and B. The headline R0 above is this "
+        "Model B (all SEC evidence) refitted walk-forward with a fixed XGBoost (Decision 45); "
+        "the later walk-forward variants erased in Decision 114 are not shown anywhere."
+    )
     controls = st.columns([3, 2])
     family = (
         controls[0].segmented_control(
@@ -92,8 +290,6 @@ def render() -> None:
         if len(cohort):
             assessed = cohort.loc[cohort["period"].eq("assessment")]
             prevalence = float(assessed["success_rate"].iloc[0]) if len(assessed) else None
-        from structural_break.app_ui import theme
-
         components.legend(
             [(VARIANT_LABELS[v], theme.VARIANT_COLORS[v]) for v in VARIANT_LABELS]
             + [("Reference (diagonal or base rate)", theme.GRID)]

@@ -8,6 +8,7 @@ from typing import Any
 
 import pandas as pd
 
+from structural_break import periods
 from structural_break.research.universe import json_bytes
 
 CATALYST_SCHEDULE_VERSION = "year-business-group-balanced-gemma-pilot-v1"
@@ -73,7 +74,7 @@ def build_catalyst_schedule(
         if pd.isna(timestamp) or timestamp.tzinfo is None:
             raise ValueError("Catalyst scheduling requires development-only aware timestamps")
         timestamp = timestamp.tz_convert("UTC")
-        if not 2004 <= timestamp.year <= 2023:
+        if not 2004 <= timestamp.year <= periods.data_end().year:
             raise ValueError("Catalyst scheduling requires development-only aware timestamps")
         row = {
             "event_id": source["event_id"],
@@ -145,11 +146,14 @@ def build_catalyst_schedule(
         + group_counts[group]
         for group in available_groups
     }
+    # Development schedules keep their recorded 2023 end; a final-test schedule (after the
+    # owner's unlock, Decision 120a) records the year its events reach.
+    end_year = max([2023, *available_years])
     body = {
         "policy": {
             "version": CATALYST_SCHEDULE_VERSION,
             "start_year": 2006,
-            "end_year": 2023,
+            "end_year": end_year,
             "requested_max_events": max_events,
             "call_budget_including_retries": call_budget,
             "max_retries": max_retries,
@@ -173,7 +177,7 @@ def build_catalyst_schedule(
             group for group in available_groups if not group_counts[group]
         ],
         "missing_development_years": [
-            year for year in range(2006, 2024) if year not in available_years
+            year for year in range(2006, end_year + 1) if year not in available_years
         ],
         "missing_business_groups": sorted(set(group_by_pair.values()) - set(available_groups)),
         "all_events_retained_in_feature_population": True,

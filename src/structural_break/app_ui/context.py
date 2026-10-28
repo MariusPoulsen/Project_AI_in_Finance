@@ -7,6 +7,7 @@ from typing import Any
 
 import streamlit as st
 
+from structural_break.app_ui.results import Results
 from structural_break.services.research_application import ResearchApplicationService
 
 KEY = "_sb_context"
@@ -17,6 +18,7 @@ class AppContext:
     service: ResearchApplicationService
     horizon: int
     pages: dict[str, Any]
+    results: Results | None = None
 
 
 def current() -> AppContext:

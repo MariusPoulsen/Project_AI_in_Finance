@@ -6,7 +6,7 @@ from collections.abc import Callable
 
 import streamlit as st
 
-from structural_break.app_ui import data, theme
+from structural_break.app_ui import data, results, theme
 from structural_break.app_ui.context import KEY, AppContext
 from structural_break.app_ui.pages import (
     adopted_book,
@@ -82,33 +82,35 @@ def run(load: Callable[[], data.LoadOutcome] | None = None) -> None:
             st.info(outcome.message, icon=":material/hourglass_empty:")
         else:
             st.error(outcome.message, icon=":material/gpp_bad:")
-        st.caption("Final-test outcomes (2024–2025) remain locked.")
         return
     service: ResearchApplicationService = outcome.service
     pages = _pages()
+    found = results.load()
+    # Every headline model, the book and the final test use the 20-session target; the
+    # research layer's 10 and 30 sessions were sensitivities of the frozen A/B study only.
+    primary = service.identity.primary_horizon
+    horizon = primary if primary in service.horizons() else service.horizons()[0]
     with st.sidebar:
         st.markdown(f"### {TITLE}")
         if service.identity.synthetic:
             st.error("Synthetic preview data", icon=":material/warning:")
-        horizons = service.horizons()
-        primary = service.identity.primary_horizon
-        horizon = st.selectbox(
-            "Forecast horizon",
-            horizons,
-            index=horizons.index(primary) if primary in horizons else 0,
-            format_func=lambda h: (
-                f"{h} sessions" + (" (primary)" if h == primary else " (sensitivity)")
-            ),
-            help="The 20-session horizon was declared primary in advance; 10 and 30 are "
-            "sensitivities.",
-        )
-        st.markdown('<p class="sb-lock">Final test 2024–2025 locked</p>', unsafe_allow_html=True)
         st.caption(
-            f"Development data {str(service.protocol['fit_start'])[:4]}–"
-            f"{str(service.protocol['development_end'])[:4]}. Read-only: nothing on these pages "
-            "downloads, trains or trades."
+            f"Target: a divergence reverts to |z| ≤ {service.protocol['success_z']:g} within "
+            f"{horizon} sessions, before |z| ≥ {service.protocol['adverse_z']:g}."
         )
-    st.session_state[KEY] = AppContext(service=service, horizon=int(horizon), pages=pages)
+        if found is not None and found.final_included:
+            status = '<p class="sb-final">Final test 2024–2025 included</p>'
+        else:
+            status = '<p class="sb-lock">Final test 2024–2025: unlocked, results pending</p>'
+        st.markdown(status, unsafe_allow_html=True)
+        first, last = found.manifest["event_years"] if found is not None else (2010, 2023)
+        st.caption(
+            f"Scored events {first}–{last}. Read-only: nothing on these pages downloads, "
+            "trains or trades."
+        )
+    st.session_state[KEY] = AppContext(
+        service=service, horizon=int(horizon), pages=pages, results=found
+    )
     navigation = st.navigation(
         {
             "Explore": [pages["overview"], pages["scanner"], pages["pair"]],

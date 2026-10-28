@@ -38,17 +38,23 @@ def shell(service):
     run(lambda: LoadOutcome("ready", service))
 
 
-def page(service, name, horizon):
+def page(service, name, horizon, with_results=False):
     import importlib
 
     import streamlit as st
 
+    from structural_break.app_ui import results
     from structural_break.app_ui.context import KEY, AppContext
     from structural_break.app_ui.main import _pages
 
     pages = _pages()
     st.navigation(list(pages.values()), position="hidden")
-    st.session_state[KEY] = AppContext(service=service, horizon=horizon, pages=pages)
+    st.session_state[KEY] = AppContext(
+        service=service,
+        horizon=horizon,
+        pages=pages,
+        results=results.load() if with_results else None,
+    )
     importlib.import_module(f"structural_break.app_ui.pages.{name}").render()
 
 
@@ -62,11 +68,12 @@ def test_shell_opens_on_the_overview_with_the_synthetic_warning(service):
     app = AppTest.from_function(shell, args=(service,), default_timeout=60).run()
     assert not app.exception
     assert app.title[0].value == "Structural-break detector"
-    assert app.sidebar.selectbox[0].value == 20
+    assert not app.sidebar.selectbox  # every headline model uses the 20-session target
+    assert any("within 20 sessions" in item.value for item in app.sidebar.caption)
     labels = [metric.label for metric in app.metric]
-    assert "Model A Brier loss" in labels and "Difference, B − A" in labels
+    assert "Business-peer pairs" in labels
     assert any("Synthetic preview" in item.value for item in app.markdown)
-    assert any("Final test 2024–2025 locked" in item.value for item in app.sidebar.markdown)
+    assert any("Final test 2024–2025" in item.value for item in app.sidebar.markdown)
 
 
 @pytest.mark.parametrize("name", PAGES)
@@ -102,10 +109,42 @@ def test_scanner_filters_to_an_empty_state_without_inventing_rows(service):
     assert any("No events match" in item.value for item in app.info)
 
 
-def test_adopted_book_page_renders_the_committed_summary(service):
-    app = AppTest.from_function(page, args=(service, "adopted_book", 20), default_timeout=60).run()
+RESULT_PAGES = (*PAGES, "adopted_book")
+
+
+@pytest.mark.parametrize("name", RESULT_PAGES)
+def test_every_page_renders_with_the_committed_results(service, name):
+    app = AppTest.from_function(page, args=(service, name, 20, True), default_timeout=90).run()
+    assert not app.exception, app.exception
+    assert not app.error
+    assert app.title
+
+
+def test_adopted_book_page_renders_the_committed_results(service):
+    app = AppTest.from_function(
+        page, args=(service, "adopted_book", 20, True), default_timeout=90
+    ).run()
     assert not app.exception, app.exception
     assert app.title[0].value == "Adopted book"
     labels = [metric.label for metric in app.metric]
-    assert "Sharpe, 2010–2017" in labels and "Max drawdown, 2010–2023" in labels
-    assert len(app.dataframe) >= 3
+    assert "Sharpe, 2010–2017" in labels and "Sharpe, 2018–2023" in labels
+    assert any(label.startswith("Max drawdown, 2010–") for label in labels)
+    assert len(app.dataframe) >= 1 and len(app.table) >= 1
+
+
+def test_results_pages_explain_when_no_results_are_deployed(service):
+    app = AppTest.from_function(page, args=(service, "adopted_book", 20), default_timeout=60).run()
+    assert not app.exception
+    assert any("export_results.py" in item.value for item in app.info)
+
+
+def test_results_fail_closed_when_a_file_does_not_match_the_manifest(tmp_path):
+    import shutil
+
+    from structural_break.app_ui import results
+
+    copy = tmp_path / "results"
+    shutil.copytree(results.FOLDER, copy)
+    assert results.load(copy) is not None
+    (copy / "summary.json").write_text("{}", encoding="utf-8")
+    assert results.load(copy) is None

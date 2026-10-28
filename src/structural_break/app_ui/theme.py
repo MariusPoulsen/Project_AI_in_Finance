@@ -30,6 +30,16 @@ RUNG_COLORS = {
     "MODEL_B": MODEL_B,
     "FULL_SYSTEM": "#C9CED6",
 }
+FORECASTER_COLORS = {
+    "model_a": MODEL_A,
+    "r0": MODEL_B,
+    "bag5": NEUTRAL,
+    "track": ENTRY,
+    "full_base": "#9AA5B1",
+    "full": "#8E5EA2",
+}
+BOOK_COLORS = {"adopted": MODEL_B, "no_monitor": MODEL_A, "bag5": NEUTRAL, "full": ENTRY}
+PERIOD_COLORS = {"2010–2017": "#9AA5B1", "2018–2023": NEUTRAL, "2024–2025": MODEL_B}
 PARTITION_COLORS = {"fit": "#9AA5B1", "calibration": ENTRY, "assessment": MODEL_B}
 FONT = "IBM Plex Sans, sans-serif"
 
@@ -48,6 +58,7 @@ h1, h2, h3 {{ letter-spacing: -0.01em; }}
 .sb-chip {{ display: inline-block; padding: 0.08rem 0.5rem; border-radius: 999px;
   font-size: 0.82rem; border: 1px solid {GRID}; background: {PANEL}; margin-right: 0.3rem; }}
 .sb-lock {{ color: {ADVERSE}; font-weight: 600; }}
+.sb-final {{ color: {MODEL_B}; font-weight: 600; }}
 .sb-legend span {{ margin-right: 1.1rem; font-size: 0.86rem; color: {MUTED}; }}
 .sb-legend i {{ display: inline-block; width: 18px; height: 3px; vertical-align: middle;
   margin-right: 0.35rem; }}

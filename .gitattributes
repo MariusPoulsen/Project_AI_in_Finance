@@ -10,3 +10,4 @@
 *.pdf binary
 docs/freeze/*.json -text
 demo/app_bundle/** -text
+demo/results/** -text
