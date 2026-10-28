@@ -164,6 +164,9 @@ def evaluation(since: date) -> None:
         state["registry"],
         Path(state["intelligence"]),
         since,
+        labels=(WORKSPACE / "final_test_labels.parquet")
+        if (WORKSPACE / "final_test_labels.parquet").exists()
+        else None,
     )
     version = str(manifest["research_version"])
     write_binding(paths, version)

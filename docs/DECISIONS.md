@@ -5908,3 +5908,33 @@ the backtest, portfolio, scheduling and app test suites pass unchanged.
 - **8-K news and headline tone** reuse the development caches (packs, LLM records, FinBERT
   scores), keyed by company and filing, so only 2024–2025 filings are parsed, scored or sent to
   the language model.
+
+### 120a, continued: one event-id space (2026-10-28)
+
+The final-test registry gives every event a new id, because event ids derive from the market
+snapshot and the splice made a new one. The final-test evaluation had kept the frozen
+2006–2023 model-input rows under their old ids, so every join on event id with the new
+registry, simulation or features would have dropped 2006–2023. `extend_evaluation` now re-keys
+the frozen rows and their research predictions to the registry's ids by pair and event
+timestamp (all 29,071 match exactly one event), and `scripts/final_test_desk_rekey.py`
+re-keys the copied development agent-desk answers the same way (6,516 entry and 7,954 monitor
+answers; none unmatched), so only 2024–2025 cases are sent to the language models. The new
+evaluation is `research_evaluation_2420db281e86fa92f308bea5`; the earlier final-test
+evaluation and binding are kept and superseded.
+
+## 120b. Final-test labels: the frozen label rule after the unlock (2026-10-28)
+
+The dataset builder never materialises final-test labels: its `final_test` partition is
+locked by design and has no unlock path. Without labels Goal 1 cannot be scored on 2024–2025,
+and the walk-forward refit for 2025 cannot train on 2024.
+
+- **Labels.** `scripts/final_test_labels.py` calls the frozen `ml.dataset.build_event_dataset`
+  per pair with the registry's own inputs, on a configuration whose labelled period runs to
+  2025-12-31 (the locked partition moves past the data). Before writing anything it checks
+  that the rebuilt events are exactly the registry's (all 736 pairs) and that every
+  development label resolved before the old boundary is unchanged: 28,821 checked, 0 differ.
+- **Result.** 3,727 final-test events, 3,626 labelled, 238 reverted (base rate 6.6 %).
+- **Use.** `extend_evaluation` fills these labels and the usual eligibility (label eligible and
+  feature complete) into the 2024–2025 model-input rows; development labels are never
+  replaced. Labels are read only to fit the walk-forward model for a later year and to score
+  the final-test years, exactly as for every development year.

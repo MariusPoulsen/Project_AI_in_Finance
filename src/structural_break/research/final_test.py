@@ -156,6 +156,24 @@ def model_input_rows(
     return rows
 
 
+def _registry_ids(frozen: pd.DataFrame, registry_events: Path) -> dict[str, str]:
+    """Frozen event id -> final-test registry event id, matched by pair and event timestamp."""
+    events = pd.read_parquet(registry_events, columns=["event_id", "pair_id", "event_timestamp"])
+
+    def keys(frame: pd.DataFrame) -> pd.Series:
+        stamps = pd.to_datetime(frame["event_timestamp"], utc=True)
+        return pd.Series(list(zip(frame["pair_id"], stamps, strict=True)), index=frame.index)
+
+    registry_keys = keys(events)
+    if registry_keys.duplicated().any():
+        raise ValueError("Registry events are not unique by pair and timestamp")
+    lookup = dict(zip(registry_keys, events["event_id"], strict=True))
+    mapped = keys(frozen).map(lookup)
+    if mapped.isna().any() or mapped.duplicated().any():
+        raise ValueError("Frozen model inputs do not match the registry one to one")
+    return dict(zip(frozen["event_id"], mapped, strict=True))
+
+
 def extend_evaluation(
     paths: ProjectPaths,
     frozen_evaluation: Path,
@@ -164,6 +182,7 @@ def extend_evaluation(
     since: date,
     *,
     horizon: int = 20,
+    labels: Path | None = None,
 ) -> dict[str, Any]:
     """Publish the final-test evaluation: frozen rows plus the new events' rows."""
     registry = _registered_manifest(paths, registry_version)
@@ -180,8 +199,33 @@ def extend_evaluation(
     frames = {name: frame[frame["event_id"].isin(new_ids)] for name, frame in frames.items()}
     pairs = pd.read_parquet(paths.workspace_root / "universe/source_v1/pair_universe.parquet")
     new_rows = model_input_rows(frames, pairs, intelligence_dir)
+    if labels is not None:
+        # Decision 120b: the frozen label rule applied after the unlock
+        # (scripts/final_test_labels.py); eligibility as for every other labelled event.
+        table = pd.read_parquet(labels).set_index("event_id")
+        if not set(new_rows["event_id"]) <= set(table.index):
+            raise ValueError("Final-test labels do not cover every new event")
+        rows = table.loc[new_rows["event_id"]]
+        complete = frames["features"].set_index("event_id").loc[new_rows["event_id"]]
+        new_rows = new_rows.assign(
+            y_revert_success=rows["y_revert_success"].to_numpy(),
+            supervised_eligible=(
+                rows["label_eligible"].astype(bool).to_numpy()
+                & complete["feature_complete"].astype(bool).to_numpy()
+            ),
+        )
     frozen_inputs = pd.read_parquet(frozen_evaluation / "model_inputs.parquet")
     frozen_predictions = pd.read_parquet(frozen_evaluation / "predictions.parquet")
+    # The registry's event ids derive from its market snapshot, which the splice changes, so
+    # the frozen rows are re-keyed to the final-test registry's ids by pair and event
+    # timestamp (Decision 120a); every frozen row must match exactly one registry event.
+    renamed = _registry_ids(frozen_inputs, registry_dir / f"h{horizon}_events.parquet")
+    frozen_inputs = frozen_inputs.assign(event_id=frozen_inputs["event_id"].map(renamed))
+    frozen_predictions = frozen_predictions.assign(
+        event_id=frozen_predictions["event_id"].map(renamed)
+    )
+    if frozen_predictions["event_id"].isna().any():
+        raise ValueError("A frozen research prediction has no frozen model-input row")
     old_inputs = frozen_inputs[~frozen_inputs["event_id"].isin(new_ids)]
     model_inputs = pd.concat(
         [old_inputs, new_rows.loc[:, list(frozen_inputs.columns)]], ignore_index=True
@@ -198,6 +242,8 @@ def extend_evaluation(
         "horizon": horizon,
         "since": since.isoformat(),
         "decision": "DECISIONS 118",
+        "frozen_rows_rekeyed": "pair_id+event_timestamp (DECISIONS 120a)",
+        "final_test_labels_sha256": sha256_file(labels) if labels is not None else None,
     }
     generation = "research_evaluation_" + identity(inputs)[:24]
     existing = _registered_manifest(paths, generation)
