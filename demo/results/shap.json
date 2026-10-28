@@ -6,7 +6,7 @@
   "sampling": "Lowest SHA-256(event_id), independently in each year",
   "units": "Native TreeSHAP log-odds of each seed component; not bag probability",
   "source_hashes": {
-    "book\\features.parquet": "1966532cb15cc368a2b6562b6bb52d0d1207f60f4915b63763fc5d86a8852798",
-    "book\\ou_features.parquet": "a500a9d98355d0b878862f689c1319fb11dfc0c8a6c8a4818824472f87cf7acd"
+    "book/features.parquet": "1966532cb15cc368a2b6562b6bb52d0d1207f60f4915b63763fc5d86a8852798",
+    "book/ou_features.parquet": "a500a9d98355d0b878862f689c1319fb11dfc0c8a6c8a4818824472f87cf7acd"
   }
 }

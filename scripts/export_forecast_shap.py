@@ -156,7 +156,7 @@ def main() -> None:
         "sampling": "Lowest SHA-256(event_id), independently in each year",
         "units": "Native TreeSHAP log-odds of each seed component; not bag probability",
         "source_hashes": {
-            str(p.relative_to(args.outputs_root)): sha(p)
+            p.relative_to(args.outputs_root).as_posix(): sha(p)
             for p in (
                 args.outputs_root / "book/features.parquet",
                 args.outputs_root / "book/ou_features.parquet",
@@ -165,10 +165,10 @@ def main() -> None:
             if p.is_file()
         },
     }
-    (args.results / "shap.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+    (args.results / "shap.json").write_bytes(json.dumps(metadata, indent=2).encode("utf-8"))
     for name in ("shap_events.parquet", "shap_values.parquet", "shap.json"):
         manifest["files"][name] = sha(args.results / name)
-    manifest_path.write_text(json.dumps(manifest, indent=1), encoding="utf-8")
+    manifest_path.write_bytes(json.dumps(manifest, indent=1).encode("utf-8"))
     print("Exported verified current-model SHAP; no research outputs were modified", flush=True)
 
 

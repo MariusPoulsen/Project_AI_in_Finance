@@ -133,7 +133,7 @@ def main() -> None:
         "files": files,
         "source_hashes": sources,
     }
-    (output / "manifest.json").write_text(json.dumps(manifest, indent=1), encoding="utf-8")
+    (output / "manifest.json").write_bytes(json.dumps(manifest, indent=1).encode("utf-8"))
     size_mb = sum((output / n).stat().st_size for n in files) / 1e6
     print(f"Exported {len(known)} pairs in {size_mb:.1f} MB", flush=True)
 
