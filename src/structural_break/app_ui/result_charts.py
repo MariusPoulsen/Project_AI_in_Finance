@@ -120,13 +120,14 @@ def metric_bars(metrics: pd.DataFrame, metric: str, title: str, models: list[str
                 hovertemplate="%{y}<br>" + title + " %{x:.4f}<extra>" + period + "</extra>",
             )
         )
-    values = metrics[metric].dropna()
+    selected = metrics.loc[metrics.model.isin(models)]
+    values = selected[metric].dropna()
     low = float(values.min()) if len(values) else 0.0
     high = float(values.max()) if len(values) else 1.0
     pad = (high - low) * 0.25 or 0.01
     figure.update_layout(
         theme.layout(
-            height=300,
+            height=max(300, 60 * len(models) + 90),
             barmode="group",
             xaxis={"title": title, "range": [low - pad, high + pad]},
             yaxis={"autorange": "reversed"},

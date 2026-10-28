@@ -12,8 +12,10 @@ import streamlit as st
 from structural_break.app_ui import components, result_charts, shap_view, theme
 from structural_break.app_ui.context import current
 from structural_break.app_ui.results import MODEL_NOTES, MODELS, period_label
+from structural_break.services.forecast_baselines import metrics as baseline_metrics
 
 HEADLINE = ["model_a", "r0", "bag5", "track"]
+COMPARISON = ["baseline0", "baseline1", *HEADLINE]
 CURVES = ["r0", "bag5", "track"]
 METRIC_COLUMNS: dict[str, Any] = {
     "label": "Model",
@@ -260,27 +262,49 @@ def render() -> None:
     )
     legend = [(MODELS[m], theme.FORECASTER_COLORS[m]) for m in CURVES]
     with tabs[0]:
+        references = baseline_metrics(forecasts, results.tables.get("baseline_events"))
+        comparison = pd.concat([references, metrics], ignore_index=True)
+        compared = comparison.loc[comparison.period.eq(period)].set_index("model")
         left, right = st.columns(2)
         with left:
             st.markdown("**ROC AUC by test period (higher is better)**")
             components.chart(
-                result_charts.metric_bars(metrics, "roc_auc", "ROC AUC", HEADLINE), key="g1_auc"
+                result_charts.metric_bars(comparison, "roc_auc", "ROC AUC", COMPARISON),
+                key="g1_auc",
             )
         with right:
             st.markdown("**Log loss by test period (lower is better)**")
             components.chart(
-                result_charts.metric_bars(metrics, "log_loss", "Log loss", HEADLINE),
+                result_charts.metric_bars(comparison, "log_loss", "Log loss", COMPARISON),
                 key="g1_ll",
             )
         st.dataframe(
-            rows.reindex([m for m in HEADLINE if m in rows.index]).reset_index()[
+            compared.reindex([m for m in COMPARISON if m in compared.index]).reset_index()[
                 list(METRIC_COLUMNS)
             ],
             hide_index=True,
             width="stretch",
             column_config=METRIC_COLUMNS,
         )
-        st.markdown("\n".join(f"- **{MODELS[m]}**: {MODEL_NOTES[m]}" for m in HEADLINE))
+        st.caption(
+            "Baselines are entry rules scored as binary ranks on the same labelled events. "
+            "Baseline 0 cannot discriminate (ROC AUC 0.5; PR AUC equals the base rate). "
+            "Neither rule produces probabilities, so log loss and Brier are unavailable."
+        )
+        if "baseline1" in compared.index:
+            active = compared.loc["baseline1"]
+            st.caption(
+                f"Baseline 1 admits {int(active['selected_n']):,} of "
+                f"{int(active['n']):,} labelled events in {period}; its ranking metrics "
+                "include both admitted and rejected events."
+            )
+        else:
+            st.info("Baseline 1 awaits the historical ACTIVE flags for this forecast export.")
+        st.markdown(
+            "\n".join(
+                f"- **{MODELS[m]}**: {MODEL_NOTES[m]}" for m in COMPARISON if m in compared.index
+            )
+        )
         st.caption(
             "On 2018–2023 the pre-registered model beats R0 by 0.0053 in log loss (month-block "
             "bootstrap p = 0.002) and by 0.017 in AUC. Model A's walk-forward scores were "

@@ -188,3 +188,16 @@ def test_model_lab_exposes_current_shap_pending_instead_of_legacy_attributions(
     assert not app.exception and not app.error
     assert "SHAP" in [tab.label for tab in app.tabs]
     assert any("SHAP values have not been exported" in item.value for item in app.info)
+
+
+def test_model_lab_comparison_includes_matched_entry_baselines(service):
+    app = AppTest.from_function(
+        page, args=(service, "model_lab", 20, True), default_timeout=90
+    ).run()
+    assert not app.exception and not app.error
+    table = next(item.value for item in app.dataframe if "roc_auc" in item.value)
+    baseline = table.loc[table.label.str.startswith("Baseline")]
+    assert len(table) == 6 and len(baseline) == 2
+    assert baseline.n.tolist() == [10940, 10940]
+    assert baseline.iloc[0].roc_auc == 0.5
+    assert baseline[["log_loss", "brier"]].isna().all().all()

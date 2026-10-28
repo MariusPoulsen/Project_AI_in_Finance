@@ -15,12 +15,14 @@ from typing import Any
 import pandas as pd
 import streamlit as st
 
+from structural_break.services.forecast_baselines import BASELINES, validate_flags
 from structural_break.services.forecast_explanations import validate as validate_shap
 
 FOLDER = Path(__file__).resolve().parents[3] / "demo" / "results"
 TABLES = ("forecasts", "curves", "books_daily", "trades", "news")
 
 MODELS = {
+    **BASELINES,
     "model_a": "Model A (prices only)",
     "r0": "Original Model B (R0)",
     "bag5": "B+rule+ou, bagged",
@@ -29,6 +31,9 @@ MODELS = {
     "full": "Desk region: full model (bagged + agent desk)",
 }
 MODEL_NOTES = {
+    "baseline0": "Take every estimable fresh divergence; all events receive the same rank.",
+    "baseline1": "Take only relationships marked ACTIVE at the event close; ACTIVE ranks "
+    "above inactive events. This is the existing econometric entry gate.",
     "model_a": "Prices and the relationship only; the plan's Model A (Decision 45).",
     "r0": "Model A's inputs plus SEC timing and tone, fixed XGBoost (Decision 45). "
     "Selects the adopted book's trades.",
@@ -108,6 +113,17 @@ def _read(folder: str, digest: str) -> Results | None:
     for column in ("entry_date", "exit_date"):
         tables["trades"][column] = pd.to_datetime(tables["trades"][column])
     summary = json.loads((root / "summary.json").read_text(encoding="utf-8"))
+    baseline = manifest.get("baseline_reference")
+    if baseline is not None or "baseline_events.parquet" in files:
+        if (
+            baseline is None
+            or "baseline_events.parquet" not in files
+            or baseline["schema_version"] != "forecast-baseline-flags-v1"
+            or baseline["forecast_sha256"] != files["forecasts.parquet"]
+        ):
+            raise ValueError("Baseline eligibility does not match the current forecasts")
+        tables["baseline_events"] = pd.read_parquet(root / "baseline_events.parquet")
+        validate_flags(tables["baseline_events"], tables["forecasts"])
     shap_files = {"shap_events.parquet", "shap_values.parquet", "shap.json"}
     if shap_files & files.keys():
         if not shap_files <= files.keys():

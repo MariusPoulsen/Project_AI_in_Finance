@@ -21,6 +21,28 @@ missing-value shares and only lists input fields actually present in this export
 It cannot describe engineered peer/OU/track features absent from the export.
 The UI change does not remove predictors from, or refit, the scientific models.
 
+## Baselines in Model Lab
+
+The Comparison tab includes Baseline 0 (take every fresh divergence) and
+Baseline 1 (take only historical ACTIVE relationships). They are evaluated as
+constant/binary ranking rules on the same labelled forecast events in each
+period, including rejected events. Baseline 0's ROC AUC is 0.5 and its average
+precision equals the base rate. Baseline 1 ranks ACTIVE above inactive events;
+its admitted-event count is shown separately. These entry rules have no
+probability forecasts, so their log loss and Brier are unavailable. No base rate
+is fitted using holdout outcomes and no old frozen-period metric is reused.
+
+`baseline_events.parquet` contains verified eligibility flags for all 22,450
+development forecast events, exported from the registered h20 model inputs.
+Its provenance and forecast-file binding live in the results manifest. A missing,
+duplicate or UNKNOWN flag is rejected, rather than interpreted as inactive.
+This small sidecar preserves the forecast bytes and existing SHAP binding.
+Regenerate it for a development results copy with:
+
+```shell
+uv run --frozen python scripts/export_forecast_baselines.py --workspace-root C:/Users/mariu/dev/Project_AI_in_Finance/data/team --evaluation-version research_evaluation_16a431c4fea73ffd35f56062 --results demo/results
+```
+
 ## SHAP export
 
 Model Lab has a SHAP tab for verified current-model explanations. The committed
