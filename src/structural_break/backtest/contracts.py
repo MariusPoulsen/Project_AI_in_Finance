@@ -5,6 +5,7 @@ Declared sessions are checked against the local XNYS calendar, including holiday
 early closes and daylight saving. Missing observations remain explicit nulls.
 """
 
+import time
 from datetime import UTC, date, datetime, timedelta
 from functools import lru_cache
 from math import isclose, log
@@ -53,14 +54,26 @@ def utc(value: datetime) -> datetime:
     return value.astimezone(UTC)
 
 
+_HELD_END: list[tuple[float, date]] = []
+
+
+def _readable_end() -> date:
+    # Every contract validates its dates, millions of times per run: the gate's end date is
+    # re-read at most once a second.
+    now = time.monotonic()
+    if not _HELD_END or now - _HELD_END[0][0] >= 1.0:
+        _HELD_END[:] = [(now, periods.data_end())]
+    return _HELD_END[0][1]
+
+
 def development_date(value: date) -> None:
-    if not date(2004, 1, 1) <= value <= periods.data_end():
+    if not date(2004, 1, 1) <= value <= _readable_end():
         raise ValueError("Execution inputs are development-only; 2024+ remains locked")
 
 
 def _calendar_end() -> date:
     # 15 days past the last readable date (2024-01-15 while the final test is locked).
-    return periods.data_end() + timedelta(days=15)
+    return _readable_end() + timedelta(days=15)
 
 
 @lru_cache(maxsize=1)
