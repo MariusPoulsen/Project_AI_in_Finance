@@ -15,6 +15,8 @@ from typing import Any
 import pandas as pd
 import streamlit as st
 
+from structural_break.services.forecast_explanations import validate as validate_shap
+
 FOLDER = Path(__file__).resolve().parents[3] / "demo" / "results"
 TABLES = ("forecasts", "curves", "books_daily", "trades", "news")
 
@@ -106,6 +108,20 @@ def _read(folder: str, digest: str) -> Results | None:
     for column in ("entry_date", "exit_date"):
         tables["trades"][column] = pd.to_datetime(tables["trades"][column])
     summary = json.loads((root / "summary.json").read_text(encoding="utf-8"))
+    shap_files = {"shap_events.parquet", "shap_values.parquet", "shap.json"}
+    if shap_files & files.keys():
+        if not shap_files <= files.keys():
+            raise ValueError("Incomplete SHAP export")
+        metadata = json.loads((root / "shap.json").read_text(encoding="utf-8"))
+        if (
+            metadata["schema_version"] != "current-tree-shap-v1"
+            or metadata["forecast_sha256"] != files["forecasts.parquet"]
+        ):
+            raise ValueError("SHAP source does not match the current forecasts")
+        for name in ("shap_events", "shap_values"):
+            tables[name] = pd.read_parquet(root / f"{name}.parquet")
+        validate_shap(tables["shap_events"], tables["shap_values"], tables["forecasts"])
+        summary["shap"] = metadata
     final = root / "final_test.json"
     report = json.loads(final.read_text(encoding="utf-8")) if "final_test.json" in files else None
     present = tuple(dict.fromkeys(m["period"] for m in summary["goal1"]))

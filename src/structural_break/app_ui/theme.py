@@ -40,7 +40,14 @@ FORECASTER_COLORS = {
 }
 BOOK_COLORS = {"adopted": MODEL_B, "no_monitor": MODEL_A, "bag5": NEUTRAL, "full": ENTRY}
 PERIOD_COLORS = {"2010–2017": "#9AA5B1", "2018–2023": NEUTRAL, "2024–2025": MODEL_B}
-PARTITION_COLORS = {"fit": "#9AA5B1", "calibration": ENTRY, "assessment": MODEL_B}
+PARTITION_COLORS = {
+    "fit": "#9AA5B1",
+    "calibration": ENTRY,
+    "assessment": MODEL_B,
+    "Selection · 2010–2017": MODEL_A,
+    "Holdout · 2018–2023": MODEL_B,
+    "Final test · 2024–2025": ENTRY,
+}
 FONT = "IBM Plex Sans, sans-serif"
 
 CSS = f"""

@@ -105,3 +105,11 @@ ignored `.env` or process environment to select a restored workspace. Results
 appear only after a complete, independently verified generation is explicitly
 published; missing outputs show a pending state and failed verification shows an
 error.
+
+## Current monitoring and explanations
+
+The monitor now follows the current scored-event population and the 2010–2017,
+2018–2023 and 2024–2025 evaluation periods. Catalyst fields are hidden from SEC
+coverage and drift, with all missing-input events retained in denominators.
+Model Lab's SHAP tab reads verified annual-model attributions; it never reuses
+frozen-study explanations. See [the export instructions](../docs/APP_DIAGNOSTICS.md).

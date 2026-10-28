@@ -148,3 +148,31 @@ def test_results_fail_closed_when_a_file_does_not_match_the_manifest(tmp_path):
     assert results.load(copy) is not None
     (copy / "summary.json").write_text("{}", encoding="utf-8")
     assert results.load(copy) is None
+
+
+def test_monitor_uses_current_periods_and_omits_catalyst_fields(service, monkeypatch):
+    monkeypatch.setattr(
+        service, "cohorts", lambda *_: pytest.fail("Used frozen fitting partitions")
+    )
+    app = AppTest.from_function(page, args=(service, "monitor", 20, True), default_timeout=90).run()
+    assert not app.exception and not app.error
+    samples = next(item.value for item in app.dataframe if "Labelled" in item.value)
+    assert samples["Labelled"].iloc[:2].tolist() == [11048, 10940]
+    assert samples["Period"].tolist() == [
+        "Selection · 2010–2017",
+        "Holdout · 2018–2023",
+        "Final test · 2024–2025",
+    ]
+    assert not any(
+        "catalyst" in str(option).lower() or "affected_leg" in str(option)
+        for option in app.selectbox[0].options
+    )
+
+
+def test_model_lab_exposes_current_shap_pending_instead_of_legacy_attributions(service):
+    app = AppTest.from_function(
+        page, args=(service, "model_lab", 20, True), default_timeout=90
+    ).run()
+    assert not app.exception and not app.error
+    assert "SHAP" in [tab.label for tab in app.tabs]
+    assert any("SHAP values have not been exported" in item.value for item in app.info)

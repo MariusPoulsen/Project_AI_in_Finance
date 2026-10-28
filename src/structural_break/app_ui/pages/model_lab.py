@@ -9,7 +9,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from structural_break.app_ui import components, result_charts, theme
+from structural_break.app_ui import components, result_charts, shap_view, theme
 from structural_break.app_ui.context import current
 from structural_break.app_ui.results import MODEL_NOTES, MODELS, period_label
 
@@ -250,6 +250,7 @@ def render() -> None:
             "Comparison",
             "Discrimination",
             "Calibration",
+            "SHAP",
             "By year",
             "By business group",
             "Full model and agent desk",
@@ -332,7 +333,7 @@ def render() -> None:
             "on each model's log-odds: slope 1 and intercept 0 are perfect. A slope below 1 "
             "means the predictions are too spread out, above 1 too cautious."
         )
-    with tabs[3]:
+    with tabs[4]:
         table = _by_year(forecasts)
         if table.empty:
             components.empty_state("No yearly results are available.")
@@ -343,7 +344,7 @@ def render() -> None:
                 "(2010–2017) from the holdout (2018–2023)"
                 + ("; the second marks the final test." if table["year"].max() >= 2024 else ".")
             )
-    with tabs[4]:
+    with tabs[5]:
         groups = _by_group(forecasts, period)
         if groups.empty:
             components.empty_state("Too few reverting events per business group in these years.")
@@ -367,7 +368,7 @@ def render() -> None:
                 "favour either model by chance; none was selected after the fact. Groups with "
                 "fewer than five reversions are left out."
             )
-    with tabs[5]:
+    with tabs[6]:
         desk = metrics[metrics["model"].isin(["full_base", "full"])]
         if desk.empty:
             components.empty_state("No agent-desk forecasts are available.")
@@ -388,7 +389,7 @@ def render() -> None:
                 "the forecast slightly worse (Brier +0.00104, 95 % [+0.00034, +0.00189], "
                 "Decision 110b); the full model is reported, not adopted."
             )
-    with tabs[6]:
+    with tabs[7]:
         st.table(
             pd.DataFrame(
                 SETTINGS, columns=["Model", "Features", "Learner", "Training window"]
@@ -400,7 +401,7 @@ def render() -> None:
             "keeps the fixed XGBoost settings. Each test year's model is fitted on earlier years "
             "only; selections use the previous year's out-of-sample score cutoff."
         )
-    with tabs[7]:
+    with tabs[8]:
         st.dataframe(
             metrics[["period", *METRIC_COLUMNS]],
             hide_index=True,
@@ -415,6 +416,8 @@ def render() -> None:
             icon=":material/download:",
             key="g1_download",
         )
+    with tabs[3]:
+        shap_view.render(results, YEARS[period])
     components.provenance(
         {
             "Results export": f"{results.manifest.get('commit')} "
