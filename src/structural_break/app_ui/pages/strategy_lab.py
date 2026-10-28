@@ -200,9 +200,8 @@ def goal2(results: Results | None) -> None:
                     "2010–23": _num(s3),
                     "CAGR 2010–23": components.pct(cagr),
                     "Max DD": components.pct(dd),
-                    "Decision": decision,
                 }
-                for step, costs, s1, s2, s3, cagr, dd, decision in DESIGN_LADDER
+                for step, costs, s1, s2, s3, cagr, dd, _decision in DESIGN_LADDER
             ]
         )
         st.markdown("**Sharpe ratio by period, each step added to the one above**")
@@ -212,9 +211,9 @@ def goal2(results: Results | None) -> None:
             "2018–2023. The first three rows use the plan's flat costs and 25 % of NAV per "
             "entry; from the fourth row on, realistic per-stock costs (spread, square-root "
             "impact, commission) at $10m. The largest gains came from how trades are run, not "
-            "from better forecasts: the better forecasters did not select better trades "
-            "(Decision 87). Probability of backtest overfitting over all 132 tracked designs: "
-            "0.54; deflated Sharpe 0.86 (Decision 113)."
+            "from better forecasts: the better forecasters did not select better trades. "
+            "Probability of backtest overfitting over all 132 tracked designs: "
+            "0.54; deflated Sharpe 0.86."
         )
     with tabs[1]:
         daily = results.tables["books_daily"]
@@ -225,7 +224,7 @@ def goal2(results: Results | None) -> None:
         )
         st.caption(
             "All four books share the exits, sizing, residual sleeve, risk targeting and costs; "
-            "only the trade selection or the monitor exit differs (Decision 119). Values "
+            "only the trade selection or the monitor exit differs. Values "
             "include cash interest; Sharpe ratios are in excess of it. The dotted line marks the "
             "2018 holdout"
             + (", the shaded band the 2024–2025 final test." if results.final_included else ".")
@@ -274,8 +273,7 @@ def goal2(results: Results | None) -> None:
         st.caption(
             "Returns per trade are gross, from the entry close to the exit close, as a share of "
             "the trade's gross notional; costs are charged in the book. The monitor exit closes "
-            "a trade when the agent desk rates new company news adverse 5 and persistent 5 "
-            "(Decision 110d)."
+            "a trade when the agent desk rates new company news adverse 5 and persistent 5."
         )
     with tabs[3]:
         trades = results.tables["trades"].copy()
@@ -335,7 +333,3 @@ def render() -> None:
     )
     components.synthetic_banner(ctx.service.identity)
     goal2(ctx.results)
-    st.caption(
-        "The plan's original 2022–2023 ladder (Decisions 36–40) is superseded by this book and "
-        "kept in the decision log."
-    )

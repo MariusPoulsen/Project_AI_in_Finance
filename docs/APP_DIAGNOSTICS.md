@@ -5,6 +5,17 @@ periods are selection 2010–2017, holdout 2018–2023 and final test 2024–202
 annual forecaster fits earlier resolved labels; these are evaluation periods,
 not a replacement for the original frozen fitting/calibration partitions.
 Final-test counts remain pending until the results export includes them.
+The main Versions table describes the current results export. Superseded frozen
+evaluation, backtest and explanation-status rows are omitted. The still-used
+input registry, SEC generation, protocol and bundle identities remain available
+under the collapsed Input data provenance section.
+Numbered decision references and links to the development decision log are not
+shown in app copy, settings, tables or authorization labels. Source comments,
+development documentation, stored unlock records and research artifacts retain
+their original references.
+The methodology's displayed research feature blocks omit the Gemma catalyst
+extraction row and description. This is a presentation filter; it does not
+change fitted feature sets, stored research results or historical artifacts.
 
 Counts retain all scored events and separately report labelled events, positive
 labels and labelled-event reversion rates. At export 50dd896, the counts are
@@ -42,6 +53,20 @@ Regenerate it for a development results copy with:
 ```shell
 uv run --frozen python scripts/export_forecast_baselines.py --workspace-root C:/Users/mariu/dev/Project_AI_in_Finance/data/team --evaluation-version research_evaluation_16a431c4fea73ffd35f56062 --results demo/results
 ```
+
+## Full model forecasting view
+
+The Full model tab explains the actual annual logistic stack: bagged B+rule+ou
+probability plus six entry-desk inputs (explains-move, persistence, relationship
+change, explains × persistence, no-news and abstain). Conditional debate and
+citation review validate evidence; the statistical stack, rather than the LLM,
+produces the probability. The position monitor remains a trading exit component.
+
+The selected period controls a matched four-metric comparison of the same
+logistic stack with and without the agent inputs. It displays signed differences,
+sample size and base rate, and rejects mismatched exported cohort counts/rates.
+The comparator is a probability-only stack on desk-covered events, not the
+headline forecaster's all-event result. Performance conclusions stay in the report.
 
 ## SHAP export
 

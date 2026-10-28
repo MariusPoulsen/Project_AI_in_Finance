@@ -34,15 +34,17 @@ MODEL_NOTES = {
     "baseline0": "Take every estimable fresh divergence; all events receive the same rank.",
     "baseline1": "Take only relationships marked ACTIVE at the event close; ACTIVE ranks "
     "above inactive events. This is the existing econometric entry gate.",
-    "model_a": "Prices and the relationship only; the plan's Model A (Decision 45).",
-    "r0": "Model A's inputs plus SEC timing and tone, fixed XGBoost (Decision 45). "
+    "model_a": "Prices and the relationship only; the quantitative forecaster.",
+    "r0": "Model A's inputs plus SEC timing and tone, fixed XGBoost. "
     "Selects the adopted book's trades.",
     "bag5": "R0's inputs plus the rule blocks (peer, state, earnings, momentum) and the "
-    "structural OU prior, five seeds bagged (Decision 86b). The pre-registered Goal 1 model.",
+    "structural OU prior, five seeds bagged. The pre-registered Goal 1 model.",
     "track": "The pre-registered model plus each pair's and stock's earlier reversion "
-    "record (Decision 88b). Best observed, chosen after the fact.",
-    "full_base": "The pre-registered model on the events the agent desk scored.",
-    "full": "The pre-registered model plus the entry agents' scores (Decisions 110b–c, 119).",
+    "record. Best observed, chosen after the fact.",
+    "full_base": "Annual logistic stack using only the bagged B+rule+ou probability, "
+    "on the same desk-covered events as the Full model.",
+    "full": "The same annual logistic stack plus entry-agent assessments, their interaction "
+    "and no-news/abstain indicators.",
 }
 BOOKS = {
     "adopted": "Adopted book (R0 selection, monitor exit)",

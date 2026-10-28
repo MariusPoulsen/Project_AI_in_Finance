@@ -4,6 +4,8 @@ Uses the clearly labelled synthetic preview (invented data) so the smoke tests
 need no snapshot, network or language model.
 """
 
+import re
+
 import pytest
 from streamlit.testing.v1 import AppTest
 
@@ -118,6 +120,12 @@ def test_every_page_renders_with_the_committed_results(service, name):
     assert not app.exception, app.exception
     assert not app.error
     assert app.title
+    for item in [*app.markdown, *app.caption, *app.table, *app.dataframe]:
+        value = item.value
+        text = value.to_csv(index=False) if hasattr(value, "to_csv") else str(value)
+        assert not re.search(r"\bDecisions?\s+\d|DECISIONS\.md|decision log", text)
+        if hasattr(value, "columns"):
+            assert "Decision" not in value.columns
 
 
 def test_adopted_book_page_renders_the_committed_results(service):
@@ -157,6 +165,9 @@ def test_monitor_uses_current_periods_and_omits_catalyst_fields(service, monkeyp
     app = AppTest.from_function(page, args=(service, "monitor", 20, True), default_timeout=90).run()
     assert not app.exception and not app.error
     samples = next(item.value for item in app.dataframe if "Labelled" in item.value)
+    versions = next(item.value for item in app.dataframe if "Item" in item.value)
+    assert not versions.Item.str.startswith("Frozen").any()
+    assert "Input registry protocol" not in set(versions.Item)
     assert samples["Labelled"].iloc[:2].tolist() == [11048, 10940]
     assert samples["Period"].tolist() == [
         "Selection · 2010–2017",

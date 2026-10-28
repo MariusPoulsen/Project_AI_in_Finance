@@ -44,20 +44,30 @@ def render() -> None:
             "bundle": "Exported app bundle",
             "synthetic": "Synthetic preview",
         }[identity.source],
-        "Primary research generation": identity.primary_version,
-        "Event registry": identity.registry_version,
-        "SEC evidence generation": identity.intelligence_version,
-        **{f"Frozen research evaluation h{h}": v for h, v in sorted(identity.evaluations.items())},
-        **{f"Frozen plan-ladder backtest h{h}": v for h, v in sorted(identity.experiments.items())},
-        "Frozen research-layer explanations": identity.explanation_status,
-        "Input registry protocol": service.protocol.get("version"),
-        "Bundle identity": identity.bundle_id,
     }
     st.dataframe(
         pd.DataFrame({"Item": list(versions), "Value": [str(v) for v in versions.values()]}),
         hide_index=True,
         width="stretch",
     )
+    with st.expander("Input data provenance"):
+        st.caption(
+            "The current forecasts, SEC diagnostics and pair histories reuse these registered "
+            "inputs. These identifiers describe their source data, "
+            "not the annual forecasting models."
+        )
+        inputs = {
+            "Accepted input snapshot": identity.primary_version,
+            "Event registry": identity.registry_version,
+            "SEC evidence generation": identity.intelligence_version,
+            "Input registry protocol": service.protocol.get("version"),
+            "Bundle identity": identity.bundle_id,
+        }
+        st.dataframe(
+            pd.DataFrame({"Input": list(inputs), "Identity": [str(v) for v in inputs.values()]}),
+            hide_index=True,
+            width="stretch",
+        )
     _current_data()
     _headline_health(ctx.results)
 
@@ -153,20 +163,20 @@ def _current_data() -> None:
 
 
 FORECASTER_INVENTORY = [
-    ("Original Model B (R0)", "Fixed XGBoost, Decision 45", "Selects the adopted book's trades"),
+    ("Original Model B (R0)", "Fixed XGBoost", "Selects the adopted book's trades"),
     (
         "B+rule+ou, bagged",
-        "Five XGBoost seeds, feature subsampling, Decision 86b",
+        "Five XGBoost seeds, feature subsampling",
         "Pre-registered Goal 1 model",
     ),
     (
         "B+rule+ou+track, bagged",
-        "As above plus track record, Decision 88b",
+        "As above plus track record",
         "Best observed, post-hoc",
     ),
     (
         "Full model",
-        "Bagged base plus entry-agent scores, Decisions 110b–c, 119",
+        "Bagged base plus entry-agent scores",
         "Reported, not adopted",
     ),
 ]
@@ -184,9 +194,11 @@ def _result_versions(results: Results | None) -> dict[str, object]:
         "Headline results export": f"{manifest.get('commit')} ({manifest.get('generated_at')})",
         "Scored event years": "–".join(str(y) for y in manifest.get("event_years", [])),
         "Freeze manifest SHA-256": manifest.get("freeze_manifest_sha256"),
-        "Final-test unlock": manifest.get("unlock_record") or "No unlock record",
+        "Final-test unlock": "Owner authorization recorded"
+        if manifest.get("unlock_record")
+        else "No unlock record",
         "Final test": "Included" if results.final_included else "Unlocked, results pending",
-        "Agent desk": "Run (Decisions 109–110); monitor exit adopted, entry scores reported",
+        "Agent desk": "Monitor exit adopted; entry scores evaluated in the Full model",
     }
 
 
@@ -258,7 +270,7 @@ def _headline_health(results: Results | None) -> None:
     review = results.summary.get("review", {})
     if review.get("answered"):
         st.caption(
-            f"Development cases. Human review (Decision 113): {review['cases']} blind cases and "
+            f"Development cases. Human review: {review['cases']} blind cases and "
             f"{review['claims']} cited claims; {review['confirmed']} of {review['answered']} "
             "answers confirm the agents. Language models never set a trade by themselves: the "
             "monitor's scores pass a fixed rule (adverse ≥ 5 and persistence ≥ 5)."

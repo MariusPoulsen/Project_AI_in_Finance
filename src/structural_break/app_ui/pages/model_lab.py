@@ -9,7 +9,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from structural_break.app_ui import components, result_charts, shap_view, theme
+from structural_break.app_ui import components, full_forecast_view, result_charts, shap_view, theme
 from structural_break.app_ui.context import current
 from structural_break.app_ui.results import MODEL_NOTES, MODELS, period_label
 from structural_break.services.forecast_baselines import metrics as baseline_metrics
@@ -33,7 +33,7 @@ SETTINGS = [
         "Model A's 36 quantitative features plus SEC 8-K timing, FinBERT tone and catalyst "
         "fields (the research layer's B, all SEC evidence)",
         "XGBoost: depth 3, 400 trees, learning rate 0.03, min child weight 20, λ 10; one seed",
-        "Decision 45 split: trains on labels that ended before year Y−1",
+        "Trains on labels that ended before year Y−1",
     ),
     (
         "B+rule+ou, bagged",
@@ -52,7 +52,7 @@ SETTINGS = [
     (
         "Full model",
         "The bagged B+rule+ou probability plus the entry agents' scores",
-        "Walk-forward logistic stack on the desk region (Decisions 110b–c)",
+        "Walk-forward logistic stack on the desk region",
         "Recent",
     ),
 ]
@@ -308,8 +308,8 @@ def render() -> None:
         st.caption(
             "On 2018–2023 the pre-registered model beats R0 by 0.0053 in log loss (month-block "
             "bootstrap p = 0.002) and by 0.017 in AUC. Model A's walk-forward scores were "
-            "erased in Decision 114: its metrics are kept, its curves are not. Where it "
-            "started: the frozen research study (Decisions 36–45) found no established "
+            "not retained: its metrics are kept, its curves are not. Where it "
+            "started: the frozen research study found no established "
             "difference between Model A and the SEC-evidence variants of Model B on 2022–2023; "
             "R0 is that study's Model B refitted walk-forward."
         )
@@ -393,26 +393,7 @@ def render() -> None:
                 "fewer than five reversions are left out."
             )
     with tabs[6]:
-        desk = metrics[metrics["model"].isin(["full_base", "full"])]
-        if desk.empty:
-            components.empty_state("No agent-desk forecasts are available.")
-        else:
-            st.dataframe(
-                desk[["period", *METRIC_COLUMNS]],
-                hide_index=True,
-                width="stretch",
-                column_config={"period": "Test years", **METRIC_COLUMNS},
-            )
-            st.markdown(
-                f"- **{MODELS['full']}**: {MODEL_NOTES['full']}\n"
-                f"- **{MODELS['full_base']}**: {MODEL_NOTES['full_base']}"
-            )
-            st.caption(
-                "Both rows use only the events the entry agents scored (the desk region), so the "
-                "comparison is like with like. On the selection years the agent features made "
-                "the forecast slightly worse (Brier +0.00104, 95 % [+0.00034, +0.00189], "
-                "Decision 110b); the full model is reported, not adopted."
-            )
+        full_forecast_view.render(metrics, period)
     with tabs[7]:
         st.table(
             pd.DataFrame(
@@ -421,7 +402,7 @@ def render() -> None:
         )
         st.caption(
             "No hyperparameter is tuned per year: tuning and other boosting libraries did not "
-            "improve the forecast on the selection years (Decisions 66, 70, 86), so every model "
+            "improve the forecast on the selection years, so every model "
             "keeps the fixed XGBoost settings. Each test year's model is fitted on earlier years "
             "only; selections use the previous year's out-of-sample score cutoff."
         )
