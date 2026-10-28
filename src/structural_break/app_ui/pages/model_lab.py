@@ -222,11 +222,12 @@ def render() -> None:
     st.divider()
     st.subheader("Research layer: the frozen A/B study, 2022–2023")
     st.caption(
-        "The pre-registered research comparison (Decisions 36–45): calibrated logistic and "
-        "XGBoost models at 20 sessions, Model A against Model B with each block of SEC evidence, "
-        "on the 2022–2023 assessment events. Its Model B is the research-layer model, not the "
-        "walk-forward R0 above; the later walk-forward variants erased in Decision 114 are not "
-        "shown anywhere."
+        "The pre-registered research study that defined Model B: the 20-session label, A's 36 "
+        "quantitative features and the SEC evidence blocks (8-K metadata, FinBERT tone, Gemma "
+        "catalysts), compared with calibrated logistic and XGBoost models on 2022–2023. It "
+        "found no established difference between A and B. The headline R0 above is this "
+        "Model B (all SEC evidence) refitted walk-forward with a fixed XGBoost (Decision 45); "
+        "the later walk-forward variants erased in Decision 114 are not shown anywhere."
     )
     controls = st.columns([3, 2])
     family = (
