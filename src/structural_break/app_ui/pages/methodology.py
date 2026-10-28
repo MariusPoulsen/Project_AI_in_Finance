@@ -6,7 +6,7 @@ import pandas as pd
 import streamlit as st
 
 from structural_break.app_bundle.features import BLOCK_ORDER, feature_block
-from structural_break.app_ui import charts, components
+from structural_break.app_ui import components
 from structural_break.app_ui.context import current
 
 PROGRAMME = [
@@ -64,12 +64,6 @@ def render() -> None:
         hide_index=True,
         width="stretch",
     )
-    st.caption(
-        "The headline forecasters and the book are scored walk-forward: each test year uses "
-        "models fitted on earlier years only. The frozen research layer (timeline below) used "
-        "fixed fit, calibration and assessment windows."
-    )
-    components.chart(charts.timeline(service.periods()), key="timeline")
     st.subheader("Events and labels")
     st.markdown(
         f"- **Population:** a frozen roster of business-peer pairs. Each month an Engle–Granger "
