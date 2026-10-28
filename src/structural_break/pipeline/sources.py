@@ -26,6 +26,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from structural_break import periods
 from structural_break.backtest.contracts import ExecutionConfig, PairTradeResult
 from structural_break.backtest.historical import (
     HistoricalSources,
@@ -91,7 +92,7 @@ def simulate_events(
     progress: Callable[[str], None] | None = None,
 ) -> pd.DataFrame:
     """One row per fresh h20 episode event; each config is simulated once per event."""
-    if end > ASSESSMENT[1]:
+    if end > max(ASSESSMENT[1], periods.data_end()):
         raise ValueError("Simulation cannot extend past the development period")
     rows: list[dict[str, Any]] = []
     for chunk_start, chunk_end in _chunks(start, end):
