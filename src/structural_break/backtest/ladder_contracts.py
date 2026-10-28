@@ -21,6 +21,7 @@ from structural_break.backtest.contracts import (
     Price,
     canonical_sessions,
     development_date,
+    readable_end,
     utc,
 )
 
@@ -106,7 +107,7 @@ class LadderState(FrozenModel):
     @model_validator(mode="after")
     def identity_and_clocks(self) -> Self:
         signal = utc(self.signal_at)
-        if signal.year >= 2024:
+        if signal.year > readable_end().year:
             raise ValueError("Ladder inputs cannot open locked 2024+ outcomes")
         for prediction in (self.model_a, self.model_b):
             if prediction is not None and utc(prediction.information_cutoff) != signal:
@@ -231,7 +232,7 @@ class LadderRow(FrozenModel):
 
     @model_validator(mode="after")
     def coherent_rows(self) -> Self:
-        if utc(self.signal_at).year >= 2024:
+        if utc(self.signal_at).year > readable_end().year:
             raise ValueError("Ladder rows cannot open locked 2024+ outcomes")
         if (self.raw_fresh is True) != (self.execution is not None):
             raise ValueError("Every fresh event requires one shared counterfactual execution")

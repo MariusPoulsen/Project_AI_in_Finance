@@ -57,7 +57,7 @@ def utc(value: datetime) -> datetime:
 _HELD_END: list[tuple[float, date]] = []
 
 
-def _readable_end() -> date:
+def readable_end() -> date:
     # Every contract validates its dates, millions of times per run: the gate's end date is
     # re-read at most once a second.
     now = time.monotonic()
@@ -67,13 +67,13 @@ def _readable_end() -> date:
 
 
 def development_date(value: date) -> None:
-    if not date(2004, 1, 1) <= value <= _readable_end():
+    if not date(2004, 1, 1) <= value <= readable_end():
         raise ValueError("Execution inputs are development-only; 2024+ remains locked")
 
 
 def _calendar_end() -> date:
     # 15 days past the last readable date (2024-01-15 while the final test is locked).
-    return _readable_end() + timedelta(days=15)
+    return readable_end() + timedelta(days=15)
 
 
 @lru_cache(maxsize=1)
