@@ -500,10 +500,11 @@ EXIT = "E3_adverse_tone_either_leg"
 
 
 def load_exits(output: Path) -> pd.DataFrame:
-    parts = [
-        pd.read_parquet(output / f"exits_{name}.parquet")
-        for name in ("explore", "confirm", "replicate")
-    ]
+    # The final-test run adds 2024-2025 under the frozen rule (Decision 120a).
+    names = ["explore", "confirm", "replicate"]
+    if (output / "exits_final.parquet").exists():
+        names.append("final")
+    parts = [pd.read_parquet(output / f"exits_{name}.parquet") for name in names]
     exits = pd.concat(parts, ignore_index=True)
     if exits["event_id"].duplicated().any():
         raise ValueError("Exit simulations overlap")

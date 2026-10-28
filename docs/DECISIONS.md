@@ -5887,3 +5887,24 @@ return was read. None of these changes a development result.
   bulk months and 8 in FNSPID 2018–2023. The monitor's thresholds are unchanged.
 - **Cash rate.** The 13-week T-bill series (Yahoo ^IRX) is extended through 2025 in the
   final-test checkout; its overlap with the frozen file matches exactly.
+
+### 120a, continued: more development-only gates in the book pipeline (2026-10-28)
+
+The 2022–2023 rehearsal rebuilt the research layer only, so the book pipeline's own guards were
+never exercised past 2023. Each hard-coded development end below now reads the unlock gate
+(`periods.data_end()`); while the final test is locked every bound is the same as before, and
+the backtest, portfolio, scheduling and app test suites pass unchanged.
+
+- `backtest.contracts`: the execution-date check and the exchange calendar (2023-12-31 and
+  2024-01-15 become the readable end and 15 days after it).
+- `backtest.portfolio`: the truncation of open positions at the development end.
+- `pipeline.sources.simulate_events`: the simulation window.
+- **News exit for 2024–2025.** The frozen E3 exit was simulated in three development stages
+  (2006–2015, 2016–2021, 2022–2023) that also chose the rule. No stage covers 2024–2025, so
+  the book would have run the final test without its news exit. `scripts/final_test_exits.py`
+  re-simulates the frozen rule for each development span on the final-test registry and once
+  for 2024–2025 (`exits_final.parquet`, read by `news_exit.load_exits`); the rule choices are
+  copied from development, nothing is re-selected.
+- **8-K news and headline tone** reuse the development caches (packs, LLM records, FinBERT
+  scores), keyed by company and filing, so only 2024–2025 filings are parsed, scored or sent to
+  the language model.
