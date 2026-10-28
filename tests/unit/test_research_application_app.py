@@ -169,7 +169,19 @@ def test_monitor_uses_current_periods_and_omits_catalyst_fields(service, monkeyp
     )
 
 
-def test_model_lab_exposes_current_shap_pending_instead_of_legacy_attributions(service):
+def test_model_lab_exposes_current_shap_pending_instead_of_legacy_attributions(
+    service, monkeypatch
+):
+    from dataclasses import replace
+
+    from structural_break.app_ui import results
+
+    saved = results.load()
+    assert saved is not None
+    pending = replace(
+        saved, tables={k: v for k, v in saved.tables.items() if not k.startswith("shap_")}
+    )
+    monkeypatch.setattr(results, "load", lambda: pending)
     app = AppTest.from_function(
         page, args=(service, "model_lab", 20, True), default_timeout=90
     ).run()

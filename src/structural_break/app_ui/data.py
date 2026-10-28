@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Literal
 
@@ -18,6 +18,7 @@ import streamlit as st
 
 from structural_break.app_bundle.contracts import AppBundle
 from structural_break.app_bundle.io import read_bundle
+from structural_break.app_bundle.pair_history import PairHistory
 from structural_break.app_bundle.strategy import find_experiments
 from structural_break.config.models import RuntimeSettings
 from structural_break.config.paths import ProjectPaths
@@ -60,6 +61,18 @@ def _bundle(location: str, digest: str) -> AppBundle:
 
 
 @st.cache_resource(show_spinner=False, max_entries=2)
+def _with_history(_bundle_value: AppBundle, location: str, digest: str, identity: str) -> AppBundle:
+    del digest, identity
+    bundle = _bundle_value
+    history = PairHistory.open(
+        Path(location), bundle.identity.registry_version, set(bundle.pairs.pair_id)
+    )
+    pairs = bundle.pairs.copy()
+    pairs["series_available"] = True
+    return replace(bundle, pairs=pairs, pair_loader=history.read)
+
+
+@st.cache_resource(show_spinner=False, max_entries=2)
 def _workspace(
     root: str, workspace: str, versions: tuple[str, ...], experiments: tuple[str, ...]
 ) -> AppBundle:
@@ -84,6 +97,15 @@ def load(source: DataSource, root: Path = PROJECT_ROOT) -> LoadOutcome:
                 )
             digest = hashlib.sha256(manifest.read_bytes()).hexdigest()
             bundle = _bundle(str(source.location.resolve()), digest)
+            history_root = source.location.parent / "pair_history"
+            history_manifest = history_root / "manifest.json"
+            if history_manifest.is_file():
+                bundle = _with_history(
+                    bundle,
+                    str(history_root.resolve()),
+                    hashlib.sha256(history_manifest.read_bytes()).hexdigest(),
+                    bundle.identity.bundle_id,
+                )
         else:
             paths = ProjectPaths.resolve(root, source.location)
             versions = primary_versions(paths) if paths.database.exists() else ()

@@ -15,6 +15,9 @@
   "forecasts.parquet": "ae4c94575442a357c8f42e856494335eeb00b780547a322bb8e8b72cd1cc1c04",
   "news.parquet": "bf467dee56e9e371ba2ec029ac685d38abcc0d6ba33c78330476940e0caf9ab9",
   "summary.json": "6b07ddc384d542f551e4af316ff62774b16f1324254bd234ef21a5ba67d19093",
-  "trades.parquet": "7ffc1baacbbc32daa88397f70a237cba1caf06b83f8ed4c86f084a27d4107d38"
+  "trades.parquet": "7ffc1baacbbc32daa88397f70a237cba1caf06b83f8ed4c86f084a27d4107d38",
+  "shap_events.parquet": "05bcf14b1116d6b52533f7e99e7c8dbd9cfc5c82f80a508a17cd4737142f8fb1",
+  "shap_values.parquet": "d600dee9b73edcb22031bf069739967780836446d3e1c885d9baa8d67596b531",
+  "shap.json": "3f9f791710dacb3a51ffcae845ea8874c96ab9299626b04cf9e8a14f4e303d57"
  }
 }

@@ -23,17 +23,23 @@ The UI change does not remove predictors from, or refit, the scientific models.
 
 ## SHAP export
 
-Model Lab has a SHAP tab for verified current-model explanations. The current
-committed results contain no such attributions. Frozen-study TreeSHAP is not a
-substitute for the annual models. To populate the tab, run in the development
-checkout that holds `data/team`, `outputs/book`, the walk-forward simulation and
-news-exit inputs:
+Model Lab has a SHAP tab for verified current-model explanations. The committed
+export contains 240 target-blind sampled events per model across 2018–2023
+(40 per year), for R0 and both bagged forecasters. Every raw annual score was
+reproduced before exporting the native attributions. Selection-period SHAP is
+not included. Frozen-study TreeSHAP is not a substitute for the annual models.
+To regenerate, run from a separate checkout with read-only development inputs:
 
 ```shell
 uv run --frozen python scripts/export_forecast_shap.py
 ```
 
 Paths can be overridden with `--results`, `--workspace-root` and `--outputs-root`.
+The verified inputs on the owner's computer are under
+`C:/Users/mariu/dev/Project_AI_in_Finance/data/team` and
+`C:/Users/mariu/dev/Project_AI_in_Finance/outputs`. The source `demo/results`
+must also remain read-only: Claude regenerates it independently. Pass this
+checkout's results copy to `--results`. Do not use the final-test workspace.
 Default years are 2018–2023, with 40 events per year, chosen by the lowest SHA-256
 of event ID independently in each year. The sample never uses outcomes, scores
 or feature values. `--years` accepts development years 2010–2023 only.
@@ -60,3 +66,29 @@ with the published calibrated ensemble probability separately labelled.
 Model A has no annual score export for verification here, and the Full model
 uses a logistic stack; neither receives a fabricated tree explanation. All
 explanations are model behaviour, not causal effects or performance evidence.
+
+## Complete pair histories
+
+`demo/pair_history` supplements the small showcase app bundle with all 736
+registered development pairs (75.1 MB compressed). The export verifies the
+registered registry, each pair manifest, daily state, snapshots, crossings and
+market prices before projecting the columns used by Pair Detail. It reads
+DuckDB registrations and immutable Parquet without modifying them; it does not
+download, refit or reconstruct SEC text.
+
+```shell
+uv run --frozen python scripts/export_pair_history.py --workspace-root C:/Users/mariu/dev/Project_AI_in_Finance/data/team
+```
+
+Choose a new `--output` directory when regenerating; existing exports are not
+overwritten. Publish this directory beside `app_bundle`, including its manifest
+and all Parquet shards. The loader requires the same registry identity and exact
+pair roster, verifies file hashes before use and reads only the selected pair's
+rows. The supplement ends in 2023 and makes no claim of final-test history.
+It removes the demo's previous "events only" limitation without copying the
+SEC archive or putting a database in Git. Browsing never starts an export job.
+
+Code changes target `main` (or `app/refresh` while integration is active), not
+the deployment-only `deploy` branch. The deployment maintainer merges code and
+publishes the matching results/history exports together. Preserve the current
+`pipeline.news_exit.load_exits` support for `exits_final.parquet` during integration.

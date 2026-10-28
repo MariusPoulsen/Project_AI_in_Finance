@@ -49,12 +49,21 @@ def render() -> None:
         st.session_state["sb_pair"] = pair_id
         st.session_state["sb_event"] = None
     info = pairs.set_index("pair_id").loc[pair_id]
+    if ctx.results is not None:
+        scored = event_table(ctx.results, pair_id)
+        count_label = (
+            f"{len(scored):,} scored events, "
+            f"{int(scored['period'].eq('holdout').sum()):,} in holdout"
+        )
+    else:
+        count_label = (
+            f"{int(info['events_n'])} events, {int(info['assessment_events_n'])} in assessment"
+        )
     st.markdown(
         f'<span class="sb-chip">{info["leg_a"]} / {info["leg_b"]}</span>'
         f'<span class="sb-chip">{info["business_group"]}</span>'
         f'<span class="sb-chip">{info["sector"]}</span>'
-        f'<span class="sb-chip">{int(info["events_n"])} events, '
-        f"{int(info['assessment_events_n'])} in assessment</span>",
+        f'<span class="sb-chip">{count_label}</span>',
         unsafe_allow_html=True,
     )
     events = service.pair_events(horizon, pair_id)
@@ -63,9 +72,8 @@ def render() -> None:
 
     if series is None or series.state.empty:
         components.empty_state(
-            "Daily prices and spread history for this pair are not in this demo bundle (it carries "
-            "a showcase subset to stay small). Its events and explanations are still listed below; "
-            "the full workspace shows every pair."
+            "Daily prices and spread history for this pair are not in the verified history "
+            "export. Its available events are listed below."
         )
     else:
         state = series.state.copy()
