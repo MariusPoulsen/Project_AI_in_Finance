@@ -275,6 +275,9 @@ def render() -> None:
                 result_charts.metric_bars(comparison, "log_loss", "Log loss", COMPARISON),
                 key="g1_ll",
             )
+            st.caption(
+                "N/A: Baseline 0 and Baseline 1 are entry rules without probability forecasts."
+            )
         st.dataframe(
             compared.reindex([m for m in COMPARISON if m in compared.index]).reset_index()[
                 list(METRIC_COLUMNS)

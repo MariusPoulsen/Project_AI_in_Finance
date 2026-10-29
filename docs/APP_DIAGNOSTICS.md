@@ -58,6 +58,9 @@ precision equals the base rate. Baseline 1 ranks ACTIVE above inactive events;
 its admitted-event count is shown separately. These entry rules have no
 probability forecasts, so their log loss and Brier are unavailable. No base rate
 is fitted using holdout outcomes and no old frozen-period metric is reused.
+The log-loss chart retains both baseline rows as explicitly marked N/A entry
+rules, aligned with the ROC chart. It draws no numeric or zero-length baseline
+bars and does not interpret admission flags as 0/1 probabilities.
 
 `baseline_events.parquet` contains verified eligibility flags for all 22,450
 development forecast events, exported from the registered h20 model inputs.
