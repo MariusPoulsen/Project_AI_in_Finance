@@ -1,5 +1,11 @@
 # Current-study monitoring and SHAP
 
+Overview's pipeline is a compact left-to-right vector diagram. Five short stages
+connect data, divergence detection, forecasting, the trading book and evaluation.
+Small entry-agent and monitor branches distinguish forecast inputs from exits.
+Event thresholds, the forecasting horizon and issuer count use the current input
+protocol and roster. Publication dates and status remain in the page context.
+
 The monitor uses `demo/results/forecasts.parquet` as its event population. Its
 periods are selection 2010–2017, holdout 2018–2023 and final test 2024–2025. Each
 annual forecaster fits earlier resolved labels; these are evaluation periods,

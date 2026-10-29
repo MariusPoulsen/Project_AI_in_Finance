@@ -5,35 +5,9 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from structural_break.app_ui import charts, components, result_charts, theme
+from structural_break.app_ui import charts, components, pipeline_view, result_charts, theme
 from structural_break.app_ui.context import current
 from structural_break.app_ui.results import Results
-
-ARCHITECTURE = """
-digraph {
-  rankdir=LR; bgcolor="transparent"; nodesep=0.25; ranksep=0.35;
-  node [shape=box, style="rounded,filled", fontname="IBM Plex Sans", fontsize=15,
-        margin="0.18,0.08",
-        color="#D5DAE1", fillcolor="#FFFFFF", fontcolor="#172033"];
-  edge [color="#9AA5B1", arrowsize=0.6];
-  prices [label="Daily prices\\n250 issuers · VIX"];
-  sec [label="SEC EDGAR filings\\n8-K timing · FinBERT tone"];
-  news [label="Company headlines\\nFNSPID · TickerTick"];
-  econ [label="Econometric engine\\nmonthly Engle–Granger,\\nfrozen z-score, OU prior"];
-  events [label="Fresh divergences\\n|z| ≥ 2"];
-  feats [label="Features\\nspread · peers · state ·\\nearnings · momentum · OU"];
-  fc [label="Walk-forward forecasters\\nR0 · bagged B+rule+ou ·\\n+track (refit each year)",
-      fillcolor="#E3F2EF"];
-  desk [label="Agent desk\\nentry agents · position\\nmonitor (Gemma)", fillcolor="#EEF1F5"];
-  book [label="Trading book\\nR0 top 20 % · exits ·\\nresidual sleeve · risk", fillcolor="#E3F2EF"];
-  eval [label="Selection 2010–2017\\nholdout 2018–2023\\nfinal test 2024–2025"];
-  prices -> econ -> events -> feats -> fc;
-  sec -> feats;
-  news -> desk;
-  fc -> book; desk -> book; fc -> desk;
-  fc -> eval; book -> eval;
-}
-"""
 
 
 def _goals(ctx_results: Results | None) -> None:
@@ -168,8 +142,8 @@ def render() -> None:
         help="Fresh divergences scored walk-forward from 2010 (the research layer counts "
         f"{components.count(counts['events'])} development events from 2006).",
     )
-    st.markdown("**How the pipeline fits together**")
-    st.graphviz_chart(ARCHITECTURE, width="stretch")
+    st.subheader("How the pipeline fits together")
+    pipeline_view.render(protocol, counts["issuers"])
     st.markdown(
         "**Where to go next.** Compare the forecasters in the Model Lab, see how the book was "
         "built and every trade in the Strategy Lab, read the adopted book and the final test, "
