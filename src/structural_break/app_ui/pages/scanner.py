@@ -6,7 +6,7 @@ from datetime import date
 
 import streamlit as st
 
-from structural_break.app_ui import components
+from structural_break.app_ui import components, navigation
 from structural_break.app_ui.context import current, open_pair
 from structural_break.app_ui.results import event_table
 from structural_break.services.research_application import PARTITION_ORDER, ScannerFilters
@@ -148,6 +148,7 @@ SCORE_MODELS = {
     "p_r0": "Original Model B (R0)",
     "p_bag5": "B+rule+ou, bagged",
     "p_track": "B+rule+ou+track, bagged",
+    "p_full": "Full model (desk-covered events)",
 }
 PERIODS = {
     "selection": "Selection (2010–2017)",
@@ -164,32 +165,50 @@ def render() -> None:
     components.page_header(
         "Scanner",
         "Every fresh divergence scored walk-forward from 2010, with each headline forecaster's "
-        "calibrated probability that the gap closes and whether the adopted book traded it. "
-        "Select a row to open the pair.",
+        "estimated probability that the gap closes and whether the adopted book traded it. "
+        "Click an event row to investigate its forecast, evidence and outcome.",
     )
     components.synthetic_banner(ctx.service.identity)
     events = event_table(ctx.results)
     first, last = int(events["year"].min()), int(events["year"].max())
     with st.container(border=True):
         top = st.columns([2, 2, 3])
-        years = top[0].slider("Event years", first, last, (max(first, last - 1), last))
-        periods = top[1].multiselect(
-            "Period",
-            [p for p in PERIODS if p in set(events["period"])],
-            format_func=lambda p: PERIODS[p],
-        )
-        groups = top[2].multiselect("Business groups", sorted(events["group"].dropna().unique()))
+        with top[0]:
+            years = navigation.year_range(first, last)
+        with top[1]:
+            periods = navigation.multiselect(
+                "Period",
+                [p for p in PERIODS if p in set(events["period"])],
+                "scan_period",
+                format_func=lambda p: PERIODS[p],
+            )
+        with top[2]:
+            groups = navigation.multiselect(
+                "Business groups", sorted(events["group"].dropna().unique()), "scan_group"
+            )
         bottom = st.columns([2, 2, 2, 2])
-        model = bottom[0].selectbox(
-            "Filter on", list(SCORE_MODELS), format_func=lambda m: SCORE_MODELS[m]
-        )
-        minimum = bottom[1].slider("Minimum probability", 0.0, 1.0, 0.0, 0.01)
-        query = bottom[2].text_input("Pair contains", placeholder="e.g. KO or KO__PEP")
-        traded_only = bottom[3].toggle(
-            "Traded by the adopted book",
-            help="Events the R0 selection picked and the book entered, after its filters.",
-        )
-    mask = events["year"].between(*years) & events[model].fillna(0).ge(minimum)
+        with bottom[0]:
+            model = navigation.selectbox(
+                "Filter on",
+                list(SCORE_MODELS),
+                "scan_model",
+                default="p_r0",
+                format_func=lambda m: SCORE_MODELS[m],
+            )
+        with bottom[1]:
+            minimum = navigation.probability()
+        with bottom[2]:
+            query = navigation.text_input(
+                "Pair contains", "scan_pair", placeholder="e.g. KO or KO__PEP"
+            )
+        with bottom[3]:
+            traded_only = navigation.toggle(
+                "Traded by the adopted book",
+                "scan_traded",
+                help="Events the R0 selection picked and the book entered, after its filters.",
+            )
+    navigation.share("scanner")
+    mask = events["year"].between(*years) & events[model].notna() & events[model].ge(minimum)
     if periods:
         mask &= events["period"].isin(periods)
     if groups:
@@ -244,7 +263,7 @@ def render() -> None:
         height=460,
         on_select="rerun",
         selection_mode="single-row",
-        key="scanner_table",
+        key=f"scanner_table_{hash(tuple(rows.event_id))}",
         column_config={
             "date": st.column_config.DateColumn("Date", format="D MMM YYYY"),
             "pair": "Pair",
@@ -273,9 +292,7 @@ def render() -> None:
     chosen = selection.selection.rows if selection else []
     if chosen:
         row = rows.iloc[chosen[0]]
-        st.success(f"Selected {row['pair']} on {row['date']:%d %b %Y}.")
-        if st.button("Open pair detail", type="primary", icon=":material/open_in_new:"):
-            open_pair(str(row["pair"]), str(row["event_id"]))
+        navigation.switch("event", event=str(row["event_id"]), pair=str(row["pair"]))
     st.download_button(
         "Download these rows (CSV)",
         rows.to_csv(index=False).encode(),

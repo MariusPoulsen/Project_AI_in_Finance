@@ -12,7 +12,7 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -42,8 +42,9 @@ def main() -> None:
     parser.add_argument("--results", type=Path, default=Path("demo/results"))
     parser.add_argument("--workspace-root", type=Path, default=Path("data/team"))
     parser.add_argument("--outputs-root", type=Path, default=Path("outputs"))
-    parser.add_argument("--years", nargs="+", type=int, default=list(range(2018, 2024)))
-    parser.add_argument("--events-per-year", type=int, default=40)
+    parser.add_argument("--years", nargs="+", type=int, default=list(range(2010, 2024)))
+    parser.add_argument("--events-per-year", type=int, default=80)
+    parser.add_argument("--checkpoint-dir", type=Path, default=Path(".design/shap-checkpoints"))
     args = parser.parse_args()
     if not args.years or min(args.years) < 2010 or max(args.years) > 2023:
         parser.error("Only development years 2010–2023 can be explained by this command")
@@ -56,6 +57,10 @@ def main() -> None:
     if sha(source) != manifest["files"][source.name]:
         raise ValueError("Current forecast export failed its hash check")
     forecasts = pd.read_parquet(source)
+    if args.results.resolve().is_relative_to(
+        args.workspace_root.resolve()
+    ) or args.results.resolve().is_relative_to(args.outputs_root.resolve()):
+        raise ValueError("Presentation writes must be outside the read-only sources")
     harness_args = harness.parser().parse_args(
         [
             "summary",
@@ -81,6 +86,16 @@ def main() -> None:
     sets = harness.feature_sets(base, list(frame.columns))
     import xgboost as xgb
 
+    # Bind checkpoints to the exact reconstructed training/test data, parameters and
+    # fitting implementation, not timestamps or just a presentation-file identity.
+    bound_columns = sorted(
+        {c for columns in sets.values() for c in columns}
+        | {"event_id", "event_date", "horizon_end_date", "supervised_eligible", harness.TARGET}
+    )
+    frame_digest = hashlib.sha256(
+        pd.util.hash_pandas_object(frame[bound_columns], index=True).to_numpy().tobytes()
+    ).hexdigest()
+    implementation = sha(Path(harness.__file__))
     totals: list[dict[str, Any]] = []
     contributions: list[dict[str, Any]] = []
     for model_key, (spec, scheme, params_key) in SPECS.items():
@@ -88,6 +103,39 @@ def main() -> None:
         if not set(columns) <= set(frame):
             raise ValueError(f"Missing published inputs for {model_key}")
         for year in sorted(set(args.years)):
+            checkpoint = args.checkpoint_dir / f"{model_key}-{year}-{args.events_per_year}"
+            binding = hashlib.sha256(
+                json.dumps(
+                    [
+                        sha(source),
+                        frame_digest,
+                        implementation,
+                        columns,
+                        harness.PARAMS[params_key],
+                        xgb.__version__,
+                    ]
+                ).encode()
+            ).hexdigest()
+            receipt = checkpoint / "receipt.json"
+            if receipt.is_file():
+                saved = json.loads(receipt.read_bytes())
+                if saved["binding"] == binding and all(
+                    sha(checkpoint / name) == digest for name, digest in saved["files"].items()
+                ):
+                    totals.extend(
+                        cast(
+                            list[dict[str, Any]],
+                            pd.read_parquet(checkpoint / "events.parquet").to_dict("records"),
+                        )
+                    )
+                    contributions.extend(
+                        cast(
+                            list[dict[str, Any]],
+                            pd.read_parquet(checkpoint / "values.parquet").to_dict("records"),
+                        )
+                    )
+                    print(f"Reused verified {model_key}/{year}", flush=True)
+                    continue
             train, _, test = harness.split(frame, year, scheme)
             if test.empty:
                 continue
@@ -103,6 +151,7 @@ def main() -> None:
                     f"Annual {model_key}/{year} fit does not reproduce published scores"
                 )
             chosen = sample(test, args.events_per_year)
+            total_start, value_start = len(totals), len(contributions)
             x = chosen[list(columns)].astype(float)
             input_values = x.to_numpy(dtype=float)
             components = estimator.models if hasattr(estimator, "models") else [estimator]
@@ -135,6 +184,24 @@ def main() -> None:
                                 "contribution": float(shap[position, number]),
                             }
                         )
+            checkpoint.mkdir(parents=True, exist_ok=True)
+            pd.DataFrame(totals[total_start:]).to_parquet(
+                checkpoint / "events.parquet", index=False
+            )
+            pd.DataFrame(contributions[value_start:]).to_parquet(
+                checkpoint / "values.parquet", index=False
+            )
+            receipt.write_text(
+                json.dumps(
+                    {
+                        "binding": binding,
+                        "files": {
+                            name: sha(checkpoint / name)
+                            for name in ("events.parquet", "values.parquet")
+                        },
+                    }
+                )
+            )
             print(
                 f"Verified {model_key}/{year}: {len(test)} scores; explained {len(chosen)} events",
                 flush=True,

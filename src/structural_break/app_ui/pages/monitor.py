@@ -82,7 +82,7 @@ def _current_data() -> None:
         return
     events = diagnostics.event_inputs(
         ctx.results.tables["forecasts"],
-        ctx.service.data(ctx.horizon).events,
+        ctx.results.tables.get("diagnostic_inputs", ctx.service.data(ctx.horizon).events),
         final_included=ctx.results.final_included,
     )
     st.subheader("Samples per study period")
@@ -140,16 +140,30 @@ def _current_data() -> None:
         return
     from structural_break.app_bundle.features import feature_label
 
-    default = features.index("abs_z") if "abs_z" in features else 0
-    feature = st.selectbox(
-        "Feature", features, index=default, format_func=lambda f: f"{feature_label(f)} ({f})"
+    blocks = ["All feature groups", *dict.fromkeys(diagnostics.feature_block(f) for f in features)]
+    from structural_break.app_ui import navigation
+
+    block = navigation.selectbox(
+        "Feature group", blocks, "drift_group", default="All feature groups"
     )
+    if block != "All feature groups":
+        features = [f for f in features if diagnostics.feature_block(f) == block]
+    default = features.index("abs_z") if "abs_z" in features else 0
+    feature = navigation.selectbox(
+        "Feature",
+        features,
+        "drift_feature",
+        default=features[default],
+        format_func=lambda f: f"{feature_label(f)} ({f})",
+    )
+    navigation.share("monitor")
     profile = diagnostics.drift(events, feature)
     components.chart(charts.drift(profile, feature_label(feature)), key="drift")
     st.caption(
         "Distributions use the current scored events and their exported input values. "
         "Selection: 2010–2017; holdout: 2018–2023; final test only when exported. "
-        "Additional engineered features are not included in this input export."
+        "Peer, relationship state, earnings, momentum, OU and track inputs are included when "
+        "the current diagnostics sidecar is deployed. Missing values remain missing."
     )
     with st.expander("Feature coverage by year"):
         st.dataframe(

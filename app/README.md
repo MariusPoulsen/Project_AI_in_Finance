@@ -5,7 +5,7 @@ sources, calls a language model, fits a model or writes analytical results.
 
 | Entry point | What it is |
 |---|---|
-| `research_app.py` | The full research application: eight pages with the headline forecasters (Goal 1), the trading book (Goal 2), the agent desk, the final test and the frozen research layer. Use this for demos and the deployed site. |
+| `research_app.py` | The full research application: nine pages with the headline forecasters (Goal 1), trading book (Goal 2), event investigations, agent desk and final test. Use this for demos and the deployed site. |
 | `streamlit_app.py` | The minimal verified two-page view (model comparison, event scores). Unchanged. |
 | `reference_streamlit_app.py` | The original Scanner/Pair Detail for the recorded v1 workspace. See the [reference archive](../docs/archive/README.md). |
 
@@ -19,13 +19,14 @@ uv run --frozen streamlit run app/research_app.py
 
 | Page | What it answers |
 |---|---|
-| Overview | The question, the spread picture, both goals' headline answers (the pre-registered forecaster against R0; the adopted book's Sharpe and CAGR) and the frozen A/B result the programme started from. |
+| Overview | The research question, spread picture, both goals and a compact pipeline diagram. |
 | Scanner | Every divergence scored walk-forward from 2010: R0, bagged and +track probabilities (and the full model where the agents read the event), whether the adopted book traded it, its exit and gross return; filters and CSV download. Falls back to the research layer's A/B scanner when no results are deployed. |
+| Event investigation | Click a Scanner row to compare probabilities, exported explanations, cached agent reports and cited evidence, input values, then the separate realised label and adopted-book trade. Back to Scanner preserves filters. |
 | Pair detail | Rebased prices, the frozen z-score with bands, ACTIVE shading and hedge-ratio history; each event with the headline probabilities and its trade; the research layer's exact feature contributions where available; every trade of the adopted book on the pair. |
-| Model Lab | The headline forecasters by test period (metrics, ROC and calibration curves, AUC by year, the full model against its base), then the frozen A/B study with all its tabs (ablation ladder, curves, slices, drivers, tuning, metrics). |
+| Model Lab | Baselines and current forecasters by test period, discrimination, calibration, SHAP, yearly and business-group slices, the matched Full/base comparison, settings and metrics. |
 | Strategy Lab | The book's design ladder from trading every divergence to the adopted book, the four books compared (adopted, without the monitor, the best forecaster's and the full model's selections), exits and the monitor, every trade. The original 2022–2023 plan ladder (Decisions 36–40) is superseded and no longer shown. |
 | Adopted book | The design, results by period, the final-test section (filled once the 2024–2025 run is published), monthly returns, the overfitting audit, the agent desk and news coverage. |
-| Data and model monitor | Every data/model identity (including the results export, freeze manifest and unlock record), research-layer samples, SEC coverage and feature drift, the headline forecasters, agent-desk health, company-news coverage and the research-layer inventory. |
+| Data and model monitor | Current scored-event samples, complete input matching, SEC metadata/FinBERT coverage, quantitative and engineered feature drift, model inventory, agent/news health and provenance. |
 | Methodology | Model card: goals, chronology, target, headline forecasters, agent desk, trading book, the research layer, limitations, intended use, data/privacy/security. |
 
 Every page has a "Data and model versions behind this page" expander, and every
@@ -63,9 +64,10 @@ uv run --frozen structural-break-app verify --bundle outputs/app-bundles/v2
 SB_APP_BUNDLE=outputs/app-bundles/v2 uv run --frozen streamlit run app/research_app.py
 ```
 
-A bundle carries daily pair history only for the showcase pairs (to stay around
-10–20 MB); the other pairs still show their events and scores. Opening the app on
-the full workspace shows every pair.
+The base bundle carries daily pair history for showcase pairs. The committed
+`demo/pair_history` supplement supplies history for all 736 development pairs,
+verified against the same registry. Neither the SEC archive nor a database is
+needed for browsing.
 
 ### Synthetic preview (no snapshot needed)
 
@@ -113,3 +115,9 @@ The monitor now follows the current scored-event population and the 2010–2017,
 coverage and drift, with all missing-input events retained in denominators.
 Model Lab's SHAP tab reads verified annual-model attributions; it never reuses
 frozen-study explanations. See [the export instructions](../docs/APP_DIAGNOSTICS.md).
+
+Scanner filters, event ID, pair/window, Model Lab period/model/event/seed and
+monitor feature selection are URL-backed. Use **Share this view** or copy the
+browser address. Teammates must use the same published export; links do not pin
+an immutable data release. The investigation page keeps contemporaneous evidence
+separate from later outcomes, and never computes a new forecast or agent answer.

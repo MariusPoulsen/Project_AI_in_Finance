@@ -53,6 +53,21 @@ FONT = "IBM Plex Sans, sans-serif"
 CSS = f"""
 <style>
 .block-container {{ padding-top: 2.2rem; max-width: 1320px; }}
+@media (max-width: 600px) {{
+  .st-key-investigation_actions [data-testid="stHorizontalBlock"] {{
+    flex-wrap: nowrap; gap: 0.5rem;
+  }}
+  .st-key-investigation_actions [data-testid="stColumn"] {{
+    flex: 0 1 auto !important; min-width: 0 !important; width: auto !important;
+  }}
+  .st-key-investigation_metrics [data-testid="stHorizontalBlock"] {{
+    flex-wrap: wrap; gap: 1rem;
+  }}
+  .st-key-investigation_metrics [data-testid="stColumn"] {{
+    flex: 1 1 calc(50% - 0.5rem) !important;
+    min-width: 0 !important; width: calc(50% - 0.5rem) !important;
+  }}
+}}
 h1, h2, h3 {{ letter-spacing: -0.01em; }}
 [data-testid="stMetricValue"] {{ font-variant-numeric: tabular-nums; }}
 [data-testid="stMetricLabel"] p {{ color: {MUTED}; }}

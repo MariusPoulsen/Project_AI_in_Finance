@@ -7,6 +7,8 @@ import pandas as pd
 
 from structural_break.intelligence.sentiment import SENTIMENT_FEATURE_COLUMNS
 from structural_break.ml.features import FEATURE_FAMILIES
+from structural_break.pipeline.features import EARNINGS, MOMENTUM, PEER, STATE, TRACK
+from structural_break.pipeline.ou_features import OU
 from structural_break.research.intelligence import METADATA_FEATURE_COLUMNS
 
 PERIODS = {
@@ -15,8 +17,35 @@ PERIODS = {
     "Final test · 2024–2025": (2024, 2025),
 }
 INPUTS = frozenset(c for columns in FEATURE_FAMILIES.values() for c in columns) | frozenset(
-    (*METADATA_FEATURE_COLUMNS, *SENTIMENT_FEATURE_COLUMNS, "tone_aligned_contrast")
+    (
+        *METADATA_FEATURE_COLUMNS,
+        *SENTIMENT_FEATURE_COLUMNS,
+        "tone_aligned_contrast",
+        *PEER,
+        *STATE,
+        *TRACK,
+        *EARNINGS,
+        *MOMENTUM,
+        *OU,
+    )
 )
+
+FEATURE_BLOCKS = {
+    "Peer context": PEER,
+    "Relationship state": STATE,
+    "Track record": TRACK,
+    "Earnings timing": EARNINGS,
+    "Momentum": MOMENTUM,
+    "OU prior": OU,
+}
+
+
+def feature_block(feature: str) -> str:
+    return next(
+        (name for name, fields in FEATURE_BLOCKS.items() if feature in fields), "Quantitative / SEC"
+    )
+
+
 COVERAGE = {
     "sentiment_both_known": "FinBERT tone known for both legs",
     "sec_a_metadata_coverage_unknown": "Leg A SEC metadata UNKNOWN",

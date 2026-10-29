@@ -278,9 +278,10 @@ def goal2(results: Results | None) -> None:
     with tabs[3]:
         trades = results.tables["trades"].copy()
         years = sorted(trades["entry_date"].dt.year.unique())
-        chosen = st.select_slider(
-            "Entry years", options=years, value=(years[0], years[-1]), key="g2_years"
-        )
+        from structural_break.app_ui import navigation
+
+        chosen = navigation.trade_years([int(y) for y in years])
+        navigation.share("strategy")
         part = trades[trades["entry_date"].dt.year.between(*chosen)]
         part = part.assign(
             exit=part["exit_reason"].map(REASONS).fillna(part["exit_reason"]),

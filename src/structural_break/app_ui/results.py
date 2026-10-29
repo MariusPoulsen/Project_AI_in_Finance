@@ -15,8 +15,10 @@ from typing import Any
 import pandas as pd
 import streamlit as st
 
+from structural_break.services import current_monitor
 from structural_break.services.forecast_baselines import BASELINES, validate_flags
 from structural_break.services.forecast_explanations import validate as validate_shap
+from structural_break.services.full_explanations import validate as validate_full_shap
 
 FOLDER = Path(__file__).resolve().parents[3] / "demo" / "results"
 TABLES = ("forecasts", "curves", "books_daily", "trades", "news")
@@ -115,6 +117,33 @@ def _read(folder: str, digest: str) -> Results | None:
     for column in ("entry_date", "exit_date"):
         tables["trades"][column] = pd.to_datetime(tables["trades"][column])
     summary = json.loads((root / "summary.json").read_text(encoding="utf-8"))
+    investigation_files = {
+        f"{name}.parquet"
+        for name in ("diagnostic_inputs", "event_cases", "full_shap_events", "full_shap_values")
+    }
+    reference = manifest.get("investigation_reference")
+    if reference is not None or investigation_files & files.keys():
+        if (
+            not investigation_files <= files.keys()
+            or reference is None
+            or reference["schema_version"] != "development-investigations-v1"
+            or reference["forecast_sha256"] != files["forecasts.parquet"]
+        ):
+            raise ValueError("Investigation sources do not match the current forecasts")
+        for name in investigation_files:
+            tables[name.removesuffix(".parquet")] = pd.read_parquet(root / name)
+        inputs, cases = tables["diagnostic_inputs"], tables["event_cases"]
+        if (
+            inputs.event_id.duplicated().any()
+            or set(inputs.event_id) != set(tables["forecasts"].event_id)
+            or set(inputs) - {"event_id"} - current_monitor.INPUTS
+        ):
+            raise ValueError("Current diagnostic input population/fields differ")
+        if cases.event_id.duplicated().any() or not set(cases.event_id) <= set(inputs.event_id):
+            raise ValueError("Invalid event evidence identities")
+        validate_full_shap(
+            tables["full_shap_events"], tables["full_shap_values"], tables["forecasts"]
+        )
     baseline = manifest.get("baseline_reference")
     if baseline is not None or "baseline_events.parquet" in files:
         if (

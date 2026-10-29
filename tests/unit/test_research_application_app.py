@@ -190,7 +190,8 @@ def test_model_lab_exposes_current_shap_pending_instead_of_legacy_attributions(
     saved = results.load()
     assert saved is not None
     pending = replace(
-        saved, tables={k: v for k, v in saved.tables.items() if not k.startswith("shap_")}
+        saved,
+        tables={k: v for k, v in saved.tables.items() if not k.startswith(("shap_", "full_shap_"))},
     )
     monkeypatch.setattr(results, "load", lambda: pending)
     app = AppTest.from_function(
@@ -198,7 +199,28 @@ def test_model_lab_exposes_current_shap_pending_instead_of_legacy_attributions(
     ).run()
     assert not app.exception and not app.error
     assert "SHAP" in [tab.label for tab in app.tabs]
-    assert any("SHAP values have not been exported" in item.value for item in app.info)
+    assert any("explanations have not been exported" in item.value for item in app.info)
+
+
+def test_event_investigation_opens_a_saved_full_forecast_and_rejects_unknown_id(service):
+    from structural_break.app_ui import results
+
+    saved = results.load()
+    assert saved is not None
+    event_id = str(saved.tables["full_shap_events"].event_id.iloc[0])
+    app = AppTest.from_function(
+        page, args=(service, "event_investigation", 20, True), default_timeout=90
+    )
+    app.query_params["event"] = event_id
+    app.run()
+    assert not app.exception and not app.error
+    assert "Forecast and SHAP" in [tab.label for tab in app.tabs]
+    assert any("Probability-only stack" in item.value for item in app.markdown)
+    assert any("Exact linear SHAP" in item.value for item in app.caption)
+    app.query_params["event"] = "not-published"
+    app.run()
+    assert not app.exception and not app.error
+    assert any("not in the published results" in item.value for item in app.warning)
 
 
 def test_model_lab_comparison_includes_matched_entry_baselines(service):

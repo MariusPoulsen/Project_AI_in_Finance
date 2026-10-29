@@ -2,7 +2,7 @@
   "schema_version": "current-tree-shap-v1",
   "xgboost_version": "3.2.0",
   "forecast_sha256": "ae4c94575442a357c8f42e856494335eeb00b780547a322bb8e8b72cd1cc1c04",
-  "events_per_year": 40,
+  "events_per_year": 80,
   "sampling": "Lowest SHA-256(event_id), independently in each year",
   "units": "Native TreeSHAP log-odds of each seed component; not bag probability",
   "source_hashes": {

@@ -214,12 +214,10 @@ def render() -> None:
     forecasts = results.tables["forecasts"]
     periods = [p for p in YEARS if p in results.periods]
     default = periods[-1]
-    period = (
-        st.segmented_control(
-            "Test years", periods, default=default, format_func=period_label, key="g1_period"
-        )
-        or default
-    )
+    from structural_break.app_ui import navigation
+
+    period = navigation.period(periods, default, period_label)
+    navigation.share("models")
     rows = metrics[metrics["period"].eq(period)].set_index("model")
     cols = st.columns(4)
     if {"bag5", "r0"} <= set(rows.index):

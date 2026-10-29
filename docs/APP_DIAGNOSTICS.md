@@ -31,11 +31,12 @@ not the headline forecasters' evaluation populations.
 
 SEC coverage and drift left-join quantitative, metadata and FinBERT input values
 by current event ID. No fitted probabilities, old labels or catalyst fields are
-used. The committed input bundle lacks 566 of 22,450 current scored events; they
-remain in coverage denominators, with missing SEC metadata counted as UNKNOWN.
-FinBERT known coverage requires an explicit known flag. Annual drift includes
-missing-value shares and only lists input fields actually present in this export.
-It cannot describe engineered peer/OU/track features absent from the export.
+used. The `diagnostic_inputs.parquet` supplement now covers all 22,450 scored
+events with 109 input fields, eliminating the older bundle's 566 unmatched rows.
+It includes peer context, relationship state, earnings timing, momentum, OU priors
+and track records, with feature-group filters. FinBERT known coverage requires
+an explicit known flag. Drift retains actual missing values; complete event
+matching does not imply complete source coverage.
 The UI change does not remove predictors from, or refit, the scientific models.
 
 ## Baselines in Model Lab
@@ -77,10 +78,10 @@ headline forecaster's all-event result. Performance conclusions stay in the repo
 ## SHAP export
 
 Model Lab has a SHAP tab for verified current-model explanations. The committed
-export contains 240 target-blind sampled events per model across 2018–2023
-(40 per year), for R0 and both bagged forecasters. Every raw annual score was
-reproduced before exporting the native attributions. Selection-period SHAP is
-not included. Frozen-study TreeSHAP is not a substitute for the annual models.
+export contains 1,120 target-blind sampled events per model across 2010–2023
+(80 per year), for R0 and both bagged forecasters. Every raw annual score was
+reproduced before exporting the native attributions. Selection and holdout are
+included. Frozen-study TreeSHAP is not a substitute for the annual models.
 To regenerate, run from a separate checkout with read-only development inputs:
 
 ```shell
@@ -93,7 +94,7 @@ The verified inputs on the owner's computer are under
 `C:/Users/mariu/dev/Project_AI_in_Finance/outputs`. The source `demo/results`
 must also remain read-only: Claude regenerates it independently. Pass this
 checkout's results copy to `--results`. Do not use the final-test workspace.
-Default years are 2018–2023, with 40 events per year, chosen by the lowest SHA-256
+Default years are 2010–2023, with 80 events per year, chosen by the lowest SHA-256
 of event ID independently in each year. The sample never uses outcomes, scores
 or feature values. `--years` accepts development years 2010–2023 only.
 
@@ -116,9 +117,55 @@ of the bag's probability. The UI therefore shows a sample-wide importance
 summary across seed fits and an event waterfall for a selected seed component,
 with the published calibrated ensemble probability separately labelled.
 
-Model A has no annual score export for verification here, and the Full model
-uses a logistic stack; neither receives a fabricated tree explanation. All
+Model A has no annual score export for verification here. The Full model and its
+probability-only comparator have exact linear SHAP exports for all 8,983 events
+with published desk probabilities. All
 explanations are model behaviour, not causal effects or performance evidence.
+
+## Event investigations and Full explanations
+
+Run this explicit development-only job against the read-only sources and this
+checkout's presentation copy:
+
+```shell
+uv run --frozen python scripts/export_app_investigations.py --workspace-root C:/Users/mariu/dev/Project_AI_in_Finance/data/team --outputs-root C:/Users/mariu/dev/Project_AI_in_Finance/outputs --results demo/results
+```
+
+It exports current numeric inputs, 9,253 desk inventory records with the cached
+case/report where available, and Full/probability-only stack attributions. It
+verifies case digests, evidence cutoffs, all published stack probabilities and
+additivity. The unchanged logistic reconstruction uses the original annual
+training means/stds, C=1 and earlier labelled desk-region events only. Each
+coefficient × centred standardised input is interventional linear SHAP against
+that training mean. Correlated inputs are not given conditional attributions;
+the persistence × explains interaction is a separate input. Different stack
+coefficients mean subtracting their SHAP values is not a decomposition of their
+probability difference. Forecast bytes, research sources and final-test workspaces
+are unchanged.
+
+The event view opens directly from a Scanner row. It shows model probabilities,
+available explanations (tree sample versus complete desk-stack coverage),
+validated agent-stage reports, cited quotes, context versus primary source chunks,
+timestamps/offsets/hashes, inputs, the realised label, spread path and adopted-book
+trade. NO_NEWS, ABSTAIN, not run and outside the desk region are distinct.
+Browsing never requests missing evidence or fits missing explanations.
+
+URL-backed controls preserve Scanner year/period/group/model/probability/pair/traded
+filters, event IDs, pair history windows, Model Lab period/model/event/seed and
+monitor feature/group. Repeated group parameters are retained across the explicit
+Scanner → investigation → back path. Invalid values fall back to valid controls;
+unknown event IDs show a recovery action. Links identify a view in the deployed
+export rather than promising an immutable release.
+
+These supplements cover development only (through 2023). A final-test results
+refresh must regenerate its own matching supplements, or omit these optional
+files from its manifest. Their forecast hash binding prevents silently mixing
+development explanations with changed/final-test forecasts.
+
+The TreeSHAP job checkpoints each verified annual model/sample in the ignored
+`.design/shap-checkpoints` directory. Reuse requires matching reconstructed-data,
+parameter, fitting-code, XGBoost-version and forecast identities plus checkpoint
+hashes. Only complete validated exports update the presentation manifest.
 
 ## Complete pair histories
 
