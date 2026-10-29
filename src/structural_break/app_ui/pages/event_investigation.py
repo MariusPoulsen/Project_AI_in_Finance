@@ -56,7 +56,7 @@ def render() -> None:
         f"divergence z = {row['z_at_event']:+.2f}",
     )
     with st.container(key="investigation_actions"):
-        actions = st.columns([1, 1, 2])
+        actions = st.columns([1, 1, 6])
         if actions[0].button(
             "Back", icon=":material/arrow_back:", help="Return to Scanner with the same filters"
         ):
@@ -67,8 +67,6 @@ def render() -> None:
             help="Open this pair's price and spread history",
         ):
             open_pair(str(row["pair"]), str(event_id))
-        with actions[2]:
-            navigation.share("event", label="Share")
     with st.container(key="investigation_metrics"):
         cols = st.columns(4)
         for col, model in zip(cols, ("r0", "bag5", "track", "full"), strict=True):

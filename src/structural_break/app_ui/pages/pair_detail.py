@@ -51,7 +51,6 @@ def render() -> None:
         st.session_state["sb_event"] = None
     if st.query_params.get("event"):
         st.session_state["sb_event"] = st.query_params["event"]
-    navigation.share("pair")
     info = pairs.set_index("pair_id").loc[pair_id]
     if ctx.results is not None:
         scored = event_table(ctx.results, pair_id)
@@ -334,8 +333,6 @@ def _headline_events(results: Results, pair_id: str, research_events: pd.DataFra
             traded = table.loc[table["traded"]]
             row = traded.iloc[0] if len(traded) else table.iloc[0]
         st.query_params["event"] = str(row["event_id"])
-        if st.button("Investigate event", icon=":material/search:"):
-            navigation.switch("event", event=str(row["event_id"]))
         st.markdown(f"#### Event on {row['date']:%d %B %Y}")
         cols = st.columns(5)
         cols[0].metric("R0 P(revert)", components.pct(row["p_r0"]))

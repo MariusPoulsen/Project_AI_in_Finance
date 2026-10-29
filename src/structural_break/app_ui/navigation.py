@@ -120,19 +120,6 @@ def restore() -> None:
         st.query_params.from_dict(pending)
 
 
-def share(path: str, *, label: str = "Share this view") -> None:
-    del path
-    with st.popover(label, icon=None if label == "Share" else ":material/link:"):
-        st.write(
-            "Copy the browser address to share this page and its filters. "
-            "A teammate with the same published data will see the same selection."
-        )
-        st.caption(
-            "Links preserve the investigation and filters, not a particular export. "
-            "Data versions are shown on each page."
-        )
-
-
 def trade_years(options: list[int]) -> tuple[int, int]:
     wanted = (options[0], options[-1])
     try:

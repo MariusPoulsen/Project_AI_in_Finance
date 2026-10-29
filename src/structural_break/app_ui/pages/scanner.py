@@ -207,7 +207,6 @@ def render() -> None:
                 "scan_traded",
                 help="Events the R0 selection picked and the book entered, after its filters.",
             )
-    navigation.share("scanner")
     mask = events["year"].between(*years) & events[model].notna() & events[model].ge(minimum)
     if periods:
         mask &= events["period"].isin(periods)

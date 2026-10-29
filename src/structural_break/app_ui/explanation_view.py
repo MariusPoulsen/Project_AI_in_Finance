@@ -233,5 +233,3 @@ def render(results: Results, years: tuple[int, int]) -> None:
         values.loc[values.event_id.eq(event_id)],
         key="lab",
     )
-    if st.button("Investigate this event", icon=":material/search:"):
-        navigation.switch("event", event=event_id)

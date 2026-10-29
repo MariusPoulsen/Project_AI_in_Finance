@@ -156,7 +156,6 @@ def _current_data() -> None:
         default=features[default],
         format_func=lambda f: f"{feature_label(f)} ({f})",
     )
-    navigation.share("monitor")
     profile = diagnostics.drift(events, feature)
     components.chart(charts.drift(profile, feature_label(feature)), key="drift")
     st.caption(

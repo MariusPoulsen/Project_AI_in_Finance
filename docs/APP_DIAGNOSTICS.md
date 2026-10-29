@@ -149,6 +149,9 @@ validated agent-stage reports, cited quotes, context versus primary source chunk
 timestamps/offsets/hashes, inputs, the realised label, spread path and adopted-book
 trade. NO_NEWS, ABSTAIN, not run and outside the desk region are distinct.
 Browsing never requests missing evidence or fits missing explanations.
+Event investigation is a registered hidden page: it is omitted from the sidebar
+and other pages' investigation buttons. Scanner rows open it, and saved direct
+event URLs remain valid. There are no Share buttons; URL persistence is implicit.
 
 URL-backed controls preserve Scanner year/period/group/model/probability/pair/traded
 filters, event IDs, pair history windows, Model Lab period/model/event/seed and

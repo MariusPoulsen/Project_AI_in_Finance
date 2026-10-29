@@ -117,7 +117,8 @@ Model Lab's SHAP tab reads verified annual-model attributions; it never reuses
 frozen-study explanations. See [the export instructions](../docs/APP_DIAGNOSTICS.md).
 
 Scanner filters, event ID, pair/window, Model Lab period/model/event/seed and
-monitor feature selection are URL-backed. Use **Share this view** or copy the
-browser address. Teammates must use the same published export; links do not pin
+monitor feature selection are URL-backed. Copy the browser address to preserve
+the selection. Event investigation is hidden from the sidebar and opens from a
+Scanner row; saved event URLs still work. Teammates must use the same published export; links do not pin
 an immutable data release. The investigation page keeps contemporaneous evidence
 separate from later outcomes, and never computes a new forecast or agent answer.

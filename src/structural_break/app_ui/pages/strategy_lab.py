@@ -281,7 +281,6 @@ def goal2(results: Results | None) -> None:
         from structural_break.app_ui import navigation
 
         chosen = navigation.trade_years([int(y) for y in years])
-        navigation.share("strategy")
         part = trades[trades["entry_date"].dt.year.between(*chosen)]
         part = part.assign(
             exit=part["exit_reason"].map(REASONS).fillna(part["exit_reason"]),

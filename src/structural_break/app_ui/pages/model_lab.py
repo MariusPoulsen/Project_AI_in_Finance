@@ -217,7 +217,6 @@ def render() -> None:
     from structural_break.app_ui import navigation
 
     period = navigation.period(periods, default, period_label)
-    navigation.share("models")
     rows = metrics[metrics["period"].eq(period)].set_index("model")
     cols = st.columns(4)
     if {"bag5", "r0"} <= set(rows.index):

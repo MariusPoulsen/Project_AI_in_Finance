@@ -48,6 +48,7 @@ def _pages() -> dict[str, st.Page]:
             title="Event investigation",
             icon=":material/search_insights:",
             url_path="event",
+            visibility="hidden",
         ),
         "model": st.Page(
             model_lab.render, title="Model Lab", icon=":material/science:", url_path="models"
