@@ -157,7 +157,7 @@ def render() -> None:
 
     st.subheader("Divergence events")
     if ctx.results is not None:
-        _headline_events(ctx.results, pair_id, events)
+        _headline_events(ctx.results, pair_id)
         return
     if events.empty:
         components.empty_state("This pair has no published development events at this horizon.")
@@ -308,7 +308,7 @@ EVENT_COLUMNS: dict[str, Any] = {
 }
 
 
-def _headline_events(results: Results, pair_id: str, research_events: pd.DataFrame) -> None:
+def _headline_events(results: Results, pair_id: str) -> None:
     table = event_table(results, pair_id)
     if table.empty:
         components.empty_state("This pair has no divergence scored walk-forward since 2010.")
@@ -360,12 +360,6 @@ def _headline_events(results: Results, pair_id: str, research_events: pd.DataFra
                 "In R0's top 20 % but not entered: skipped by the book's news, mean-crossing or "
                 "cost filter, or by its capacity rules."
             )
-        same_day = research_events.loc[
-            research_events["date"].dt.date.eq(pd.Timestamp(row["date"]).date())
-        ]
-        if len(same_day):
-            with st.expander("Why the research-layer models leaned this way (frozen A/B study)"):
-                _event_panel(str(same_day["event_id"].iloc[0]), research_events)
     trades = results.tables["trades"]
     part = trades.loc[trades["pair_id"].eq(pair_id)].sort_values("entry_date", ascending=False)
     st.subheader("Trades of the adopted book on this pair")
