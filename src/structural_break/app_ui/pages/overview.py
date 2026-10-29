@@ -155,19 +155,6 @@ def render() -> None:
     st.subheader("The answers")
     _goals(ctx.results)
 
-    headline = service.headline(horizon)
-    tone, sentence = service.verdict(headline)
-    st.subheader("Where the study started")
-    components.verdict_box(
-        "The frozen A/B study: no established difference",
-        f" Model A (prices only) against the research-layer Model B (plus SEC filings), "
-        f"calibrated logistic, 2022–2023: Brier {components.fmt(headline.a_brier)} against "
-        f"{components.fmt(headline.b_brier)} on {components.count(headline.n)} events. "
-        + sentence
-        + " The programme that followed added new information and changed how trades are run.",
-        tone,
-    )
-
     counts = service.universe_counts(horizon)
     st.subheader("What the study covers")
     cols = st.columns(4)
