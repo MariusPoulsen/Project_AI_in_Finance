@@ -6,7 +6,7 @@ import pandas as pd
 import streamlit as st
 
 from structural_break.app_bundle.features import BLOCK_ORDER, feature_block
-from structural_break.app_ui import charts, components
+from structural_break.app_ui import components
 from structural_break.app_ui.context import current
 
 PROGRAMME = [
@@ -20,7 +20,7 @@ PROGRAMME = [
         "2018–2023",
         "Opened once per stage, after the choice was committed (about ten stages)",
     ),
-    ("Final test", "2024–2025", "Opened once, after the owner's unlock record (Decision 120)"),
+    ("Final test", "2024–2025", "Opened once, after the owner's unlock record"),
 ]
 HEADLINE_BLOCKS = [
     ("Quantitative (Model A)", "Spread, relationship, market and liquidity features"),
@@ -64,12 +64,6 @@ def render() -> None:
         hide_index=True,
         width="stretch",
     )
-    st.caption(
-        "The headline forecasters and the book are scored walk-forward: each test year uses "
-        "models fitted on earlier years only. The frozen research layer (timeline below) used "
-        "fixed fit, calibration and assessment windows."
-    )
-    components.chart(charts.timeline(service.periods()), key="timeline")
     st.subheader("Events and labels")
     st.markdown(
         f"- **Population:** a frozen roster of business-peer pairs. Each month an Engle–Granger "
@@ -95,29 +89,26 @@ def render() -> None:
         width="stretch",
     )
     st.markdown(
-        "- **Original Model B (R0):** fixed XGBoost on the quantitative and SEC blocks "
-        "(Decision 45).\n"
+        "- **Original Model B (R0):** fixed XGBoost on the quantitative and SEC blocks.\n"
         "- **B+rule+ou, bagged (pre-registered):** R0's inputs plus the peer, state, earnings, "
-        "momentum and OU blocks; five seeds with feature subsampling (Decision 86b).\n"
+        "momentum and OU blocks; five seeds with feature subsampling.\n"
         "- **B+rule+ou+track, bagged:** the same plus the track-record block; best observed, "
-        "chosen after the fact (Decision 88b).\n"
+        "chosen after the fact.\n"
         "- **Full model:** the pre-registered model plus the entry agents' scores, where the "
-        "agents read the event (Decisions 110b–c, 119).\n"
+        "agents read the event.\n"
         "- **Calibration:** walk-forward on earlier years only. Model comparisons use the same "
         "labelled events in every row and a month-block bootstrap."
     )
     st.subheader("Agent desk")
     st.markdown(
         "- **Entry agents:** a pair news analyst, a bull/bear debate and a risk judge read the "
-        "company headlines and filings around an event and score it. Their scores are reported "
-        "through the full model but not used to trade, because they did not improve the "
-        "forecast or the book.\n"
+        "company headlines and filings around an event and score it. Their assessments enter "
+        "the Full model's probability forecast and its alternative trade selection. They do "
+        "not select the adopted R0 book's entries.\n"
         "- **Position monitor:** for every open trade and session with new company headlines, a "
         "FinBERT triage passes adverse-toned news to a language model (Gemma), which scores "
-        "how adverse and how persistent it is. A trade closes when both scores are 5 "
-        "(Decision 110d).\n"
-        "- **News:** FNSPID headlines for development; TickerTick for 2024–2025 (Decision "
-        "116d)."
+        "how adverse and how persistent it is. A trade closes when both scores are 5.\n"
+        "- **News:** FNSPID headlines for development; TickerTick for 2024–2025."
     )
     st.subheader("Trading book (Goal 2)")
     st.markdown(
@@ -134,22 +125,18 @@ def render() -> None:
     report = service.data(horizon).report
     columns = report["models"].get("logistic", {}).get("B_both", {}).get("feature_columns", [])
     blocks = pd.Series([feature_block(c) for c in columns]).value_counts()
+    shown = [b for b in BLOCK_ORDER if b in blocks.index and "catalyst" not in b.lower()]
     table = pd.DataFrame(
         {
-            "Block": [b for b in BLOCK_ORDER if b in blocks.index],
-            "Features": [int(blocks[b]) for b in BLOCK_ORDER if b in blocks.index],
-            "Used by": [
-                "A and B" if not b.startswith("SEC") else "B variants"
-                for b in BLOCK_ORDER
-                if b in blocks.index
-            ],
+            "Block": shown,
+            "Features": [int(blocks[b]) for b in shown],
+            "Used by": ["A and B" if not b.startswith("SEC") else "B variants" for b in shown],
         }
     )
     st.dataframe(table, hide_index=True, width="stretch")
     st.markdown(
         "- **Model A:** quantitative features only. **Model B:** A's identical columns plus SEC "
-        "evidence: 8-K/item recency (metadata), FinBERT tone, Gemma-extracted catalysts, or "
-        "all three.\n"
+        "evidence shown here: 8-K/item recency (metadata) and FinBERT tone.\n"
         "- **Families:** logistic regression (median imputation, standardisation; C from "
         f"{p['logistic_c']}) and a small fixed XGBoost grid. Choices use forward folds "
         f"{', '.join(map(str, p['tuning_years']))} with full-horizon purging; a sigmoid "
@@ -173,13 +160,13 @@ def render() -> None:
         "filings and headlines, which a trader at the time could not have done.\n"
         "- **Reuse of years:** 2018–2023 was opened in about ten stages, so it is less clean "
         "than a single holdout. Across 132 tracked designs the probability of backtest "
-        "overfitting is 0.54 and the book's deflated Sharpe ratio is 0.86 (Decision 113).\n"
+        "overfitting is 0.54 and the book's deflated Sharpe ratio is 0.86.\n"
         "- **Thin edge:** at double the realistic costs the book is only marginally positive.\n"
         "- **News source change:** the final test's headlines come from a different, much "
         "denser source until May 2025 and a thinner one after it; the monitor's thresholds were "
         "not changed.\n"
         "- **Final-test code:** one development-only year check in the catalyst scheduler was "
-        "widened to the unlocked end date (Decision 120a); no development result changes."
+        "widened to the unlocked end date; no development result changes."
     )
     st.subheader("Intended use")
     st.markdown(
@@ -188,8 +175,8 @@ def render() -> None:
         "- **Not for:** live trading, investment advice or decisions about any individual. "
         "The application has no order execution and shows no live data.\n"
         "- **Human oversight:** language models never trade by themselves. The monitor's "
-        "scores pass a fixed, audited rule; the entry agents' scores are only reported; the "
-        "group reviewed 50 blind agent cases (Decision 113)."
+        "scores pass a fixed, audited rule; entry assessments feed a statistical forecast; "
+        "the group reviewed 50 blind agent cases."
     )
     st.subheader("Data, privacy and security")
     st.markdown(
@@ -200,6 +187,6 @@ def render() -> None:
         "model or writes results. Every file it shows is checked against a SHA-256 manifest.\n"
         "- API keys live only in an ignored `.env` file or platform secrets, never in the "
         "repository, logs or this interface.\n"
-        "- The owner unlocked the 2024–2025 final test on 27 October 2026 (Decision 120); its "
+        "- The owner unlocked the 2024–2025 final test on 27 October 2026; its "
         "results appear in the app once the single run is published."
     )

@@ -8,7 +8,7 @@ from typing import Any
 import pandas as pd
 import streamlit as st
 
-from structural_break.app_ui import charts, components, theme
+from structural_break.app_ui import charts, components, navigation, theme
 from structural_break.app_ui.context import current
 from structural_break.app_ui.results import EXIT_LABELS, Results, event_table
 
@@ -30,12 +30,13 @@ def render() -> None:
         return
     available = pairs.sort_values(["series_available", "assessment_events_n"], ascending=False)
     options = available["pair_id"].tolist()
-    requested = st.session_state.get("sb_pair")
+    requested = st.query_params.get("pair", st.session_state.get("sb_pair"))
     index = options.index(requested) if requested in options else 0
-    pair_id = st.selectbox(
+    pair_id = navigation.selectbox(
         "Pair",
         options,
-        index=index,
+        "pair",
+        default=options[index],
         format_func=lambda p: (
             p.replace("__", " vs ")
             + (
@@ -48,13 +49,24 @@ def render() -> None:
     if pair_id != requested:
         st.session_state["sb_pair"] = pair_id
         st.session_state["sb_event"] = None
+    if st.query_params.get("event"):
+        st.session_state["sb_event"] = st.query_params["event"]
     info = pairs.set_index("pair_id").loc[pair_id]
+    if ctx.results is not None:
+        scored = event_table(ctx.results, pair_id)
+        count_label = (
+            f"{len(scored):,} scored events, "
+            f"{int(scored['period'].eq('holdout').sum()):,} in holdout"
+        )
+    else:
+        count_label = (
+            f"{int(info['events_n'])} events, {int(info['assessment_events_n'])} in assessment"
+        )
     st.markdown(
         f'<span class="sb-chip">{info["leg_a"]} / {info["leg_b"]}</span>'
         f'<span class="sb-chip">{info["business_group"]}</span>'
         f'<span class="sb-chip">{info["sector"]}</span>'
-        f'<span class="sb-chip">{int(info["events_n"])} events, '
-        f"{int(info['assessment_events_n'])} in assessment</span>",
+        f'<span class="sb-chip">{count_label}</span>',
         unsafe_allow_html=True,
     )
     events = service.pair_events(horizon, pair_id)
@@ -63,9 +75,8 @@ def render() -> None:
 
     if series is None or series.state.empty:
         components.empty_state(
-            "Daily prices and spread history for this pair are not in this demo bundle (it carries "
-            "a showcase subset to stay small). Its events and explanations are still listed below; "
-            "the full workspace shows every pair."
+            "Daily prices and spread history for this pair are not in the verified history "
+            "export. Its available events are listed below."
         )
     else:
         state = series.state.copy()
@@ -85,9 +96,7 @@ def render() -> None:
             )
         else:
             default = (max(first, last - timedelta(days=3 * 365)), last)
-        window = st.slider(
-            "Window", min_value=first, max_value=last, value=default, format="MMM YYYY"
-        )
+        window = navigation.date_window(first, last, default)
         start, end = window
         in_window = state.loc[state["trading_date"].dt.date.between(start, end)]
         window_events = events.loc[events["date"].dt.date.between(start, end)]
@@ -117,7 +126,8 @@ def render() -> None:
                 components.empty_state("No prices in this window.")
             else:
                 components.chart(
-                    charts.normalised_prices(prices, info["leg_a"], info["leg_b"]), key="prices"
+                    charts.normalised_prices(prices, str(info["leg_a"]), str(info["leg_b"])),
+                    key="prices",
                 )
         with right:
             st.markdown("**Monthly hedge ratio (teal = ACTIVE)**")
@@ -147,7 +157,7 @@ def render() -> None:
 
     st.subheader("Divergence events")
     if ctx.results is not None:
-        _headline_events(ctx.results, pair_id, events)
+        _headline_events(ctx.results, pair_id)
         return
     if events.empty:
         components.empty_state("This pair has no published development events at this horizon.")
@@ -298,7 +308,7 @@ EVENT_COLUMNS: dict[str, Any] = {
 }
 
 
-def _headline_events(results: Results, pair_id: str, research_events: pd.DataFrame) -> None:
+def _headline_events(results: Results, pair_id: str) -> None:
     table = event_table(results, pair_id)
     if table.empty:
         components.empty_state("This pair has no divergence scored walk-forward since 2010.")
@@ -322,6 +332,7 @@ def _headline_events(results: Results, pair_id: str, research_events: pd.DataFra
         else:
             traded = table.loc[table["traded"]]
             row = traded.iloc[0] if len(traded) else table.iloc[0]
+        st.query_params["event"] = str(row["event_id"])
         st.markdown(f"#### Event on {row['date']:%d %B %Y}")
         cols = st.columns(5)
         cols[0].metric("R0 P(revert)", components.pct(row["p_r0"]))
@@ -349,12 +360,6 @@ def _headline_events(results: Results, pair_id: str, research_events: pd.DataFra
                 "In R0's top 20 % but not entered: skipped by the book's news, mean-crossing or "
                 "cost filter, or by its capacity rules."
             )
-        same_day = research_events.loc[
-            research_events["date"].dt.date.eq(pd.Timestamp(row["date"]).date())
-        ]
-        if len(same_day):
-            with st.expander("Why the research-layer models leaned this way (frozen A/B study)"):
-                _event_panel(str(same_day["event_id"].iloc[0]), research_events)
     trades = results.tables["trades"]
     part = trades.loc[trades["pair_id"].eq(pair_id)].sort_values("entry_date", ascending=False)
     st.subheader("Trades of the adopted book on this pair")

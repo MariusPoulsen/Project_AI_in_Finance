@@ -9,11 +9,13 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from structural_break.app_ui import components, result_charts, theme
+from structural_break.app_ui import components, full_forecast_view, result_charts, shap_view, theme
 from structural_break.app_ui.context import current
 from structural_break.app_ui.results import MODEL_NOTES, MODELS, period_label
+from structural_break.services.forecast_baselines import metrics as baseline_metrics
 
 HEADLINE = ["model_a", "r0", "bag5", "track"]
+COMPARISON = ["baseline0", "baseline1", *HEADLINE]
 CURVES = ["r0", "bag5", "track"]
 METRIC_COLUMNS: dict[str, Any] = {
     "label": "Model",
@@ -31,7 +33,7 @@ SETTINGS = [
         "Model A's 36 quantitative features plus SEC 8-K timing, FinBERT tone and catalyst "
         "fields (the research layer's B, all SEC evidence)",
         "XGBoost: depth 3, 400 trees, learning rate 0.03, min child weight 20, λ 10; one seed",
-        "Decision 45 split: trains on labels that ended before year Y−1",
+        "Trains on labels that ended before year Y−1",
     ),
     (
         "B+rule+ou, bagged",
@@ -50,7 +52,7 @@ SETTINGS = [
     (
         "Full model",
         "The bagged B+rule+ou probability plus the entry agents' scores",
-        "Walk-forward logistic stack on the desk region (Decisions 110b–c)",
+        "Walk-forward logistic stack on the desk region",
         "Recent",
     ),
 ]
@@ -212,12 +214,9 @@ def render() -> None:
     forecasts = results.tables["forecasts"]
     periods = [p for p in YEARS if p in results.periods]
     default = periods[-1]
-    period = (
-        st.segmented_control(
-            "Test years", periods, default=default, format_func=period_label, key="g1_period"
-        )
-        or default
-    )
+    from structural_break.app_ui import navigation
+
+    period = navigation.period(periods, default, period_label)
     rows = metrics[metrics["period"].eq(period)].set_index("model")
     cols = st.columns(4)
     if {"bag5", "r0"} <= set(rows.index):
@@ -250,6 +249,7 @@ def render() -> None:
             "Comparison",
             "Discrimination",
             "Calibration",
+            "SHAP",
             "By year",
             "By business group",
             "Full model and agent desk",
@@ -259,32 +259,57 @@ def render() -> None:
     )
     legend = [(MODELS[m], theme.FORECASTER_COLORS[m]) for m in CURVES]
     with tabs[0]:
+        references = baseline_metrics(forecasts, results.tables.get("baseline_events"))
+        comparison = pd.concat([references, metrics], ignore_index=True)
+        compared = comparison.loc[comparison.period.eq(period)].set_index("model")
         left, right = st.columns(2)
         with left:
             st.markdown("**ROC AUC by test period (higher is better)**")
             components.chart(
-                result_charts.metric_bars(metrics, "roc_auc", "ROC AUC", HEADLINE), key="g1_auc"
+                result_charts.metric_bars(comparison, "roc_auc", "ROC AUC", COMPARISON),
+                key="g1_auc",
             )
         with right:
             st.markdown("**Log loss by test period (lower is better)**")
             components.chart(
-                result_charts.metric_bars(metrics, "log_loss", "Log loss", HEADLINE),
+                result_charts.metric_bars(comparison, "log_loss", "Log loss", COMPARISON),
                 key="g1_ll",
             )
+            st.caption(
+                "N/A: Baseline 0 and Baseline 1 are entry rules without probability forecasts."
+            )
         st.dataframe(
-            rows.reindex([m for m in HEADLINE if m in rows.index]).reset_index()[
+            compared.reindex([m for m in COMPARISON if m in compared.index]).reset_index()[
                 list(METRIC_COLUMNS)
             ],
             hide_index=True,
             width="stretch",
             column_config=METRIC_COLUMNS,
         )
-        st.markdown("\n".join(f"- **{MODELS[m]}**: {MODEL_NOTES[m]}" for m in HEADLINE))
+        st.caption(
+            "Baselines are entry rules scored as binary ranks on the same labelled events. "
+            "Baseline 0 cannot discriminate (ROC AUC 0.5; PR AUC equals the base rate). "
+            "Neither rule produces probabilities, so log loss and Brier are unavailable."
+        )
+        if "baseline1" in compared.index:
+            active = compared.loc["baseline1"]
+            st.caption(
+                f"Baseline 1 admits {int(active['selected_n']):,} of "
+                f"{int(active['n']):,} labelled events in {period}; its ranking metrics "
+                "include both admitted and rejected events."
+            )
+        else:
+            st.info("Baseline 1 awaits the historical ACTIVE flags for this forecast export.")
+        st.markdown(
+            "\n".join(
+                f"- **{MODELS[m]}**: {MODEL_NOTES[m]}" for m in COMPARISON if m in compared.index
+            )
+        )
         st.caption(
             "On 2018–2023 the pre-registered model beats R0 by 0.0053 in log loss (month-block "
             "bootstrap p = 0.002) and by 0.017 in AUC. Model A's walk-forward scores were "
-            "erased in Decision 114: its metrics are kept, its curves are not. Where it "
-            "started: the frozen research study (Decisions 36–45) found no established "
+            "not retained: its metrics are kept, its curves are not. Where it "
+            "started: the frozen research study found no established "
             "difference between Model A and the SEC-evidence variants of Model B on 2022–2023; "
             "R0 is that study's Model B refitted walk-forward."
         )
@@ -332,7 +357,7 @@ def render() -> None:
             "on each model's log-odds: slope 1 and intercept 0 are perfect. A slope below 1 "
             "means the predictions are too spread out, above 1 too cautious."
         )
-    with tabs[3]:
+    with tabs[4]:
         table = _by_year(forecasts)
         if table.empty:
             components.empty_state("No yearly results are available.")
@@ -343,7 +368,7 @@ def render() -> None:
                 "(2010–2017) from the holdout (2018–2023)"
                 + ("; the second marks the final test." if table["year"].max() >= 2024 else ".")
             )
-    with tabs[4]:
+    with tabs[5]:
         groups = _by_group(forecasts, period)
         if groups.empty:
             components.empty_state("Too few reverting events per business group in these years.")
@@ -367,28 +392,9 @@ def render() -> None:
                 "favour either model by chance; none was selected after the fact. Groups with "
                 "fewer than five reversions are left out."
             )
-    with tabs[5]:
-        desk = metrics[metrics["model"].isin(["full_base", "full"])]
-        if desk.empty:
-            components.empty_state("No agent-desk forecasts are available.")
-        else:
-            st.dataframe(
-                desk[["period", *METRIC_COLUMNS]],
-                hide_index=True,
-                width="stretch",
-                column_config={"period": "Test years", **METRIC_COLUMNS},
-            )
-            st.markdown(
-                f"- **{MODELS['full']}**: {MODEL_NOTES['full']}\n"
-                f"- **{MODELS['full_base']}**: {MODEL_NOTES['full_base']}"
-            )
-            st.caption(
-                "Both rows use only the events the entry agents scored (the desk region), so the "
-                "comparison is like with like. On the selection years the agent features made "
-                "the forecast slightly worse (Brier +0.00104, 95 % [+0.00034, +0.00189], "
-                "Decision 110b); the full model is reported, not adopted."
-            )
     with tabs[6]:
+        full_forecast_view.render(metrics, period)
+    with tabs[7]:
         st.table(
             pd.DataFrame(
                 SETTINGS, columns=["Model", "Features", "Learner", "Training window"]
@@ -396,11 +402,11 @@ def render() -> None:
         )
         st.caption(
             "No hyperparameter is tuned per year: tuning and other boosting libraries did not "
-            "improve the forecast on the selection years (Decisions 66, 70, 86), so every model "
+            "improve the forecast on the selection years, so every model "
             "keeps the fixed XGBoost settings. Each test year's model is fitted on earlier years "
             "only; selections use the previous year's out-of-sample score cutoff."
         )
-    with tabs[7]:
+    with tabs[8]:
         st.dataframe(
             metrics[["period", *METRIC_COLUMNS]],
             hide_index=True,
@@ -415,6 +421,8 @@ def render() -> None:
             icon=":material/download:",
             key="g1_download",
         )
+    with tabs[3]:
+        shap_view.render(results, YEARS[period])
     components.provenance(
         {
             "Results export": f"{results.manifest.get('commit')} "

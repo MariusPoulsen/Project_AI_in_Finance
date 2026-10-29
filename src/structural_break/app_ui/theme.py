@@ -40,12 +40,34 @@ FORECASTER_COLORS = {
 }
 BOOK_COLORS = {"adopted": MODEL_B, "no_monitor": MODEL_A, "bag5": NEUTRAL, "full": ENTRY}
 PERIOD_COLORS = {"2010–2017": "#9AA5B1", "2018–2023": NEUTRAL, "2024–2025": MODEL_B}
-PARTITION_COLORS = {"fit": "#9AA5B1", "calibration": ENTRY, "assessment": MODEL_B}
+PARTITION_COLORS = {
+    "fit": "#9AA5B1",
+    "calibration": ENTRY,
+    "assessment": MODEL_B,
+    "Selection · 2010–2017": MODEL_A,
+    "Holdout · 2018–2023": MODEL_B,
+    "Final test · 2024–2025": ENTRY,
+}
 FONT = "IBM Plex Sans, sans-serif"
 
 CSS = f"""
 <style>
 .block-container {{ padding-top: 2.2rem; max-width: 1320px; }}
+@media (max-width: 600px) {{
+  .st-key-investigation_actions [data-testid="stHorizontalBlock"] {{
+    flex-wrap: nowrap; gap: 0.5rem;
+  }}
+  .st-key-investigation_actions [data-testid="stColumn"] {{
+    flex: 0 1 auto !important; min-width: 0 !important; width: auto !important;
+  }}
+  .st-key-investigation_metrics [data-testid="stHorizontalBlock"] {{
+    flex-wrap: wrap; gap: 1rem;
+  }}
+  .st-key-investigation_metrics [data-testid="stColumn"] {{
+    flex: 1 1 calc(50% - 0.5rem) !important;
+    min-width: 0 !important; width: calc(50% - 0.5rem) !important;
+  }}
+}}
 h1, h2, h3 {{ letter-spacing: -0.01em; }}
 [data-testid="stMetricValue"] {{ font-variant-numeric: tabular-nums; }}
 [data-testid="stMetricLabel"] p {{ color: {MUTED}; }}
