@@ -168,6 +168,7 @@ def test_monitor_uses_current_periods_and_omits_catalyst_fields(service, monkeyp
     versions = next(item.value for item in app.dataframe if "Item" in item.value)
     assert not versions.Item.str.startswith("Frozen").any()
     assert "Input registry protocol" not in set(versions.Item)
+    assert not {"Freeze manifest SHA-256", "Data source"} & set(versions.Item)
     assert samples["Labelled"].iloc[:2].tolist() == [11048, 10940]
     assert samples["Period"].tolist() == [
         "Selection · 2010–2017",

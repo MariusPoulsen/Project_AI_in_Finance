@@ -14,7 +14,10 @@ Final-test counts remain pending until the results export includes them.
 The main Versions table describes the current results export. Superseded frozen
 evaluation, backtest and explanation-status rows are omitted. The still-used
 input registry, SEC generation, protocol and bundle identities remain available
-under the collapsed Input data provenance section.
+under the collapsed Technical provenance section. The current freeze-manifest
+hash and app-bundle data source also live there, outside the main Versions table.
+They remain current reproducibility records; their underlying manifests and
+verification are retained.
 Numbered decision references and links to the development decision log are not
 shown in app copy, settings, tables or authorization labels. Source comments,
 development documentation, stored unlock records and research artifacts retain

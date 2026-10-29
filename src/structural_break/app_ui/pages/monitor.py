@@ -37,24 +37,16 @@ def render() -> None:
     )
     components.synthetic_banner(identity)
     st.subheader("Versions")
-    versions = {
-        **_result_versions(ctx.results),
-        "Data source": {
-            "workspace": "Accepted workspace (read in memory)",
-            "bundle": "Exported app bundle",
-            "synthetic": "Synthetic preview",
-        }[identity.source],
-    }
+    versions = _result_versions(ctx.results)
     st.dataframe(
         pd.DataFrame({"Item": list(versions), "Value": [str(v) for v in versions.values()]}),
         hide_index=True,
         width="stretch",
     )
-    with st.expander("Input data provenance"):
+    with st.expander("Technical provenance"):
         st.caption(
-            "The current forecasts, SEC diagnostics and pair histories reuse these registered "
-            "inputs. These identifiers describe their source data, "
-            "not the annual forecasting models."
+            "These identifiers bind the source inputs, app packaging and the methodology "
+            "authorized for the final test."
         )
         inputs = {
             "Accepted input snapshot": identity.primary_version,
@@ -62,7 +54,14 @@ def render() -> None:
             "SEC evidence generation": identity.intelligence_version,
             "Input registry protocol": service.protocol.get("version"),
             "Bundle identity": identity.bundle_id,
+            "Data source": {
+                "workspace": "Accepted workspace (read in memory)",
+                "bundle": "Exported app bundle",
+                "synthetic": "Synthetic preview",
+            }[identity.source],
         }
+        if ctx.results is not None:
+            inputs["Freeze manifest SHA-256"] = ctx.results.manifest.get("freeze_manifest_sha256")
         st.dataframe(
             pd.DataFrame({"Input": list(inputs), "Identity": [str(v) for v in inputs.values()]}),
             hide_index=True,
@@ -210,7 +209,6 @@ def _result_versions(results: Results | None) -> dict[str, object]:
     return {
         "Headline results export": f"{manifest.get('commit')} ({manifest.get('generated_at')})",
         "Scored event years": "–".join(str(y) for y in manifest.get("event_years", [])),
-        "Freeze manifest SHA-256": manifest.get("freeze_manifest_sha256"),
         "Final-test unlock": "Owner authorization recorded"
         if manifest.get("unlock_record")
         else "No unlock record",
