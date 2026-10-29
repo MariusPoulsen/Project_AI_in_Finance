@@ -116,6 +116,10 @@ def _current_data() -> None:
     )
     components.chart(figure, key="current_events_year")
     st.subheader("SEC evidence coverage")
+    st.caption(
+        "Fit covers model selection (2010–2017); Calibration covers holdout validation "
+        "(2018–2023). Each annual model fits and calibrates its probabilities on earlier data."
+    )
     rows = diagnostics.coverage(events)
     components.chart(charts.coverage_lines(rows), key="coverage")
     table = diagnostics.coverage_table(rows)

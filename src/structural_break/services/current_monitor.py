@@ -16,6 +16,13 @@ PERIODS = {
     "Holdout · 2018–2023": (2018, 2023),
     "Final test · 2024–2025": (2024, 2025),
 }
+# Presentation stages for the coverage table. The canonical evaluation periods
+# above and the annual models' actual fitting/calibration windows are unchanged.
+COVERAGE_STAGES = {
+    "Selection · 2010–2017": "Fit · 2010–2017",
+    "Holdout · 2018–2023": "Calibration · 2018–2023",
+    "Final test · 2024–2025": "Assessment · 2024–2025",
+}
 INPUTS = frozenset(c for columns in FEATURE_FAMILIES.values() for c in columns) | frozenset(
     (
         *METADATA_FEATURE_COLUMNS,
@@ -131,7 +138,7 @@ def coverage_table(rows: pd.DataFrame) -> pd.DataFrame:
         n=("n", "sum"), flagged=("flagged", "sum")
     )
     summed["share"] = summed.flagged / summed.n
-    summed["column"] = summed.period + " (n=" + summed.n.astype(str) + ")"
+    summed["column"] = summed.period.map(COVERAGE_STAGES) + " (n=" + summed.n.astype(str) + ")"
     columns = [
         str(row.column)
         for period in PERIODS

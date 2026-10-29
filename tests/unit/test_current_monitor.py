@@ -79,3 +79,20 @@ def test_period_boundaries_describe_evaluation_not_frozen_fitting_partitions():
     assert monitor.period_of_year(2024) == "Final test · 2024–2025"
     with pytest.raises(ValueError):
         monitor.period_of_year(2006)
+
+
+def test_coverage_reports_current_development_stages_and_only_published_assessment():
+    forecasts, registry = inputs()
+    forecasts.loc[0, "year"] = 2010
+    frame = monitor.event_inputs(forecasts, registry, final_included=False)
+    rows = monitor.coverage(frame)
+    table = monitor.coverage_table(rows).set_index("Indicator")
+    assert table.columns.tolist() == ["Fit · 2010–2017 (n=1)", "Calibration · 2018–2023 (n=1)"]
+    assert not table.index.str.contains("catalyst", case=False).any()
+    assert set(table.index) == set(monitor.COVERAGE.values())
+    assert table.loc["FinBERT tone known for both legs"].tolist() == [1, 0]
+    assert table.loc["Leg A SEC metadata UNKNOWN"].tolist() == [0, 1]
+    assert set(rows.year) == {2010, 2018}
+    forecasts.loc[1, "year"] = 2024
+    published = monitor.event_inputs(forecasts, registry, final_included=True)
+    assert "Assessment · 2024–2025 (n=1)" in monitor.coverage_table(monitor.coverage(published))

@@ -37,6 +37,12 @@ It includes peer context, relationship state, earnings timing, momentum, OU prio
 and track records, with feature-group filters. FinBERT known coverage requires
 an explicit known flag. Drift retains actual missing values; complete event
 matching does not imply complete source coverage.
+SEC coverage uses the current scored population from 2010, not the old 2006–2023
+frozen-study fitting partitions. Its table displays Fit (selection, 2010–2017)
+and Calibration (holdout validation, 2018–2023). These are presentation-stage
+labels; annual fitting and probability calibration still use earlier data.
+Assessment (2024–2025) is added only when published final-test rows are included.
+Only SEC metadata UNKNOWN and FinBERT known coverage indicators are displayed.
 The UI change does not remove predictors from, or refit, the scientific models.
 
 ## Baselines in Model Lab

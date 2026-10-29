@@ -174,6 +174,13 @@ def test_monitor_uses_current_periods_and_omits_catalyst_fields(service, monkeyp
         "Holdout · 2018–2023",
         "Final test · 2024–2025",
     ]
+    coverage = next(item.value for item in app.dataframe if "Indicator" in item.value)
+    assert coverage.columns.tolist() == [
+        "Indicator",
+        "Fit · 2010–2017 (n=11236)",
+        "Calibration · 2018–2023 (n=11214)",
+    ]
+    assert not coverage.Indicator.str.contains("catalyst", case=False).any()
     assert not any(
         "catalyst" in str(option).lower() or "affected_leg" in str(option)
         for option in app.selectbox[0].options
