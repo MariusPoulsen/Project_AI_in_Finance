@@ -27,6 +27,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from structural_break.pipeline.sources import registry_dir, registry_targets
+
 REGISTRY = "artifacts/research/research_registry_0bd415d2a5af1f4891dc1f0d"
 STATE_COLUMNS = [
     "pair_id",
@@ -98,7 +100,7 @@ BLOCKS = {
 
 
 def load_state(workspace: Path) -> pd.DataFrame:
-    folder = workspace / REGISTRY / "pairs"
+    folder = registry_dir(workspace) / "pairs"
     parts = [
         pd.read_parquet(path / "daily_pair_state.parquet", columns=STATE_COLUMNS)
         for path in sorted(folder.iterdir())
@@ -330,7 +332,7 @@ def build_all(
     prices: pd.DataFrame,
 ) -> pd.DataFrame:
     state = load_state(workspace)
-    targets = pd.read_parquet(workspace / REGISTRY / "h20_targets.parquet")
+    targets = registry_targets(workspace)
     parts: list[Any] = [
         peer_features(events, state),
         state_features(events, state),
