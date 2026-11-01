@@ -36,3 +36,6 @@ htmlcov/
 
 # The exported app bundle (about 44 MB) is committed only on the deploy branch.
 /demo/app_bundle/
+
+# Local UI inspection screenshots and logs
+/.design/

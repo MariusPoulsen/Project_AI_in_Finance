@@ -4,6 +4,8 @@ Uses the clearly labelled synthetic preview (invented data) so the smoke tests
 need no snapshot, network or language model.
 """
 
+import re
+
 import pytest
 from streamlit.testing.v1 import AppTest
 
@@ -118,6 +120,12 @@ def test_every_page_renders_with_the_committed_results(service, name):
     assert not app.exception, app.exception
     assert not app.error
     assert app.title
+    for item in [*app.markdown, *app.caption, *app.table, *app.dataframe]:
+        value = item.value
+        text = value.to_csv(index=False) if hasattr(value, "to_csv") else str(value)
+        assert not re.search(r"\bDecisions?\s+\d|DECISIONS\.md|decision log", text)
+        if hasattr(value, "columns"):
+            assert "Decision" not in value.columns
 
 
 def test_adopted_book_page_renders_the_committed_results(service):
@@ -148,3 +156,89 @@ def test_results_fail_closed_when_a_file_does_not_match_the_manifest(tmp_path):
     assert results.load(copy) is not None
     (copy / "summary.json").write_text("{}", encoding="utf-8")
     assert results.load(copy) is None
+
+
+def test_monitor_uses_current_periods_and_omits_catalyst_fields(service, monkeypatch):
+    monkeypatch.setattr(
+        service, "cohorts", lambda *_: pytest.fail("Used frozen fitting partitions")
+    )
+    app = AppTest.from_function(page, args=(service, "monitor", 20, True), default_timeout=90).run()
+    assert not app.exception and not app.error
+    samples = next(item.value for item in app.dataframe if "Labelled" in item.value)
+    versions = next(item.value for item in app.dataframe if "Item" in item.value)
+    assert not versions.Item.str.startswith("Frozen").any()
+    assert "Input registry protocol" not in set(versions.Item)
+    assert not {"Freeze manifest SHA-256", "Data source"} & set(versions.Item)
+    assert samples["Labelled"].iloc[:2].tolist() == [11048, 10940]
+    assert samples["Period"].tolist() == [
+        "Selection · 2010–2017",
+        "Holdout · 2018–2023",
+        "Final test · 2024–2025",
+    ]
+    coverage = next(item.value for item in app.dataframe if "Indicator" in item.value)
+    assert coverage.columns.tolist() == [
+        "Indicator",
+        "Fit · 2010–2017 (n=11236)",
+        "Calibration · 2018–2023 (n=11214)",
+    ]
+    assert not coverage.Indicator.str.contains("catalyst", case=False).any()
+    assert not any(
+        "catalyst" in str(option).lower() or "affected_leg" in str(option)
+        for option in app.selectbox[0].options
+    )
+
+
+def test_model_lab_exposes_current_shap_pending_instead_of_legacy_attributions(
+    service, monkeypatch
+):
+    from dataclasses import replace
+
+    from structural_break.app_ui import results
+
+    saved = results.load()
+    assert saved is not None
+    pending = replace(
+        saved,
+        tables={k: v for k, v in saved.tables.items() if not k.startswith(("shap_", "full_shap_"))},
+    )
+    monkeypatch.setattr(results, "load", lambda: pending)
+    app = AppTest.from_function(
+        page, args=(service, "model_lab", 20, True), default_timeout=90
+    ).run()
+    assert not app.exception and not app.error
+    assert "SHAP" in [tab.label for tab in app.tabs]
+    assert any("explanations have not been exported" in item.value for item in app.info)
+
+
+def test_event_investigation_opens_a_saved_full_forecast_and_rejects_unknown_id(service):
+    from structural_break.app_ui import results
+
+    saved = results.load()
+    assert saved is not None
+    event_id = str(saved.tables["full_shap_events"].event_id.iloc[0])
+    app = AppTest.from_function(
+        page, args=(service, "event_investigation", 20, True), default_timeout=90
+    )
+    app.query_params["event"] = event_id
+    app.run()
+    assert not app.exception and not app.error
+    assert "Forecast and SHAP" in [tab.label for tab in app.tabs]
+    assert any("Probability-only stack" in item.value for item in app.markdown)
+    assert any("Exact linear SHAP" in item.value for item in app.caption)
+    app.query_params["event"] = "not-published"
+    app.run()
+    assert not app.exception and not app.error
+    assert any("not in the published results" in item.value for item in app.warning)
+
+
+def test_model_lab_comparison_includes_matched_entry_baselines(service):
+    app = AppTest.from_function(
+        page, args=(service, "model_lab", 20, True), default_timeout=90
+    ).run()
+    assert not app.exception and not app.error
+    table = next(item.value for item in app.dataframe if "roc_auc" in item.value)
+    baseline = table.loc[table.label.str.startswith("Baseline")]
+    assert len(table) == 6 and len(baseline) == 2
+    assert baseline.n.tolist() == [10940, 10940]
+    assert baseline.iloc[0].roc_auc == 0.5
+    assert baseline[["log_loss", "brier"]].isna().all().all()

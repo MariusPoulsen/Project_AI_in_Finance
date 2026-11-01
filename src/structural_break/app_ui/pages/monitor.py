@@ -11,6 +11,7 @@ import streamlit as st
 from structural_break.app_ui import charts, components, theme
 from structural_break.app_ui.context import current
 from structural_break.app_ui.results import Results
+from structural_break.services import current_monitor as diagnostics
 
 INVENTORY_COLUMNS: dict[str, Any] = {
     "bundle": "Saved bundle",
@@ -26,7 +27,7 @@ INVENTORY_COLUMNS: dict[str, Any] = {
 
 def render() -> None:
     ctx = current()
-    service, horizon = ctx.service, ctx.horizon
+    service = ctx.service
     identity = service.identity
     components.page_header(
         "Data and model monitor",
@@ -36,105 +37,162 @@ def render() -> None:
     )
     components.synthetic_banner(identity)
     st.subheader("Versions")
-    versions = {
-        **_result_versions(ctx.results),
-        "Data source": {
-            "workspace": "Accepted workspace (read in memory)",
-            "bundle": "Exported app bundle",
-            "synthetic": "Synthetic preview",
-        }[identity.source],
-        "Primary research generation": identity.primary_version,
-        "Event registry": identity.registry_version,
-        "SEC evidence generation": identity.intelligence_version,
-        **{f"Evaluation h{h}": v for h, v in sorted(identity.evaluations.items())},
-        **{f"Backtest h{h}": v for h, v in sorted(identity.experiments.items())},
-        "Explanations": identity.explanation_status,
-        "Protocol": service.protocol.get("version"),
-        "Bundle identity": identity.bundle_id,
-    }
+    versions = _result_versions(ctx.results)
     st.dataframe(
         pd.DataFrame({"Item": list(versions), "Value": [str(v) for v in versions.values()]}),
         hide_index=True,
         width="stretch",
     )
-    st.subheader(f"Samples per period, research layer, {horizon} sessions")
-    cohorts = service.cohorts(horizon)
-    if cohorts.empty:
-        components.empty_state("No cohort record is published.")
-    else:
+    with st.expander("Technical provenance"):
+        st.caption(
+            "These identifiers bind the source inputs, app packaging and the methodology "
+            "authorized for the final test."
+        )
+        inputs = {
+            "Accepted input snapshot": identity.primary_version,
+            "Event registry": identity.registry_version,
+            "SEC evidence generation": identity.intelligence_version,
+            "Input registry protocol": service.protocol.get("version"),
+            "Bundle identity": identity.bundle_id,
+            "Data source": {
+                "workspace": "Accepted workspace (read in memory)",
+                "bundle": "Exported app bundle",
+                "synthetic": "Synthetic preview",
+            }[identity.source],
+        }
+        if ctx.results is not None:
+            inputs["Freeze manifest SHA-256"] = ctx.results.manifest.get("freeze_manifest_sha256")
         st.dataframe(
-            cohorts,
+            pd.DataFrame({"Input": list(inputs), "Identity": [str(v) for v in inputs.values()]}),
             hide_index=True,
             width="stretch",
-            column_config={
-                "period": "Period",
-                "n": st.column_config.NumberColumn("Events", format="localized"),
-                "positives": st.column_config.NumberColumn("Reverted", format="localized"),
-                "success_rate": st.column_config.NumberColumn("Reversion rate", format="percent"),
-                "pairs": "Pairs",
-                "issuers": "Issuers",
-                "ACTIVE": st.column_config.NumberColumn("ACTIVE at event", format="localized"),
-            },
         )
-    components.chart(charts.events_by_year(service.events_by_year(horizon)), key="events_year")
-    st.subheader("SEC evidence coverage")
-    coverage = service.coverage(horizon)
-    if coverage.empty:
-        components.empty_state("No coverage record is published.")
-    else:
-        components.chart(charts.coverage_lines(coverage), key="coverage")
-        table = service.coverage_table(horizon)
-        st.dataframe(
-            table,
-            hide_index=True,
-            width="stretch",
-            column_config={"indicator": "Indicator"}
-            | {
-                name: st.column_config.NumberColumn(name, format="percent")
-                for name in table.columns[1:]
-            },
-        )
-        st.caption(
-            "Coverage is reported with full denominators. Missing evidence stays in the matched "
-            "comparison as UNKNOWN. Catalysts were extracted for a frozen, target-blind schedule "
-            "of 500 events; all others are UNKNOWN by design."
-        )
-    st.subheader("Feature drift")
-    features = service.drift_features(horizon)
-    if not features:
-        components.empty_state("No feature profiles are published.")
-    else:
-        default = features.index("abs_z") if "abs_z" in features else 0
-        from structural_break.app_bundle.features import feature_label
-
-        feature = st.selectbox(
-            "Feature", features, index=default, format_func=lambda f: f"{feature_label(f)} ({f})"
-        )
-        rows = service.drift(horizon, feature)
-        components.chart(charts.drift(rows, feature_label(feature)), key="drift")
-        st.caption(
-            "Yearly distribution of the feature across all events; marker colour shows the "
-            "research period (grey fit, gold calibration, teal assessment). The research "
-            "layer's events end in 2023."
-        )
+    _current_data()
     _headline_health(ctx.results)
 
 
+def _current_data() -> None:
+    ctx = current()
+    if ctx.results is None:
+        components.empty_state(
+            "Current scored-event diagnostics are not in this deployment. "
+            "The frozen study's partitions are not a substitute."
+        )
+        return
+    events = diagnostics.event_inputs(
+        ctx.results.tables["forecasts"],
+        ctx.results.tables.get("diagnostic_inputs", ctx.service.data(ctx.horizon).events),
+        final_included=ctx.results.final_included,
+    )
+    st.subheader("Samples per study period")
+    st.dataframe(
+        diagnostics.cohorts(events, final_included=ctx.results.final_included),
+        hide_index=True,
+        width="stretch",
+        column_config={"Reversion rate": st.column_config.NumberColumn(format="percent")},
+    )
+    st.caption(
+        "Each annual model trains on earlier years. Selection and holdout describe "
+        "evaluation periods; they are not one fixed train/test split. Reversion rates "
+        "use labelled events only. Unlabelled events remain in the event counts."
+    )
+    yearly = diagnostics.events_by_year(events)
+    figure = go.Figure()
+    for period, part in yearly.groupby("period", sort=False):
+        figure.add_trace(
+            go.Bar(
+                x=part.year,
+                y=part.events,
+                name=str(period),
+                marker_color=theme.PARTITION_COLORS[str(period)],
+            )
+        )
+    figure.add_vline(x=2017.5, line_dash="dot", line_color=theme.MUTED)
+    if ctx.results.final_included:
+        figure.add_vline(x=2023.5, line_dash="dot", line_color=theme.MUTED)
+    figure.update_layout(
+        theme.layout(height=300, xaxis={"dtick": 2}, yaxis={"title": "Scored divergence events"})
+    )
+    components.chart(figure, key="current_events_year")
+    st.subheader("SEC evidence coverage")
+    st.caption(
+        "Fit covers model selection (2010–2017); Calibration covers holdout validation "
+        "(2018–2023). Each annual model fits and calibrates its probabilities on earlier data."
+    )
+    rows = diagnostics.coverage(events)
+    components.chart(charts.coverage_lines(rows), key="coverage")
+    table = diagnostics.coverage_table(rows)
+    st.dataframe(
+        table,
+        hide_index=True,
+        width="stretch",
+        column_config={
+            name: st.column_config.NumberColumn(format="percent") for name in table.columns[1:]
+        },
+    )
+    missing = int((~events.registry_available).sum())
+    st.caption(
+        f"Coverage uses all {len(events):,} current scored events. "
+        f"{missing:,} have no matching row in the SEC input export and remain UNKNOWN; "
+        "they are retained in the denominators. This view shows metadata and FinBERT tone."
+    )
+    st.subheader("Feature drift")
+    features = diagnostics.drift_features(events)
+    if not features:
+        components.empty_state("No current-event feature values are exported.")
+        return
+    from structural_break.app_bundle.features import feature_label
+
+    blocks = ["All feature groups", *dict.fromkeys(diagnostics.feature_block(f) for f in features)]
+    from structural_break.app_ui import navigation
+
+    block = navigation.selectbox(
+        "Feature group", blocks, "drift_group", default="All feature groups"
+    )
+    if block != "All feature groups":
+        features = [f for f in features if diagnostics.feature_block(f) == block]
+    default = features.index("abs_z") if "abs_z" in features else 0
+    feature = navigation.selectbox(
+        "Feature",
+        features,
+        "drift_feature",
+        default=features[default],
+        format_func=lambda f: f"{feature_label(f)} ({f})",
+    )
+    profile = diagnostics.drift(events, feature)
+    components.chart(charts.drift(profile, feature_label(feature)), key="drift")
+    st.caption(
+        "Distributions use the current scored events and their exported input values. "
+        "Selection: 2010–2017; holdout: 2018–2023; final test only when exported. "
+        "Peer, relationship state, earnings, momentum, OU and track inputs are included when "
+        "the current diagnostics sidecar is deployed. Missing values remain missing."
+    )
+    with st.expander("Feature coverage by year"):
+        st.dataframe(
+            profile[["year", "period", "n", "missing_share"]],
+            hide_index=True,
+            width="stretch",
+            column_config={
+                "missing_share": st.column_config.NumberColumn("Missing values", format="percent")
+            },
+        )
+
+
 FORECASTER_INVENTORY = [
-    ("Original Model B (R0)", "Fixed XGBoost, Decision 45", "Selects the adopted book's trades"),
+    ("Original Model B (R0)", "Fixed XGBoost", "Selects the adopted book's trades"),
     (
         "B+rule+ou, bagged",
-        "Five XGBoost seeds, feature subsampling, Decision 86b",
+        "Five XGBoost seeds, feature subsampling",
         "Pre-registered Goal 1 model",
     ),
     (
         "B+rule+ou+track, bagged",
-        "As above plus track record, Decision 88b",
+        "As above plus track record",
         "Best observed, post-hoc",
     ),
     (
         "Full model",
-        "Bagged base plus entry-agent scores, Decisions 110b–c, 119",
+        "Bagged base plus entry-agent scores",
         "Reported, not adopted",
     ),
 ]
@@ -151,10 +209,11 @@ def _result_versions(results: Results | None) -> dict[str, object]:
     return {
         "Headline results export": f"{manifest.get('commit')} ({manifest.get('generated_at')})",
         "Scored event years": "–".join(str(y) for y in manifest.get("event_years", [])),
-        "Freeze manifest SHA-256": manifest.get("freeze_manifest_sha256"),
-        "Final-test unlock": manifest.get("unlock_record") or "No unlock record",
+        "Final-test unlock": "Owner authorization recorded"
+        if manifest.get("unlock_record")
+        else "No unlock record",
         "Final test": "Included" if results.final_included else "Unlocked, results pending",
-        "Agent desk": "Run (Decisions 109–110); monitor exit adopted, entry scores reported",
+        "Agent desk": "Monitor exit adopted; entry scores evaluated in the Full model",
     }
 
 
@@ -226,7 +285,7 @@ def _headline_health(results: Results | None) -> None:
     review = results.summary.get("review", {})
     if review.get("answered"):
         st.caption(
-            f"Development cases. Human review (Decision 113): {review['cases']} blind cases and "
+            f"Development cases. Human review: {review['cases']} blind cases and "
             f"{review['claims']} cited claims; {review['confirmed']} of {review['answered']} "
             "answers confirm the agents. Language models never set a trade by themselves: the "
             "monitor's scores pass a fixed rule (adverse ≥ 5 and persistence ≥ 5)."

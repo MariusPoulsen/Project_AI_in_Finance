@@ -27,9 +27,29 @@ def manifest_sha256(manifest: Path = MANIFEST) -> str | None:
     return hashlib.sha256(manifest.read_bytes()).hexdigest()
 
 
+def _stamp(path: Path) -> tuple[int, int] | None:
+    try:
+        status = path.stat()
+    except OSError:
+        return None
+    return status.st_mtime_ns, status.st_size
+
+
+# Execution checks call the gate millions of times; the answer is cached per state of the
+# two files, so a changed decision log or manifest is always read again.
+_UNLOCK_CACHE: dict[tuple[object, ...], str | None] = {}
+
+
 def unlock_record(decisions: Path = DECISIONS, manifest: Path = MANIFEST) -> str | None:
     """The unlock heading, if a decision section titled "... unlock record ..." cites the
     current manifest's SHA-256 and says the owner wrote it; otherwise None."""
+    key = (str(decisions), _stamp(Path(decisions)), str(manifest), _stamp(Path(manifest)))
+    if key not in _UNLOCK_CACHE:
+        _UNLOCK_CACHE[key] = _read_unlock_record(Path(decisions), Path(manifest))
+    return _UNLOCK_CACHE[key]
+
+
+def _read_unlock_record(decisions: Path, manifest: Path) -> str | None:
     sha = manifest_sha256(manifest)
     if sha is None or not decisions.exists():
         return None

@@ -5887,3 +5887,54 @@ return was read. None of these changes a development result.
   bulk months and 8 in FNSPID 2018–2023. The monitor's thresholds are unchanged.
 - **Cash rate.** The 13-week T-bill series (Yahoo ^IRX) is extended through 2025 in the
   final-test checkout; its overlap with the frozen file matches exactly.
+
+### 120a, continued: more development-only gates in the book pipeline (2026-10-28)
+
+The 2022–2023 rehearsal rebuilt the research layer only, so the book pipeline's own guards were
+never exercised past 2023. Each hard-coded development end below now reads the unlock gate
+(`periods.data_end()`); while the final test is locked every bound is the same as before, and
+the backtest, portfolio, scheduling and app test suites pass unchanged.
+
+- `backtest.contracts`: the execution-date check and the exchange calendar (2023-12-31 and
+  2024-01-15 become the readable end and 15 days after it).
+- `backtest.portfolio`: the truncation of open positions at the development end.
+- `pipeline.sources.simulate_events`: the simulation window.
+- **News exit for 2024–2025.** The frozen E3 exit was simulated in three development stages
+  (2006–2015, 2016–2021, 2022–2023) that also chose the rule. No stage covers 2024–2025, so
+  the book would have run the final test without its news exit. `scripts/final_test_exits.py`
+  re-simulates the frozen rule for each development span on the final-test registry and once
+  for 2024–2025 (`exits_final.parquet`, read by `news_exit.load_exits`); the rule choices are
+  copied from development, nothing is re-selected.
+- **8-K news and headline tone** reuse the development caches (packs, LLM records, FinBERT
+  scores), keyed by company and filing, so only 2024–2025 filings are parsed, scored or sent to
+  the language model.
+
+### 120a, continued: one event-id space (2026-10-28)
+
+The final-test registry gives every event a new id, because event ids derive from the market
+snapshot and the splice made a new one. The final-test evaluation had kept the frozen
+2006–2023 model-input rows under their old ids, so every join on event id with the new
+registry, simulation or features would have dropped 2006–2023. `extend_evaluation` now re-keys
+the frozen rows and their research predictions to the registry's ids by pair and event
+timestamp (all 29,071 match exactly one event), and `scripts/final_test_desk_rekey.py`
+re-keys the copied development agent-desk answers the same way (6,516 entry and 7,954 monitor
+answers; none unmatched), so only 2024–2025 cases are sent to the language models. The new
+evaluation is `research_evaluation_2420db281e86fa92f308bea5`; the earlier final-test
+evaluation and binding are kept and superseded.
+
+## 120b. Final-test labels: the frozen label rule after the unlock (2026-10-28)
+
+The dataset builder never materialises final-test labels: its `final_test` partition is
+locked by design and has no unlock path. Without labels Goal 1 cannot be scored on 2024–2025,
+and the walk-forward refit for 2025 cannot train on 2024.
+
+- **Labels.** `scripts/final_test_labels.py` calls the frozen `ml.dataset.build_event_dataset`
+  per pair with the registry's own inputs, on a configuration whose labelled period runs to
+  2025-12-31 (the locked partition moves past the data). Before writing anything it checks
+  that the rebuilt events are exactly the registry's (all 736 pairs) and that every
+  development label resolved before the old boundary is unchanged: 28,821 checked, 0 differ.
+- **Result.** 3,727 final-test events, 3,626 labelled, 238 reverted (base rate 6.6 %).
+- **Use.** `extend_evaluation` fills these labels and the usual eligibility (label eligible and
+  feature complete) into the 2024–2025 model-input rows; development labels are never
+  replaced. Labels are read only to fit the walk-forward model for a later year and to score
+  the final-test years, exactly as for every development year.

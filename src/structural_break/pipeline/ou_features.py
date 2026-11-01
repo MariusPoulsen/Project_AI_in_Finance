@@ -24,7 +24,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from structural_break.pipeline import features as qf
+from structural_break.pipeline.sources import registry_dir
 
 PATHS = 2000
 STEPS = 20
@@ -35,7 +35,7 @@ OU = ("ou_p_label", "ou_p_tp", "ou_zgain", "ou_ev_bps", "ou_rho", "ou_sigma")
 
 
 def realised_sigma(workspace: Path) -> pd.DataFrame:
-    folder = workspace / qf.REGISTRY / "pairs"
+    folder = registry_dir(workspace) / "pairs"
     parts = []
     for path in sorted(p for p in folder.iterdir() if p.is_dir()):
         state = pd.read_parquet(

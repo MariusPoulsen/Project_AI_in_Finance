@@ -17,6 +17,7 @@ from structural_break.backtest.contracts import (
     FrozenModel,
     Identifier,
     development_date,
+    readable_end,
     utc,
 )
 from structural_break.backtest.ladder_contracts import (
@@ -152,7 +153,7 @@ class InventoryRow(FrozenModel):
 
     @model_validator(mode="after")
     def coherent(self) -> Self:
-        if utc(self.signal_at).year >= 2024:
+        if utc(self.signal_at).year > readable_end().year:
             raise ValueError("Historical inventories cannot open locked 2024+ outcomes")
         check_selection_chain(self.selections)
         return self
