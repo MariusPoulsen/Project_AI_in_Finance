@@ -1,12 +1,12 @@
 {
   "schema_version": "current-tree-shap-v1",
   "xgboost_version": "3.2.0",
-  "forecast_sha256": "ae4c94575442a357c8f42e856494335eeb00b780547a322bb8e8b72cd1cc1c04",
+  "forecast_sha256": "4fcc4ac261349ed9df9edf046c46ecec0435f852909ee597696218504a6fce44",
   "events_per_year": 80,
   "sampling": "Lowest SHA-256(event_id), independently in each year",
   "units": "Native TreeSHAP log-odds of each seed component; not bag probability",
   "source_hashes": {
-    "book/features.parquet": "1966532cb15cc368a2b6562b6bb52d0d1207f60f4915b63763fc5d86a8852798",
-    "book/ou_features.parquet": "a500a9d98355d0b878862f689c1319fb11dfc0c8a6c8a4818824472f87cf7acd"
+    "book/features.parquet": "6242d53b3dc60590d78337fb1f22a4ee4ec410e1cd7cb374a4a9689c3ced9ee4",
+    "book/ou_features.parquet": "519053f5a1c03cb8921f7c404e019fc4dceaa20cc6903383ed339569e9072469"
   }
 }

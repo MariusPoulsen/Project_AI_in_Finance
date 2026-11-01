@@ -5938,3 +5938,52 @@ and the walk-forward refit for 2025 cannot train on 2024.
   feature complete) into the 2024–2025 model-input rows; development labels are never
   replaced. Labels are read only to fit the walk-forward model for a later year and to score
   the final-test years, exactly as for every development year.
+
+## 121. Final-test results, 2024–2025 (opened once, 2026-11-02)
+
+The frozen design run once on 2024–2025 after the owner's unlock (Decision 120), with the
+deviations recorded beforehand (Decisions 120a–b). Nothing was retuned after the results
+were seen. The full model (bagged forecaster plus the entry agents) is added when the entry
+agents' 2024–2025 answers are complete; it is listed as pending below.
+
+**Goal 1: forecasting reversion** (3,626 labelled events; base rate 6.6 %)
+
+| Model | ROC AUC | PR AUC | Log loss | Brier |
+|---|---|---|---|---|
+| Original Model B (R0) | 0.719 | 0.167 | 0.2283 | 0.0592 |
+| **B+rule+ou, bagged (pre-registered)** | **0.742** | 0.170 | **0.2195** | **0.0582** |
+| B+rule+ou+track, bagged (best observed) | 0.742 | 0.173 | 0.2186 | 0.0580 |
+| Full model | pending | | | |
+
+The pre-registered model beats the original Model B out of sample by +0.023 AUC and −0.0088
+log loss, the same direction and similar size as on the 2018–2023 holdout. Goal 1 holds.
+
+**Goal 2: the trading book** (Sharpe in excess of cash)
+
+| Book, 2024–2025 | Sharpe | CAGR | CAGR with cash | Max drawdown | Turnover | Costs |
+|---|---|---|---|---|---|---|
+| Adopted book (R0 selection, monitor exit) | −0.17 | −0.84 % | +3.47 % | −5.4 % | 23× | 1.92 %/yr |
+| Same book without the monitor exit | +0.03 | +0.01 % | +4.36 % | −4.8 % | 22× | 1.75 %/yr |
+| Best forecaster's selection | −0.12 | −0.57 % | +3.75 % | −4.5 % | 24× | 1.69 %/yr |
+| Full model's selection | pending | | | | | |
+
+The book's development edge did not hold: it earned slightly less than cash. Its trades
+averaged +21 bps gross (51 and 62 bps in development), 24 % reached the take profit (28–32 %),
+and reversions were rarer (base rate 6.6 % against about 10 % in 2018–2023). The monitor
+exit closed 17.6 % of trades, against 4.5–5.4 % in development: the TickerTick news it read
+until May 2025 is far denser than the development source (Decision 116d foresaw more checks),
+and without it the book is flat rather than negative. The overfitting audit (Decision 113:
+PBO 0.54, deflated Sharpe 0.86) had already said the development Sharpe was not distinguishable
+from luck after the search; the final test is consistent with that.
+
+**Reproduction of development in the final-test checkout.**
+- Forecasters: R0 identical; the bagged models identical on 2018–2023 and within 0.001 AUC on
+  2010–2017.
+- Book: 2,435 of the 2,472 development trades recur, 99.5 % with the same exit reason. The
+  development Sharpe ratios are higher (adopted 0.857 / 0.678 against the frozen 0.813 / 0.595)
+  because the fresh SEC capture revised 24,556 pre-2024 acceptance timestamps (27 %) by four or
+  five hours, the Eastern-time offset. The revised times are the plausible ones (the old ones
+  fell outside EDGAR's filing hours), so the frozen capture had treated those filings as
+  available later than they were; this shifts some fresh-news filter decisions and, through
+  the book's path dependence, about 3 % of trades. The frozen development figures remain the
+  selection record; the app shows the final-test checkout's consistent 2010–2025 series.
