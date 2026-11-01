@@ -78,7 +78,7 @@ def _final_test(report: dict[str, Any] | None, results: Results) -> None:
         sha = str(results.manifest.get("freeze_manifest_sha256") or "")[:12]
         components.verdict_box(
             "Unlocked, results pending",
-            " The owner unlocked the final test on 27 October 2026 (Decision 120) for the "
+            " The owner unlocked the final test on 27 October 2026 for the "
             f"freeze manifest {sha}…. The frozen code and design run once on 2024–2025; this "
             "section fills in when that run is published. Nothing is retuned after it.",
             "unavailable",
@@ -86,7 +86,7 @@ def _final_test(report: dict[str, Any] | None, results: Results) -> None:
         return
     components.verdict_box(
         "Opened once on the frozen design",
-        f" {report.get('unlock_record', 'Owner unlock record')}; freeze manifest "
+        " Owner-authorized final test; freeze manifest "
         f"{str(report.get('manifest_sha256', ''))[:12]}…. Every parameter is the frozen one.",
         "inconclusive",
     )
@@ -194,7 +194,7 @@ def render() -> None:
     components.chart(result_charts.monthly_heatmap(daily, "adopted"), key="book_months")
 
     components.verdict_box(
-        "Overfitting audit (Decision 113)",
+        "Overfitting audit",
         " Across 132 tracked designs the probability of backtest overfitting is 0.54, and the "
         "book's deflated Sharpe ratio is 0.86 for 2010–2023 (0.65 for 2018–2023), below the "
         "usual 0.95 bar. After correcting for the number of designs tried, the development "
@@ -209,15 +209,15 @@ def render() -> None:
         f"- **Entry agents** (pair news analyst, bull/bear debate, risk judge): "
         f"{DESK['entry_scored']:,} development events scored, {DESK['entry_abstained']} "
         "abstained. Their scores did not improve the forecast or the book, so they are "
-        "reported (the full model) but not used.",
+        "evaluated in the Full model, while the adopted book retains R0 entry selection.",
         f"- **Position monitor:** a FinBERT triage sent {DESK['monitor_after_triage']:,} of "
         f"{DESK['monitor_checks']:,} development checks to the model; "
         f"{DESK['monitor_scored']:,} were scored. A trade closes when the monitor rates new "
-        "news adverse 5 and persistent 5 (Decision 110d).",
+        "news adverse 5 and persistent 5.",
     ]
     if review.get("answered"):
         lines.append(
-            f"- **Human review** (Decision 113): the group checked {review['cases']} blind "
+            f"- **Human review:** the group checked {review['cases']} blind "
             f"cases with {review['claims']} cited claims; {review['confirmed']} of "
             f"{review['answered']} answers confirm the agents, {review['partly']} partly, "
             f"{review['rejected']} reject."
@@ -239,9 +239,8 @@ def render() -> None:
             },
         )
         st.caption(
-            "FNSPID ends in 2023. For 2024–2025 the monitor reads TickerTick (Decision 116d): "
+            "FNSPID ends in 2023. For 2024–2025 the monitor reads TickerTick: "
             "its bulk file covers January 2024 to 25 May 2025 and is far denser than FNSPID; the "
             "live API used from 26 May 2025 keeps a much thinner archive, close to FNSPID's "
             "density. No threshold was changed for either."
         )
-    st.caption("Decisions 105–120 in docs/DECISIONS.md")

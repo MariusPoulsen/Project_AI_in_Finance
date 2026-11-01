@@ -15,10 +15,16 @@ from typing import Any
 import pandas as pd
 import streamlit as st
 
+from structural_break.services import current_monitor
+from structural_break.services.forecast_baselines import BASELINES, validate_flags
+from structural_break.services.forecast_explanations import validate as validate_shap
+from structural_break.services.full_explanations import validate as validate_full_shap
+
 FOLDER = Path(__file__).resolve().parents[3] / "demo" / "results"
 TABLES = ("forecasts", "curves", "books_daily", "trades", "news")
 
 MODELS = {
+    **BASELINES,
     "model_a": "Model A (prices only)",
     "r0": "Original Model B (R0)",
     "bag5": "B+rule+ou, bagged",
@@ -27,15 +33,20 @@ MODELS = {
     "full": "Desk region: full model (bagged + agent desk)",
 }
 MODEL_NOTES = {
-    "model_a": "Prices and the relationship only; the plan's Model A (Decision 45).",
-    "r0": "Model A's inputs plus SEC timing and tone, fixed XGBoost (Decision 45). "
+    "baseline0": "Take every estimable fresh divergence; all events receive the same rank.",
+    "baseline1": "Take only relationships marked ACTIVE at the event close; ACTIVE ranks "
+    "above inactive events. This is the existing econometric entry gate.",
+    "model_a": "Prices and the relationship only; the quantitative forecaster.",
+    "r0": "Model A's inputs plus SEC timing and tone, fixed XGBoost. "
     "Selects the adopted book's trades.",
     "bag5": "R0's inputs plus the rule blocks (peer, state, earnings, momentum) and the "
-    "structural OU prior, five seeds bagged (Decision 86b). The pre-registered Goal 1 model.",
+    "structural OU prior, five seeds bagged. The pre-registered Goal 1 model.",
     "track": "The pre-registered model plus each pair's and stock's earlier reversion "
-    "record (Decision 88b). Best observed, chosen after the fact.",
-    "full_base": "The pre-registered model on the events the agent desk scored.",
-    "full": "The pre-registered model plus the entry agents' scores (Decisions 110b–c, 119).",
+    "record. Best observed, chosen after the fact.",
+    "full_base": "Annual logistic stack using only the bagged B+rule+ou probability, "
+    "on the same desk-covered events as the Full model.",
+    "full": "The same annual logistic stack plus entry-agent assessments, their interaction "
+    "and no-news/abstain indicators.",
 }
 BOOKS = {
     "adopted": "Adopted book (R0 selection, monitor exit)",
@@ -106,6 +117,58 @@ def _read(folder: str, digest: str) -> Results | None:
     for column in ("entry_date", "exit_date"):
         tables["trades"][column] = pd.to_datetime(tables["trades"][column])
     summary = json.loads((root / "summary.json").read_text(encoding="utf-8"))
+    investigation_files = {
+        f"{name}.parquet"
+        for name in ("diagnostic_inputs", "event_cases", "full_shap_events", "full_shap_values")
+    }
+    reference = manifest.get("investigation_reference")
+    if reference is not None or investigation_files & files.keys():
+        if (
+            not investigation_files <= files.keys()
+            or reference is None
+            or reference["schema_version"] != "development-investigations-v1"
+            or reference["forecast_sha256"] != files["forecasts.parquet"]
+        ):
+            raise ValueError("Investigation sources do not match the current forecasts")
+        for name in investigation_files:
+            tables[name.removesuffix(".parquet")] = pd.read_parquet(root / name)
+        inputs, cases = tables["diagnostic_inputs"], tables["event_cases"]
+        if (
+            inputs.event_id.duplicated().any()
+            or set(inputs.event_id) != set(tables["forecasts"].event_id)
+            or set(inputs) - {"event_id"} - current_monitor.INPUTS
+        ):
+            raise ValueError("Current diagnostic input population/fields differ")
+        if cases.event_id.duplicated().any() or not set(cases.event_id) <= set(inputs.event_id):
+            raise ValueError("Invalid event evidence identities")
+        validate_full_shap(
+            tables["full_shap_events"], tables["full_shap_values"], tables["forecasts"]
+        )
+    baseline = manifest.get("baseline_reference")
+    if baseline is not None or "baseline_events.parquet" in files:
+        if (
+            baseline is None
+            or "baseline_events.parquet" not in files
+            or baseline["schema_version"] != "forecast-baseline-flags-v1"
+            or baseline["forecast_sha256"] != files["forecasts.parquet"]
+        ):
+            raise ValueError("Baseline eligibility does not match the current forecasts")
+        tables["baseline_events"] = pd.read_parquet(root / "baseline_events.parquet")
+        validate_flags(tables["baseline_events"], tables["forecasts"])
+    shap_files = {"shap_events.parquet", "shap_values.parquet", "shap.json"}
+    if shap_files & files.keys():
+        if not shap_files <= files.keys():
+            raise ValueError("Incomplete SHAP export")
+        metadata = json.loads((root / "shap.json").read_text(encoding="utf-8"))
+        if (
+            metadata["schema_version"] != "current-tree-shap-v1"
+            or metadata["forecast_sha256"] != files["forecasts.parquet"]
+        ):
+            raise ValueError("SHAP source does not match the current forecasts")
+        for name in ("shap_events", "shap_values"):
+            tables[name] = pd.read_parquet(root / f"{name}.parquet")
+        validate_shap(tables["shap_events"], tables["shap_values"], tables["forecasts"])
+        summary["shap"] = metadata
     final = root / "final_test.json"
     report = json.loads(final.read_text(encoding="utf-8")) if "final_test.json" in files else None
     present = tuple(dict.fromkeys(m["period"] for m in summary["goal1"]))
