@@ -15,6 +15,7 @@ refuses files that do not match.
 import hashlib
 import json
 import subprocess
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, cast
@@ -42,6 +43,7 @@ BOOKS = {
     "bag5": ("Best forecaster's selection (bagged B+rule+ou)", "B+rule+ou__recent-bag5", True),
     "full": ("Full model's selection (bagged + agent desk)", "FULL", True),
 }
+WITH_FULL = True  # --without-full-model while the entry agents are still running
 PERIODS = {
     "2010–2017": ((2010, 2017), "selection"),
     "2018–2023": ((2018, 2023), "holdout"),
@@ -80,15 +82,19 @@ def forecasts() -> pd.DataFrame:
     table = table.merge(inputs, on="event_id", how="left").merge(
         pairs[["pair_id", "leg_a", "leg_b", "business_group"]], on="pair_id", how="left"
     )
-    full, _ = desk.full_model(WS)
-    full = full.dropna(subset=["p_base", "p_agent"]).drop_duplicates("event_id")
-    table = table.merge(
-        full[["event_id", "p_base", "p_agent"]].rename(
-            columns={"p_base": "p_full_base", "p_agent": "p_full"}
-        ),
-        on="event_id",
-        how="left",
-    )
+    if WITH_FULL:
+        full, _ = desk.full_model(WS)
+        full = full.dropna(subset=["p_base", "p_agent"]).drop_duplicates("event_id")
+        table = table.merge(
+            full[["event_id", "p_base", "p_agent"]].rename(
+                columns={"p_base": "p_full_base", "p_agent": "p_full"}
+            ),
+            on="event_id",
+            how="left",
+        )
+    else:  # the entry agents' answers are still being collected
+        table["p_full_base"] = np.nan
+        table["p_full"] = np.nan
     table["event_date"] = pd.to_datetime(table["event_date"])
     return table.rename(columns={"y_revert_success": "y"})
 
@@ -199,10 +205,12 @@ def books(exits: dict[str, Any]) -> tuple[pd.DataFrame, dict[str, Any]]:
     panels = book.load_panels(prices, sectors)
     rf = book.tbill(Path("data/external/irx_13w_tbill.csv"))
     w = np.load("outputs/book/residual_targets_pca.npy") * 0.25
-    _, chosen_full = desk.full_model(WS)
+    chosen_full = desk.full_model(WS)[1] if WITH_FULL else None
     daily: pd.DataFrame | None = None
     stats: dict[str, Any] = {}
     for key, (label, selector, monitor) in BOOKS.items():
+        if selector == "FULL" and not WITH_FULL:
+            continue
         legs = desk.desk_book(
             WS,
             {},
@@ -328,6 +336,8 @@ def _sha(path: Path) -> str:
 
 
 def main() -> None:
+    global WITH_FULL
+    WITH_FULL = "--without-full-model" not in sys.argv[1:]
     OUT.mkdir(parents=True, exist_ok=True)
     table = forecasts()
     curves, metrics = goal1(table)
@@ -374,6 +384,7 @@ def main() -> None:
     files = sorted(p for p in OUT.iterdir() if p.name != "manifest.json")
     manifest = {
         "schema_version": "app-results-v1",
+        "full_model_included": WITH_FULL,
         "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "commit": commit,
         "event_years": [int(table.year.min()), int(table.year.max())],
