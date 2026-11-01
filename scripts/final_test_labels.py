@@ -164,8 +164,10 @@ def main() -> None:
     bad_events = [r["pair_id"] for r in results if not r["same_events"]]
     mismatched = sum(r["mismatched"] for r in results)
     checked = sum(r["checked"] for r in results)
-    print(f"checked {checked} development labels: {mismatched} differ; event lists differ for "
-          f"{len(bad_events)} pairs {bad_events[:5]}")
+    print(
+        f"checked {checked} development labels: {mismatched} differ; event lists differ for "
+        f"{len(bad_events)} pairs {bad_events[:5]}"
+    )
     if bad_events or mismatched:
         raise SystemExit("The rebuilt events or labels differ from the registry; nothing written")
     labels = pd.DataFrame([row for r in results for row in r["final"]], columns=COLUMNS)
