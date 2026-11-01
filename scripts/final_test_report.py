@@ -36,7 +36,7 @@ SPECS = {
 }
 
 
-def goal1(years: tuple[int, int]) -> dict[str, dict[str, Any]]:
+def goal1(years: tuple[int, int], full: bool = True) -> dict[str, dict[str, Any]]:
     args = harness.parser().parse_args(["summary"])
     frame, _, exits = harness.load(args)
     out = {}
@@ -45,6 +45,8 @@ def goal1(years: tuple[int, int]) -> dict[str, dict[str, Any]]:
             pd.read_parquet(Path("outputs/book") / f"{name}.parquet"), frame, exits
         )
         out[label] = harness.forecast_metrics(scored, years)
+    if not full:
+        return out
     # Decision 119: the full model against its own base, on the region events with a forecast.
     from sklearn.metrics import average_precision_score, brier_score_loss, log_loss, roc_auc_score
 
@@ -64,7 +66,7 @@ def goal1(years: tuple[int, int]) -> dict[str, dict[str, Any]]:
     return out
 
 
-def goal2(years: tuple[int, int]) -> dict[str, dict[str, Any]]:
+def goal2(years: tuple[int, int], full: bool = True) -> dict[str, dict[str, Any]]:
     sectors = _sources(WORKSPACE).security_sectors()
     prices = pd.read_parquet(
         WORKSPACE / "market/source_v1/prices.parquet",
@@ -86,8 +88,7 @@ def goal2(years: tuple[int, int]) -> dict[str, dict[str, Any]]:
     hit = pd.DataFrame(checks).query("adverse >= 5 and persistence >= 5")
     exits = hit.sort_values("session").groupby("event_id").session.first().dt.date.to_dict()
     out = {}
-    _, chosen_full = desk.full_model(WORKSPACE)
-    books = (
+    books: list[tuple[str, Any]] = [
         ("adopted book (with monitor exit)", desk.desk_book(WORKSPACE, {}, set(), exits)),
         ("same book without the monitor exit", desk.desk_book(WORKSPACE, {}, set(), {})),
         # Decision 119: the same construction, only the selection differs.
@@ -95,11 +96,15 @@ def goal2(years: tuple[int, int]) -> dict[str, dict[str, Any]]:
             "best forecaster's selection",
             desk.desk_book(WORKSPACE, {}, set(), exits, "B+rule+ou__recent-bag5"),
         ),
-        (
-            "full model's selection",
-            desk.desk_book(WORKSPACE, {}, set(), exits, "FULL", chosen_full),
-        ),
-    )
+    ]
+    if full:
+        _, chosen_full = desk.full_model(WORKSPACE)
+        books.append(
+            (
+                "full model's selection",
+                desk.desk_book(WORKSPACE, {}, set(), exits, "FULL", chosen_full),
+            )
+        )
     for label, legs in books:
         b = book.run_book(
             panels,
@@ -127,7 +132,16 @@ def main() -> None:
     parser.add_argument(
         "--rehearsal", action="store_true", help="run on 2022-2023 instead of the final test"
     )
+    parser.add_argument(
+        "--without-full-model",
+        action="store_true",
+        help="skip the full model (its entry-agent answers are still being collected)",
+    )
+    parser.add_argument(
+        "--goal1-only", action="store_true", help="the forecasters only (no book, no agents)"
+    )
     args = parser.parse_args()
+    full = not args.without_full_model and not args.goal1_only
     if args.rehearsal:
         years, label = (2022, 2023), "rehearsal_2022_2023"
     else:
@@ -143,8 +157,22 @@ def main() -> None:
         "years": list(years),
         "unlock_record": periods.unlock_record(),
         "manifest_sha256": periods.manifest_sha256(),
-        "goal1": goal1(years),
-        "goal2": goal2(years),
+        "goal1": goal1(years, full),
+        "goal2": {} if args.goal1_only else goal2(years, full),
+        "notes": [
+            note
+            for note, missing in (
+                (
+                    "Full model pending: the entry agents' 2024-2025 answers are being collected.",
+                    not full,
+                ),
+                (
+                    "Goal 2 pending: the position monitor's 2024-2025 checks are being collected.",
+                    args.goal1_only,
+                ),
+            )
+            if missing
+        ],
     }
     out = Path("outputs/final_test") / f"{label}.json"
     out.parent.mkdir(parents=True, exist_ok=True)

@@ -186,6 +186,14 @@ def render() -> None:
         f"The {BOOKS['bag5'].lower()} and the {BOOKS['full'].lower()} are compared in the "
         "Strategy Lab, with the design ladder and every trade."
     )
+    if results.final_included:
+        st.caption(
+            "All years come from the final-test run, one consistent pipeline for 2010–2025. Its "
+            "development figures differ slightly from the frozen ones chosen in development "
+            "(adopted book 0.813 and 0.595 for 2010–2017 and 2018–2023): the fresh SEC capture "
+            "revised 27 % of pre-2024 filing timestamps by the Eastern-time offset, which moved "
+            "some fresh-news filter decisions and about 3 % of trades."
+        )
     st.page_link(
         ctx.pages["strategy"], label="Open the Strategy Lab", icon=":material/candlestick_chart:"
     )

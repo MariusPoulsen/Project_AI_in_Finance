@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from structural_break import periods
 from structural_break.config.paths import ProjectPaths
 from structural_break.research.primary import checked_file, registered_manifest
 from structural_break.services.forecast_baselines import validate_flags
@@ -34,8 +35,8 @@ def main() -> None:
     if forecast_sha != manifest["files"]["forecasts.parquet"]:
         raise ValueError("Forecast checksum differs")
     forecasts = pd.read_parquet(forecast_path)
-    if forecasts.year.gt(2023).any():
-        raise ValueError("This supplemental baseline export is development-only")
+    if forecasts.year.gt(2023).any() and not periods.final_years_open():
+        raise ValueError("Final-test baseline flags require the owner's unlock record")
     source_manifest, source = registered_manifest(
         ProjectPaths.resolve(Path.cwd(), args.workspace_root), args.evaluation_version, "evaluation"
     )
