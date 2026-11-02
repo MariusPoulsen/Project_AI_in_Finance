@@ -1,28 +1,15 @@
-"""Data and Model Monitor: versions, cohorts, source coverage, drift and inventory."""
+"""Data and Model Monitor: data sources and downloads, cohorts, coverage, drift, health."""
 
 from __future__ import annotations
-
-from typing import Any
 
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from structural_break.app_ui import charts, components, theme
+from structural_break.app_ui import charts, components, data_downloads, theme
 from structural_break.app_ui.context import current
 from structural_break.app_ui.results import Results
 from structural_break.services import current_monitor as diagnostics
-
-INVENTORY_COLUMNS: dict[str, Any] = {
-    "bundle": "Saved bundle",
-    "features": "Features",
-    "chosen_parameters": "Chosen parameters",
-    "calibrator_slope": st.column_config.NumberColumn("Calibrator slope", format="%.3f"),
-    "calibrator_intercept": st.column_config.NumberColumn("Calibrator intercept", format="%.3f"),
-    "calibrator_status": "Calibrator status",
-    "reload_max_error": st.column_config.NumberColumn("Reload error", format="%.1e"),
-    "assessment_brier": st.column_config.NumberColumn("Assessment Brier", format="%.4f"),
-}
 
 
 def render() -> None:
@@ -31,44 +18,17 @@ def render() -> None:
     identity = service.identity
     components.page_header(
         "Data and model monitor",
-        "What the results rest on: exact data and model identities, sample sizes per period, "
-        "how much SEC evidence was actually available, how features shift over time, and the "
-        "health of every saved model and of the agent desk.",
+        "What the results rest on: where the data comes from (with downloads), sample sizes "
+        "per period, how much SEC evidence was actually available, how features shift over "
+        "time, and the health of every saved model and of the agent desk.",
     )
     components.synthetic_banner(identity)
-    st.subheader("Versions")
-    versions = _result_versions(ctx.results)
-    st.dataframe(
-        pd.DataFrame({"Item": list(versions), "Value": [str(v) for v in versions.values()]}),
-        hide_index=True,
-        width="stretch",
-    )
-    with st.expander("Technical provenance"):
-        st.caption(
-            "These identifiers bind the source inputs, app packaging and the methodology "
-            "authorized for the final test."
-        )
-        inputs = {
-            "Accepted input snapshot": identity.primary_version,
-            "Event registry": identity.registry_version,
-            "SEC evidence generation": identity.intelligence_version,
-            "Input registry protocol": service.protocol.get("version"),
-            "Bundle identity": identity.bundle_id,
-            "Data source": {
-                "workspace": "Accepted workspace (read in memory)",
-                "bundle": "Exported app bundle",
-                "synthetic": "Synthetic preview",
-            }[identity.source],
-        }
-        if ctx.results is not None:
-            inputs["Freeze manifest SHA-256"] = ctx.results.manifest.get("freeze_manifest_sha256")
-        st.dataframe(
-            pd.DataFrame({"Input": list(inputs), "Identity": [str(v) for v in inputs.values()]}),
-            hide_index=True,
-            width="stretch",
-        )
+    data_downloads.render(ctx.results)
     _current_data()
     _headline_health(ctx.results)
+    note = data_downloads.footnote(ctx.results)
+    if note:
+        st.caption(note)
 
 
 def _current_data() -> None:
@@ -200,21 +160,6 @@ DESK_HEALTH = [
     ("Entry agents (pair news analyst, bull/bear debate, risk judge)", 6485, 31),
     ("Position monitor (after the FinBERT triage)", 7937, 4),
 ]
-
-
-def _result_versions(results: Results | None) -> dict[str, object]:
-    if results is None:
-        return {"Headline results": "Not in this deployment"}
-    manifest = results.manifest
-    return {
-        "Headline results export": f"{manifest.get('commit')} ({manifest.get('generated_at')})",
-        "Scored event years": "–".join(str(y) for y in manifest.get("event_years", [])),
-        "Final-test unlock": "Owner authorization recorded"
-        if manifest.get("unlock_record")
-        else "No unlock record",
-        "Final test": "Included" if results.final_included else "Unlocked, results pending",
-        "Agent desk": "Monitor exit adopted; entry scores evaluated in the Full model",
-    }
 
 
 def _headline_health(results: Results | None) -> None:
