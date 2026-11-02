@@ -307,8 +307,9 @@ def render() -> None:
         )
         st.caption(
             "On 2018–2023 the pre-registered model beats R0 by 0.0053 in log loss (month-block "
-            "bootstrap p = 0.002) and by 0.017 in AUC. Model A's walk-forward scores were "
-            "not retained: its metrics are kept, its curves are not. Where it "
+            "bootstrap p = 0.002) and by 0.017 in AUC. Model A was refitted with the same fixed "
+            "XGBoost and split for the final test; its earlier development scores were not "
+            "retained, and the refit differs from them by at most 0.006 AUC. Where it "
             "started: the frozen research study found no established "
             "difference between Model A and the SEC-evidence variants of Model B on 2022–2023; "
             "R0 is that study's Model B refitted walk-forward."

@@ -30,6 +30,7 @@ from structural_break.pipeline.sources import _sources
 
 WORKSPACE = Path("data/team")
 SPECS = {
+    "Model A (prices only)": "scores__A__d45",
     "Original Model B (R0)": "scores__B__d45",
     "B+rule+ou, bagged (pre-registered Goal 1 model)": "scores__B+rule+ou__recent-bag5",
     "B+rule+ou+track, bagged (best observed)": "scores__B+rule+ou+track__recent-bag5",

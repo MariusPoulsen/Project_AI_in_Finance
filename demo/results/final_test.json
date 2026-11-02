@@ -6,6 +6,14 @@
  "unlock_record": "120. Owner final-test unlock record (2026-10-27)",
  "manifest_sha256": "bd2727ef79afb5df82858b985dbbac74e895abf697eeefcf68a0f1409911aec1",
  "goal1": {
+  "Model A (prices only)": {
+   "roc_auc": 0.7199805542051532,
+   "pr_auc": 0.1632717142863902,
+   "log_loss": 0.22786265356628177,
+   "brier": 0.059209090552821746,
+   "base_rate": 0.06563706563706563,
+   "n": 3626
+  },
   "Original Model B (R0)": {
    "roc_auc": 0.7192339745815682,
    "pr_auc": 0.16680559722030008,

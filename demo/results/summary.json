@@ -1,6 +1,17 @@
 {
  "goal1": [
   {
+   "model": "model_a",
+   "label": "Model A (prices only)",
+   "period": "2010\u20132017",
+   "roc_auc": 0.678106011868671,
+   "pr_auc": 0.10202524781934429,
+   "log_loss": 0.21298706646294,
+   "brier": 0.053212131105796506,
+   "base_rate": 0.056299782766111514,
+   "n": 11048
+  },
+  {
    "model": "r0",
    "label": "Original Model B (R0)",
    "period": "2010\u20132017",
@@ -54,6 +65,17 @@
    "brier": 0.09337068429456523,
    "base_rate": 0.104989604989605,
    "n": 3848
+  },
+  {
+   "model": "model_a",
+   "label": "Model A (prices only)",
+   "period": "2018\u20132023",
+   "roc_auc": 0.7143752399839829,
+   "pr_auc": 0.20663313351616863,
+   "log_loss": 0.28368086165738826,
+   "brier": 0.07906774877998847,
+   "base_rate": 0.09168190127970749,
+   "n": 10940
   },
   {
    "model": "r0",
@@ -111,6 +133,17 @@
    "n": 4989
   },
   {
+   "model": "model_a",
+   "label": "Model A (prices only)",
+   "period": "2024\u20132025",
+   "roc_auc": 0.7199805542051532,
+   "pr_auc": 0.1632717142863902,
+   "log_loss": 0.22786265356628177,
+   "brier": 0.059209090552821746,
+   "base_rate": 0.06563706563706563,
+   "n": 3626
+  },
+  {
    "model": "r0",
    "label": "Original Model B (R0)",
    "period": "2024\u20132025",
@@ -164,28 +197,6 @@
    "brier": 0.10099399722085224,
    "base_rate": 0.11824080749819754,
    "n": 1387
-  },
-  {
-   "model": "model_a",
-   "label": "Model A (prices only)",
-   "period": "2010\u20132017",
-   "roc_auc": 0.684,
-   "pr_auc": 0.107,
-   "log_loss": 0.2085,
-   "brier": 0.0524,
-   "base_rate": NaN,
-   "n": 0
-  },
-  {
-   "model": "model_a",
-   "label": "Model A (prices only)",
-   "period": "2018\u20132023",
-   "roc_auc": 0.711,
-   "pr_auc": 0.204,
-   "log_loss": 0.2836,
-   "brier": 0.0791,
-   "base_rate": NaN,
-   "n": 0
   }
  ],
  "books": {

@@ -6008,3 +6008,16 @@ book, its no-monitor variant and the best forecaster's book are unchanged from t
 The app's event-investigation view stays unpublished for the final-test results: its exporter
 is development-only and checks each agent answer against the hash of its case, and the reused
 development answers were produced for cases keyed by the old event ids.
+
+### 121, continued: Model A and the agent answers (2026-11-02, owner's request)
+
+- **Model A on 2024–2025.** Its walk-forward scores were erased in Decision 114, so it was
+  refitted with the frozen fixed XGBoost and Decision 45 split. The refit is within 0.006 AUC
+  of the erased development scores (0.678 / 0.714 against 0.684 / 0.711). On 2024–2025:
+  AUC 0.720, PR AUC 0.163, log loss 0.2279, Brier 0.0592, the same as R0 (0.719): the SEC
+  timing and tone of R0 add nothing out of sample, while the bagged model's blocks do (0.742).
+- **Agent answers behind the full model.** Of the 7,802 development answers reused after the
+  re-keying, 6,304 were produced for a case identical to the final-test case apart from the
+  event id; 170 were produced for an earlier version of the case (its evidence changed with the
+  revised SEC timestamps) and still entered the full model; 42 have no final-test case and were
+  not used. The app's event investigation shows the 170 with a marked status and omits the 42.
