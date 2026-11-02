@@ -5987,3 +5987,24 @@ from luck after the search; the final test is consistent with that.
   available later than they were; this shifts some fresh-news filter decisions and, through
   the book's path dependence, about 3 % of trades. The frozen development figures remain the
   selection record; the app shows the final-test checkout's consistent 2010–2025 series.
+
+### 121, continued: the full model on 2024–2025 (2026-11-02)
+
+The entry agents scored the remaining 2024–2025 cases (770 scored, 26 abstained; development
+answers were reused after re-keying), so the full model is now reported.
+
+| Desk region, 2024–2025 (1,387 events) | ROC AUC | PR AUC | Log loss | Brier |
+|---|---|---|---|---|
+| Bagged B+rule+ou alone (walk-forward calibrated) | 0.662 | 0.203 | 0.3475 | 0.1010 |
+| Full model (bagged B+rule+ou + agent desk) | 0.657 | 0.200 | 0.3477 | 0.1010 |
+
+| Book, 2024–2025 | Sharpe | CAGR | CAGR with cash | Max drawdown | Turnover | Costs |
+|---|---|---|---|---|---|---|
+| Full model's selection | −0.96 | −3.75 % | +0.44 % | −9.2 % | 19× | 1.23 %/yr |
+
+As in development (Decision 110b), the entry agents' scores add nothing to the forecast, and
+the book built on the full model's selection is the weakest of the four. The adopted
+book, its no-monitor variant and the best forecaster's book are unchanged from the table above.
+The app's event-investigation view stays unpublished for the final-test results: its exporter
+is development-only and checks each agent answer against the hash of its case, and the reused
+development answers were produced for cases keyed by the old event ids.

@@ -218,7 +218,7 @@ def test_event_investigation_opens_a_saved_full_forecast_and_rejects_unknown_id(
     saved = results.load()
     assert saved is not None
     if "full_shap_events" not in saved.tables:
-        pytest.skip("Event investigations are published with the full model's final-test data")
+        pytest.skip("Event investigations are published for development results only")
     event_id = str(saved.tables["full_shap_events"].event_id.iloc[0])
     app = AppTest.from_function(
         page, args=(service, "event_investigation", 20, True), default_timeout=90
