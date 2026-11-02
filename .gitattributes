@@ -11,3 +11,4 @@
 docs/freeze/*.json -text
 demo/app_bundle/** -text
 demo/results/** -text
+demo/pair_history/** -text
