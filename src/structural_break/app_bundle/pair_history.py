@@ -22,10 +22,14 @@ class PairHistory:
     @classmethod
     def open(cls, root: Path, registry_version: str, pairs: set[str]) -> PairHistory:
         manifest = json.loads((root / "manifest.json").read_bytes())
+        # A final-test history extends the bundle's development registry through 2025; it says
+        # which development registry it extends and is marked as final-test data.
+        final = manifest.get("final_test_included") is True
+        extends = manifest.get("development_registry_version") if final else None
         if (
             manifest["schema_version"] != "pair-history-v1"
-            or manifest["registry_version"] != registry_version
-            or pd.Timestamp(manifest["end"]).year > 2023
+            or registry_version not in {manifest["registry_version"], extends}
+            or (pd.Timestamp(manifest["end"]).year > 2023 and not final)
             or set(manifest["pairs"]) != pairs
         ):
             raise ValueError("Pair-history registry, roster or development period differs")
