@@ -42,6 +42,7 @@ class LoadOutcome:
     status: Literal["ready", "pending", "failed"]
     service: ResearchApplicationService | None = None
     message: str = ""
+    detail: str = ""
 
 
 def resolve_source(root: Path = PROJECT_ROOT) -> DataSource:
@@ -128,12 +129,13 @@ def load(source: DataSource, root: Path = PROJECT_ROOT) -> LoadOutcome:
             message="The accepted research generation is not published yet, so there is nothing "
             "to display. Results appear here once all three evaluations pass verification.",
         )
-    except Exception:  # noqa: BLE001 - never show internals; fail closed
+    except Exception as error:  # noqa: BLE001 - never show internals; fail closed
         # The page stays generic; the server log (Streamlit Cloud: Manage app) keeps the cause.
         LOG.exception("Research outputs failed verification")
         return LoadOutcome(
             "failed",
             message="The research outputs failed verification and are not shown. Re-run "
             "`python scripts/team.py check` (or `structural-break-app verify`) to find the file.",
+            detail=f"{type(error).__name__}: {error}",
         )
     return LoadOutcome("ready", ResearchApplicationService(bundle))
