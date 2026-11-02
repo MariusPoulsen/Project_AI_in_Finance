@@ -12,6 +12,7 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from structural_break import periods
 from structural_break.app_bundle.workspace import CROSSING_COLUMNS, SNAPSHOT_COLUMNS
 from structural_break.config.paths import ProjectPaths, confined_path
 from structural_break.research.primary import checked_file, checked_json, registered_manifest
@@ -26,21 +27,30 @@ def main() -> None:
     parser.add_argument("--workspace-root", type=Path, required=True)
     parser.add_argument("--bundle", type=Path, default=Path("demo/app_bundle"))
     parser.add_argument("--output", type=Path, default=Path("demo/pair_history"))
+    parser.add_argument(
+        "--final-test-registry",
+        help="after the unlock: export this final-test registry (through 2025) instead of the "
+        "bundle's development registry",
+    )
     args = parser.parse_args()
     workspace = args.workspace_root.resolve()
     output = args.output.resolve()
     if output.is_relative_to(workspace) or output.exists():
         raise ValueError("Choose a new presentation directory outside the source workspace")
     bundle = json.loads((args.bundle / "bundle.json").read_bytes())
-    version = bundle["identity"]["registry_version"]
+    development_version = bundle["identity"]["registry_version"]
+    final = args.final_test_registry is not None
+    if final and not periods.final_years_open():
+        raise ValueError("A final-test history requires the owner's unlock record")
+    version = args.final_test_registry if final else development_version
     registry_path, registry = registered_manifest(
         ProjectPaths.resolve(Path.cwd(), workspace), version, "registry"
     )
     protocol = registry["protocol"]
-    if protocol != bundle["identity"]["protocol"]:
+    if not final and protocol != bundle["identity"]["protocol"]:
         raise ValueError("Pair history and the app input registry have different protocols")
     start, end = pd.Timestamp(protocol["fit_start"]), pd.Timestamp(protocol["development_end"])
-    if end.year > 2023:
+    if end.year > 2023 and not final:
         raise ValueError("This history export is development-only")
     roster = pd.read_parquet(args.bundle / "pairs.parquet")
     known = set(roster.pair_id)
@@ -71,7 +81,7 @@ def main() -> None:
             )
             state["trading_date"] = pd.to_datetime(state["trading_date"])
             if state["trading_date"].gt(end).any():
-                raise ValueError("Final-test state rows in a development registry")
+                raise ValueError("State rows after the registry's end")
             state = state.loc[state["trading_date"].ge(start)].copy()
             if state.empty:
                 raise ValueError(f"No history for registered pair {pair_id}")
@@ -127,6 +137,11 @@ def main() -> None:
     manifest = {
         "schema_version": "pair-history-v1",
         "registry_version": version,
+        **(
+            {"final_test_included": True, "development_registry_version": development_version}
+            if final
+            else {}
+        ),
         "start": start.date().isoformat(),
         "end": end.date().isoformat(),
         "pairs": pair_files,
