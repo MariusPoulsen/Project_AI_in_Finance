@@ -3,9 +3,10 @@
 The bundle was exported when the frozen A/B study compared the 10-, 20- and 30-session
 horizons, with its strategy ladder and model diagnostics. The app now uses the 20-session
 horizon only, and from it the events (scanner, pair detail), the per-event explanations
-(pair detail) and the report's feature list (methodology). This reads the verified bundle and
-writes a new one with just those parts and the A and B_both model entries; the values kept
-are unchanged. Usage:
+(pair detail) and the report's feature list (methodology). The showcase pairs' daily series
+are dropped too: demo/pair_history holds every pair's full history. This reads the verified
+bundle and writes a new one with just those parts and the A and B_both model entries; the
+values kept are unchanged. Usage:
 
     python scripts/slim_app_bundle.py demo/app_bundle NEW_DIRECTORY
 """
@@ -65,7 +66,16 @@ def main() -> None:
         experiments=experiments,
         bundle_id=bundle_digest(payload),
     )
-    write_bundle(replace(bundle, identity=identity, horizons={horizon: slim}), target)
+    slimmed = replace(
+        bundle,
+        identity=identity,
+        horizons={horizon: slim},
+        pair_state=empty,
+        pair_prices=empty,
+        pair_snapshots=empty,
+        pair_crossings=empty,
+    )
+    write_bundle(slimmed, target)
     read_bundle(target)  # verify what was written
     print(f"wrote {target}: horizon {horizon}, bundle {identity.bundle_id}")
 

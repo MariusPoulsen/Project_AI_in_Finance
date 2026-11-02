@@ -7,23 +7,23 @@
   },
   {
    "path": "pair_state.parquet",
-   "rows": 159879,
-   "sha256": "993d8ab4d4441a6c5ce6a560577b7b0a24981d29cca4b70fabb1187adc598534"
+   "rows": 0,
+   "sha256": null
   },
   {
    "path": "pair_prices.parquet",
-   "rows": 268267,
-   "sha256": "a1100c2839cfe2376c4f8be4ebf46bb84af6757030668eca7182679de39c464b"
+   "rows": 0,
+   "sha256": null
   },
   {
    "path": "pair_snapshots.parquet",
-   "rows": 9572,
-   "sha256": "e526bd034ac0e5216eead46c34127d6aefe1540f9957da0bf673f5607a4659a7"
+   "rows": 0,
+   "sha256": null
   },
   {
    "path": "pair_crossings.parquet",
-   "rows": 3349,
-   "sha256": "6abd05b8ab9bba5c9935f20a6e0758e1ae774662c78fab52716adb76929261bc"
+   "rows": 0,
+   "sha256": null
   },
   {
    "path": "h20/report.json",

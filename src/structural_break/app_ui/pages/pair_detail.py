@@ -99,7 +99,12 @@ def render() -> None:
         window = navigation.date_window(first, last, default)
         start, end = window
         in_window = state.loc[state["trading_date"].dt.date.between(start, end)]
-        window_events = events.loc[events["date"].dt.date.between(start, end)]
+        # Markers come from the scored events (all years) when the headline results are in.
+        marked = scored.rename(columns={"z_at_event": "z_signed"}) if ctx.results else events
+        labels = (
+            (("p_r0", "R0"), ("p_bag5", "bagged")) if ctx.results else (("p_A", "A"), ("p_B", "B"))
+        )
+        window_events = marked.loc[pd.to_datetime(marked["date"]).dt.date.between(start, end)]
         components.chart(
             charts.spread_bands(
                 in_window,
@@ -107,6 +112,7 @@ def render() -> None:
                 entry=float(protocol["entry_z"]),
                 success=float(protocol["success_z"]),
                 adverse=float(protocol["adverse_z"]),
+                probabilities=labels,
             ),
             key="pair_bands",
         )
