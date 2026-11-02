@@ -9,6 +9,7 @@ Order: an explicit `SB_APP_BUNDLE`, then a committed demo bundle at
 from __future__ import annotations
 
 import hashlib
+import logging
 import os
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -24,6 +25,8 @@ from structural_break.config.models import RuntimeSettings
 from structural_break.config.paths import ProjectPaths
 from structural_break.research.primary import PrimaryNotReadyError, primary_versions
 from structural_break.services.research_application import ResearchApplicationService
+
+LOG = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
@@ -126,6 +129,8 @@ def load(source: DataSource, root: Path = PROJECT_ROOT) -> LoadOutcome:
             "to display. Results appear here once all three evaluations pass verification.",
         )
     except Exception:  # noqa: BLE001 - never show internals; fail closed
+        # The page stays generic; the server log (Streamlit Cloud: Manage app) keeps the cause.
+        LOG.exception("Research outputs failed verification")
         return LoadOutcome(
             "failed",
             message="The research outputs failed verification and are not shown. Re-run "
