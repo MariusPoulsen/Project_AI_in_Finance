@@ -37,6 +37,10 @@ FORECASTERS = {
     "bag5": ("B+rule+ou, bagged (pre-registered Goal 1 model)", "scores__B+rule+ou__recent-bag5"),
     "track": ("B+rule+ou+track, bagged (best observed)", "scores__B+rule+ou+track__recent-bag5"),
 }
+# Model A was refitted for the final test (its development scores were erased in the model
+# cleanup); when its walk-forward scores exist it is scored like the other forecasters.
+if Path("outputs/book/scores__A__d45.parquet").exists():
+    FORECASTERS = {"model_a": ("Model A (prices only)", "scores__A__d45"), **FORECASTERS}
 BOOKS = {
     "adopted": ("Adopted book (R0 selection, monitor exit)", "R0", True),
     "no_monitor": ("Same book without the monitor exit", "R0", False),
@@ -161,6 +165,8 @@ def goal1(table: pd.DataFrame) -> tuple[pd.DataFrame, list[dict[str, Any]]]:
                 metrics.append(
                     {"model": key, "label": label, "period": period, **_metrics(y_r, p, p)}
                 )
+    if "model_a" in FORECASTERS:
+        return pd.DataFrame(curves), metrics
     reference = pd.read_csv("outputs/book/goal1_table.csv")
     row = reference[reference.model.str.startswith("Model A")].iloc[0]
     for period, tag in (("2010–2017", "2010-17"), ("2018–2023", "2018-23")):

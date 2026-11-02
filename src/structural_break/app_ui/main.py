@@ -107,11 +107,11 @@ def run(load: Callable[[], data.LoadOutcome] | None = None) -> None:
             f"Target: a divergence reverts to |z| ≤ {service.protocol['success_z']:g} within "
             f"{horizon} sessions, before |z| ≥ {service.protocol['adverse_z']:g}."
         )
-        if found is not None and found.final_included:
-            status = '<p class="sb-final">Final test 2024–2025 included</p>'
-        else:
-            status = '<p class="sb-lock">Final test 2024–2025: unlocked, results pending</p>'
-        st.markdown(status, unsafe_allow_html=True)
+        if found is None or not found.final_included:
+            st.markdown(
+                '<p class="sb-lock">Final test 2024–2025: unlocked, results pending</p>',
+                unsafe_allow_html=True,
+            )
         first, last = found.manifest["event_years"] if found is not None else (2010, 2023)
         st.caption(
             f"Scored events {first}–{last}. Read-only: nothing on these pages downloads, "

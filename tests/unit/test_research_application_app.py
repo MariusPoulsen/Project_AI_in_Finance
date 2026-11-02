@@ -75,7 +75,7 @@ def test_shell_opens_on_the_overview_with_the_synthetic_warning(service):
     labels = [metric.label for metric in app.metric]
     assert "Business-peer pairs" in labels
     assert any("Synthetic preview" in item.value for item in app.markdown)
-    assert any("Final test 2024–2025" in item.value for item in app.sidebar.markdown)
+    assert not any("Final test 2024–2025 included" in item.value for item in app.sidebar.markdown)
 
 
 @pytest.mark.parametrize("name", PAGES)

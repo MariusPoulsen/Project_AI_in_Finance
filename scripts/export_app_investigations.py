@@ -15,14 +15,41 @@ from typing import Any
 
 import pandas as pd
 
+from structural_break import periods
 from structural_break.agents import desk_runner as desk
 from structural_break.agents.debate import Case
 from structural_break.forecast import harness
+from structural_break.pipeline.sources import _sources, registry_dir
+from structural_break.research.final_test import _registry_ids
 from structural_break.services import current_monitor, full_explanations
 
 
 def sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+FROZEN_EVALUATION = "research_evaluation_16a431c4fea73ffd35f56062"
+
+
+def _reused_answer(
+    output: Path,
+    event_id: str,
+    earlier_id: dict[str, str],
+    result: dict[str, Any],
+    case: dict[str, Any],
+) -> bool:
+    """Verify a reused development answer against the case it was produced for.
+
+    Returns False when that case equals the current one apart from the event id, True when
+    the case has changed since (the answer is shown, marked); raises when neither holds."""
+    old_id = earlier_id.get(event_id)
+    old_path = output / "entry_cases" / f"{old_id}.json"
+    if old_id is None or not old_path.is_file():
+        raise ValueError(f"Stale agent result for {event_id}")
+    old_text = old_path.read_text(encoding="utf-8")
+    if Case.from_json(json.loads(old_text)).digest != result.get("case_sha256"):
+        raise ValueError(f"Stale agent result for {event_id}")
+    return bool(json.loads(old_text.replace(old_id, event_id)) != case)
 
 
 def main() -> None:
@@ -41,11 +68,24 @@ def main() -> None:
     if sha(forecast_path) != manifest["files"][forecast_path.name]:
         raise ValueError("Forecast checksum differs")
     forecasts = pd.read_parquet(forecast_path)
-    if forecasts.year.gt(2023).any() or manifest.get("final_test_included"):
-        raise ValueError("This exporter accepts development results only")
+    final = bool(forecasts.year.gt(2023).any() or manifest.get("final_test_included"))
+    if final and not periods.final_years_open():
+        raise ValueError("Final-test investigations require the owner's unlock record")
     evaluation = (
-        args.workspace_root / "artifacts/research/research_evaluation_16a431c4fea73ffd35f56062"
+        args.workspace_root
+        / "artifacts/research"
+        / _sources(args.workspace_root).binding.evaluation.version
     )
+    # Final test: development answers were reused under the registry's new event ids
+    # (Decision 120a); map each new id back to the case the answer was produced for.
+    earlier_id: dict[str, str] = {}
+    if final:
+        frozen = pd.read_parquet(
+            args.workspace_root / f"artifacts/research/{FROZEN_EVALUATION}/model_inputs.parquet",
+            columns=["event_id", "pair_id", "event_timestamp"],
+        )
+        renamed = _registry_ids(frozen, registry_dir(args.workspace_root) / "h20_events.parquet")
+        earlier_id = {new: old for old, new in renamed.items()}
     sources = [
         evaluation / "model_inputs.parquet",
         evaluation / "predictions.parquet",
@@ -94,16 +134,21 @@ def main() -> None:
         result_path = output / "entry_results" / f"{event_id}.json"
         case = json.loads(case_path.read_bytes()) if case_path.is_file() else None
         result = desk.load_result(output, "entry", event_id)
+        earlier_case = False
         if case is not None:
             parsed = Case.from_json(case)
             if result and result.get("case_sha256") != parsed.digest:
-                raise ValueError(f"Stale agent result for {event_id}")
+                earlier_case = _reused_answer(output, event_id, earlier_id, result, case)
             stamp = pd.Timestamp(case["event"]["event_timestamp"])
             for chunk in case["event"]["evidence"]:
                 if pd.Timestamp(chunk["source_timestamp"]) > stamp:
                     raise ValueError("Agent evidence timestamp is later than event close")
         if result and case is None:
-            raise ValueError("Agent result lacks its source case")
+            if not final:
+                raise ValueError("Agent result lacks its source case")
+            # A reused development answer whose event no longer has a case in the final-test
+            # pipeline cannot be checked against current evidence, so it is not shown.
+            result = None
         compact = None
         if result:
             compact = {
@@ -118,6 +163,8 @@ def main() -> None:
                     "case_sha256",
                 )
             }
+            if earlier_case:
+                compact["status"] = f"{compact['status']} (answer for an earlier case version)"
             compact["stages"] = {
                 name: {k: stage.get(k) for k in ("status", "model", "error", "report", "rejected")}
                 for name, stage in result.get("stages", {}).items()

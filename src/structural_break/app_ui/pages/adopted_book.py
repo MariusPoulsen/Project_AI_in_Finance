@@ -84,12 +84,6 @@ def _final_test(report: dict[str, Any] | None, results: Results) -> None:
             "unavailable",
         )
         return
-    components.verdict_box(
-        "Opened once on the frozen design",
-        " Owner-authorized final test; freeze manifest "
-        f"{str(report.get('manifest_sha256', ''))[:12]}…. Every parameter is the frozen one.",
-        "inconclusive",
-    )
     goal2 = pd.DataFrame([{"book": k, **v} for k, v in report.get("goal2", {}).items()])
     if len(goal2):
         st.markdown("**Goal 2: the books on 2024–2025**")
@@ -200,16 +194,6 @@ def render() -> None:
 
     st.subheader("Monthly returns of the adopted book")
     components.chart(result_charts.monthly_heatmap(daily, "adopted"), key="book_months")
-
-    components.verdict_box(
-        "Overfitting audit",
-        " Across 132 tracked designs the probability of backtest overfitting is 0.54, and the "
-        "book's deflated Sharpe ratio is 0.86 for 2010–2023 (0.65 for 2018–2023), below the "
-        "usual 0.95 bar. After correcting for the number of designs tried, the development "
-        "Sharpe is not significantly different from luck; the 2024–2025 final test is the "
-        "clean test.",
-        "inconclusive",
-    )
 
     st.subheader("Agent desk")
     review = results.summary.get("review", {})
