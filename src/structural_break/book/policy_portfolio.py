@@ -32,9 +32,9 @@ from structural_break.backtest.contracts import (
     ExecutionConfig,
     PairTradeResult,
     canonical_sessions,
+    readable_end,
 )
 from structural_break.backtest.portfolio import (
-    DEVELOPMENT_END,
     PortfolioPolicy,
     PortfolioProposal,
 )
@@ -264,7 +264,7 @@ def research_portfolio(
         rows.append(row)
         if day == last_declared_day and held and unknown_at is None:
             following = canonical_sessions(day, day + timedelta(days=14))
-            if len(following) >= 2 and following[1][0] <= DEVELOPMENT_END:
+            if len(following) >= 2 and following[1][0] <= readable_end():
                 sessions.append(following[1])
             else:
                 for position in held.values():

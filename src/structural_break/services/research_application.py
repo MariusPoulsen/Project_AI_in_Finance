@@ -407,7 +407,11 @@ class ResearchApplicationService:
             return self._series_cache[pair_id]
         bundle = self.bundle
         series: PairSeries | None = None
-        if len(bundle.pair_state) and pair_id in set(bundle.pair_state["pair_id"]):
+        # The full pair histories (through the last scored year) take precedence over the
+        # showcase series embedded in the bundle, which end with the development period.
+        if bundle.pair_loader is not None:
+            series = bundle.pair_loader(pair_id)
+        elif len(bundle.pair_state) and pair_id in set(bundle.pair_state["pair_id"]):
             legs = pair_id.split("__")
             series = PairSeries(
                 pair_id,
@@ -428,8 +432,6 @@ class ResearchApplicationService:
                 if len(bundle.pair_crossings)
                 else pd.DataFrame(),
             )
-        elif bundle.pair_loader is not None:
-            series = bundle.pair_loader(pair_id)
         self._series_cache[pair_id] = series
         return series
 

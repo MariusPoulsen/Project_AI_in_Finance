@@ -1,0 +1,212 @@
+{
+ "files": [
+  {
+   "path": "pairs.parquet",
+   "rows": 736,
+   "sha256": "fcdb0423c3f163b60f232af3063002d75fe15994d0ebb95eb38960b2bd894a91"
+  },
+  {
+   "path": "pair_state.parquet",
+   "rows": 0,
+   "sha256": null
+  },
+  {
+   "path": "pair_prices.parquet",
+   "rows": 0,
+   "sha256": null
+  },
+  {
+   "path": "pair_snapshots.parquet",
+   "rows": 0,
+   "sha256": null
+  },
+  {
+   "path": "pair_crossings.parquet",
+   "rows": 0,
+   "sha256": null
+  },
+  {
+   "path": "h20/report.json",
+   "rows": 1,
+   "sha256": "f1d67ffe5cf7a200ba537320f707ca4153884cca1d9c76001e0eadb313109580"
+  },
+  {
+   "path": "h20/strategy.json",
+   "rows": 0,
+   "sha256": null
+  },
+  {
+   "path": "h20/events.parquet",
+   "rows": 28329,
+   "sha256": "f67e8610c44ec6eb4a2bdc84d08ba63ba13ffbb9d58e1914591c7bbbe8e408d4"
+  },
+  {
+   "path": "h20/curves.parquet",
+   "rows": 0,
+   "sha256": null
+  },
+  {
+   "path": "h20/importance.parquet",
+   "rows": 0,
+   "sha256": null
+  },
+  {
+   "path": "h20/contributions.parquet",
+   "rows": 189960,
+   "sha256": "afb00c046d238320359d2b7de2733f29a881d0a82a61f2ac63fb8b298bc04fcc"
+  },
+  {
+   "path": "h20/contribution_totals.parquet",
+   "rows": 18996,
+   "sha256": "d3698bde035c5c0af4b631a9d3670d30123749c0ad26f26cc4ff7ce7bb7bd689"
+  },
+  {
+   "path": "h20/feature_profile.parquet",
+   "rows": 0,
+   "sha256": null
+  },
+  {
+   "path": "h20/strategy_nav.parquet",
+   "rows": 0,
+   "sha256": null
+  },
+  {
+   "path": "h20/strategy_trades.parquet",
+   "rows": 0,
+   "sha256": null
+  }
+ ],
+ "final_test_read": false,
+ "identity": {
+  "bundle_id": "app_bundle_d329381d2c3f34c4e2923e6f",
+  "evaluations": {
+   "20": "research_evaluation_16a431c4fea73ffd35f56062"
+  },
+  "experiments": {
+   "20": "d828d7aceb30950536226f48185664440db6e34f0b7f5b342b706b21f669cab5"
+  },
+  "explanation_status": "AVAILABLE",
+  "intelligence_version": "research_intelligence_b7c1529f24b40185f48b786f",
+  "primary_version": "research_primary_5c01ab3d29c74e3e9154d9e3",
+  "protocol": {
+   "adverse_z": 3.0,
+   "assessment_end": "2023-12-31",
+   "assessment_start": "2022-01-01",
+   "bootstrap_calendar_months": 3,
+   "bootstrap_replicates": 2000,
+   "calibration_end": "2021-12-31",
+   "calibration_start": "2020-01-01",
+   "candidate_threshold": 0.65,
+   "data_start": "2004-01-01",
+   "development_end": "2023-12-31",
+   "entry_z": 2.0,
+   "extraction_interval_seconds": 8.0,
+   "extraction_max_calls": 1000,
+   "extraction_max_chunks_per_leg": 3,
+   "extraction_max_pack_chars": 12000,
+   "extraction_model": "gemma-4-26b-a4b-it",
+   "extraction_order": "chronological",
+   "extraction_provider": "gemma",
+   "extraction_retries": 1,
+   "final_test_locked": true,
+   "fit_end": "2019-12-31",
+   "fit_start": "2006-01-01",
+   "flash_reserved_for_agents": true,
+   "formation_sessions": 504,
+   "logistic_c": [
+    0.01,
+    0.1,
+    1.0
+   ],
+   "metadata_feature_policy": "sec-item-recency-v1",
+   "paid_api_enabled": false,
+   "population": "estimable",
+   "primary_b_variant": "both",
+   "primary_family": "logistic",
+   "primary_horizon": 20,
+   "seed": 42,
+   "sensitivity_horizons": [
+    10,
+    30
+   ],
+   "sentiment_model": "ProsusAI/finbert",
+   "sentiment_revision": "4556d13015211d73dccd3fdd39d39232506f3e43",
+   "success_z": 0.5,
+   "tuning_years": [
+    2018,
+    2019
+   ],
+   "version": "research-v2-20261006",
+   "xgb_candidates": [
+    {
+     "learning_rate": 0.05,
+     "max_depth": 2,
+     "min_child_weight": 10,
+     "n_estimators": 100,
+     "reg_lambda": 10
+    },
+    {
+     "learning_rate": 0.05,
+     "max_depth": 2,
+     "min_child_weight": 10,
+     "n_estimators": 200,
+     "reg_lambda": 10
+    },
+    {
+     "learning_rate": 0.05,
+     "max_depth": 3,
+     "min_child_weight": 20,
+     "n_estimators": 100,
+     "reg_lambda": 10
+    }
+   ]
+  },
+  "registry_version": "research_registry_0bd415d2a5af1f4891dc1f0d",
+  "schema_version": "app-bundle-v1",
+  "showcase_pairs": [
+   "KO__PEP",
+   "EBAY__NFLX",
+   "AAP__ORLY",
+   "CRM__MSFT",
+   "ON__TXN",
+   "AEO__BURL",
+   "BURL__URBN",
+   "JBLU__UAL",
+   "PNC__TFC",
+   "PPL__SO",
+   "UPS__XPO",
+   "ADBE__CRM",
+   "AEO__ROST",
+   "ALK__UAL",
+   "AMZN__META",
+   "AVGO__QCOM",
+   "BAC__WFC",
+   "BMY__JNJ",
+   "BSX__MDT",
+   "CHRW__FDX",
+   "CRM__INTU",
+   "C__CFG",
+   "EBAY__GOOGL",
+   "ES__EXC",
+   "ES__NEE",
+   "ES__PCG",
+   "ES__PPL",
+   "GIS__HRL",
+   "GPN__V",
+   "INTU__ORCL",
+   "JPM__USB",
+   "KLAC__TER",
+   "MA__PYPL",
+   "MCD__SBUX",
+   "MCHP__ON",
+   "NOW__ORCL",
+   "PNC__USB",
+   "PNC__WFC",
+   "AAP__AZO",
+   "ADI__SWKS"
+  ],
+  "source": "bundle",
+  "synthetic": false
+ },
+ "schema_version": "app-bundle-v1"
+}

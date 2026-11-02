@@ -26,6 +26,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from structural_break import periods
 from structural_break.backtest.contracts import ExecutionConfig, PairTradeResult
 from structural_break.backtest.historical import (
     HistoricalSources,
@@ -91,7 +92,7 @@ def simulate_events(
     progress: Callable[[str], None] | None = None,
 ) -> pd.DataFrame:
     """One row per fresh h20 episode event; each config is simulated once per event."""
-    if end > ASSESSMENT[1]:
+    if end > max(ASSESSMENT[1], periods.data_end()):
         raise ValueError("Simulation cannot extend past the development period")
     rows: list[dict[str, Any]] = []
     for chunk_start, chunk_end in _chunks(start, end):
@@ -206,3 +207,27 @@ def _sources(workspace: Path) -> HistoricalSources:
 
 
 __all__ = ["paired_block_bootstrap"]
+
+
+def registry_dir(workspace: Path) -> Path:
+    """The event registry behind the bound evaluation (its recorded ``registry`` parent)."""
+    version = _sources(workspace).binding.evaluation.version
+    manifest = json.loads(
+        (workspace / "artifacts/research" / version / "manifest.json").read_text(encoding="utf-8")
+    )
+    parent = next(p for p in manifest["parents"] if p["role"] == "registry")
+    return (workspace / str(parent["path"])).parent
+
+
+def registry_targets(workspace: Path, horizon: int = 20) -> pd.DataFrame:
+    """The registry's targets, with the final-test labels (Decision 120b) once they exist."""
+    targets = pd.read_parquet(registry_dir(workspace) / f"h{horizon}_targets.parquet")
+    labels = workspace / "final_test_labels.parquet"
+    if not periods.final_years_open() or not labels.exists():
+        return targets
+    final = pd.read_parquet(labels).set_index("event_id")
+    rows = targets["event_id"].isin(final.index)
+    for column in final.columns:
+        if column in targets.columns:
+            targets.loc[rows, column] = targets.loc[rows, "event_id"].map(final[column]).to_numpy()
+    return targets

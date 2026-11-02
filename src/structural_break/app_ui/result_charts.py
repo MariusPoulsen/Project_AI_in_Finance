@@ -112,24 +112,53 @@ def metric_bars(metrics: pd.DataFrame, metric: str, title: str, models: list[str
             continue
         figure.add_trace(
             go.Bar(
-                y=[MODELS[m] for m in rows.index],
+                y=[models.index(m) for m in rows.index],
                 x=rows[metric],
+                customdata=[MODELS[m] for m in rows.index],
                 name=period,
                 orientation="h",
                 marker_color=color,
-                hovertemplate="%{y}<br>" + title + " %{x:.4f}<extra>" + period + "</extra>",
+                hovertemplate="%{customdata}<br>"
+                + title
+                + " %{x:.4f}<extra>"
+                + period
+                + "</extra>",
             )
         )
-    values = metrics[metric].dropna()
+    selected = metrics.loc[metrics.model.isin(models)]
+    values = selected[metric].dropna()
     low = float(values.min()) if len(values) else 0.0
     high = float(values.max()) if len(values) else 1.0
     pad = (high - low) * 0.25 or 0.01
+    for index, model in enumerate(models):
+        if not selected.loc[selected.model.eq(model), metric].notna().any():
+            label = (
+                "N/A · entry rule"
+                if model in {"baseline0", "baseline1"} and metric in {"log_loss", "brier"}
+                else "N/A · not exported"
+            )
+            figure.add_annotation(
+                x=0.03,
+                xref="paper",
+                y=index,
+                yref="y",
+                text=label,
+                showarrow=False,
+                xanchor="left",
+                font={"color": theme.MUTED, "size": 12},
+            )
     figure.update_layout(
         theme.layout(
-            height=300,
+            height=max(300, 60 * len(models) + 90),
             barmode="group",
             xaxis={"title": title, "range": [low - pad, high + pad]},
-            yaxis={"autorange": "reversed"},
+            yaxis={
+                "type": "linear",
+                "tickmode": "array",
+                "tickvals": list(range(len(models))),
+                "ticktext": [MODELS[m] for m in models],
+                "range": [len(models) - 0.5, -0.5],
+            },
             margin={"l": 230},
         )
     )

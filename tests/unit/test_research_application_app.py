@@ -4,6 +4,8 @@ Uses the clearly labelled synthetic preview (invented data) so the smoke tests
 need no snapshot, network or language model.
 """
 
+import re
+
 import pytest
 from streamlit.testing.v1 import AppTest
 
@@ -73,7 +75,7 @@ def test_shell_opens_on_the_overview_with_the_synthetic_warning(service):
     labels = [metric.label for metric in app.metric]
     assert "Business-peer pairs" in labels
     assert any("Synthetic preview" in item.value for item in app.markdown)
-    assert any("Final test 2024–2025" in item.value for item in app.sidebar.markdown)
+    assert not any("Final test 2024–2025 included" in item.value for item in app.sidebar.markdown)
 
 
 @pytest.mark.parametrize("name", PAGES)
@@ -118,6 +120,12 @@ def test_every_page_renders_with_the_committed_results(service, name):
     assert not app.exception, app.exception
     assert not app.error
     assert app.title
+    for item in [*app.markdown, *app.caption, *app.table, *app.dataframe]:
+        value = item.value
+        text = value.to_csv(index=False) if hasattr(value, "to_csv") else str(value)
+        assert not re.search(r"\bDecisions?\s+\d|DECISIONS\.md|decision log", text)
+        if hasattr(value, "columns"):
+            assert "Decision" not in value.columns
 
 
 def test_adopted_book_page_renders_the_committed_results(service):
@@ -148,3 +156,119 @@ def test_results_fail_closed_when_a_file_does_not_match_the_manifest(tmp_path):
     assert results.load(copy) is not None
     (copy / "summary.json").write_text("{}", encoding="utf-8")
     assert results.load(copy) is None
+
+
+def test_monitor_uses_current_periods_and_omits_catalyst_fields(service, monkeypatch):
+    monkeypatch.setattr(
+        service, "cohorts", lambda *_: pytest.fail("Used frozen fitting partitions")
+    )
+    app = AppTest.from_function(page, args=(service, "monitor", 20, True), default_timeout=90).run()
+    assert not app.exception and not app.error
+    samples = next(item.value for item in app.dataframe if "Labelled" in item.value)
+    text = " ".join(str(item.value) for item in [*app.markdown, *app.caption])
+    assert "[SEC EDGAR](https://www.sec.gov/edgar)" in text and "Yahoo Finance" in text
+    assert "Versions" not in [header.value for header in app.subheader]
+    assert "bundle" not in text.lower() and "Reproducibility:" in text
+    assert samples["Labelled"].iloc[:2].tolist() == [11048, 10940]
+    assert samples["Period"].tolist() == [
+        "Selection · 2010–2017",
+        "Holdout · 2018–2023",
+        "Final test · 2024–2025",
+    ]
+    coverage = next(item.value for item in app.dataframe if "Indicator" in item.value)
+    assert coverage.columns.tolist()[:3] == [
+        "Indicator",
+        "Fit · 2010–2017 (n=11236)",
+        "Calibration · 2018–2023 (n=11214)",
+    ]
+    # Once the final-test results are published, their years get their own column.
+    assert len(coverage.columns) == 3 or coverage.columns[3].endswith("2024–2025 (n=3727)")
+    assert not coverage.Indicator.str.contains("catalyst", case=False).any()
+    assert not any(
+        "catalyst" in str(option).lower() or "affected_leg" in str(option)
+        for option in app.selectbox[0].options
+    )
+
+
+def test_model_lab_exposes_current_shap_pending_instead_of_legacy_attributions(
+    service, monkeypatch
+):
+    from dataclasses import replace
+
+    from structural_break.app_ui import results
+
+    saved = results.load()
+    assert saved is not None
+    pending = replace(
+        saved,
+        tables={k: v for k, v in saved.tables.items() if not k.startswith(("shap_", "full_shap_"))},
+    )
+    monkeypatch.setattr(results, "load", lambda: pending)
+    app = AppTest.from_function(
+        page, args=(service, "model_lab", 20, True), default_timeout=90
+    ).run()
+    assert not app.exception and not app.error
+    assert "SHAP" in [tab.label for tab in app.tabs]
+    assert any("explanations have not been exported" in item.value for item in app.info)
+
+
+def test_event_investigation_opens_a_saved_full_forecast_and_rejects_unknown_id(service):
+    from structural_break.app_ui import results
+
+    saved = results.load()
+    assert saved is not None
+    if "full_shap_events" not in saved.tables:
+        pytest.skip("Event investigations are published for development results only")
+    event_id = str(saved.tables["full_shap_events"].event_id.iloc[0])
+    app = AppTest.from_function(
+        page, args=(service, "event_investigation", 20, True), default_timeout=90
+    )
+    app.query_params["event"] = event_id
+    app.run()
+    assert not app.exception and not app.error
+    assert "Forecast and SHAP" in [tab.label for tab in app.tabs]
+    assert any("Probability-only stack" in item.value for item in app.markdown)
+    assert any("Exact linear SHAP" in item.value for item in app.caption)
+    app.query_params["event"] = "not-published"
+    app.run()
+    assert not app.exception and not app.error
+    assert any("not in the published results" in item.value for item in app.warning)
+
+
+def test_model_lab_comparison_includes_matched_entry_baselines(service):
+    app = AppTest.from_function(
+        page, args=(service, "model_lab", 20, True), default_timeout=90
+    ).run()
+    assert not app.exception and not app.error
+    table = next(item.value for item in app.dataframe if "roc_auc" in item.value)
+    baseline = table.loc[table.label.str.startswith("Baseline")]
+    models = table.loc[~table.label.str.startswith("Baseline")]
+    # The latest published period: 2018-2023 in development, 2024-2025 after the final test
+    # (Model A's metrics are a development-only reference, so it has no final-test row).
+    assert len(baseline) == 2 and len(models) in (3, 4)
+    assert baseline.n.tolist() == [models.n.max()] * 2
+    assert baseline.iloc[0].roc_auc == 0.5
+    assert baseline[["log_loss", "brier"]].isna().all().all()
+
+
+def test_data_downloads_package_every_dataset_with_a_dictionary():
+    import io
+    import zipfile
+
+    import pandas as pd
+
+    from structural_break.app_ui import data_downloads, results
+
+    found = results.load()
+    if found is None:
+        pytest.skip("Published results are not in this checkout")
+    files = data_downloads.build(found, "test")
+    archive = zipfile.ZipFile(io.BytesIO(files["structural_break_data.zip"]))
+    names = set(archive.namelist())
+    assert {"events.csv", "trades.csv", "data_dictionary.csv", "README.txt"} <= names
+    events = pd.read_csv(io.BytesIO(files["events.csv"]), encoding="utf-8-sig")
+    assert len(events) == len(found.tables["forecasts"])
+    dictionary = pd.read_csv(io.BytesIO(files["data_dictionary.csv"]), encoding="utf-8-sig")
+    for name in names - {"README.txt", "data_dictionary.csv"}:
+        columns = pd.read_csv(archive.open(name), encoding="utf-8-sig", nrows=0).columns
+        assert set(columns) <= set(dictionary.loc[dictionary.file.eq(name), "column"])

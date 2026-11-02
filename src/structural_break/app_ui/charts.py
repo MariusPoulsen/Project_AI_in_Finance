@@ -20,6 +20,7 @@ def spread_bands(
     adverse: float = 3.0,
     height: int = 360,
     shade_inactive: bool = True,
+    probabilities: tuple[tuple[str, str], ...] = (("p_A", "A"), ("p_B", "B")),
 ) -> go.Figure:
     """Frozen daily z-score with entry, convergence and adverse-stop bands."""
     rows = state.copy()
@@ -79,10 +80,14 @@ def spread_bands(
                         "line": {"width": 1, "color": "#fff"},
                     },
                     name=f"Event · {outcome.lower()}",
-                    customdata=np.stack([part["p_A"], part["p_B"]], axis=1),
+                    customdata=np.stack([part[column] for column, _ in probabilities], axis=1),
                     hovertemplate=(
-                        "%{x|%d %b %Y}<br>z = %{y:.2f}<br>P(revert) A %{customdata[0]:.2f}"
-                        " · B %{customdata[1]:.2f}<extra></extra>"
+                        "%{x|%d %b %Y}<br>z = %{y:.2f}<br>P(revert) "
+                        + " · ".join(
+                            f"{label} %{{customdata[{i}]:.2f}}"
+                            for i, (_, label) in enumerate(probabilities)
+                        )
+                        + "<extra></extra>"
                     ),
                 )
             )

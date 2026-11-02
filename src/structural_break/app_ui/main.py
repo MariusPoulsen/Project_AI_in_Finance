@@ -7,9 +7,11 @@ from collections.abc import Callable
 import streamlit as st
 
 from structural_break.app_ui import data, results, theme
+from structural_break.app_ui import navigation as links
 from structural_break.app_ui.context import KEY, AppContext
 from structural_break.app_ui.pages import (
     adopted_book,
+    event_investigation,
     methodology,
     model_lab,
     monitor,
@@ -40,6 +42,13 @@ def _pages() -> dict[str, st.Page]:
             title="Pair detail",
             icon=":material/stacked_line_chart:",
             url_path="pair",
+        ),
+        "event": st.Page(
+            event_investigation.render,
+            title="Event investigation",
+            icon=":material/search_insights:",
+            url_path="event",
+            visibility="hidden",
         ),
         "model": st.Page(
             model_lab.render, title="Model Lab", icon=":material/science:", url_path="models"
@@ -82,6 +91,8 @@ def run(load: Callable[[], data.LoadOutcome] | None = None) -> None:
             st.info(outcome.message, icon=":material/hourglass_empty:")
         else:
             st.error(outcome.message, icon=":material/gpp_bad:")
+            if st.query_params.get("debug") and outcome.detail:
+                st.code(outcome.detail, language=None)
         return
     service: ResearchApplicationService = outcome.service
     pages = _pages()
@@ -98,11 +109,11 @@ def run(load: Callable[[], data.LoadOutcome] | None = None) -> None:
             f"Target: a divergence reverts to |z| ≤ {service.protocol['success_z']:g} within "
             f"{horizon} sessions, before |z| ≥ {service.protocol['adverse_z']:g}."
         )
-        if found is not None and found.final_included:
-            status = '<p class="sb-final">Final test 2024–2025 included</p>'
-        else:
-            status = '<p class="sb-lock">Final test 2024–2025: unlocked, results pending</p>'
-        st.markdown(status, unsafe_allow_html=True)
+        if found is None or not found.final_included:
+            st.markdown(
+                '<p class="sb-lock">Final test 2024–2025: unlocked, results pending</p>',
+                unsafe_allow_html=True,
+            )
         first, last = found.manifest["event_years"] if found is not None else (2010, 2023)
         st.caption(
             f"Scored events {first}–{last}. Read-only: nothing on these pages downloads, "
@@ -111,9 +122,10 @@ def run(load: Callable[[], data.LoadOutcome] | None = None) -> None:
     st.session_state[KEY] = AppContext(
         service=service, horizon=int(horizon), pages=pages, results=found
     )
+    links.restore()
     navigation = st.navigation(
         {
-            "Explore": [pages["overview"], pages["scanner"], pages["pair"]],
+            "Explore": [pages["overview"], pages["scanner"], pages["event"], pages["pair"]],
             "Evaluate": [pages["model"], pages["strategy"], pages["book"]],
             "Trust": [pages["monitor"], pages["method"]],
         }

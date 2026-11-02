@@ -27,6 +27,8 @@ def current() -> AppContext:
 
 
 def open_pair(pair_id: str, event_id: str | None = None) -> None:
+    from structural_break.app_ui import navigation
+
     st.session_state["sb_pair"] = pair_id
     st.session_state["sb_event"] = event_id
-    st.switch_page(current().pages["pair"])
+    navigation.switch("pair", pair=pair_id, event=event_id or "")

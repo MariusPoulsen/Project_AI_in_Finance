@@ -5887,3 +5887,137 @@ return was read. None of these changes a development result.
   bulk months and 8 in FNSPID 2018–2023. The monitor's thresholds are unchanged.
 - **Cash rate.** The 13-week T-bill series (Yahoo ^IRX) is extended through 2025 in the
   final-test checkout; its overlap with the frozen file matches exactly.
+
+### 120a, continued: more development-only gates in the book pipeline (2026-10-28)
+
+The 2022–2023 rehearsal rebuilt the research layer only, so the book pipeline's own guards were
+never exercised past 2023. Each hard-coded development end below now reads the unlock gate
+(`periods.data_end()`); while the final test is locked every bound is the same as before, and
+the backtest, portfolio, scheduling and app test suites pass unchanged.
+
+- `backtest.contracts`: the execution-date check and the exchange calendar (2023-12-31 and
+  2024-01-15 become the readable end and 15 days after it).
+- `backtest.portfolio`: the truncation of open positions at the development end.
+- `pipeline.sources.simulate_events`: the simulation window.
+- **News exit for 2024–2025.** The frozen E3 exit was simulated in three development stages
+  (2006–2015, 2016–2021, 2022–2023) that also chose the rule. No stage covers 2024–2025, so
+  the book would have run the final test without its news exit. `scripts/final_test_exits.py`
+  re-simulates the frozen rule for each development span on the final-test registry and once
+  for 2024–2025 (`exits_final.parquet`, read by `news_exit.load_exits`); the rule choices are
+  copied from development, nothing is re-selected.
+- **8-K news and headline tone** reuse the development caches (packs, LLM records, FinBERT
+  scores), keyed by company and filing, so only 2024–2025 filings are parsed, scored or sent to
+  the language model.
+
+### 120a, continued: one event-id space (2026-10-28)
+
+The final-test registry gives every event a new id, because event ids derive from the market
+snapshot and the splice made a new one. The final-test evaluation had kept the frozen
+2006–2023 model-input rows under their old ids, so every join on event id with the new
+registry, simulation or features would have dropped 2006–2023. `extend_evaluation` now re-keys
+the frozen rows and their research predictions to the registry's ids by pair and event
+timestamp (all 29,071 match exactly one event), and `scripts/final_test_desk_rekey.py`
+re-keys the copied development agent-desk answers the same way (6,516 entry and 7,954 monitor
+answers; none unmatched), so only 2024–2025 cases are sent to the language models. The new
+evaluation is `research_evaluation_2420db281e86fa92f308bea5`; the earlier final-test
+evaluation and binding are kept and superseded.
+
+## 120b. Final-test labels: the frozen label rule after the unlock (2026-10-28)
+
+The dataset builder never materialises final-test labels: its `final_test` partition is
+locked by design and has no unlock path. Without labels Goal 1 cannot be scored on 2024–2025,
+and the walk-forward refit for 2025 cannot train on 2024.
+
+- **Labels.** `scripts/final_test_labels.py` calls the frozen `ml.dataset.build_event_dataset`
+  per pair with the registry's own inputs, on a configuration whose labelled period runs to
+  2025-12-31 (the locked partition moves past the data). Before writing anything it checks
+  that the rebuilt events are exactly the registry's (all 736 pairs) and that every
+  development label resolved before the old boundary is unchanged: 28,821 checked, 0 differ.
+- **Result.** 3,727 final-test events, 3,626 labelled, 238 reverted (base rate 6.6 %).
+- **Use.** `extend_evaluation` fills these labels and the usual eligibility (label eligible and
+  feature complete) into the 2024–2025 model-input rows; development labels are never
+  replaced. Labels are read only to fit the walk-forward model for a later year and to score
+  the final-test years, exactly as for every development year.
+
+## 121. Final-test results, 2024–2025 (opened once, 2026-11-02)
+
+The frozen design run once on 2024–2025 after the owner's unlock (Decision 120), with the
+deviations recorded beforehand (Decisions 120a–b). Nothing was retuned after the results
+were seen. The full model (bagged forecaster plus the entry agents) is added when the entry
+agents' 2024–2025 answers are complete; it is listed as pending below.
+
+**Goal 1: forecasting reversion** (3,626 labelled events; base rate 6.6 %)
+
+| Model | ROC AUC | PR AUC | Log loss | Brier |
+|---|---|---|---|---|
+| Original Model B (R0) | 0.719 | 0.167 | 0.2283 | 0.0592 |
+| **B+rule+ou, bagged (pre-registered)** | **0.742** | 0.170 | **0.2195** | **0.0582** |
+| B+rule+ou+track, bagged (best observed) | 0.742 | 0.173 | 0.2186 | 0.0580 |
+| Full model | pending | | | |
+
+The pre-registered model beats the original Model B out of sample by +0.023 AUC and −0.0088
+log loss, the same direction and similar size as on the 2018–2023 holdout. Goal 1 holds.
+
+**Goal 2: the trading book** (Sharpe in excess of cash)
+
+| Book, 2024–2025 | Sharpe | CAGR | CAGR with cash | Max drawdown | Turnover | Costs |
+|---|---|---|---|---|---|---|
+| Adopted book (R0 selection, monitor exit) | −0.17 | −0.84 % | +3.47 % | −5.4 % | 23× | 1.92 %/yr |
+| Same book without the monitor exit | +0.03 | +0.01 % | +4.36 % | −4.8 % | 22× | 1.75 %/yr |
+| Best forecaster's selection | −0.12 | −0.57 % | +3.75 % | −4.5 % | 24× | 1.69 %/yr |
+| Full model's selection | pending | | | | | |
+
+The book's development edge did not hold: it earned slightly less than cash. Its trades
+averaged +21 bps gross (51 and 62 bps in development), 24 % reached the take profit (28–32 %),
+and reversions were rarer (base rate 6.6 % against about 10 % in 2018–2023). The monitor
+exit closed 17.6 % of trades, against 4.5–5.4 % in development: the TickerTick news it read
+until May 2025 is far denser than the development source (Decision 116d foresaw more checks),
+and without it the book is flat rather than negative. The overfitting audit (Decision 113:
+PBO 0.54, deflated Sharpe 0.86) had already said the development Sharpe was not distinguishable
+from luck after the search; the final test is consistent with that.
+
+**Reproduction of development in the final-test checkout.**
+- Forecasters: R0 identical; the bagged models identical on 2018–2023 and within 0.001 AUC on
+  2010–2017.
+- Book: 2,435 of the 2,472 development trades recur, 99.5 % with the same exit reason. The
+  development Sharpe ratios are higher (adopted 0.857 / 0.678 against the frozen 0.813 / 0.595)
+  because the fresh SEC capture revised 24,556 pre-2024 acceptance timestamps (27 %) by four or
+  five hours, the Eastern-time offset. The revised times are the plausible ones (the old ones
+  fell outside EDGAR's filing hours), so the frozen capture had treated those filings as
+  available later than they were; this shifts some fresh-news filter decisions and, through
+  the book's path dependence, about 3 % of trades. The frozen development figures remain the
+  selection record; the app shows the final-test checkout's consistent 2010–2025 series.
+
+### 121, continued: the full model on 2024–2025 (2026-11-02)
+
+The entry agents scored the remaining 2024–2025 cases (770 scored, 26 abstained; development
+answers were reused after re-keying), so the full model is now reported.
+
+| Desk region, 2024–2025 (1,387 events) | ROC AUC | PR AUC | Log loss | Brier |
+|---|---|---|---|---|
+| Bagged B+rule+ou alone (walk-forward calibrated) | 0.662 | 0.203 | 0.3475 | 0.1010 |
+| Full model (bagged B+rule+ou + agent desk) | 0.657 | 0.200 | 0.3477 | 0.1010 |
+
+| Book, 2024–2025 | Sharpe | CAGR | CAGR with cash | Max drawdown | Turnover | Costs |
+|---|---|---|---|---|---|---|
+| Full model's selection | −0.96 | −3.75 % | +0.44 % | −9.2 % | 19× | 1.23 %/yr |
+
+As in development (Decision 110b), the entry agents' scores add nothing to the forecast, and
+the book built on the full model's selection is the weakest of the four. The adopted
+book, its no-monitor variant and the best forecaster's book are unchanged from the table above.
+The app's event-investigation view stays unpublished for the final-test results: its exporter
+is development-only and checks each agent answer against the hash of its case, and the reused
+development answers were produced for cases keyed by the old event ids.
+
+### 121, continued: Model A and the agent answers (2026-11-02, owner's request)
+
+- **Model A on 2024–2025.** Its walk-forward scores were erased in Decision 114, so it was
+  refitted with the frozen fixed XGBoost and Decision 45 split. The refit is within 0.006 AUC
+  of the erased development scores (0.678 / 0.714 against 0.684 / 0.711). On 2024–2025:
+  AUC 0.720, PR AUC 0.163, log loss 0.2279, Brier 0.0592, the same as R0 (0.719): the SEC
+  timing and tone of R0 add nothing out of sample, while the bagged model's blocks do (0.742).
+- **Agent answers behind the full model.** Of the 7,802 development answers reused after the
+  re-keying, 6,304 were produced for a case identical to the final-test case apart from the
+  event id; 170 were produced for an earlier version of the case (its evidence changed with the
+  revised SEC timestamps) and still entered the full model; 42 have no final-test case and were
+  not used. The app's event investigation shows the 170 with a marked status and omits the 42.
