@@ -165,10 +165,10 @@ def test_monitor_uses_current_periods_and_omits_catalyst_fields(service, monkeyp
     app = AppTest.from_function(page, args=(service, "monitor", 20, True), default_timeout=90).run()
     assert not app.exception and not app.error
     samples = next(item.value for item in app.dataframe if "Labelled" in item.value)
-    versions = next(item.value for item in app.dataframe if "Item" in item.value)
-    assert not versions.Item.str.startswith("Frozen").any()
-    assert "Input registry protocol" not in set(versions.Item)
-    assert not {"Freeze manifest SHA-256", "Data source"} & set(versions.Item)
+    text = " ".join(str(item.value) for item in [*app.markdown, *app.caption])
+    assert "[SEC EDGAR](https://www.sec.gov/edgar)" in text and "Yahoo Finance" in text
+    assert "Versions" not in [header.value for header in app.subheader]
+    assert "bundle" not in text.lower() and "Reproducibility:" in text
     assert samples["Labelled"].iloc[:2].tolist() == [11048, 10940]
     assert samples["Period"].tolist() == [
         "Selection · 2010–2017",
@@ -249,3 +249,26 @@ def test_model_lab_comparison_includes_matched_entry_baselines(service):
     assert baseline.n.tolist() == [models.n.max()] * 2
     assert baseline.iloc[0].roc_auc == 0.5
     assert baseline[["log_loss", "brier"]].isna().all().all()
+
+
+def test_data_downloads_package_every_dataset_with_a_dictionary():
+    import io
+    import zipfile
+
+    import pandas as pd
+
+    from structural_break.app_ui import data_downloads, results
+
+    found = results.load()
+    if found is None:
+        pytest.skip("Published results are not in this checkout")
+    files = data_downloads.build(found, "test")
+    archive = zipfile.ZipFile(io.BytesIO(files["structural_break_data.zip"]))
+    names = set(archive.namelist())
+    assert {"events.csv", "trades.csv", "data_dictionary.csv", "README.txt"} <= names
+    events = pd.read_csv(io.BytesIO(files["events.csv"]), encoding="utf-8-sig")
+    assert len(events) == len(found.tables["forecasts"])
+    dictionary = pd.read_csv(io.BytesIO(files["data_dictionary.csv"]), encoding="utf-8-sig")
+    for name in names - {"README.txt", "data_dictionary.csv"}:
+        columns = pd.read_csv(archive.open(name), encoding="utf-8-sig", nrows=0).columns
+        assert set(columns) <= set(dictionary.loc[dictionary.file.eq(name), "column"])
