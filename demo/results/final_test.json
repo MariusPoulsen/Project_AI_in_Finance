@@ -29,6 +29,20 @@
    "brier": 0.05797250927958747,
    "base_rate": 0.06563706563706563,
    "n": 3626
+  },
+  "Desk region: bagged B+rule+ou alone (walk-forward calibrated)": {
+   "roc_auc": 0.6619717607642144,
+   "pr_auc": 0.20273996453603943,
+   "log_loss": 0.34747556302080873,
+   "brier": 0.10095743792912637,
+   "n": 1387
+  },
+  "Desk region: full model (bagged B+rule+ou + agent desk)": {
+   "roc_auc": 0.6567068184990926,
+   "pr_auc": 0.19995350419309554,
+   "log_loss": 0.34774601401498656,
+   "brier": 0.10099399722085224,
+   "n": 1387
   }
  },
  "goal2": {
@@ -64,9 +78,18 @@
    "gross": 0.7688588923781372,
    "names": 248.85258964143426,
    "cagr_with_cash": 0.037508010065491204
+  },
+  "full model's selection": {
+   "sharpe": -0.9581184258661886,
+   "cagr": -0.03747297895959656,
+   "maxdd": -0.09188417440151986,
+   "vol": 0.03906341421139868,
+   "turnover": 19.336204200364023,
+   "cost": 0.012344553368925938,
+   "gross": 0.6297865608175719,
+   "names": 248.86454183266932,
+   "cagr_with_cash": 0.004363591397365196
   }
  },
- "notes": [
-  "Full model pending: the entry agents' 2024-2025 answers are being collected."
- ]
+ "notes": []
 }

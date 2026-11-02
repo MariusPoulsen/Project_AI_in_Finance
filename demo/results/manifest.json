@@ -1,7 +1,7 @@
 {
  "schema_version": "app-results-v1",
- "full_model_included": false,
- "generated_at": "2026-11-01T20:52:48+00:00",
+ "full_model_included": true,
+ "generated_at": "2026-11-02T06:02:44+00:00",
  "commit": "bee9c9f",
  "event_years": [
   2010,
@@ -11,21 +11,21 @@
  "unlock_record": "120. Owner final-test unlock record (2026-10-27)",
  "freeze_manifest_sha256": "bd2727ef79afb5df82858b985dbbac74e895abf697eeefcf68a0f1409911aec1",
  "files": {
-  "books_daily.parquet": "348f9ad55b7b6842f8f8a28d1173b4d6a6d2ba172abea3d9da5d764e99bb6464",
-  "curves.parquet": "9e2f69806b87ef9ee48c46cdf6ea21685398283b608b19598c9a0225065e8f08",
-  "final_test.json": "86c0bd4923a4b42035bf0c5843e355bd7007252566847ec77d3e3274beb05e30",
-  "forecasts.parquet": "4fcc4ac261349ed9df9edf046c46ecec0435f852909ee597696218504a6fce44",
+  "books_daily.parquet": "69f71e714f4809af15a75c6858e7b508bcb404e40afbb91fb4516fd0935f9cd6",
+  "curves.parquet": "e6fc955ca7eab289e116945022a3389ccd5c17d036740e7914544edbbf14a69b",
+  "final_test.json": "511e9818ce990dd8d5982956c7ba9397b342262434037f90a0cdfa1c871a39e8",
+  "forecasts.parquet": "1b1eb0e9e0e629a196b424269f8d627161e0ae3e42794657332e255df6d4a9b8",
   "news.parquet": "6b64f228444f3f29268d251f64cc70245401e79cab9f54549f23be3ee2abd44b",
-  "summary.json": "749fca3807f6fe99ea19e55b517f1defd31e02d608d0e4b2d014d886a8103d36",
+  "summary.json": "9f48ec3abf763801ba38a1666bdb2e9659cbde0faffb4eac9e7afc47f6b0a26a",
   "trades.parquet": "11850ee7b96cf135dc8b52888c9b4672ca85087d30b4c96d6cb5f12c60fe63e1",
   "baseline_events.parquet": "767d10860f021a1aa9ef2e8e5631c199ad43459129a841f9b361f375782eb514",
   "shap_events.parquet": "70853b54a1bf541a39af85bb3b79c414d0d72b2ddc842dc376c33ed4f47ffa47",
   "shap_values.parquet": "c106d0d2e20bb43b6276fea17925661bae6647519d50bc9e15f48574ffdf1259",
-  "shap.json": "885d71472019b8ffe5d29230da6c729b64cbf27eb1ab720906d8b63e46f85265"
+  "shap.json": "2b863f05c08e07f09f0f476b2148870202ac8e3c4c99077a533aad884fb42433"
  },
  "baseline_reference": {
   "schema_version": "forecast-baseline-flags-v1",
-  "forecast_sha256": "4fcc4ac261349ed9df9edf046c46ecec0435f852909ee597696218504a6fce44",
+  "forecast_sha256": "1b1eb0e9e0e629a196b424269f8d627161e0ae3e42794657332e255df6d4a9b8",
   "evaluation_version": "research_evaluation_2420db281e86fa92f308bea5",
   "source_manifest_sha256": "05277d706bc7ace099f9caf340b55287983a665b653b1117b065559a61275d61",
   "source_inputs_sha256": "5294ce2f2e82449585d251cfd269eabdf8abe95d88b5accf4f07d06c96acf93f"
