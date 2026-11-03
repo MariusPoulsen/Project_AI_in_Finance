@@ -19,13 +19,14 @@
   "summary.json": "dabef2e9776cd76727c821bbff301bbdc24ebe36651d90722cdcfc0741fc3f07",
   "trades.parquet": "11850ee7b96cf135dc8b52888c9b4672ca85087d30b4c96d6cb5f12c60fe63e1",
   "baseline_events.parquet": "767d10860f021a1aa9ef2e8e5631c199ad43459129a841f9b361f375782eb514",
-  "shap_events.parquet": "70853b54a1bf541a39af85bb3b79c414d0d72b2ddc842dc376c33ed4f47ffa47",
-  "shap_values.parquet": "c106d0d2e20bb43b6276fea17925661bae6647519d50bc9e15f48574ffdf1259",
-  "shap.json": "be86d6ff0c2149edab97eb8ed97a06864275bf0ddd488ca77eb749849e8abf0b",
+  "shap_events.parquet": "6d02f1104c41b8098d33232427ff1487a50b270d37b64b71a3ebeb6c45f3da7c",
+  "shap_values.parquet": "630b5f17c84142790f8f231d0c09c8634f760dfa407d7cac29d37a0770b1fc06",
+  "shap.json": "0128b331ab416a594e34134b14bb8422b8f565951f8eba81f4bb609bde52bb12",
   "diagnostic_inputs.parquet": "7770033e6d377b0f94d25637941634d478ae2aff5227a130bbe0dba489c5d866",
   "event_cases.parquet": "f26214e29b882b2aad95c7a8901808f6baaaaad2742ff0259c5e2a1aeac6e6fa",
   "full_shap_events.parquet": "bc0e049b11261302d5f022463078bb7bd42d94abd89120a3a1de070c8e195f39",
-  "full_shap_values.parquet": "3b027fa7d9e8a707ae2cd9c9318bd0f537b0e55a5c96018b71a3e2db72475d54"
+  "full_shap_values.parquet": "3b027fa7d9e8a707ae2cd9c9318bd0f537b0e55a5c96018b71a3e2db72475d54",
+  "shap_summary.parquet": "61316e22430032f85915a6eceb74af8afaf2923c2441e234bf3ba7180fd8fe5e"
  },
  "baseline_reference": {
   "schema_version": "forecast-baseline-flags-v1",

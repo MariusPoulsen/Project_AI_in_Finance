@@ -158,7 +158,8 @@ def _event(
             + " The bars add up to the models' average log-odds before calibration "
             f"({1 / (1 + np.exp(-margin)):.2%}); the published probability averages the "
             "models' probabilities and is then calibrated, so it is close to, not equal to, "
-            "this value. Inputs outside the 15 largest are summed in “All other features”."
+            "this value. The chart shows the 12 largest effects and sums the rest in “All other "
+            "features”; the table below lists the 15 largest."
         )
     with st.expander("Input values and contributions"):
         table = values.assign(

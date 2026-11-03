@@ -43,7 +43,8 @@ def validate(
         raise ValueError("SHAP values and totals have different event identities")
     if not np.allclose(expected, totals.reindex(expected.index), atol=1e-4, rtol=1e-5):
         raise ValueError("SHAP additivity check failed")
-    if not values.groupby(event_keys).feature.apply(lambda f: f.eq(OTHER).sum() == 1).all():
+    others = values.feature.eq(OTHER).groupby([values.model, values.event_id]).sum()
+    if not others.eq(1).all():
         raise ValueError("Each SHAP event needs exactly one row for the remaining inputs")
     probabilities = 1 / (1 + np.exp(-events.margin.to_numpy(float)))
     if not np.allclose(probabilities, events.raw_probability, atol=1e-6, rtol=1e-6):
@@ -76,10 +77,10 @@ def validate(
         or not (groups.last_year.to_numpy() == years).all()
     ):
         raise ValueError("SHAP year differs from the current forecast")
-    raw = np.array(
-        [original[f"raw_{model}"].iat[i] for i, model in enumerate(groups.model.astype(str))],
-        dtype=float,
-    )
+    models = sorted(set(groups.model.astype(str)))
+    matrix = original[[f"raw_{model}" for model in models]].to_numpy(float)
+    column = groups.model.astype(str).map({model: i for i, model in enumerate(models)})
+    raw = matrix[np.arange(len(groups)), column.to_numpy()]
     if not np.allclose(groups["mean"].to_numpy(float), raw, atol=1e-6, rtol=1e-6):
         raise ValueError("SHAP components do not reproduce the published forecast")
     if summary is not None:

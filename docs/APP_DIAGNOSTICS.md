@@ -89,45 +89,37 @@ headline forecaster's all-event result. Performance conclusions stay in the repo
 
 ## SHAP export
 
-Model Lab has a SHAP tab for verified current-model explanations. The committed
-export contains 1,120 target-blind sampled events per model across 2010–2023
-(80 per year), for R0 and both bagged forecasters. Every raw annual score was
-reproduced before exporting the native attributions. Selection and holdout are
-included. Frozen-study TreeSHAP is not a substitute for the annual models.
-To regenerate, run from a separate checkout with read-only development inputs:
+Model Lab's SHAP tab and every event page show verified current-model explanations for
+all 26,177 scored events (2010–2025), for R0 and both bagged forecasters. Every raw annual
+score is reproduced before any explanation is exported. To regenerate, run in the checkout
+that holds `data/team` and `outputs/` (the final-test checkout for 2024–2025):
 
 ```shell
 uv run --frozen python scripts/export_forecast_shap.py
 ```
 
-Paths can be overridden with `--results`, `--workspace-root` and `--outputs-root`.
-The verified inputs on the owner's computer are under
-`C:/Users/mariu/dev/Project_AI_in_Finance/data/team` and
-`C:/Users/mariu/dev/Project_AI_in_Finance/outputs`. The source `demo/results`
-must also remain read-only: Claude regenerates it independently. Pass this
-checkout's results copy to `--results`. Do not use the final-test workspace.
-Default years are 2010–2023, with 80 events per year, chosen by the lowest SHA-256
-of event ID independently in each year. The sample never uses outcomes, scores
-or feature values. `--years` accepts development years 2010–2023 only.
+Paths can be overridden with `--results`, `--workspace-root` and `--outputs-root`;
+`--years` defaults to 2010 through the last unlocked year and `--top` (default 15) sets
+how many effects are kept per event. Each model-year is checkpointed under
+`.design/shap-checkpoints`, so an interrupted run continues where it stopped.
 
-This is an explicit diagnostic batch job. It reconstructs R0, bagged B+rule+ou
-and bagged B+rule+ou+track using the existing harness, fixed parameters, seeds,
-feature sets and label-window cutoffs. It must reproduce every published annual
-raw score before exporting any explanation. It never writes research outputs or
-changes forecast results, settings or final-test records. Its cost includes
-reconstructing the annual fits; app browsing never launches it.
+The job reconstructs R0, bagged B+rule+ou and bagged B+rule+ou+track with the existing
+harness, fixed parameters, seeds, feature sets and label-window cutoffs. It never writes
+research outputs or changes forecast results, settings or final-test records.
 
-The job writes `shap_events.parquet`, `shap_values.parquet`, `shap.json` and an
-updated presentation manifest under `demo/results`. Publish those files together.
-It binds the forecast SHA, input hashes and XGBoost version. Reading verifies
-source binding, event/year/model identities, seeds, component completeness,
-SHAP additivity, sigmoid margins and component means against published scores.
+It writes `shap_events.parquet` (base, margin and raw probability per seed model and
+event), `shap_values.parquet` (each event's 15 largest effects, averaged over the bag's
+seed models, plus one `__other__` row with the sum of the rest), `shap_summary.parquet`
+(per model, year and input: event count, sum of absolute and of signed effects over all
+events), `shap.json` (schema `current-tree-shap-v2`) and an updated presentation manifest.
+Publish them together. Reading verifies the source binding, event/year/model identities,
+seed completeness, that each event's rows add up to its averaged margin minus its averaged
+base, sigmoid margins, the seed means against the published scores, and the summary
+counts.
 
-Native TreeSHAP explains each seed model's log-odds. The bag averages
-probabilities, so averaged component margins are not an additive decomposition
-of the bag's probability. The UI therefore shows a sample-wide importance
-summary across seed fits and an event waterfall for a selected seed component,
-with the published calibrated ensemble probability separately labelled.
+Native TreeSHAP explains log-odds. The bag averages probabilities and is then calibrated,
+so the averaged margin is close to, not equal to, the published probability; the pages
+say so next to every chart.
 
 Model A has no annual score export for verification here. The Full model and its
 probability-only comparator have exact linear SHAP exports for all 8,983 events

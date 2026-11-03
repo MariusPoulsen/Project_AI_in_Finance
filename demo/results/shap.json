@@ -1,10 +1,14 @@
 {
-  "schema_version": "current-tree-shap-v1",
+  "schema_version": "current-tree-shap-v2",
   "xgboost_version": "3.2.0",
   "forecast_sha256": "32f1a84ba60ca2b5aa884e7e07d2604b8ebf5c589e27899bb7366639a304ac68",
-  "events_per_year": 80,
-  "sampling": "Lowest SHA-256(event_id), independently in each year",
-  "units": "Native TreeSHAP log-odds of each seed component; not bag probability",
+  "years": [
+    2010,
+    2025
+  ],
+  "coverage": "Every scored event of each year",
+  "top_features": 15,
+  "units": "Native TreeSHAP log-odds averaged over the bag's seed models; the remaining inputs are summed in one row",
   "source_hashes": {
     "book/features.parquet": "6242d53b3dc60590d78337fb1f22a4ee4ec410e1cd7cb374a4a9689c3ced9ee4",
     "book/ou_features.parquet": "519053f5a1c03cb8921f7c404e019fc4dceaa20cc6903383ed339569e9072469"
