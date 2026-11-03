@@ -18,6 +18,7 @@ import pandas as pd
 import streamlit as st
 
 from structural_break.services.forecast_baselines import BASELINES, validate_flags
+from structural_break.services.forecast_explanations import SCHEMA as SHAP_SCHEMA
 from structural_break.services.forecast_explanations import validate as validate_shap
 from structural_break.services.full_explanations import validate as validate_full_shap
 
@@ -226,26 +227,26 @@ def _read(folder: str, digest: str) -> Results | None:
             return {"baseline_events": table}
 
         loaders["baseline_events"] = load_baseline
-    shap_files = {"shap_events.parquet", "shap_values.parquet", "shap.json"}
+    shap_tables = ("shap_events", "shap_values", "shap_summary")
+    shap_files = {*(f"{name}.parquet" for name in shap_tables), "shap.json"}
     if shap_files & files.keys():
         if not shap_files <= files.keys():
             raise ValueError("Incomplete SHAP export")
         metadata = json.loads((root / "shap.json").read_text(encoding="utf-8"))
         if (
-            metadata["schema_version"] != "current-tree-shap-v1"
+            metadata["schema_version"] != SHAP_SCHEMA
             or metadata["forecast_sha256"] != files["forecasts.parquet"]
         ):
             raise ValueError("SHAP source does not match the current forecasts")
 
         def load_shap() -> dict[str, pd.DataFrame]:
-            tables = {
-                name: pd.read_parquet(root / f"{name}.parquet")
-                for name in ("shap_events", "shap_values")
-            }
-            validate_shap(tables["shap_events"], tables["shap_values"], forecasts)
+            tables = {name: pd.read_parquet(root / f"{name}.parquet") for name in shap_tables}
+            validate_shap(
+                tables["shap_events"], tables["shap_values"], forecasts, tables["shap_summary"]
+            )
             return tables
 
-        loaders.update(dict.fromkeys(("shap_events", "shap_values"), load_shap))
+        loaders.update(dict.fromkeys(shap_tables, load_shap))
         summary["shap"] = metadata
     tables = _Tables(core, loaders)
     final = root / "final_test.json"

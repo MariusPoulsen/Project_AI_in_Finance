@@ -1,4 +1,4 @@
-"""An offline export explains actual seed models and verifies their published ensemble."""
+"""An offline export explains every event with the actual seed models and checks the ensemble."""
 
 import hashlib
 import importlib.util
@@ -11,7 +11,7 @@ import pandas as pd
 import pytest
 
 from structural_break.forecast import harness
-from structural_break.services.forecast_explanations import validate
+from structural_break.services.forecast_explanations import OTHER, validate
 
 ROOT = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location(
@@ -21,7 +21,7 @@ export = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(export)
 
 
-def shap_app(forecasts, events, values):
+def shap_app(forecasts, events, values, summary):
     import pandas as pd
 
     from structural_break.app_ui.results import Results
@@ -30,23 +30,17 @@ def shap_app(forecasts, events, values):
     current = forecasts.copy()
     current["pair_id"] = "SYNTHETIC_A__SYNTHETIC_B"
     current["event_date"] = pd.Timestamp("2018-01-02")
+    current["traded"] = False
     for key in ("r0", "bag5", "track"):
         current[f"p_{key}"] = current[f"raw_{key}"]
-    result = Results({}, {}, {"forecasts": current, "shap_events": events, "shap_values": values})
+    tables = {"forecasts": current, "shap_events": events, "shap_values": values}
+    result = Results({}, {}, {**tables, "shap_summary": summary})
     render(result, (2018, 2023))
-
-
-def test_hash_sample_is_independent_of_outcomes():
-    frame = pd.DataFrame({"event_id": list("abcdef"), "y": [0, 1, 0, 1, 0, 1]})
-    assert (
-        export.sample(frame, 3).event_id.tolist()
-        == export.sample(frame.assign(y=1 - frame.y), 3).event_id.tolist()
-    )
 
 
 @pytest.mark.allow_hosts(["127.0.0.1", "::1"])
 @pytest.mark.usefixtures("preserve_main_module")
-def test_offline_export_reproduces_scores_and_native_seed_contributions(tmp_path, monkeypatch):
+def test_offline_export_explains_every_event_and_reproduces_scores(tmp_path, monkeypatch):
     rng = np.random.default_rng(8)
     frame = pd.DataFrame(
         {
@@ -95,32 +89,39 @@ def test_offline_export_reproduces_scores_and_native_seed_contributions(tmp_path
             str(tmp_path / "outputs"),
             "--years",
             "2018",
-            "--events-per-year",
-            "3",
+            "--top",
+            "1",
         ],
     )
     export.main()
     events = pd.read_parquet(folder / "shap_events.parquet")
     values = pd.read_parquet(folder / "shap_values.parquet")
-    validate(events, values, forecasts)
+    summary = pd.read_parquet(folder / "shap_summary.parquet")
+    validate(events, values, forecasts, summary)
     assert set(events.seed) == {42, 43, 44, 45, 46}
+    # Every event of the year is explained, with its largest input and the remainder.
+    assert events.groupby("model").event_id.nunique().to_dict() == {
+        "r0": len(test),
+        "bag5": len(test),
+        "track": len(test),
+    }
+    assert values.groupby(["model", "event_id"]).size().eq(2).all()
+    assert values.feature.eq(OTHER).sum() == 3 * len(test)
+    assert set(summary.feature) == set(columns) and summary.n.eq(len(test)).all()
     from streamlit.testing.v1 import AppTest
 
     app = AppTest.from_function(
-        shap_app, args=(forecasts, events, values), default_timeout=45
+        shap_app, args=(forecasts, events, values, summary), default_timeout=45
     ).run()
     assert not app.exception and not app.error
     assert app.selectbox[0].value == "bag5"
-    app.selectbox[2].set_value(46).run()
-    assert not app.exception
-    assert events.groupby("model").event_id.nunique().to_dict() == {"r0": 3, "bag5": 3, "track": 3}
     assert (folder / "shap.json").is_file()
     bad = events.copy()
     bad.loc[0, "margin"] += 0.1
     with pytest.raises(ValueError, match="additivity"):
-        validate(bad, values, forecasts)
+        validate(bad, values, forecasts, summary)
     bad = forecasts.copy()
     bad.loc[bad.event_id.eq(events.iloc[0].event_id), "raw_r0"] += 0.1
     with pytest.raises(ValueError, match="published forecast"):
-        validate(events, values, bad)
+        validate(events, values, bad, summary)
     assert hashlib.sha256(source.read_bytes()).hexdigest() == manifest["files"]["forecasts.parquet"]

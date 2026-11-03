@@ -171,8 +171,8 @@ cannot reach the network.
 - **Survivorship.** The 250 companies are today's large caps, and the business groups use
   today's classifications.
 - **Static data.** The app shows the frozen study and does not update with new prices.
-- **Explanations are sampled.** SHAP values exist for 80 events per year; other events say
-  so and link to a similar explained event.
+- **Explanations show the largest effects.** Each event's SHAP chart shows its 15 largest
+  input effects (averaged over the bag's models) and sums the rest in one bar.
 - **Cold start.** After a period without visitors, Streamlit Community Cloud puts the app to
   sleep; the first visit then takes a little longer.
 

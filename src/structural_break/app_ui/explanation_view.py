@@ -12,6 +12,7 @@ import streamlit as st
 from structural_break.app_bundle.features import feature_label
 from structural_break.app_ui import charts, components, navigation, theme
 from structural_break.app_ui.results import MODELS, Results
+from structural_break.services.forecast_explanations import OTHER
 
 LABELS = {
     "logit_bag5": "Bagged forecast (log-odds)",
@@ -22,6 +23,9 @@ LABELS = {
     "relationship_change": "Relationship change",
     "persistence_x_explains": "Persistence × explains the move",
 }
+
+
+OTHER_LABEL = "All other inputs (summed)"
 
 
 def label(feature: str) -> str:
@@ -45,6 +49,16 @@ def _totals(results: Results, model: str) -> pd.DataFrame:
     return events.loc[events.model.eq(model)]
 
 
+#: The models whose explanations the pages offer. The probability-only stack beside the full
+#: model has a single input (the bagged forecast), so its explanation would always be one bar.
+EXPLAINED = ("bag5", "track", "r0", "full")
+TREE_NOTE = {
+    "r0": "TreeSHAP of the R0 model in log-odds, before calibration.",
+    "bag5": "TreeSHAP averaged over the bag's five models, in log-odds.",
+    "track": "TreeSHAP averaged over the bag's five models, in log-odds.",
+}
+
+
 def _explained_neighbour(results: Results, event_id: str) -> tuple[str, str] | None:
     """An explained event of the same pair, else of the same year, as (event id, pair)."""
     explained = set(_totals(results, "bag5").event_id) | set(_totals(results, "full").event_id)
@@ -61,18 +75,11 @@ def _explained_neighbour(results: Results, event_id: str) -> tuple[str, str] | N
 
 
 def render_event(results: Results, event_id: str, *, key: str = "investigation") -> None:
-    choices = [
-        m
-        for m in ("r0", "bag5", "track", "full", "full_base")
-        if _totals(results, m).event_id.eq(event_id).any()
-    ]
+    choices = [m for m in EXPLAINED if _totals(results, m).event_id.eq(event_id).any()]
     if not choices:
-        sample = results.summary.get("shap", {}).get("events_per_year", "a sample of")
         components.empty_state(
-            f"This event has no saved explanation. SHAP values were computed for {sample} "
-            "events per year (chosen without looking at outcomes), and the full model's "
-            "explanations exist only for events the agent desk scored. No other event's "
-            "explanation is shown in its place."
+            "This event has no saved explanation. No other event's explanation is shown in "
+            "its place."
         )
         example = _explained_neighbour(results, event_id)
         if example is not None and st.button(
@@ -86,7 +93,7 @@ def render_event(results: Results, event_id: str, *, key: str = "investigation")
         "Explain model",
         choices,
         f"{key}_shap_model",
-        default="full" if "full" in choices else choices[0],
+        default=choices[0],
         format_func=lambda m: MODELS[m],
     )
     events, values = tables(results, model)
@@ -103,91 +110,105 @@ def _event(
     results: Results, model: str, totals: pd.DataFrame, values: pd.DataFrame, *, key: str
 ) -> None:
     linear = model.startswith("full")
-    if not linear:
-        options = [str(seed) for seed in sorted(totals.seed.unique())]
-        seed = int(
-            navigation.selectbox("Seed component", options, f"{key}_seed", default=options[0])
-        )
-        total = totals.loc[totals.seed.eq(seed)].iloc[0]
-        parts = values.loc[values.seed.eq(seed)].copy()
-    else:
+    parts = values.copy()
+    if linear:
         total = totals.iloc[0]
-        parts = values.copy()
+        base, margin = float(total.base), float(total.margin)
+    else:
+        # Contributions are averaged over the bag's seed models; so are base and margin.
+        base, margin = float(totals.base.mean()), float(totals.margin.mean())
+        parts = parts.loc[parts.feature.ne(OTHER)]
     parts["label"] = parts.feature.map(label)
     parts = parts.sort_values("contribution", key=np.abs, ascending=False)
     figure = charts.waterfall(
         {
-            "base": float(total.base),
-            "margin": float(total.margin),
+            "base": base,
+            "margin": margin,
             "contributions": parts.assign(
                 label=parts.label.map(lambda text: "<br>".join(textwrap.wrap(text, 24)))
             )
             if linear
             else parts,
-        }
+        },
+        limit=8 if linear else 12,
     )
     if linear:
         figure.update_layout(margin={"l": 155, "r": 45}, font={"size": 11})
     components.chart(figure, key=f"{key}_waterfall")
-    published = results.tables["forecasts"].set_index("event_id").loc[total.event_id, f"p_{model}"]
+    event_id = str(totals.event_id.iloc[0])
+    forecasts = results.tables["forecasts"]
+    published = float(forecasts.loc[forecasts.event_id.eq(event_id), f"p_{model}"].iloc[0])
     st.caption(
-        f"Base {total.base:+.3f} + contributions = {total.margin:+.3f} log-odds. "
-        f"Published probability {float(published):.2%}. "
+        f"Base {base:+.3f} + contributions = {margin:+.3f} log-odds. "
+        f"Published probability {published:.2%}. "
         "SHAP describes model behaviour, not causality."
     )
     if linear:
+        total = totals.iloc[0]
         st.caption(
-            f"Exact linear SHAP against the annual training mean; {int(total.train_n):,} "
-            f"training events through {int(total.train_last_year)}. "
-            "The interaction is a separate input. These are interventional, "
-            "not conditional, attributions for correlated features."
-        )
-        st.caption(
-            "The Full and probability-only stacks have separately fitted coefficients. "
-            "Their contributions are not a decomposition of the difference between "
-            "the two probabilities."
+            "The full model is a logistic stack on top of the bagged model. Its "
+            "“Bagged forecast” bar is the whole bagged model: choose “B+rule+ou, bagged” "
+            "above to see which inputs drove that forecast. Exact linear SHAP against the "
+            f"annual training mean; {int(total.train_n):,} training events through "
+            f"{int(total.train_last_year)}."
         )
     else:
         st.caption(
-            f"Native TreeSHAP explains this seed's raw probability "
-            f"({total.raw_probability:.2%}), before calibration. "
-            "Bagged models average seed probabilities: averaged margins are not "
-            "an explanation of the bagged probability."
+            TREE_NOTE[model]
+            + " The bars add up to the models' average log-odds before calibration "
+            f"({1 / (1 + np.exp(-margin)):.2%}); the published probability averages the "
+            "models' probabilities and is then calibrated, so it is close to, not equal to, "
+            "this value. Inputs outside the 15 largest are summed in “All other features”."
         )
-    with st.expander("Feature values and exact contributions"):
+    with st.expander("Input values and contributions"):
+        table = values.assign(
+            label=values.feature.map(lambda f: OTHER_LABEL if f == OTHER else label(f))
+        )
         columns = [
             c
             for c in (
-                "feature",
+                "label",
                 "value",
                 "training_mean",
                 "training_std",
                 "coefficient",
                 "contribution",
             )
-            if c in parts
+            if c in table
         ]
-        st.dataframe(parts[columns], hide_index=True, width="stretch")
+        table = table.sort_values("contribution", key=np.abs, ascending=False)[columns]
+        st.dataframe(table, hide_index=True, width="stretch")
         st.download_button(
             "Download event explanation",
-            parts[columns].to_csv(index=False),
-            file_name=f"shap-{model}-{total.event_id}.csv",
+            table.to_csv(index=False),
+            file_name=f"shap-{model}-{event_id}.csv",
             mime="text/csv",
             key=f"{key}_download",
         )
 
 
+def _importance(results: Results, model: str, years: tuple[int, int]) -> pd.Series:
+    """Mean absolute contribution per input over every explained event in the years."""
+    if model.startswith("full"):
+        totals, values = tables(results, model)
+        chosen = totals.loc[totals.year.between(*years), "event_id"]
+        values = values.loc[values.event_id.isin(chosen)]
+        return values.groupby("feature").contribution.agg(lambda v: v.abs().mean())
+    summary = results.tables["shap_summary"]
+    part = summary.loc[summary.model.eq(model) & summary.year.between(*years)]
+    grouped = part.groupby("feature")[["sum_abs", "n"]].sum()
+    return grouped.sum_abs / grouped.n
+
+
 def render(results: Results, years: tuple[int, int]) -> None:
     st.markdown("**SHAP explanations**")
     choices = []
-    for model in ("r0", "bag5", "track", "full", "full_base"):
+    for model in EXPLAINED:
         totals = _totals(results, model)
         if not totals.empty and totals.year.between(*years).any():
             choices.append(model)
     if not choices:
-        components.empty_state(
-            "Current annual-model explanations have not been exported for these years."
-        )
+        components.empty_state("Annual-model explanations have not been exported for these years.")
         return
     model = navigation.selectbox(
         "Explain current model",
@@ -198,25 +219,15 @@ def render(results: Results, years: tuple[int, int]) -> None:
     )
     totals, values = tables(results, model)
     totals = totals.loc[totals.year.between(*years)]
-    values = values.loc[values.event_id.isin(totals.event_id)]
     linear = model.startswith("full")
     count = totals.event_id.nunique()
     universe = results.tables["forecasts"]
     denominator = int((universe.year.between(*years) & universe[f"p_{model}"].notna()).sum())
     st.caption(
         f"{count:,} / {denominator:,} scored events explained · {years[0]}–{years[1]} · "
-        + (
-            "all desk-scored events · exact linear SHAP"
-            if linear
-            else "target-blind annual sample · native seed-model TreeSHAP"
-        )
+        + ("exact linear SHAP" if linear else "native TreeSHAP, averaged over the seed models")
     )
-    importance = (
-        values.groupby("feature")
-        .contribution.agg(lambda v: v.abs().mean())
-        .nlargest(15)
-        .sort_values()
-    )
+    importance = _importance(results, model, years).nlargest(15).sort_values()
     figure = go.Figure(
         go.Bar(
             x=importance,
@@ -235,12 +246,14 @@ def render(results: Results, years: tuple[int, int]) -> None:
         )
     )
     components.chart(figure, key="headline_shap_importance")
-    if not linear:
-        st.caption(
-            "Global influence summarizes seed fits, not changes in the averaged bagged probability."
-        )
     forecasts = universe.set_index("event_id")
-    options = list(totals.event_id.drop_duplicates())
+    explained = totals.event_id.drop_duplicates()
+    traded = explained[explained.map(forecasts.traded).fillna(False).astype(bool)]
+    options = list(traded if len(traded) else explained)
+    st.caption(
+        "Pick one of the adopted book's trades below; every event's own explanation is on its "
+        "event page."
+    )
     event_id = navigation.selectbox(
         "Event",
         options,
