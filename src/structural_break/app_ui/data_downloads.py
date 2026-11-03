@@ -10,6 +10,7 @@ from __future__ import annotations
 import io
 import zipfile
 from collections.abc import Callable
+from functools import partial
 from typing import Any
 
 import pandas as pd
@@ -271,7 +272,7 @@ def dictionary(frames: dict[str, pd.DataFrame]) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-@st.cache_data(show_spinner="Packaging the downloads…", max_entries=2)
+@st.cache_data(show_spinner="Packaging the ZIP…", max_entries=2)
 def build(_results: Results, digest: str) -> dict[str, bytes]:
     """CSV bytes per file plus the data dictionary, README and one ZIP of everything."""
     del digest  # cache key: the results manifest
@@ -281,8 +282,7 @@ def build(_results: Results, digest: str) -> dict[str, bytes]:
         if frame is not None:
             frames[name] = frame
     frames["data_dictionary.csv"] = dictionary(frames)
-    # UTF-8 with a byte-order mark, so spreadsheet programs read the dashes and symbols.
-    files = {name: frame.to_csv(index=False).encode("utf-8-sig") for name, frame in frames.items()}
+    files = {name: _csv(frame) for name, frame in frames.items()}
     files["README.txt"] = README.encode("utf-8")
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
@@ -306,8 +306,24 @@ def sources_table() -> str:
     return "\n".join(rows)
 
 
-def _megabytes(data: bytes) -> str:
-    return f"{len(data) / 1e6:.1f} MB" if len(data) >= 1e5 else f"{len(data) / 1e3:.0f} kB"
+def _csv(frame: pd.DataFrame) -> bytes:
+    # UTF-8 with a byte-order mark, so spreadsheet programs read the dashes and symbols.
+    return frame.to_csv(index=False).encode("utf-8-sig")
+
+
+@st.cache_data(show_spinner="Preparing the file…", max_entries=16)
+def single(_results: Results, digest: str, name: str) -> bytes:
+    """One dataset as CSV, built the first time someone asks for it."""
+    del digest  # cache key: the results manifest
+    make = next(make for file, _, _, make in DATASETS if file == name)
+    frame = make(_results)
+    if frame is None:
+        raise ValueError(f"{name} is not in this deployment")
+    return _csv(frame)
+
+
+def _zip(results: Results, digest: str) -> bytes:
+    return build(results, digest)["structural_break_data.zip"]
 
 
 def render(results: Results | None) -> None:
@@ -318,35 +334,38 @@ def render(results: Results | None) -> None:
     if results is None:
         st.info("The project's results are not in this deployment.")
         return
-    files = build(results, str(results.manifest.get("files", {}).get("forecasts.parquet")))
+    digest = str(results.manifest.get("files", {}).get("forecasts.parquet"))
     st.markdown("**Download the project's data**")
+    # The files are built when a button is clicked, not when the page opens.
     st.download_button(
-        "Download all (ZIP with README and data dictionary) · "
-        + _megabytes(files["structural_break_data.zip"]),
-        files["structural_break_data.zip"],
+        "Download all (ZIP with README and data dictionary)",
+        partial(_zip, results, digest),
         file_name="structural_break_data.zip",
         mime="application/zip",
         icon=":material/folder_zip:",
         type="primary",
         key="download_all",
+        on_click="ignore",
     )
     for name, title, description, _ in DATASETS:
-        if name not in files:
+        if name == "event_features.csv" and "diagnostic_inputs" not in results.tables:
             continue
         left, right = st.columns([3, 1])
         left.markdown(f"**{title}** · {description}")
         right.download_button(
-            f"{name} · {_megabytes(files[name])}",
-            files[name],
+            name,
+            partial(single, results, digest, name),
             file_name=name,
             mime="text/csv",
             icon=":material/download:",
             key=f"download_{name}",
             width="stretch",
+            on_click="ignore",
         )
     st.caption(
         "Each pair's daily spread series can be downloaded on its Pair detail page. "
-        "data_dictionary.csv (in the ZIP) explains every column."
+        "data_dictionary.csv (in the ZIP) explains every column. The ZIP takes a few seconds "
+        "to prepare the first time."
     )
 
 
