@@ -6,7 +6,7 @@ from datetime import date
 
 import streamlit as st
 
-from structural_break.app_ui import components, navigation
+from structural_break.app_ui import components, lookup, navigation
 from structural_break.app_ui.context import current, open_pair
 from structural_break.app_ui.results import event_table
 from structural_break.services.research_application import PARTITION_ORDER, ScannerFilters
@@ -166,10 +166,12 @@ def render() -> None:
         "Scanner",
         "Every fresh divergence scored walk-forward from 2010, with each headline forecaster's "
         "estimated probability that the gap closes and whether the adopted book traded it. "
-        "Click an event row to investigate its forecast, evidence and outcome.",
+        "Look up one pair on a date, or filter the table and click an event row to investigate "
+        "its forecast, evidence and outcome.",
     )
     components.synthetic_banner(ctx.service.identity)
     events = event_table(ctx.results)
+    lookup.render(events)
     first, last = int(events["year"].min()), int(events["year"].max())
     with st.container(border=True):
         top = st.columns([2, 2, 3])
