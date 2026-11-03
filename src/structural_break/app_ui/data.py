@@ -20,7 +20,6 @@ import streamlit as st
 from structural_break.app_bundle.contracts import AppBundle
 from structural_break.app_bundle.io import read_bundle
 from structural_break.app_bundle.pair_history import PairHistory
-from structural_break.app_bundle.strategy import find_experiments
 from structural_break.config.models import RuntimeSettings
 from structural_break.config.paths import ProjectPaths
 from structural_break.research.primary import PrimaryNotReadyError, primary_versions
@@ -42,7 +41,6 @@ class LoadOutcome:
     status: Literal["ready", "pending", "failed"]
     service: ResearchApplicationService | None = None
     message: str = ""
-    detail: str = ""
 
 
 def resolve_source(root: Path = PROJECT_ROOT) -> DataSource:
@@ -120,6 +118,9 @@ def load(source: DataSource, root: Path = PROJECT_ROOT) -> LoadOutcome:
                     "Import the group snapshot with `python scripts/team.py setup`, or point "
                     "SB_APP_BUNDLE at an exported app bundle.",
                 )
+            # Imported here: it pulls in the backtest engine, which a bundle never needs.
+            from structural_break.app_bundle.strategy import find_experiments
+
             experiments_root = Path(os.environ.get("SB_EXPERIMENTS_ROOT", root / ".acceptance"))
             experiments = tuple(str(p) for p in find_experiments(experiments_root))
             bundle = _workspace(str(root), str(paths.workspace_root), tuple(versions), experiments)
@@ -129,13 +130,12 @@ def load(source: DataSource, root: Path = PROJECT_ROOT) -> LoadOutcome:
             message="The accepted research generation is not published yet, so there is nothing "
             "to display. Results appear here once all three evaluations pass verification.",
         )
-    except Exception as error:  # noqa: BLE001 - never show internals; fail closed
+    except Exception:  # noqa: BLE001 - never show internals; fail closed
         # The page stays generic; the server log (Streamlit Cloud: Manage app) keeps the cause.
         LOG.exception("Research outputs failed verification")
         return LoadOutcome(
             "failed",
             message="The research outputs failed verification and are not shown. Re-run "
             "`python scripts/team.py check` (or `structural-break-app verify`) to find the file.",
-            detail=f"{type(error).__name__}: {error}",
         )
     return LoadOutcome("ready", ResearchApplicationService(bundle))

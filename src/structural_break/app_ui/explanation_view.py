@@ -45,6 +45,21 @@ def _totals(results: Results, model: str) -> pd.DataFrame:
     return events.loc[events.model.eq(model)]
 
 
+def _explained_neighbour(results: Results, event_id: str) -> tuple[str, str] | None:
+    """An explained event of the same pair, else of the same year, as (event id, pair)."""
+    explained = set(_totals(results, "bag5").event_id) | set(_totals(results, "full").event_id)
+    forecasts = results.tables["forecasts"]
+    this = forecasts.loc[forecasts.event_id.eq(event_id)]
+    if this.empty or not explained:
+        return None
+    candidates = forecasts.loc[forecasts.event_id.isin(explained)]
+    for same in (candidates.pair_id.eq(this.pair_id.iat[0]), candidates.year.eq(this.year.iat[0])):
+        if same.any():
+            row = candidates.loc[same].sort_values("event_date").iloc[-1]
+            return str(row.event_id), str(row.pair_id)
+    return None
+
+
 def render_event(results: Results, event_id: str, *, key: str = "investigation") -> None:
     choices = [
         m
@@ -52,11 +67,20 @@ def render_event(results: Results, event_id: str, *, key: str = "investigation")
         if _totals(results, m).event_id.eq(event_id).any()
     ]
     if not choices:
+        sample = results.summary.get("shap", {}).get("events_per_year", "a sample of")
         components.empty_state(
-            "No current-model attribution is exported for this event. Tree SHAP uses a "
-            "target-blind sample; Full explanations exist only for desk-scored events. "
-            "No other event's explanation is substituted."
+            f"This event has no saved explanation. SHAP values were computed for {sample} "
+            "events per year (chosen without looking at outcomes), and the full model's "
+            "explanations exist only for events the agent desk scored. No other event's "
+            "explanation is shown in its place."
         )
+        example = _explained_neighbour(results, event_id)
+        if example is not None and st.button(
+            "Open a similar event that has an explanation",
+            icon=":material/arrow_forward:",
+            key=f"{key}_explained_example",
+        ):
+            navigation.switch("event", event=example[0], pair=example[1])
         return
     model = navigation.selectbox(
         "Explain model",

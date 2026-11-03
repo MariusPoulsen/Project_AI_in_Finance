@@ -2,11 +2,10 @@
 
 The bundle was exported when the frozen A/B study compared the 10-, 20- and 30-session
 horizons, with its strategy ladder and model diagnostics. The app now uses the 20-session
-horizon only, and from it the events (scanner, pair detail), the per-event explanations
-(pair detail) and the report's feature list (methodology). The showcase pairs' daily series
-are dropped too: demo/pair_history holds every pair's full history. This reads the verified
-bundle and writes a new one with just those parts and the A and B_both model entries; the
-values kept are unchanged. Usage:
+horizon only, and from it the events (scanner, pair detail) and the report's feature list
+(methodology). The showcase pairs' daily series are dropped too: demo/pair_history holds
+every pair's full history. This reads the verified bundle and writes a new one with just
+those parts and the A and B_both model entries; the values kept are unchanged. Usage:
 
     python scripts/slim_app_bundle.py demo/app_bundle NEW_DIRECTORY
 """
@@ -42,8 +41,8 @@ def main() -> None:
         events=data.events,
         curves=empty,
         importance=empty,
-        contributions=data.contributions,
-        contribution_totals=data.contribution_totals,
+        contributions=empty,
+        contribution_totals=empty,
         feature_profile=empty,
         strategy=None,
         strategy_nav=empty,

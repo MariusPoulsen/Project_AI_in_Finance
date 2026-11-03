@@ -20,13 +20,13 @@ uv run --frozen streamlit run app/research_app.py
 | Page | What it answers |
 |---|---|
 | Overview | The research question, spread picture, both goals and a compact pipeline diagram. |
-| Scanner | Every divergence scored walk-forward from 2010: R0, bagged and +track probabilities (and the full model where the agents read the event), whether the adopted book traded it, its exit and gross return; filters and CSV download. Falls back to the research layer's A/B scanner when no results are deployed. |
+| Scanner | A lookup of any pair's forecast on a date (with input checks), and every divergence scored walk-forward from 2010: R0, bagged and +track probabilities (and the full model where the agents read the event), whether the adopted book traded it, its exit and gross return; filters and CSV download. |
 | Event investigation | Click a Scanner row to compare probabilities, exported explanations, cached agent reports and cited evidence, input values, then the separate realised label and adopted-book trade. Back to Scanner preserves filters. |
-| Pair detail | Rebased prices, the frozen z-score with bands, ACTIVE shading and hedge-ratio history; each event with the current headline probabilities and its trade; every trade of the adopted book on the pair. |
+| Pair detail | Rebased prices, the frozen z-score with bands, ACTIVE shading and hedge-ratio history for 2010–2025; each event with the headline probabilities and its trade; every trade of the adopted book on the pair. |
 | Model Lab | Baselines and current forecasters by test period, discrimination, calibration, SHAP, yearly and business-group slices, the matched Full/base comparison, settings and metrics. |
 | Strategy Lab | The book's design ladder from trading every divergence to the adopted book, the four books compared (adopted, without the monitor, the best forecaster's and the full model's selections), exits and the monitor, every trade. The original 2022–2023 plan ladder (Decisions 36–40) is superseded and no longer shown. |
-| Adopted book | The design, results by period, the final-test section (filled once the 2024–2025 run is published), monthly returns, the overfitting audit, the agent desk and news coverage. |
-| Data and model monitor | Current scored-event samples, complete input matching, SEC metadata/FinBERT coverage, quantitative and engineered feature drift, model inventory, agent/news health and provenance. |
+| Adopted book | The design, results by period including the 2024–2025 final test, monthly returns, the agent desk and news coverage. |
+| Data and model monitor | Where the data comes from, CSV and ZIP downloads with a data dictionary, scored-event samples, SEC metadata/FinBERT coverage, feature drift, the forecasters' health and agent/news health. |
 | Methodology | Model card: goals, chronology, target, headline forecasters, agent desk, trading book, the research layer, limitations, intended use, data/privacy/security. |
 
 Every page has a "Data and model versions behind this page" expander, and every
@@ -36,7 +36,7 @@ loading, empty, pending and failed-verification state has its own message.
 
 **Headline results** (`demo/results/`): the forecasters' walk-forward scores, curves and metrics, the four books' daily values and statistics, the adopted book's trades, news coverage and, once published, the final-test report. Written by `python scripts/export_results.py` from a checkout whose `outputs/` holds the development results (2010–2023) or the final-test results (2010–2025); every file is checked against `manifest.json` on each load. Without them the results pages say so and the Scanner shows the research layer.
 
-**Research layer** (the frozen A/B study, spreads and explanations):
+**Research layer** (the 20-session events of the frozen A/B study, the pair roster and the feature list):
 
 The app looks, in order, for:
 
@@ -64,10 +64,10 @@ uv run --frozen structural-break-app verify --bundle outputs/app-bundles/v2
 SB_APP_BUNDLE=outputs/app-bundles/v2 uv run --frozen streamlit run app/research_app.py
 ```
 
-The base bundle carries daily pair history for showcase pairs. The committed
-`demo/pair_history` supplement supplies history for all 736 development pairs,
-verified against the same registry. Neither the SEC archive nor a database is
-needed for browsing.
+`scripts/slim_app_bundle.py` reduces an exported bundle to what the pages read
+(the committed `demo/app_bundle` is about 6 MB). The committed `demo/pair_history`
+supplies the daily history of all 736 pairs through 2025, verified against the
+registry. Neither the SEC archive nor a database is needed for browsing.
 
 ### Synthetic preview (no snapshot needed)
 
@@ -83,11 +83,10 @@ marked `synthetic: true`. Never present it as a finding.
 
 ## Deploying to Streamlit Community Cloud
 
-1. Export a real bundle (above) and copy it to `demo/app_bundle/` on a branch.
-   It is generated data, so whether it lives on `main` or a separate demo
-   branch is the repository owner's decision.
+1. The deployed data (`demo/results`, `demo/pair_history`, `demo/app_bundle`) are
+   committed on `main`.
 2. On [share.streamlit.io](https://share.streamlit.io), create an app from the
-   GitHub repository: branch with the bundle, main file `app/research_app.py`.
+   GitHub repository: branch `main`, main file `app/research_app.py`.
 3. Under **Advanced settings**, choose **Python 3.11** (the project does not
    support 3.12). Dependencies install from `uv.lock` / `requirements.txt`.
 4. No secrets are needed: the app makes no API calls. If you keep the bundle

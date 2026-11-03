@@ -135,15 +135,7 @@ def test_bundle_round_trip_verifies_every_checksum(bundle, tmp_path):
         read_bundle(tmp_path / "missing")
 
 
-def test_service_queries_keep_denominators_and_honest_verdicts(service):
-    headline = service.headline(20)
-    tone, sentence = service.verdict(headline)
-    low, high = headline.interval
-    if low <= 0 <= high:
-        assert tone == "inconclusive" and "includes zero" in sentence
-    comparison = service.comparison(20)
-    assert len(comparison) == 10 and comparison["primary"].sum() == 2
-    assert comparison.loc[comparison["variant"].eq("A"), "delta_brier_B_minus_A"].isna().all()
+def test_service_queries_cover_the_assessment_events_and_pair_histories(service):
     protocol = service.protocol
     rows = service.scanner(
         20,
@@ -156,15 +148,8 @@ def test_service_queries_keep_denominators_and_honest_verdicts(service):
     assert rows["p_B"].between(0, 1).all()
     pair = service.hero_pair(20)
     assert pair is not None and service.pair_series(pair) is not None
-    event = rows.iloc[0]["event_id"]
-    assert service.explanation(20, event, "logistic_B_both") is not None
-    evidence = service.evidence(20, event)
-    if evidence["Catalyst type"] == "UNKNOWN":
-        assert evidence["Extraction confidence"] == "UNKNOWN"
-    assert {"fit", "calibration", "assessment"} <= set(service.cohorts(20)["period"])
-    assert not service.coverage_table(20).empty
-    assert len(service.inventory(20)) == 10
-    assert set(service.strategy_rungs(20)["rung"]) >= {"MODEL_A", "MODEL_B", "FULL_SYSTEM"}
+    counts = service.universe_counts(20)
+    assert counts["events"] == len(service.data(20).events) and counts["pairs"] > 0
 
 
 def test_synthetic_cli_writes_then_verifies(tmp_path, capsys):

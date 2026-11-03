@@ -158,10 +158,10 @@ def test_results_fail_closed_when_a_file_does_not_match_the_manifest(tmp_path):
     assert results.load(copy) is None
 
 
-def test_monitor_uses_current_periods_and_omits_catalyst_fields(service, monkeypatch):
-    monkeypatch.setattr(
-        service, "cohorts", lambda *_: pytest.fail("Used frozen fitting partitions")
-    )
+def test_monitor_uses_current_periods_and_omits_catalyst_fields(service):
+    # The frozen study's fitting partitions are gone from the service, so the monitor can
+    # only show the current periods.
+    assert not hasattr(service, "cohorts")
     app = AppTest.from_function(page, args=(service, "monitor", 20, True), default_timeout=90).run()
     assert not app.exception and not app.error
     samples = next(item.value for item in app.dataframe if "Labelled" in item.value)
