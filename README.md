@@ -5,7 +5,7 @@ broken? This project forecasts which divergences between 736 pairs of large US s
 (Goal 1) and trades a book on the forecasts after realistic costs (Goal 2). Every choice was
 made on 2010–2017, confirmed on 2018–2023 and tested once on the locked 2024–2025 data.
 
-**App:** <https://aiinfinance-mkt.streamlit.app> · read-only, no login, nothing to install.
+**App:** <https://projectaiinfinance-mkt.streamlit.app> · read-only, no login, nothing to install.
 
 ![Overview page](docs/screenshots/overview.png)
 
