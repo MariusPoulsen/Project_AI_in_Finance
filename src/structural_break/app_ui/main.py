@@ -91,8 +91,6 @@ def run(load: Callable[[], data.LoadOutcome] | None = None) -> None:
             st.info(outcome.message, icon=":material/hourglass_empty:")
         else:
             st.error(outcome.message, icon=":material/gpp_bad:")
-            if st.query_params.get("debug") and outcome.detail:
-                st.code(outcome.detail, language=None)
         return
     service: ResearchApplicationService = outcome.service
     pages = _pages()
