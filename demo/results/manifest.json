@@ -26,7 +26,19 @@
   "event_cases.parquet": "f26214e29b882b2aad95c7a8901808f6baaaaad2742ff0259c5e2a1aeac6e6fa",
   "full_shap_events.parquet": "bc0e049b11261302d5f022463078bb7bd42d94abd89120a3a1de070c8e195f39",
   "full_shap_values.parquet": "3b027fa7d9e8a707ae2cd9c9318bd0f537b0e55a5c96018b71a3e2db72475d54",
-  "shap_summary.parquet": "61316e22430032f85915a6eceb74af8afaf2923c2441e234bf3ba7180fd8fe5e"
+  "shap_summary.parquet": "61316e22430032f85915a6eceb74af8afaf2923c2441e234bf3ba7180fd8fe5e",
+  "live/bag5-2024-42.ubj": "48f64800de648c636228e2bf0fff899ccb5feb8b744fc96a59189ad49a6a86f3",
+  "live/bag5-2024-43.ubj": "6129891719d632846814a0038291cba43513c50bdb600e8386953b0800b66b80",
+  "live/bag5-2024-44.ubj": "a6b43842b072cb864a4050958c0c3d158ced0decf6f50eeddab470966e58ef6a",
+  "live/bag5-2024-45.ubj": "9aa729c81bd3d7bcc0198189d5896b1b9fa6c39d1b154b54bb4cb251038b9907",
+  "live/bag5-2024-46.ubj": "964d8053bfe1222c3cadd28c857c0ff96f632304cf411076a0d92e2e281dc717",
+  "live/bag5-2025-42.ubj": "f70ed82113f80ec109c33a5e907c1a859527d2ddc782e952e0e21c96eb2b4664",
+  "live/bag5-2025-43.ubj": "d2d261bd2aa2c2fcfe71d50b32f6630610a5c544143ff2eccaa60a958f592ad0",
+  "live/bag5-2025-44.ubj": "a41377e87b8f61bfa5cfa156d95e46c4aca5a84785f337e678a74557dc256e92",
+  "live/bag5-2025-45.ubj": "59ea89f7152a22b6d584ab8c6be5406b5be76f50007ae2e9315579b34748580c",
+  "live/bag5-2025-46.ubj": "786b19937ef269e80878d31aba11ff2564f3b771f2ff4250986a3ab02838abd2",
+  "live/inputs.parquet": "b62bd985d9caa5fe9b13ca04d2910ed6f432c765a81fc31c9cd2340f9b7e082d",
+  "live.json": "13c4ece6d933353bea2a29d6ba33318a5de78748a320ff42bd26909a63484953"
  },
  "baseline_reference": {
   "schema_version": "forecast-baseline-flags-v1",

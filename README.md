@@ -48,7 +48,7 @@ The design and every result are in [FORECASTING_AND_BOOK.md](docs/FORECASTING_AN
 | Overview | The question, a live example spread (KO vs PEP) and the headline answers to both goals |
 | Scanner | Look up any pair's forecast on a date; filter all 26,177 scored divergences by year, period, business group, model probability and trade |
 | Pair detail | A pair's spread, prices and monthly hedge ratio for 2010–2025, with its events, forecasts and trades |
-| Event investigation | One forecast explained with SHAP values, the filings and news available at the close, the agents' assessments and the outcome and trade |
+| Event investigation | One forecast explained with SHAP values; for 2024–2025 events, a live re-score with the saved bagged models and a what-if on the inputs that moved it; the filings and news available at the close, the agents' assessments and the outcome and trade |
 | Model Lab | The forecasters compared on ROC AUC, PR AUC, log loss and Brier score per period, with ROC, precision-recall and calibration curves |
 | Strategy Lab | The adopted book against its variants (without the monitor, the bagged forecaster's selection, the full model's selection) |
 | Adopted book | The book's value, drawdowns, trades and exit reasons, by period |
@@ -74,6 +74,12 @@ forecast; *Evidence and agents* shows the news analyst's scores (here 1 of 5 on 
 the news did not explain the move).
 
 ![Event investigation](docs/screenshots/event_shap.png)
+
+**Score an event live.** On a 2024–2025 event, the *Live model* tab re-scores it with the
+five saved bagged models (about 40 ms) and shows that the result matches the published
+forecast. Below, the four inputs that moved the forecast most can be changed and scored
+again: for V vs MA on 2 April 2025, raising *Market share diverged* from 0.152 to 0.275
+lifts the probability from 6.36 % to 8.70 %.
 
 **Follow a pair.** *Pair detail* for V vs MA shows the spread with the ±2 entry, ±0.5
 reversion and ±3 failure bands, every event coloured by outcome, and the book's trades.
