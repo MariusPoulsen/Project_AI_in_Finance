@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import average_precision_score, roc_auc_score
 
 BASELINES = {"baseline0": "Baseline 0 (every divergence)", "baseline1": "Baseline 1 (ACTIVE only)"}
 YEARS = {"2010–2017": (2010, 2017), "2018–2023": (2018, 2023), "2024–2025": (2024, 2025)}
@@ -25,6 +24,9 @@ def validate_flags(flags: pd.DataFrame, forecasts: pd.DataFrame) -> None:
 
 def metrics(forecasts: pd.DataFrame, flags: pd.DataFrame | None) -> pd.DataFrame:
     """Score all labelled events; ACTIVE is a binary rank, never a filtered population."""
+    # Imported here: scikit-learn takes seconds to import and the app rarely needs it.
+    from sklearn.metrics import average_precision_score, roc_auc_score
+
     frame = forecasts.copy()
     if flags is not None:
         validate_flags(flags, forecasts)

@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import threading
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -15,7 +17,6 @@ from typing import Any
 import pandas as pd
 import streamlit as st
 
-from structural_break.services import current_monitor
 from structural_break.services.forecast_baselines import BASELINES, validate_flags
 from structural_break.services.forecast_explanations import validate as validate_shap
 from structural_break.services.full_explanations import validate as validate_full_shap
@@ -102,6 +103,67 @@ def _sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+class _Tables(dict[str, pd.DataFrame]):
+    """The core tables, plus supplementary groups read and validated on first use.
+
+    The supplements (model inputs, evidence, SHAP values) make up most of the data but only
+    a few pages need them, so loading them up front would slow every cold start. Their
+    checksums are still verified with the rest before anything is shown; only the reading
+    and the cross-table checks wait until a page asks for one of them.
+    """
+
+    def __init__(
+        self,
+        core: dict[str, pd.DataFrame],
+        loaders: dict[str, Callable[[], dict[str, pd.DataFrame]]],
+    ) -> None:
+        super().__init__(core)
+        self._loaders = loaders
+        self._lock = threading.Lock()
+
+    def __missing__(self, key: str) -> pd.DataFrame:
+        loader = self._loaders.get(key)
+        if loader is None:
+            raise KeyError(key)
+        with self._lock, st.spinner("Verifying and loading the detailed results…"):
+            if not dict.__contains__(self, key):
+                for name, table in loader().items():
+                    dict.__setitem__(self, name, table)
+        return dict.__getitem__(self, key)
+
+    def get(self, key: str, default: Any = None) -> Any:
+        try:
+            return self[key]
+        except KeyError:
+            return default
+
+    def __contains__(self, key: object) -> bool:
+        return dict.__contains__(self, key) or key in self._loaders
+
+    def _load_all(self) -> None:
+        for key in list(self._loaders):
+            self[key]
+
+    def __iter__(self) -> Iterator[str]:
+        self._load_all()
+        return dict.__iter__(self)
+
+    def __len__(self) -> int:
+        return len(dict.keys(self) | self._loaders.keys())
+
+    def keys(self) -> Any:
+        self._load_all()
+        return dict.keys(self)
+
+    def items(self) -> Any:
+        self._load_all()
+        return dict.items(self)
+
+    def values(self) -> Any:
+        self._load_all()
+        return dict.values(self)
+
+
 @st.cache_resource(show_spinner=False, max_entries=2)
 def _read(folder: str, digest: str) -> Results | None:
     del digest  # cache key: a changed manifest is a different set of results
@@ -111,16 +173,16 @@ def _read(folder: str, digest: str) -> Results | None:
     for name, sha in files.items():
         if not (root / name).is_file() or _sha(root / name) != sha:
             return None
-    tables = {name: pd.read_parquet(root / f"{name}.parquet") for name in TABLES}
+    core = {name: pd.read_parquet(root / f"{name}.parquet") for name in TABLES}
     for name, column in (("forecasts", "event_date"), ("books_daily", "session_date")):
-        tables[name][column] = pd.to_datetime(tables[name][column])
+        core[name][column] = pd.to_datetime(core[name][column])
     for column in ("entry_date", "exit_date"):
-        tables["trades"][column] = pd.to_datetime(tables["trades"][column])
+        core["trades"][column] = pd.to_datetime(core["trades"][column])
+    forecasts = core["forecasts"]
     summary = json.loads((root / "summary.json").read_text(encoding="utf-8"))
-    investigation_files = {
-        f"{name}.parquet"
-        for name in ("diagnostic_inputs", "event_cases", "full_shap_events", "full_shap_values")
-    }
+    loaders: dict[str, Callable[[], dict[str, pd.DataFrame]]] = {}
+    investigation = ("diagnostic_inputs", "event_cases", "full_shap_events", "full_shap_values")
+    investigation_files = {f"{name}.parquet" for name in investigation}
     reference = manifest.get("investigation_reference")
     if reference is not None or investigation_files & files.keys():
         if (
@@ -130,20 +192,24 @@ def _read(folder: str, digest: str) -> Results | None:
             or reference["forecast_sha256"] != files["forecasts.parquet"]
         ):
             raise ValueError("Investigation sources do not match the current forecasts")
-        for name in investigation_files:
-            tables[name.removesuffix(".parquet")] = pd.read_parquet(root / name)
-        inputs, cases = tables["diagnostic_inputs"], tables["event_cases"]
-        if (
-            inputs.event_id.duplicated().any()
-            or set(inputs.event_id) != set(tables["forecasts"].event_id)
-            or set(inputs) - {"event_id"} - current_monitor.INPUTS
-        ):
-            raise ValueError("Current diagnostic input population/fields differ")
-        if cases.event_id.duplicated().any() or not set(cases.event_id) <= set(inputs.event_id):
-            raise ValueError("Invalid event evidence identities")
-        validate_full_shap(
-            tables["full_shap_events"], tables["full_shap_values"], tables["forecasts"]
-        )
+
+        def load_investigation() -> dict[str, pd.DataFrame]:
+            from structural_break.services import current_monitor
+
+            tables = {name: pd.read_parquet(root / f"{name}.parquet") for name in investigation}
+            inputs, cases = tables["diagnostic_inputs"], tables["event_cases"]
+            if (
+                inputs.event_id.duplicated().any()
+                or set(inputs.event_id) != set(forecasts.event_id)
+                or set(inputs) - {"event_id"} - current_monitor.INPUTS
+            ):
+                raise ValueError("Current diagnostic input population/fields differ")
+            if cases.event_id.duplicated().any() or not set(cases.event_id) <= set(inputs.event_id):
+                raise ValueError("Invalid event evidence identities")
+            validate_full_shap(tables["full_shap_events"], tables["full_shap_values"], forecasts)
+            return tables
+
+        loaders.update(dict.fromkeys(investigation, load_investigation))
     baseline = manifest.get("baseline_reference")
     if baseline is not None or "baseline_events.parquet" in files:
         if (
@@ -153,8 +219,13 @@ def _read(folder: str, digest: str) -> Results | None:
             or baseline["forecast_sha256"] != files["forecasts.parquet"]
         ):
             raise ValueError("Baseline eligibility does not match the current forecasts")
-        tables["baseline_events"] = pd.read_parquet(root / "baseline_events.parquet")
-        validate_flags(tables["baseline_events"], tables["forecasts"])
+
+        def load_baseline() -> dict[str, pd.DataFrame]:
+            table = pd.read_parquet(root / "baseline_events.parquet")
+            validate_flags(table, forecasts)
+            return {"baseline_events": table}
+
+        loaders["baseline_events"] = load_baseline
     shap_files = {"shap_events.parquet", "shap_values.parquet", "shap.json"}
     if shap_files & files.keys():
         if not shap_files <= files.keys():
@@ -165,10 +236,18 @@ def _read(folder: str, digest: str) -> Results | None:
             or metadata["forecast_sha256"] != files["forecasts.parquet"]
         ):
             raise ValueError("SHAP source does not match the current forecasts")
-        for name in ("shap_events", "shap_values"):
-            tables[name] = pd.read_parquet(root / f"{name}.parquet")
-        validate_shap(tables["shap_events"], tables["shap_values"], tables["forecasts"])
+
+        def load_shap() -> dict[str, pd.DataFrame]:
+            tables = {
+                name: pd.read_parquet(root / f"{name}.parquet")
+                for name in ("shap_events", "shap_values")
+            }
+            validate_shap(tables["shap_events"], tables["shap_values"], forecasts)
+            return tables
+
+        loaders.update(dict.fromkeys(("shap_events", "shap_values"), load_shap))
         summary["shap"] = metadata
+    tables = _Tables(core, loaders)
     final = root / "final_test.json"
     report = json.loads(final.read_text(encoding="utf-8")) if "final_test.json" in files else None
     present = tuple(dict.fromkeys(m["period"] for m in summary["goal1"]))

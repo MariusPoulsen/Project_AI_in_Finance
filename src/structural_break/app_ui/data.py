@@ -20,7 +20,6 @@ import streamlit as st
 from structural_break.app_bundle.contracts import AppBundle
 from structural_break.app_bundle.io import read_bundle
 from structural_break.app_bundle.pair_history import PairHistory
-from structural_break.app_bundle.strategy import find_experiments
 from structural_break.config.models import RuntimeSettings
 from structural_break.config.paths import ProjectPaths
 from structural_break.research.primary import PrimaryNotReadyError, primary_versions
@@ -119,6 +118,9 @@ def load(source: DataSource, root: Path = PROJECT_ROOT) -> LoadOutcome:
                     "Import the group snapshot with `python scripts/team.py setup`, or point "
                     "SB_APP_BUNDLE at an exported app bundle.",
                 )
+            # Imported here: it pulls in the backtest engine, which a bundle never needs.
+            from structural_break.app_bundle.strategy import find_experiments
+
             experiments_root = Path(os.environ.get("SB_EXPERIMENTS_ROOT", root / ".acceptance"))
             experiments = tuple(str(p) for p in find_experiments(experiments_root))
             bundle = _workspace(str(root), str(paths.workspace_root), tuple(versions), experiments)

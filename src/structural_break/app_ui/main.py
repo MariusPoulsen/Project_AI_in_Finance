@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib
 from collections.abc import Callable
 
 import streamlit as st
@@ -9,70 +10,72 @@ import streamlit as st
 from structural_break.app_ui import data, results, theme
 from structural_break.app_ui import navigation as links
 from structural_break.app_ui.context import KEY, AppContext
-from structural_break.app_ui.pages import (
-    adopted_book,
-    event_investigation,
-    methodology,
-    model_lab,
-    monitor,
-    overview,
-    pair_detail,
-    scanner,
-    strategy_lab,
-)
 from structural_break.services.research_application import ResearchApplicationService
 
 TITLE = "Structural-break detector"
 
 
+def _page(name: str) -> Callable[[], None]:
+    """The page's render function, importing its module only when the page is first opened.
+
+    Some pages pull in heavy libraries; importing all of them up front slowed every cold start.
+    """
+
+    def render() -> None:
+        importlib.import_module(f"structural_break.app_ui.pages.{name}").render()
+
+    render.__name__ = render.__qualname__ = name
+    return render
+
+
 def _pages() -> dict[str, st.Page]:
     return {
         "overview": st.Page(
-            overview.render,
+            _page("overview"),
             title="Overview",
             icon=":material/insights:",
             url_path="overview",
             default=True,
         ),
         "scanner": st.Page(
-            scanner.render, title="Scanner", icon=":material/radar:", url_path="scanner"
+            _page("scanner"), title="Scanner", icon=":material/radar:", url_path="scanner"
         ),
         "pair": st.Page(
-            pair_detail.render,
+            _page("pair_detail"),
             title="Pair detail",
             icon=":material/stacked_line_chart:",
             url_path="pair",
         ),
         "event": st.Page(
-            event_investigation.render,
+            _page("event_investigation"),
             title="Event investigation",
             icon=":material/search_insights:",
             url_path="event",
             visibility="hidden",
         ),
         "model": st.Page(
-            model_lab.render, title="Model Lab", icon=":material/science:", url_path="models"
+            _page("model_lab"), title="Model Lab", icon=":material/science:", url_path="models"
         ),
         "strategy": st.Page(
-            strategy_lab.render,
+            _page("strategy_lab"),
             title="Strategy Lab",
             icon=":material/candlestick_chart:",
             url_path="strategy",
         ),
         "book": st.Page(
-            adopted_book.render,
+            _page("adopted_book"),
             title="Adopted book",
             icon=":material/trending_up:",
             url_path="book",
         ),
         "monitor": st.Page(
-            monitor.render,
+            _page("monitor"),
             title="Data and model monitor",
             icon=":material/monitor_heart:",
             url_path="monitor",
         ),
         "method": st.Page(
-            methodology.render,
+            _page("methodology"),
             title="Methodology",
             icon=":material/menu_book:",
             url_path="methodology",

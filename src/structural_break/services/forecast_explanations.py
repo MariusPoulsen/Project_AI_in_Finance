@@ -34,15 +34,35 @@ def validate(events: pd.DataFrame, values: pd.DataFrame, forecasts: pd.DataFrame
     published = forecasts.set_index("event_id")
     if forecasts.event_id.duplicated().any():
         raise ValueError("Duplicate current forecast IDs")
-    for (model, event_id), part in events.groupby(["model", "event_id"]):
-        if event_id not in published.index or len(part) != SEEDS[str(model)]:
-            raise ValueError("Missing SHAP event or ensemble components")
-        if set(part.seed) != set(range(42, 42 + SEEDS[str(model)])):
-            raise ValueError("Unexpected SHAP seed identities")
-        original = published.loc[str(event_id)]
-        if not part.year.eq(original["year"]).all():
-            raise ValueError("SHAP year differs from the current forecast")
-        if not np.isclose(
-            part.raw_probability.mean(), original[f"raw_{model}"], atol=1e-6, rtol=1e-6
-        ):
-            raise ValueError("SHAP components do not reproduce the published forecast")
+    # One grouped pass instead of a loop over events: the same checks, vectorised.
+    groups = (
+        events.groupby(["model", "event_id"])
+        .agg(
+            n=("seed", "size"),
+            low=("seed", "min"),
+            high=("seed", "max"),
+            first_year=("year", "min"),
+            last_year=("year", "max"),
+            mean=("raw_probability", "mean"),
+        )
+        .reset_index()
+    )
+    seeds = groups.model.astype(str).map(SEEDS)
+    if not groups.event_id.isin(published.index).all() or not groups.n.eq(seeds).all():
+        raise ValueError("Missing SHAP event or ensemble components")
+    # n equals the seed count and seeds are unique per event, so min and max fix the set.
+    if not (groups.low.eq(42) & groups.high.eq(41 + seeds)).all():
+        raise ValueError("Unexpected SHAP seed identities")
+    original = published.loc[groups.event_id.astype(str).tolist()]
+    years = original["year"].to_numpy()
+    if (
+        not (groups.first_year.to_numpy() == years).all()
+        or not (groups.last_year.to_numpy() == years).all()
+    ):
+        raise ValueError("SHAP year differs from the current forecast")
+    raw = np.array(
+        [original[f"raw_{model}"].iat[i] for i, model in enumerate(groups.model.astype(str))],
+        dtype=float,
+    )
+    if not np.allclose(groups["mean"].to_numpy(float), raw, atol=1e-6, rtol=1e-6):
+        raise ValueError("SHAP components do not reproduce the published forecast")
