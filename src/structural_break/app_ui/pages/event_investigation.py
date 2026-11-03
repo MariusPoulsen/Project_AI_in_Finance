@@ -10,7 +10,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from structural_break.app_bundle.features import feature_label
-from structural_break.app_ui import components, explanation_view, navigation, theme
+from structural_break.app_ui import components, explanation_view, live_view, navigation, theme
 from structural_break.app_ui.context import current, open_pair
 from structural_break.app_ui.results import event_table
 from structural_break.services.current_monitor import feature_block
@@ -85,7 +85,13 @@ def render() -> None:
         "a missing score is not zero."
     )
     tabs = st.tabs(
-        ["Forecast and SHAP", "Evidence and agents", "Outcome and trade", "Input values"]
+        [
+            "Forecast and SHAP",
+            "Live model",
+            "Evidence and agents",
+            "Outcome and trade",
+            "Input values",
+        ]
     )
     with tabs[0]:
         st.subheader("What moved the forecast?")
@@ -102,10 +108,12 @@ def render() -> None:
             )
         explanation_view.render_event(results, str(event_id))
     with tabs[1]:
-        _evidence(results.tables.get("event_cases", pd.DataFrame()), str(event_id))
+        live_view.render(results, str(event_id), int(row["year"]))
     with tabs[2]:
-        _outcome(row)
+        _evidence(results.tables.get("event_cases", pd.DataFrame()), str(event_id))
     with tabs[3]:
+        _outcome(row)
+    with tabs[4]:
         inputs = results.tables.get("diagnostic_inputs", pd.DataFrame())
         hit = inputs.loc[inputs.event_id.eq(event_id)] if not inputs.empty else inputs
         if hit.empty:
