@@ -5,7 +5,7 @@ broken? This project forecasts which divergences between 736 pairs of large US s
 (Goal 1) and trades a book on the forecasts after realistic costs (Goal 2). Every choice was
 made on 2010–2017, confirmed on 2018–2023 and tested once on the locked 2024–2025 data.
 
-**App:** <https://aiinfinance-mkt.streamlit.app> · read-only, no login, nothing to install.
+**App:** <https://projectaiinfinance-mkt.streamlit.app> · read-only, no login, nothing to install.
 
 ![Overview page](docs/screenshots/overview.png)
 
@@ -171,8 +171,8 @@ cannot reach the network.
 - **Survivorship.** The 250 companies are today's large caps, and the business groups use
   today's classifications.
 - **Static data.** The app shows the frozen study and does not update with new prices.
-- **Explanations are sampled.** SHAP values exist for 80 events per year; other events say
-  so and link to a similar explained event.
+- **Explanations show the largest effects.** Each event's SHAP chart shows its 15 largest
+  input effects (averaged over the bag's models) and sums the rest in one bar.
 - **Cold start.** After a period without visitors, Streamlit Community Cloud puts the app to
   sleep; the first visit then takes a little longer.
 

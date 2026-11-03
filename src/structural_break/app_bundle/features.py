@@ -30,6 +30,12 @@ _QUANT_BLOCKS = {
 }
 
 _LABELS = {
+    "ou_p_label": "OU theory: chance of reverting",
+    "ou_p_tp": "OU theory: chance of the take profit",
+    "ou_zgain": "OU theory: expected z captured",
+    "ou_ev_bps": "OU theory: expected net return (bps)",
+    "ou_rho": "OU persistence (AR(1) rho)",
+    "ou_sigma": "OU spread volatility",
     "z_signed": "Signed spread z-score",
     "abs_z": "Absolute spread z-score",
     "divergence_sign": "Divergence direction",

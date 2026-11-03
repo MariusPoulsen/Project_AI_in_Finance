@@ -1,9 +1,14 @@
-"""Explicit development-only TreeSHAP export; never invoked by app browsing.
+"""Explicit TreeSHAP export for every scored event; never invoked by app browsing.
 
-Run in the development checkout holding data/team and outputs/book. Reconstructs
-the unchanged annual fits, verifies ALL their saved raw scores, then explains a
-target-blind event sample. Bagged components are explained separately in margin
-space; their margins must never be presented as the bag's averaged probability.
+Run in the checkout holding data/team and outputs/book. Reconstructs the unchanged annual
+fits, verifies ALL their saved raw scores, then explains every event of each test year.
+
+For each event and model the contributions are averaged over the bag's seed models (one for
+R0, five for the bagged models) in log-odds. The export keeps each event's largest effects
+plus one row with the sum of the rest, so the rows still add up exactly to the averaged
+margin minus the averaged base value. A per-year summary over all inputs keeps the global
+importance exact. Seed totals (base, margin and raw probability) are kept per seed so the
+app can check them against the published forecasts.
 """
 
 from __future__ import annotations
@@ -12,13 +17,14 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 import numpy as np
 import pandas as pd
 
+from structural_break import periods
 from structural_break.forecast import harness
-from structural_break.services.forecast_explanations import validate
+from structural_break.services.forecast_explanations import OTHER, SCHEMA, validate
 
 SPECS = {
     "r0": ("B", "d45", "base"),
@@ -31,25 +37,70 @@ def sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def sample(events: pd.DataFrame, limit: int) -> pd.DataFrame:
-    """Stable selection without looking at outcomes, confidence or feature values."""
-    order = events.event_id.map(lambda x: hashlib.sha256(str(x).encode()).hexdigest())
-    return events.assign(_order=order).sort_values("_order").head(limit).drop(columns="_order")
+def compact(
+    model: str,
+    events: pd.DataFrame,
+    columns: list[str],
+    values: np.ndarray,
+    contributions: np.ndarray,
+    top: int,
+) -> list[dict[str, Any]]:
+    """Each event's ``top`` largest seed-averaged contributions plus the sum of the rest."""
+    rows: list[dict[str, Any]] = []
+    order = np.argsort(-np.abs(contributions), axis=1, kind="stable")
+    for position, event_id in enumerate(events.event_id):
+        keep = order[position, :top]
+        for number in keep:
+            rows.append(
+                {
+                    "model": model,
+                    "event_id": event_id,
+                    "feature": columns[number],
+                    "value": float(values[position, number]),
+                    "contribution": float(contributions[position, number]),
+                }
+            )
+        rest = float(np.delete(contributions[position], keep).sum())
+        rows.append(
+            {
+                "model": model,
+                "event_id": event_id,
+                "feature": OTHER,
+                "value": np.nan,
+                "contribution": rest,
+            }
+        )
+    return rows
+
+
+def summary(model: str, year: int, columns: list[str], contributions: np.ndarray) -> pd.DataFrame:
+    """Exact per-year totals over every event, for the global importance chart."""
+    return pd.DataFrame(
+        {
+            "model": model,
+            "year": year,
+            "feature": columns,
+            "n": len(contributions),
+            "sum_abs": np.abs(contributions).sum(axis=0),
+            "sum": contributions.sum(axis=0),
+        }
+    )
 
 
 def main() -> None:
+    last_year = periods.data_end().year
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--results", type=Path, default=Path("demo/results"))
     parser.add_argument("--workspace-root", type=Path, default=Path("data/team"))
     parser.add_argument("--outputs-root", type=Path, default=Path("outputs"))
-    parser.add_argument("--years", nargs="+", type=int, default=list(range(2010, 2024)))
-    parser.add_argument("--events-per-year", type=int, default=80)
+    parser.add_argument("--years", nargs="+", type=int, default=list(range(2010, last_year + 1)))
+    parser.add_argument("--top", type=int, default=15, help="Largest effects kept per event")
     parser.add_argument("--checkpoint-dir", type=Path, default=Path(".design/shap-checkpoints"))
     args = parser.parse_args()
-    if not args.years or min(args.years) < 2010 or max(args.years) > 2023:
-        parser.error("Only development years 2010–2023 can be explained by this command")
-    if args.events_per_year < 1:
-        parser.error("events-per-year must be positive")
+    if not args.years or min(args.years) < 2010 or max(args.years) > last_year:
+        parser.error(f"Years must lie in 2010–{last_year} (later years are locked)")
+    if args.top < 1:
+        parser.error("top must be positive")
     manifest_path = args.results / "manifest.json"
     original_bytes = manifest_path.read_bytes()
     manifest = json.loads(original_bytes)
@@ -96,23 +147,27 @@ def main() -> None:
         pd.util.hash_pandas_object(frame[bound_columns], index=True).to_numpy().tobytes()
     ).hexdigest()
     implementation = sha(Path(harness.__file__))
-    totals: list[dict[str, Any]] = []
-    contributions: list[dict[str, Any]] = []
+    totals: list[pd.DataFrame] = []
+    values: list[pd.DataFrame] = []
+    summaries: list[pd.DataFrame] = []
+    names = ("events.parquet", "values.parquet", "summary.parquet")
     for model_key, (spec, scheme, params_key) in SPECS.items():
-        columns = sets[spec]
+        columns = list(sets[spec])
         if not set(columns) <= set(frame):
             raise ValueError(f"Missing published inputs for {model_key}")
         for year in sorted(set(args.years)):
-            checkpoint = args.checkpoint_dir / f"{model_key}-{year}-{args.events_per_year}"
+            checkpoint = args.checkpoint_dir / f"{model_key}-{year}-all-top{args.top}"
             binding = hashlib.sha256(
                 json.dumps(
                     [
+                        SCHEMA,
                         sha(source),
                         frame_digest,
                         implementation,
                         columns,
                         harness.PARAMS[params_key],
                         xgb.__version__,
+                        args.top,
                     ]
                 ).encode()
             ).hexdigest()
@@ -122,18 +177,9 @@ def main() -> None:
                 if saved["binding"] == binding and all(
                     sha(checkpoint / name) == digest for name, digest in saved["files"].items()
                 ):
-                    totals.extend(
-                        cast(
-                            list[dict[str, Any]],
-                            pd.read_parquet(checkpoint / "events.parquet").to_dict("records"),
-                        )
-                    )
-                    contributions.extend(
-                        cast(
-                            list[dict[str, Any]],
-                            pd.read_parquet(checkpoint / "values.parquet").to_dict("records"),
-                        )
-                    )
+                    totals.append(pd.read_parquet(checkpoint / "events.parquet"))
+                    values.append(pd.read_parquet(checkpoint / "values.parquet"))
+                    summaries.append(pd.read_parquet(checkpoint / "summary.parquet"))
                     print(f"Reused verified {model_key}/{year}", flush=True)
                     continue
             train, _, test = harness.split(frame, year, scheme)
@@ -143,71 +189,58 @@ def main() -> None:
             if set(test.event_id) != set(published.index):
                 raise ValueError("Reconstructed and published annual populations differ")
             estimator = harness._estimator(harness.PARAMS[params_key])
-            estimator.fit(train[list(columns)].astype(float), train[harness.TARGET].astype(int))
-            all_raw = estimator.predict_proba(test[list(columns)].astype(float))[:, 1]
+            estimator.fit(train[columns].astype(float), train[harness.TARGET].astype(int))
+            x = test[columns].astype(float)
+            all_raw = estimator.predict_proba(x)[:, 1]
             expected = published.loc[test.event_id, f"raw_{model_key}"].to_numpy(float)
             if not np.allclose(all_raw, expected, atol=1e-6, rtol=1e-6):
                 raise ValueError(
                     f"Annual {model_key}/{year} fit does not reproduce published scores"
                 )
-            chosen = sample(test, args.events_per_year)
-            total_start, value_start = len(totals), len(contributions)
-            x = chosen[list(columns)].astype(float)
-            input_values = x.to_numpy(dtype=float)
             components = estimator.models if hasattr(estimator, "models") else [estimator]
+            matrix = xgb.DMatrix(x, feature_names=columns)
+            seed_rows = []
+            contributions = np.zeros((len(test), len(columns)))
             for index, component in enumerate(components):
                 booster = component.get_booster()
-                matrix = xgb.DMatrix(x, feature_names=list(columns))
                 shap = booster.predict(matrix, pred_contribs=True)
                 margins = booster.predict(matrix, output_margin=True)
                 raw = component.predict_proba(x)[:, 1]
-                for position, event in enumerate(chosen.itertuples()):
-                    totals.append(
+                contributions += shap[:, :-1] / len(components)
+                seed_rows.append(
+                    pd.DataFrame(
                         {
                             "model": model_key,
-                            "event_id": event.event_id,
+                            "event_id": test.event_id.to_numpy(),
                             "year": year,
                             "seed": 42 + index,
-                            "base": float(shap[position, -1]),
-                            "margin": float(margins[position]),
-                            "raw_probability": float(raw[position]),
+                            "base": shap[:, -1].astype(float),
+                            "margin": margins.astype(float),
+                            "raw_probability": raw.astype(float),
                         }
                     )
-                    for number, feature in enumerate(columns):
-                        contributions.append(
-                            {
-                                "model": model_key,
-                                "event_id": event.event_id,
-                                "seed": 42 + index,
-                                "feature": feature,
-                                "value": float(input_values[position, number]),
-                                "contribution": float(shap[position, number]),
-                            }
-                        )
+                )
+            year_totals = pd.concat(seed_rows, ignore_index=True)
+            year_values = pd.DataFrame(
+                compact(model_key, test, columns, x.to_numpy(float), contributions, args.top)
+            )
+            year_summary = summary(model_key, year, columns, contributions)
             checkpoint.mkdir(parents=True, exist_ok=True)
-            pd.DataFrame(totals[total_start:]).to_parquet(
-                checkpoint / "events.parquet", index=False
-            )
-            pd.DataFrame(contributions[value_start:]).to_parquet(
-                checkpoint / "values.parquet", index=False
-            )
+            for name, table in zip(names, (year_totals, year_values, year_summary), strict=True):
+                table.to_parquet(checkpoint / name, index=False)
             receipt.write_text(
                 json.dumps(
-                    {
-                        "binding": binding,
-                        "files": {
-                            name: sha(checkpoint / name)
-                            for name in ("events.parquet", "values.parquet")
-                        },
-                    }
+                    {"binding": binding, "files": {name: sha(checkpoint / name) for name in names}}
                 )
             )
-            print(
-                f"Verified {model_key}/{year}: {len(test)} scores; explained {len(chosen)} events",
-                flush=True,
-            )
-    event_frame, value_frame = pd.DataFrame(totals), pd.DataFrame(contributions)
-    validate(event_frame, value_frame, forecasts)
+            totals.append(year_totals)
+            values.append(year_values)
+            summaries.append(year_summary)
+            print(f"Verified and explained {model_key}/{year}: {len(test)} events", flush=True)
+    event_frame = pd.concat(totals, ignore_index=True)
+    value_frame = pd.concat(values, ignore_index=True)
+    summary_frame = pd.concat(summaries, ignore_index=True)
+    validate(event_frame, value_frame, forecasts, summary_frame)
     if (
         manifest_path.read_bytes() != original_bytes
         or sha(source) != manifest["files"][source.name]
@@ -215,13 +248,16 @@ def main() -> None:
         raise ValueError("Presentation changed while SHAP was being generated")
     event_frame.to_parquet(args.results / "shap_events.parquet", index=False)
     value_frame.to_parquet(args.results / "shap_values.parquet", index=False)
+    summary_frame.to_parquet(args.results / "shap_summary.parquet", index=False)
     metadata = {
-        "schema_version": "current-tree-shap-v1",
+        "schema_version": SCHEMA,
         "xgboost_version": xgb.__version__,
         "forecast_sha256": sha(source),
-        "events_per_year": args.events_per_year,
-        "sampling": "Lowest SHA-256(event_id), independently in each year",
-        "units": "Native TreeSHAP log-odds of each seed component; not bag probability",
+        "years": [int(min(args.years)), int(max(args.years))],
+        "coverage": "Every scored event of each year",
+        "top_features": args.top,
+        "units": "Native TreeSHAP log-odds averaged over the bag's seed models; the remaining "
+        "inputs are summed in one row",
         "source_hashes": {
             p.relative_to(args.outputs_root).as_posix(): sha(p)
             for p in (
@@ -233,7 +269,7 @@ def main() -> None:
         },
     }
     (args.results / "shap.json").write_bytes(json.dumps(metadata, indent=2).encode("utf-8"))
-    for name in ("shap_events.parquet", "shap_values.parquet", "shap.json"):
+    for name in ("shap_events.parquet", "shap_values.parquet", "shap_summary.parquet", "shap.json"):
         manifest["files"][name] = sha(args.results / name)
     manifest_path.write_bytes(json.dumps(manifest, indent=1).encode("utf-8"))
     print("Exported verified current-model SHAP; no research outputs were modified", flush=True)

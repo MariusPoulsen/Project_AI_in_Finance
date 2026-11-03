@@ -228,7 +228,8 @@ def test_event_investigation_opens_a_saved_full_forecast_and_rejects_unknown_id(
     assert not app.exception and not app.error
     assert "Forecast and SHAP" in [tab.label for tab in app.tabs]
     assert any("Probability-only stack" in item.value for item in app.markdown)
-    assert any("Exact linear SHAP" in item.value for item in app.caption)
+    # The bagged model is explained by default, averaged over its five seed models.
+    assert any("averaged over the bag's five models" in item.value for item in app.caption)
     app.query_params["event"] = "not-published"
     app.run()
     assert not app.exception and not app.error
