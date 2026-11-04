@@ -117,8 +117,9 @@ def run(load: Callable[[], data.LoadOutcome] | None = None) -> None:
             )
         first, last = found.manifest["event_years"] if found is not None else (2010, 2023)
         st.caption(
-            f"Scored events {first}–{last}. Read-only: nothing on these pages downloads, "
-            "trains or trades."
+            f"Scored events {first}–{last}. The app never fetches new data, trains a model "
+            "or places a trade; it shows saved results and scores 2024–2025 events with the "
+            "saved models."
         )
     st.session_state[KEY] = AppContext(
         service=service, horizon=int(horizon), pages=pages, results=found
