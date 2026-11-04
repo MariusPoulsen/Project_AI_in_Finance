@@ -358,6 +358,8 @@ def main() -> None:
     pd.DataFrame(news()).to_parquet(OUT / "news.parquet", index=False)
     review = pd.read_csv("docs/agent_review/review_answers.csv", dtype=str, keep_default_na=False)
     answers = review["answer (Y/P/N)"].str.upper()
+    # Only cases with answers count as reviewed (the first 10 of the 50 prepared cases).
+    answered = review.loc[answers.ne("")]
     summary = {
         "goal1": metrics,
         "books": book_stats,
@@ -366,8 +368,9 @@ def main() -> None:
             "by_reason": trades.exit_reason.value_counts().to_dict(),
         },
         "review": {
-            "cases": int(review.review_id.nunique()),
-            "claims": int(review.item.str.startswith("claim").sum()),
+            "cases": int(answered.review_id.nunique()),
+            "prepared": int(review.review_id.nunique()),
+            "claims": int(answered.item.str.startswith("claim").sum()),
             "confirmed": int((answers == "Y").sum()),
             "partly": int((answers == "P").sum()),
             "rejected": int((answers == "N").sum()),

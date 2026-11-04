@@ -6021,3 +6021,12 @@ development answers were produced for cases keyed by the old event ids.
   event id; 170 were produced for an earlier version of the case (its evidence changed with the
   revised SEC timestamps) and still entered the full model; 42 have no final-test case and were
   not used. The app's event investigation shows the 170 with a marked status and omits the 42.
+
+### 120, correction: the blind agent review covered 10 cases (2026-11-04, owner)
+
+Decision 120 recorded that all 50 prepared blind review cases were checked and confirmed. The
+owner corrected this: only the first 10 cases (R01–R10: 38 cited claims and 10 overall
+judgements, 58 answers) were checked, and all of them confirmed the agents. The answers for
+R11–R50, which had been filled in as confirmed without being read, are cleared in
+`docs/agent_review/review_answers.csv`, and the published summary and the app now report 10
+reviewed cases. No forecast, book or final-test result depends on the review.

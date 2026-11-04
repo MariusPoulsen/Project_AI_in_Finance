@@ -209,10 +209,10 @@ def render() -> None:
     ]
     if review.get("answered"):
         lines.append(
-            f"- **Human review:** the group checked {review['cases']} blind "
-            f"cases with {review['claims']} cited claims; {review['confirmed']} of "
-            f"{review['answered']} answers confirm the agents, {review['partly']} partly, "
-            f"{review['rejected']} reject."
+            f"- **Human review:** {review['cases']} of {review.get('prepared', review['cases'])} "
+            f"prepared blind cases were checked, with {review['claims']} cited claims; "
+            f"{review['confirmed']} of {review['answered']} answers confirm the agents, "
+            f"{review['partly']} partly, {review['rejected']} reject."
         )
     st.markdown("\n".join(lines))
     density = news_density(results.tables["news"])

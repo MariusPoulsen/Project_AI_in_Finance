@@ -176,7 +176,7 @@ def render() -> None:
         "The application has no order execution and shows no live data.\n"
         "- **Human oversight:** language models never trade by themselves. The monitor's "
         "scores pass a fixed, audited rule; entry assessments feed a statistical forecast; "
-        "the group reviewed 50 blind agent cases."
+        "10 of 50 prepared blind agent cases were checked by hand."
     )
     st.subheader("Data, privacy and security")
     st.markdown(
