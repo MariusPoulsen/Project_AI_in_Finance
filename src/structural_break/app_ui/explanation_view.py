@@ -248,7 +248,7 @@ def render(results: Results, years: tuple[int, int]) -> None:
     )
     components.chart(figure, key="headline_shap_importance")
     forecasts = universe.set_index("event_id")
-    explained = totals.event_id.drop_duplicates()
+    explained = totals.event_id.astype(str).drop_duplicates()
     traded = explained[explained.map(forecasts.traded).fillna(False).astype(bool)]
     options = list(traded if len(traded) else explained)
     st.caption(
