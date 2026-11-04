@@ -244,6 +244,12 @@ def _read(folder: str, digest: str) -> Results | None:
             validate_shap(
                 tables["shap_events"], tables["shap_values"], forecasts, tables["shap_summary"]
             )
+            # About 1.3 million rows repeat a few thousand event IDs and input names; as
+            # categories they take a tenth of the memory, which the hosted app needs.
+            for name in ("shap_events", "shap_values"):
+                for column in ("model", "event_id", "feature"):
+                    if column in tables[name]:
+                        tables[name][column] = tables[name][column].astype("category")
             return tables
 
         loaders.update(dict.fromkeys(shap_tables, load_shap))
