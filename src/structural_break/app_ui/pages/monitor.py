@@ -230,7 +230,8 @@ def _headline_health(results: Results | None) -> None:
     review = results.summary.get("review", {})
     if review.get("answered"):
         st.caption(
-            f"Development cases. Human review: {review['cases']} blind cases and "
+            f"Development cases. Human review: {review['cases']} of "
+            f"{review.get('prepared', review['cases'])} blind cases checked, with "
             f"{review['claims']} cited claims; {review['confirmed']} of {review['answered']} "
             "answers confirm the agents. Language models never set a trade by themselves: the "
             "monitor's scores pass a fixed rule (adverse ≥ 5 and persistence ≥ 5)."

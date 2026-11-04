@@ -411,12 +411,13 @@
   }
  },
  "review": {
-  "cases": 50,
-  "claims": 190,
-  "confirmed": 290,
+  "cases": 10,
+  "prepared": 50,
+  "claims": 38,
+  "confirmed": 58,
   "partly": 0,
   "rejected": 0,
-  "answered": 290,
+  "answered": 58,
   "rows": 290
  }
 }
